@@ -36,6 +36,8 @@ abstract class IllustiaDetailProfileModule(
         _uiState.update {
             it.copy(
                 selectedIllust = cached?.illust ?: illust,
+                selectedIllustError = null,
+                selectedIllustErrorId = null,
                 selectedIllustUser = cached?.user,
                 selectedIllustFirstComment = cached?.firstComment,
                 relatedIllusts = cached?.relatedIllusts ?: emptyList(),
@@ -133,6 +135,7 @@ abstract class IllustiaDetailProfileModule(
 
     override fun openIllust(illustId: Long) {
         if (illustId <= 0L) return
+        _uiState.update { it.copy(selectedIllustError = null, selectedIllustErrorId = null) }
         _detailNavigationRequests.tryEmit(illustId)
         val localIllust = findIllustById(illustId)
         if (localIllust != null && localIllust.artistId > 0L) {
@@ -155,7 +158,13 @@ abstract class IllustiaDetailProfileModule(
                     if (handleAuthExpired(error)) return@launch
                     GlitchTipTelemetry.recordException(error, tag = "illust_detail", extras = mapOf("illustId" to illustId))
                     withContext(Dispatchers.Main) {
-                        _uiState.update { it.copy(message = cleanErrorMessage(error, str(R.string.error_load_detail_failed))) }
+                        _uiState.update {
+                            it.copy(
+                                selectedIllustError = cleanErrorMessage(error, str(R.string.error_load_detail_failed)),
+                                selectedIllustErrorId = illustId,
+                                message = cleanErrorMessage(error, str(R.string.error_load_detail_failed)),
+                            )
+                        }
                     }
                 }
             }

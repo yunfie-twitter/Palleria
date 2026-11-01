@@ -138,6 +138,7 @@
     <string name="search_empty_user">ユーザーが見つかりません</string>
     <string name="search_recent_viewed">最近見た作品</string>
     <string name="search_recommended_tags">おすすめのタグ</string>
+    <string name="recommended_tags_empty">おすすめのタグはありません</string>
     <string name="search_reset_filters">検索条件をリセット</string>
     <string name="search_delete_history_item">履歴を削除</string>
     <string name="action_retry">再試行</string>
@@ -797,6 +798,7 @@
     <string name="image_smart_cache_count">先読みする作品数</string>
     <string name="image_cache_capacity">画像キャッシュ容量</string>
     <string name="image_cache_capacity_desc">容量変更は次回起動時に反映されます</string>
+    <string name="image_cache_capacity_unlimited">無制限</string>
     <string name="more_notifications">通知</string>
     <string name="notifications_empty">通知はありません</string>
     <string name="notifications_load_more">さらに読み込む</string>
@@ -896,6 +898,11 @@
     
     <!-- PallaSync settings -->
     <string name="pallasync_settings_title">PallaSync 同期</string>
+    <string name="pallasync_setup_guide_title">最初の設定</string>
+    <string name="pallasync_setup_guide_summary">1. 同期を有効にし、信頼できるリレーを選びます。2. 招待で別端末を追加するか、既存の回復フレーズで復元します。3. 承認前に、両端末で同じ照合コードを対面で確認します。普段は下の同期状態と参加端末を確認してください。</string>
+    <string name="pallasync_advanced_show">上級者向けメンテナンス</string>
+    <string name="pallasync_advanced_hide">上級者向けメンテナンスを隠す</string>
+    <string name="pallasync_advanced_summary">移行、履歴修復、削除・保持操作、プロトコル証拠、診断ログを表示します。復旧手順またはサポート案内に従う場合のみ使用してください。</string>
     <string name="pallasync_enable">PallaSync を有効にする</string>
     <string name="pallasync_enable_desc">他の端末と閲覧履歴やブックマークなどを同期します</string>
     <string name="pallasync_server_url">サーバー URL</string>
