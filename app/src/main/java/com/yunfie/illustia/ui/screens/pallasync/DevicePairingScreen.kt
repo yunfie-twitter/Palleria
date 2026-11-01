@@ -286,7 +286,6 @@ fun DevicePairingScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(serverUrl)
-            Text(stringResource(R.string.pallasync_v3_relay_replay_source))
             // The step shown is derived from observable state, never advanced by tapping through.
             PairingStepper(
                 current =
@@ -312,6 +311,9 @@ fun DevicePairingScreen(
                 enabled = trustSource == null && !showRoot && !peerSetup,
                 onClick = { trustSource = "relay_full_replay" },
             )
+            if (showRoot || trustSource == "relay_full_replay") {
+                Text(stringResource(R.string.pallasync_v3_relay_replay_source))
+            }
             if (peerSetup) {
                 Text(stringResource(R.string.pallasync_peer_subject_guidance))
                 TextButton(
