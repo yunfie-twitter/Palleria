@@ -353,11 +353,12 @@ abstract class IllustiaBookmarkModule(
         if (state.settings.refreshToken.isBlank()) return
         val now = System.currentTimeMillis()
         val cacheAge = now - state.recommendedTagsFetchedAtMillis
-        if (!force && state.recommendedTags.isNotEmpty() && cacheAge in 0 until RECOMMENDED_TAG_CACHE_TTL_MILLIS) {
+        if (!force && state.recommendedTagsFetchedAtMillis > 0L && cacheAge in 0 until RECOMMENDED_TAG_CACHE_TTL_MILLIS) {
             return
         }
         recommendedTagsJob?.cancel()
         recommendedTagsExpiryJob?.cancel()
+        _uiState.update { it.copy(recommendedTagsLoading = true, recommendedTagsError = null) }
         recommendedTagsJob =
             viewModelScope.launch(Dispatchers.IO) {
                 runCatching {
@@ -378,28 +379,39 @@ abstract class IllustiaBookmarkModule(
                             }.awaitAll()
                     }
                 }.onSuccess { tags ->
-                    if (tags.isEmpty()) return@onSuccess
                     val fetchedAt = System.currentTimeMillis()
                     _uiState.update { current ->
                         current.copy(
                             recommendedTags = tags.map { it.tag },
                             recommendedTagTiles = tags,
                             recommendedTagsFetchedAtMillis = fetchedAt,
+                            recommendedTagsLoading = false,
+                            recommendedTagsError = null,
                         )
                     }
-                    recommendedTagsExpiryJob =
-                        viewModelScope.launch {
-                            delay(RECOMMENDED_TAG_CACHE_TTL_MILLIS)
-                            _uiState.update { current ->
-                                if (current.recommendedTagsFetchedAtMillis != fetchedAt) {
-                                    current
-                                } else {
-                                    current.copy(recommendedTagsFetchedAtMillis = 0L)
-                                }
-                            }
-                        }
+                    scheduleRecommendedTagsExpiry(fetchedAt)
                 }.onFailure { expectedFailure ->
                     if (isCancellation(expectedFailure)) throw expectedFailure
+                    _uiState.update { current ->
+                        current.copy(
+                            recommendedTagsLoading = false,
+                            recommendedTagsError = loadFailureMessage(current, expectedFailure),
+                        )
+                    }
+                }
+            }
+    }
+
+    private fun scheduleRecommendedTagsExpiry(fetchedAt: Long) {
+        recommendedTagsExpiryJob =
+            viewModelScope.launch {
+                delay(RECOMMENDED_TAG_CACHE_TTL_MILLIS)
+                _uiState.update { current ->
+                    if (current.recommendedTagsFetchedAtMillis != fetchedAt) {
+                        current
+                    } else {
+                        current.copy(recommendedTagsFetchedAtMillis = 0L)
+                    }
                 }
             }
     }
