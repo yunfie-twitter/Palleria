@@ -201,6 +201,7 @@
     <string name="detail_related">関連イラスト</string>
     <string name="detail_illust_id">イラスト ID</string>
     <string name="detail_resolution">解像度</string>
+    <string name="detail_resolution_dimensions">%1$d × %2$d px</string>
 
     <!-- Image viewer screen -->
     <string name="viewer_share_failed">共有を開始できませんでした。</string>

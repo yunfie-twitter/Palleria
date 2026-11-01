@@ -195,6 +195,7 @@
     <string name="detail_related">Related Works</string>
     <string name="detail_illust_id">Illust ID</string>
     <string name="detail_resolution">Resolution</string>
+    <string name="detail_resolution_dimensions">%1$d × %2$d px</string>
 
     <!-- Image viewer screen -->
     <string name="viewer_share_failed">Could not start sharing.</string>
