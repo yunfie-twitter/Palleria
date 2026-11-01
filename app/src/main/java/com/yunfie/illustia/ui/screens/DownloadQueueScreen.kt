@@ -174,18 +174,26 @@ fun DownloadQueueScreen(
                             listState.smoothScrollToTop(scrollBehavior)
                         }
                     },
-                navigationIcon = { HeaderIcon(MiuixIcons.Back, onClick = onBack) },
+                navigationIcon = {
+                    HeaderIcon(
+                        MiuixIcons.Back,
+                        onClick = onBack,
+                        contentDescription = stringResource(R.string.action_back),
+                    )
+                },
                 actions = {
                     if (hasFinishedItems) {
                         HeaderIcon(
                             icon = MiuixIcons.Delete,
                             onClick = { showClearConfirmation = true },
+                            contentDescription = stringResource(R.string.download_queue_clear),
                         )
                     }
                     Box {
                         HeaderIcon(
                             icon = MiuixIcons.More,
                             onClick = { showCategoryPopup = true },
+                            contentDescription = stringResource(R.string.user_filter_category),
                         )
                         OverlayListPopup(
                             show = showCategoryPopup,
