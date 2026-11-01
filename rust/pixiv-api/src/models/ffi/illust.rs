@@ -22,6 +22,8 @@ pub struct Illust {
     pub original_image_pages: Vec<String>,
     pub tags: Vec<String>,
     pub page_count: i32,
+    pub width: i32,
+    pub height: i32,
     pub is_bookmarked: bool,
     pub total_bookmarks: i32,
     pub total_comments: Option<i32>,

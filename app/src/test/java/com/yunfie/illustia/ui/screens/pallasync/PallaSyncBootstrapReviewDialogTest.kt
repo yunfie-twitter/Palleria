@@ -6,6 +6,7 @@ import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
 import com.yunfie.illustia.R
@@ -23,7 +24,7 @@ class PallaSyncBootstrapReviewDialogTest {
     @get:Rule val compose = createComposeRule()
 
     @Test
-    fun `dialog shows verified source identity and checkpoint before affirmative action`() {
+    fun `dialog gives trust guidance first and keeps technical identity available in details`() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         compose.setContent {
             MiuixTheme {
@@ -36,21 +37,35 @@ class PallaSyncBootstrapReviewDialogTest {
         }
 
         compose
-            .onNodeWithText(context.getString(R.string.pallasync_bootstrap_review_origin, "https://relay.example"))
+            .onNodeWithText(context.getString(R.string.pallasync_bootstrap_review_summary, "https://relay.example", 17))
             .assertIsDisplayed()
-        compose.onNodeWithText(context.getString(R.string.pallasync_bootstrap_review_chain, "chain-1")).assertIsDisplayed()
-        compose.onNodeWithText(context.getString(R.string.pallasync_bootstrap_review_admin, "admin-key")).assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.pallasync_bootstrap_review_trust_guidance)).assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.pallasync_bootstrap_review_chain, "chain-1")).assertDoesNotExist()
+        compose
+            .onNodeWithText(context.getString(R.string.pallasync_bootstrap_review_show_details))
+            .assertIsDisplayed()
+            .performClick()
+        compose
+            .onNodeWithText(context.getString(R.string.pallasync_bootstrap_review_chain, "chain-1"))
+            .performScrollTo()
+            .assertIsDisplayed()
+        compose
+            .onNodeWithText(context.getString(R.string.pallasync_bootstrap_review_admin, "admin-key"))
+            .performScrollTo()
+            .assertIsDisplayed()
         compose
             .onNodeWithText(context.getString(R.string.pallasync_bootstrap_review_head, 17, "history-hash"))
+            .performScrollTo()
             .assertIsDisplayed()
         compose
             .onNodeWithText(context.getString(R.string.pallasync_bootstrap_review_parameters, "parameters-hash"))
-            .assertIsDisplayed()
-        compose.onNodeWithText(context.getString(R.string.pallasync_bootstrap_review_epoch, "epoch-hash")).assertIsDisplayed()
-        compose
-            .onNodeWithText(context.getString(R.string.pallasync_bootstrap_review_limit))
             .performScrollTo()
             .assertIsDisplayed()
+        compose
+            .onNodeWithText(context.getString(R.string.pallasync_bootstrap_review_epoch, "epoch-hash"))
+            .performScrollTo()
+            .assertIsDisplayed()
+        compose.onNodeWithText(context.getString(R.string.pallasync_bootstrap_review_limit)).performScrollTo().assertIsDisplayed()
         compose.onNodeWithText(context.getString(R.string.action_cancel)).assertIsDisplayed().assertHasClickAction()
         compose
             .onNodeWithText(context.getString(R.string.pallasync_bootstrap_review_confirm))

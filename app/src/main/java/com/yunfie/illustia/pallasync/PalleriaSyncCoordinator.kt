@@ -53,6 +53,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
+import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.put
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -4974,8 +4975,39 @@ internal class PalleriaSyncCoordinator(
                     checkNotNull((PallaSyncUrls.normalize(getServerUrl()) as? PallaSyncHttpResult.Success)?.value) {
                         "C_BOOTSTRAP_TRUST_REQUIRED"
                     }
-                refreshPeerHistory(base, activeChainStateLocked()?.chainId ?: error("C_BOOTSTRAP_TRUST_REQUIRED"))
-                peerApprover.offer(base, explicitlyRequested = true)
+                val chain = activeChainStateLocked()?.chainId ?: error("C_BOOTSTRAP_TRUST_REQUIRED")
+                refreshPeerHistory(base, chain)
+                val now = policy.retry.correctedTime(PallaSyncUrls.extractOrigin(base))
+                val authorityHash = keystore.authorityHash(chain)
+                val interruptedOffer =
+                    peerJournal.latestCreated()?.takeIf { transcript ->
+                        transcript.authorityHash == authorityHash &&
+                            (transcript.offer["expires_at_ms"]?.jsonPrimitive?.longOrNull ?: 0L) > now
+                    }
+                if (interruptedOffer != null) {
+                    peerApprover.retryOffer(base, interruptedOffer)
+                } else {
+                    peerApprover.offer(base, explicitlyRequested = true)
+                }
+            }
+        }
+
+    /** Exports only the current public authority after refreshing and verifying its signed history. */
+    internal suspend fun exportVerifiedAuthorityJson(): String =
+        withContext(Dispatchers.IO) {
+            operationMutex.withLock {
+                val base =
+                    checkNotNull((PallaSyncUrls.normalize(getServerUrl()) as? PallaSyncHttpResult.Success)?.value) {
+                        "C_BOOTSTRAP_TRUST_REQUIRED"
+                    }
+                val chain = checkNotNull(activeChainStateLocked()?.chainId) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                refreshPeerHistory(base, chain)
+                val state = checkNotNull(activeChainStateLocked()) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                val authority = checkNotNull(db.protocolDao().currentAuthority(chain)) { "C_MISSING_DEPENDENCY" }
+                val expectedHash = checkNotNull(keystore.authorityHash(chain)) { "C_BOOTSTRAP_TRUST_REQUIRED" }
+                check(state.chainId == chain) { "C_ROLLBACK_DETECTED" }
+                epochStatus.read(chain)
+                authorityJsonForVerifiedExport(authority, crypto.objectHash(authority), expectedHash)
             }
         }
 

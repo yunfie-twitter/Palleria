@@ -19,6 +19,8 @@ fn parses_illust_page_and_applies_kotlin_compatible_fallbacks() {
                     }],
                     "tags": [{"name": "tag"}],
                     "page_count": 1,
+                    "width": 720,
+                    "height": 1080,
                     "is_bookmarked": true,
                     "total_bookmarks": 123,
                     "x_restrict": 1,
@@ -44,6 +46,8 @@ fn parses_illust_page_and_applies_kotlin_compatible_fallbacks() {
     assert_eq!(illust.x_restrict, 1);
     assert_eq!(illust.sanity_level, 4);
     assert_eq!(illust.illust_ai_type, 2);
+    assert_eq!(illust.width, 720);
+    assert_eq!(illust.height, 1080);
 }
 
 #[test]
@@ -57,10 +61,13 @@ fn skips_an_illust_without_an_id_like_the_kotlin_mapper() {
 #[test]
 fn parses_an_illust_detail() {
     let response: IllustDetailResponse =
-        serde_json::from_str(r#"{"illust":{"id":42,"title":"detail"}}"#).unwrap();
+        serde_json::from_str(r#"{"illust":{"id":42,"title":"detail","width":640,"height":960}}"#)
+            .unwrap();
     let illust = response.into_illust().unwrap();
     assert_eq!(illust.id, 42);
     assert_eq!(illust.title, "detail");
+    assert_eq!(illust.width, 640);
+    assert_eq!(illust.height, 960);
 }
 
 #[test]

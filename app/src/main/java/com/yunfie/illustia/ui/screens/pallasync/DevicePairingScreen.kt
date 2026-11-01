@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -282,11 +284,14 @@ fun DevicePairingScreen(
         },
     ) { padding ->
         Column(
-            Modifier.fillMaxSize().padding(padding).padding(24.dp),
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(padding)
+                .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(serverUrl)
-            Text(stringResource(R.string.pallasync_v3_relay_replay_source))
             // The step shown is derived from observable state, never advanced by tapping through.
             PairingStepper(
                 current =
@@ -296,6 +301,11 @@ fun DevicePairingScreen(
                         else -> PairingStep.SHOW_CODE
                     },
             )
+            if (peerSetup) {
+                PairingStepCaption(
+                    text = stringResource(peerEnrollmentGuidanceResource(work != null, confirmed, candidate != null)),
+                )
+            }
             PairingRoleCard(
                 title = stringResource(R.string.pallasync_role_add_device),
                 description = stringResource(R.string.pallasync_role_add_device_description),
@@ -312,6 +322,9 @@ fun DevicePairingScreen(
                 enabled = trustSource == null && !showRoot && !peerSetup,
                 onClick = { trustSource = "relay_full_replay" },
             )
+            if (showRoot || trustSource == "relay_full_replay") {
+                Text(stringResource(R.string.pallasync_v3_relay_replay_source))
+            }
             if (peerSetup) {
                 Text(stringResource(R.string.pallasync_peer_subject_guidance))
                 TextButton(
@@ -442,5 +455,17 @@ fun DevicePairingScreen(
         }
     }
 }
+
+internal fun peerEnrollmentGuidanceResource(
+    hasWork: Boolean,
+    confirmed: Boolean,
+    hasCandidate: Boolean,
+): Int =
+    when {
+        hasCandidate -> R.string.pallasync_peer_subject_step_request
+        hasWork && confirmed -> R.string.pallasync_peer_subject_step_transfer
+        hasWork -> R.string.pallasync_peer_subject_step_compare
+        else -> R.string.pallasync_peer_subject_step_scan
+    }
 
 private enum class ImportPurpose { AUTHORITY, CERTIFICATE_ENVELOPE, ACCEPTANCE }

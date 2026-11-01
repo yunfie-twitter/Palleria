@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="pallasync_authority_export_title">Export verified Authority JSON</string>
+    <string name="pallasync_authority_export_summary">Refresh and verify the current public chain authority before saving. It contains no private keys; share it only with a device you trust.</string>
+    <string name="pallasync_authority_exported">Verified Authority JSON saved.</string>
+    <string name="pallasync_authority_export_failed">Could not verify or save Authority JSON.</string>
+    <string name="pallasync_authority_export_cancelled">Authority export cancelled.</string>
     <string name="pallasync_v3_mnemonic">Save your recovery mnemonic</string>
     <string name="pallasync_export_title">Export relay archive</string>
     <string name="pallasync_export_device_summary">Save this chain’s relay archive without recovery envelopes. Signed objects still need verification before restore; this is not a complete recovery archive.</string>
@@ -64,6 +69,7 @@
     <string name="pallasync_archive_verify_failed">The archive could not be completely verified against this chain. No data was installed.</string>
     <string name="pallasync_v3_mnemonic_explanation">Write down these 24 words in a safe offline place. The app does not retain them. The display closes when you leave this screen or after ten minutes.</string>
     <string name="pallasync_v3_mnemonic_saved">I saved these words</string>
+    <string name="pallasync_v3_mnemonic_verify_start">I wrote down the recovery phrase</string>
     <string name="pallasync_v3_mnemonic_word">Word %1$d</string>
     <string name="pallasync_v3_mnemonic_copy">Copy all words</string>
     <string name="pallasync_v3_mnemonic_copied">Copied. The clipboard is cleared automatically in %1$d seconds.</string>
@@ -90,6 +96,10 @@
     <string name="pallasync_v3_local_source">Create a new chain from the data on this device.</string>
     <string name="pallasync_v3_source_completeness_limit">This source choice permits recovery from the selected source; it does not prove that the source has shown every valid history entry. Source trust and relay policy consent are separate decisions.</string>
     <string name="pallasync_bootstrap_review_title">Review the verified recovery source</string>
+    <string name="pallasync_bootstrap_review_summary">Relay: %1$s. The signed history shown here has been verified through entry %2$d.</string>
+    <string name="pallasync_bootstrap_review_trust_guidance">Before continuing, compare the relay and chain identity with a source you already trust, such as the invite or backup from your other device. Continue only if they match.</string>
+    <string name="pallasync_bootstrap_review_show_details">Show technical details</string>
+    <string name="pallasync_bootstrap_review_hide_details">Hide technical details</string>
     <string name="pallasync_bootstrap_review_origin">Selected relay: %1$s</string>
     <string name="pallasync_bootstrap_review_chain">Derived chain ID: %1$s</string>
     <string name="pallasync_bootstrap_review_admin">Derived admin public key: %1$s</string>
@@ -110,6 +120,10 @@
     <string name="pallasync_v3_no_consent">No policy has been accepted for this relay.</string>
     <string name="pallasync_v3_withdraw">Withdraw consent and pause synchronization</string>
     <string name="pallasync_v3_history_window">Stored history last updated by this device is shown in pages of 200.</string>
+    <string name="pallasync_v3_history_summary_complete">Signed history verified through entry %1$d.</string>
+    <string name="pallasync_v3_history_summary_partial">Verified through entry %1$d. Some history or transparency evidence is still unavailable.</string>
+    <string name="pallasync_v3_history_show_details">Show sync diagnostics</string>
+    <string name="pallasync_v3_history_hide_details">Hide sync diagnostics</string>
     <string name="pallasync_v3_history_partial">Some history is still missing or awaiting verification. This is the locally available range.</string>
     <string name="pallasync_v3_history_sync_positions">Sync positions — downloaded: %1$d, verified: %2$d, materialized: %3$d</string>
     <string name="pallasync_v3_history_transparency">Transparency checkpoint — verified: %1$d, observed target: %2$d</string>
@@ -130,6 +144,7 @@
     <string name="pallasync_v3_epoch_title">Synchronization keys</string>
     <string name="pallasync_v3_epoch_number">Stored epoch: %1$d · Verified epoch: %2$d</string>
     <string name="pallasync_v3_epoch_unknown">Awaiting a verified key history.</string>
+    <string name="pallasync_v3_epoch_status_unavailable">Unable to verify the key history. Check the sync key and retry history verification.</string>
     <string name="pallasync_v3_epoch_ready">Ready for synchronization.</string>
     <string name="pallasync_v3_epoch_keys_needed">The verified history has new keys. Enter your mnemonic to fetch and verify them.</string>
     <string name="pallasync_v3_epoch_edits_pending">Pending edits are being prepared for the new keys.</string>
@@ -369,9 +384,13 @@
     <string name="pallasync_schema_recovery_retry">Recheck schema support after updating</string>
     <string name="pallasync_schema_recovery_failed">Revalidation stopped. Unresolved records and evidence are kept; any records already verified and applied remain saved. Resolve the reported sync condition before retrying.</string>
     <string name="pallasync_role_add_device">Add this device to a sync chain</string>
-    <string name="pallasync_role_add_device_description">This device is new. Have an existing device show its code, then scan it here.</string>
+    <string name="pallasync_role_add_device_description">Add this new device by invitation: scan a QR on the existing device, then exchange verified files. No recovery phrase is entered on this device.</string>
+    <string name="pallasync_peer_subject_step_scan">This device: scan the invite QR, then import the Authority JSON. On the inviting device: export the verified Authority JSON and show the QR. Resume this step by scanning and importing those same files again.</string>
+    <string name="pallasync_peer_subject_step_compare">Both devices: compare the same verification code in person. Confirm on this device only when every character matches. Then ask the inviting device to send its certificate and key-envelope file.</string>
+    <string name="pallasync_peer_subject_step_transfer">Inviting device: export the certificate and key-envelope file and send it to this device. This device: import that file; the next step is to export the enrollment request back to the inviter.</string>
+    <string name="pallasync_peer_subject_step_request">This device: export the enrollment request and send it to the inviting device. After the inviter approves it, import the acceptance JSON they send back here.</string>
     <string name="pallasync_role_join_chain">Join with an existing recovery phrase</string>
-    <string name="pallasync_role_join_chain_description">Re-enter the 24 words on this device to take over an existing chain.</string>
+    <string name="pallasync_role_join_chain_description">Use the existing 24-word recovery phrase on this device to restore the chain without an invitation from another device.</string>
     <string name="pallasync_trust_fingerprint_label">Relay signing key fingerprint</string>
     <string name="pallasync_trust_key_id">Key ID: %1$s</string>
     <string name="pallasync_trust_working">Contacting the relay…</string>

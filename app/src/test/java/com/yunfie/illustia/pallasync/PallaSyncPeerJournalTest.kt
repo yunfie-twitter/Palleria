@@ -15,6 +15,29 @@ import org.robolectric.annotation.Config
 @Config(sdk = [35], application = android.app.Application::class)
 class PallaSyncPeerJournalTest {
     @Test
+    fun `an interrupted created offer is available for exact retry after restart`() {
+        val prefs =
+            ApplicationProvider.getApplicationContext<Context>().getSharedPreferences(
+                "peer-journal-unit-interrupted-offer",
+                Context.MODE_PRIVATE,
+            )
+        prefs.edit().clear().commit()
+        val journal = PallaSyncPeerJournal(prefs)
+        val offer =
+            buildJsonObject {
+                put("request_id", "interrupted-offer")
+                put("expires_at_ms", 10_000L)
+            }
+        val created = journal.create(offer, "authority-fixture")
+
+        PallaSyncPeerJournal(prefs).latestCreated() shouldBe created
+
+        val offered = journal.update(created, created.copy(stage = PallaSyncPeerJournal.Stage.OFFERED))
+        PallaSyncPeerJournal(prefs).latestCreated() shouldBe null
+        offered.offer shouldBe created.offer
+    }
+
+    @Test
     fun `an authority head change invalidates an in-flight enrollment offer`() {
         val prefs =
             ApplicationProvider.getApplicationContext<Context>().getSharedPreferences(

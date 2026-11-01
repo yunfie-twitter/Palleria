@@ -294,6 +294,10 @@ abstract class IllustiaViewModelFoundation(
     @Suppress("VariableNaming")
     protected val _updateCheckState = MutableStateFlow<UpdateCheckState>(UpdateCheckState.Idle)
     val updateCheckState: StateFlow<UpdateCheckState> = _updateCheckState.asStateFlow()
+
+    @Suppress("VariableNaming")
+    protected val _activeDownloads = MutableStateFlow(0)
+    val activeDownloadsState: StateFlow<Int> = _activeDownloads.asStateFlow()
     val settingsState: StateFlow<AppSettings> =
         _uiState
             .map { it.settings }
@@ -304,11 +308,6 @@ abstract class IllustiaViewModelFoundation(
             .map { it.appLocked }
             .distinctUntilChanged()
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), _uiState.value.appLocked)
-    val activeDownloadsState: StateFlow<Int> =
-        _uiState
-            .map { it.activeDownloads }
-            .distinctUntilChanged()
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), _uiState.value.activeDownloads)
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
