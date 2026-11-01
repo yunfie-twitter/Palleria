@@ -260,6 +260,7 @@ tasks.withType(org.gradle.api.tasks.testing.Test).configureEach {
     dependsOn buildPallaSyncCoreHost
     systemProperty "java.library.path", pallaSyncHostLibrary.parentFile.absolutePath +
         File.pathSeparator + System.getProperty("java.library.path")
+    systemProperty "jna.library.path", new File(rustTargetDir, "debug").absolutePath
 }
 
 def buildPallaSyncCoreAndroid = tasks.register("buildPallaSyncCoreAndroid", Exec) {

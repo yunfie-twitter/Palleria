@@ -43,6 +43,14 @@ class IllustWidgetTest {
     private val context: Context = ApplicationProvider.getApplicationContext()
 
     @Test
+    fun widgetConfiguratorIsHiddenUntilSettingsAreLoadedAndUnlocked() {
+        assertEquals(false, canShowWidgetConfigurator(settingsLoaded = false, appLocked = false, privacyLocked = false))
+        assertEquals(false, canShowWidgetConfigurator(settingsLoaded = true, appLocked = true, privacyLocked = false))
+        assertEquals(false, canShowWidgetConfigurator(settingsLoaded = true, appLocked = false, privacyLocked = true))
+        assertEquals(true, canShowWidgetConfigurator(settingsLoaded = true, appLocked = false, privacyLocked = false))
+    }
+
+    @Test
     fun storeObservesSelectionChangesFromAnotherInstance() =
         runBlocking {
             val store = IllustWidgetStore(context)
