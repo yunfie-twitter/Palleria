@@ -122,7 +122,6 @@ data class IllustiaUiState(
     val webLoginRequest: PixivWebLoginRequest? = null,
     val showReloginRequiredDialog: Boolean = false,
     val pendingBookmarkRemoval: Illust? = null,
-    val activeDownloads: Int = 0,
     val notifications: List<PixivNotification> = emptyList(),
     val notificationNextUrl: String? = null,
     val expandedNotifications: Map<Long, List<PixivNotification>> = emptyMap(),

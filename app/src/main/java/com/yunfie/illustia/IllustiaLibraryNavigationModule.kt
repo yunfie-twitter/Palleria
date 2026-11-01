@@ -362,10 +362,11 @@ abstract class IllustiaLibraryNavigationModule(
         while (true) {
             val acquired =
                 downloadMutex.withLock {
-                    val state = _uiState.value
-                    val currentLimit = state.settings.simultaneousDownloads.coerceIn(1, 4)
-                    if (state.activeDownloads < currentLimit) {
-                        _uiState.update { it.copy(activeDownloads = it.activeDownloads + 1) }
+                    val currentLimit =
+                        _uiState.value.settings.simultaneousDownloads
+                            .coerceIn(1, 4)
+                    if (_activeDownloads.value < currentLimit) {
+                        _activeDownloads.update { it + 1 }
                         true
                     } else {
                         false
@@ -380,7 +381,7 @@ abstract class IllustiaLibraryNavigationModule(
 
     private suspend fun releaseDownloadSlot() {
         downloadMutex.withLock {
-            _uiState.update { it.copy(activeDownloads = (it.activeDownloads - 1).coerceAtLeast(0)) }
+            _activeDownloads.update { (it - 1).coerceAtLeast(0) }
         }
     }
 

@@ -5,11 +5,10 @@ import org.junit.Assert.assertNotEquals
 import org.junit.Test
 
 class ActivityPresentationStateTest {
-    @Test fun ignoresDownloadSearchDraftAndHistoryUpdates() {
+    @Test fun ignoresSearchDraftAndHistoryUpdates() {
         val state = IllustiaUiState()
         val changed =
             state.copy(
-                activeDownloads = 3,
                 searchDraft = "typing",
                 settings = state.settings.copy(searchHistory = listOf("query")),
             )
