@@ -108,6 +108,7 @@ class MainActivity : FragmentActivity() {
         const val SPLASH_EASING_CONTROL_X2 = 0.2f
         const val REFRESH_RATE_NORMAL = 60f
         const val REFRESH_RATE_HIGH_MAX = 120f
+        const val REFRESH_RATE_CATEGORY_HIGH = 3
         const val TASK_SNAPSHOT_BLUR_RADIUS = 60f
 
         val hasArrSupportMethod by lazy(LazyThreadSafetyMode.NONE) {
@@ -733,7 +734,7 @@ class MainActivity : FragmentActivity() {
         runCatching {
             val method = getSuggestedFrameRateMethod ?: return REFRESH_RATE_NORMAL
             // Only Boost reaches this helper; Normal clears the hint first.
-            (method.invoke(display, 3) as? Float) ?: REFRESH_RATE_NORMAL
+            (method.invoke(display, REFRESH_RATE_CATEGORY_HIGH) as? Float) ?: REFRESH_RATE_NORMAL
         }.getOrDefault(REFRESH_RATE_NORMAL)
 
     private fun resolveLegacyRefreshRate(display: Display): Float =
