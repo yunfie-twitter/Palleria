@@ -14,6 +14,7 @@ import io.sentry.android.core.SentryAndroid
 import io.sentry.protocol.SentryTransaction
 
 private val TELEMETRY_EXTRA_ALLOWLIST = setOf("illustId", "thread_name")
+private const val MAX_TELEMETRY_TEXT_LENGTH = 64
 
 internal fun sanitizedTelemetryExtras(extras: Map<String, Any?>?): Map<String, Any?> =
     extras
@@ -21,7 +22,7 @@ internal fun sanitizedTelemetryExtras(extras: Map<String, Any?>?): Map<String, A
             key in TELEMETRY_EXTRA_ALLOWLIST &&
                 when (key) {
                     "illustId" -> value is Number
-                    "thread_name" -> value is String && value.length <= 64
+                    "thread_name" -> value is String && value.length <= MAX_TELEMETRY_TEXT_LENGTH
                     else -> false
                 }
         }.orEmpty()
@@ -111,7 +112,7 @@ object GlitchTipTelemetry {
                 if (!tag.isNullOrBlank()) {
                     scope.setTag("module", tag)
                 }
-                scope.setTag("error_type", throwable.javaClass.simpleName.take(64))
+                scope.setTag("error_type", throwable.javaClass.simpleName.take(MAX_TELEMETRY_TEXT_LENGTH))
                 sanitizedTelemetryExtras(extras).forEach { (key, value) ->
                     if (value != null) {
                         scope.setExtra(key, value.toString())
