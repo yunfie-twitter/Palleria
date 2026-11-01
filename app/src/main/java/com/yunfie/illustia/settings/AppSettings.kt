@@ -16,6 +16,9 @@ private const val DEFAULT_SEED_COLOR = 0xFF42A5F5L
 
 const val UNLIMITED_IMAGE_CACHE_SIZE_MB = 0
 
+fun normalizeImageCacheSizeMb(sizeMb: Int): Int =
+    if (sizeMb == UNLIMITED_IMAGE_CACHE_SIZE_MB) sizeMb else sizeMb.coerceIn(100, 1000)
+
 val DEFAULT_NAVIGATION_ORDER = listOf("home", "search", "bookmarks", "ranking", "more")
 val DEFAULT_DETAIL_SECTION_ORDER = listOf("artist", "tags", "description", "related")
 

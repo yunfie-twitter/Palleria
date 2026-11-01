@@ -9,6 +9,14 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 class AppSettingsDefaultsTest {
     @Test
+    fun `image cache size normalization preserves unlimited and clamps bounded sizes`() {
+        normalizeImageCacheSizeMb(UNLIMITED_IMAGE_CACHE_SIZE_MB) shouldBe UNLIMITED_IMAGE_CACHE_SIZE_MB
+        normalizeImageCacheSizeMb(99) shouldBe 100
+        normalizeImageCacheSizeMb(500) shouldBe 500
+        normalizeImageCacheSizeMb(1001) shouldBe 1000
+    }
+
+    @Test
     fun `new UX feature flags have defaultEnabled set to true in FeatureFlag`() {
         FeatureFlag.OfflineStaleCache.defaultEnabled shouldBe true
         FeatureFlag.BookmarkHapticBurst.defaultEnabled shouldBe true
