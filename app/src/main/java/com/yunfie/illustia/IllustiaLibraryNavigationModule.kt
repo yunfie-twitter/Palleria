@@ -90,7 +90,7 @@ abstract class IllustiaLibraryNavigationModule(
                     }
                     terminalStatus = DownloadQueueStatus.Failed
                     if (handleAuthExpired(error)) return@launch
-                    GlitchTipTelemetry.recordException(error, tag = "download_image", extras = mapOf("url" to url, "filename" to filename))
+                    GlitchTipTelemetry.recordException(error, tag = "download_image")
                     _uiState.update { it.copy(loadState = LoadState.Error(cleanErrorMessage(error, str(R.string.error_save_failed)))) }
                 } finally {
                     terminalStatus?.let { updateDownloadQueueStatus(queueId, it) }
