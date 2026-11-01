@@ -45,6 +45,7 @@ import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.visibleWithMutedTagsVisible
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -170,7 +171,27 @@ internal fun BrowseArea(
                     }
                 }
             if (recommendedTags.isEmpty()) {
-                RecommendedTagsSkeleton(tagColumns = tagColumns)
+                when {
+                    state.recommendedTagsError != null -> {
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Text(state.recommendedTagsError, color = MiuixTheme.colorScheme.error)
+                            TextButton(
+                                text = stringResource(R.string.action_retry),
+                                onClick = { viewModel.refreshRecommendedTags(force = true) },
+                            )
+                        }
+                    }
+
+                    state.recommendedTagsLoading || state.recommendedTagsFetchedAtMillis == 0L -> {
+                        RecommendedTagsSkeleton(tagColumns = tagColumns)
+                    }
+
+                    else -> {
+                        Text(stringResource(R.string.recommended_tags_empty))
+                    }
+                }
             } else {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     recommendedTags.chunked(tagColumns).forEach { row ->
