@@ -40,14 +40,14 @@ internal suspend fun readStartupAppSettings(
 
 internal suspend fun writeAppSettings(
     dataStore: DataStore<Preferences>,
-    sensitivePreferences: SharedPreferences,
+    sensitivePreferences: SharedPreferences?,
     database: IllustiaDatabase,
     dao: SettingsDao,
     settings: AppSettings,
     baseSettings: AppSettings? = null,
 ) {
     writeDataStorePreferences(dataStore, settings)
-    writeSensitiveSettings(sensitivePreferences, settings)
+    sensitivePreferences?.let { writeSensitiveSettings(it, settings) }
     writeRoomSettingsData(database, dao, settings, baseSettings)
 }
 
