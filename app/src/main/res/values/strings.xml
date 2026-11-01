@@ -137,6 +137,7 @@
     <string name="search_suggest">サジェスト</string>
     <string name="search_empty_illust">イラストが見つかりません</string>
     <string name="comments_empty">コメントはありません</string>
+    <string name="view_history_empty">閲覧履歴はありません</string>
     <string name="device_history_empty">この端末の閲覧履歴はありません</string>
     <string name="search_empty_novel">小説が見つかりません</string>
     <string name="search_empty_user">ユーザーが見つかりません</string>
