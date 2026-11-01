@@ -34,6 +34,7 @@
     <string name="pallasync_v3_mnemonic">復旧用mnemonicを保存</string>
     <string name="pallasync_v3_mnemonic_explanation">24単語を安全なオフラインの場所に控えてください。アプリには保存されません。この画面を離れるか10分経過すると表示を消去します。</string>
     <string name="pallasync_v3_mnemonic_saved">単語を控えました</string>
+    <string name="pallasync_v3_mnemonic_verify_start">復旧フレーズを控えました</string>
     <string name="pallasync_v3_mnemonic_word">%1$d番目</string>
     <string name="pallasync_v3_mnemonic_copy">単語をすべてコピー</string>
     <string name="pallasync_v3_mnemonic_copied">コピーしました。クリップボードは%1$d秒後に自動で消去されます。</string>
