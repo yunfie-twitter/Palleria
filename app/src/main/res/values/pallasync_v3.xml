@@ -368,9 +368,13 @@
     <string name="pallasync_schema_recovery_retry">Recheck schema support after updating</string>
     <string name="pallasync_schema_recovery_failed">Revalidation stopped. Unresolved records and evidence are kept; any records already verified and applied remain saved. Resolve the reported sync condition before retrying.</string>
     <string name="pallasync_role_add_device">Add this device to a sync chain</string>
-    <string name="pallasync_role_add_device_description">This device is new. Have an existing device show its code, then scan it here.</string>
+    <string name="pallasync_role_add_device_description">Add this new device by invitation: scan a QR on the existing device, then exchange verified files. No recovery phrase is entered on this device.</string>
+    <string name="pallasync_peer_subject_step_scan">This device: scan the invite QR, then import the Authority JSON. On the inviting device: export the verified Authority JSON and show the QR. Resume this step by scanning and importing those same files again.</string>
+    <string name="pallasync_peer_subject_step_compare">Both devices: compare the same verification code in person. Confirm on this device only when every character matches. Then ask the inviting device to send its certificate and key-envelope file.</string>
+    <string name="pallasync_peer_subject_step_transfer">Inviting device: export the certificate and key-envelope file and send it to this device. This device: import that file; the next step is to export the enrollment request back to the inviter.</string>
+    <string name="pallasync_peer_subject_step_request">This device: export the enrollment request and send it to the inviting device. After the inviter approves it, import the acceptance JSON they send back here.</string>
     <string name="pallasync_role_join_chain">Join with an existing recovery phrase</string>
-    <string name="pallasync_role_join_chain_description">Re-enter the 24 words on this device to take over an existing chain.</string>
+    <string name="pallasync_role_join_chain_description">Use the existing 24-word recovery phrase on this device to restore the chain without an invitation from another device.</string>
     <string name="pallasync_trust_fingerprint_label">Relay signing key fingerprint</string>
     <string name="pallasync_trust_key_id">Key ID: %1$s</string>
     <string name="pallasync_trust_working">Contacting the relay…</string>

@@ -340,9 +340,13 @@
     <string name="pallasync_schema_recovery_retry">更新後の形式対応を再確認</string>
     <string name="pallasync_schema_recovery_failed">再検証を中断しました。未解決のレコードと証拠、検証・適用が完了したレコードは保持されています。表示された同期の問題を解消してから再試行してください。</string>
     <string name="pallasync_role_add_device">この端末を同期チェーンに追加する</string>
-    <string name="pallasync_role_add_device_description">新しい端末です。既存の端末でコードを表示し、この端末でスキャンします。</string>
+    <string name="pallasync_role_add_device_description">招待で新しい端末を追加します。既存端末のQRを読み取り、検証済みファイルを交換します。この端末で回復フレーズを入力する必要はありません。</string>
+    <string name="pallasync_peer_subject_step_scan">この端末: 招待QRを読み取り、Authority JSONを読み込みます。招待側端末: 検証済みAuthority JSONを書き出し、QRを表示します。中断した場合は同じQRを再スキャンし、同じファイルを読み込み直してください。</string>
+    <string name="pallasync_peer_subject_step_compare">両方の端末: 目の前で同じ照合コードを確認します。すべて一致した場合のみ、この端末で確認してください。その後、招待側から証明書と鍵envelopeのファイルを受け取ります。</string>
+    <string name="pallasync_peer_subject_step_transfer">招待側端末: 証明書と鍵envelopeのファイルを書き出し、この端末へ送ります。この端末: ファイルを読み込み、次に参加要求ファイルを招待側へ返します。</string>
+    <string name="pallasync_peer_subject_step_request">この端末: 参加要求ファイルを書き出し、招待側へ送ります。招待側が承認した後、返送されたacceptance JSONをこの端末で読み込みます。</string>
     <string name="pallasync_role_join_chain">既存の回復フレーズで参加する</string>
-    <string name="pallasync_role_join_chain_description">この端末で24語を再入力し、既存のチェーンを引き継ぎます。</string>
+    <string name="pallasync_role_join_chain_description">別端末からの招待なしで復元する場合に、この端末で既存の24語の回復フレーズを使います。</string>
     <string name="pallasync_trust_fingerprint_label">リレーの署名鍵フィンガープリント</string>
     <string name="pallasync_trust_key_id">鍵ID：%1$s</string>
     <string name="pallasync_trust_working">リレーに接続しています…</string>
