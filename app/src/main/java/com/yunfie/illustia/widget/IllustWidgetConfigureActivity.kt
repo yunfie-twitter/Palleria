@@ -24,6 +24,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -76,6 +77,12 @@ import java.io.FileOutputStream
 import java.io.IOException
 import kotlin.math.roundToInt
 
+internal fun canShowWidgetConfigurator(
+    settingsLoaded: Boolean,
+    appLocked: Boolean,
+    privacyLocked: Boolean,
+): Boolean = settingsLoaded && !appLocked && !privacyLocked
+
 class IllustWidgetConfigureActivity : FragmentActivity() {
     private val widgetImageMaxDimension = 960
 
@@ -89,7 +96,7 @@ class IllustWidgetConfigureActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (widgetId == AppWidgetManager.INVALID_APPWIDGET_ID) {
+        if (!hasValidWidgetInfo()) {
             finish()
             return
         }
@@ -115,7 +122,14 @@ class IllustWidgetConfigureActivity : FragmentActivity() {
                     finish()
                 }
 
-                if (state.settings.refreshToken.isBlank()) {
+                if (!canShowWidgetConfigurator(state.settingsLoaded, state.appLocked, state.privacyLocked)) {
+                    if (state.settingsLoaded && (state.appLocked || state.privacyLocked)) {
+                        LaunchedEffect(Unit) { finish() }
+                    }
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        LoadingIndicator()
+                    }
+                } else if (state.settings.refreshToken.isBlank()) {
                     OnboardingScreen(
                         state = state,
                         viewModel = viewModel,
@@ -221,6 +235,13 @@ class IllustWidgetConfigureActivity : FragmentActivity() {
                 }
             }
         }
+    }
+
+    private fun hasValidWidgetInfo(): Boolean {
+        val appWidgetInfo = AppWidgetManager.getInstance(this).getAppWidgetInfo(widgetId)
+        return widgetId != AppWidgetManager.INVALID_APPWIDGET_ID &&
+            appWidgetInfo?.provider?.packageName == packageName &&
+            appWidgetInfo.provider.className == IllustWidgetProvider::class.java.name
     }
 
     private suspend fun saveSelection(

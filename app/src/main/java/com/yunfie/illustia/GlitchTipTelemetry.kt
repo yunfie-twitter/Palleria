@@ -5,9 +5,49 @@ import io.sentry.Breadcrumb
 import io.sentry.ISpan
 import io.sentry.ITransaction
 import io.sentry.Sentry
+import io.sentry.SentryBaseEvent
+import io.sentry.SentryEvent
 import io.sentry.SentryLevel
+import io.sentry.SentryOptions
 import io.sentry.SpanStatus
 import io.sentry.android.core.SentryAndroid
+import io.sentry.protocol.SentryTransaction
+
+private val TELEMETRY_EXTRA_ALLOWLIST = setOf("illustId", "thread_name")
+private const val MAX_TELEMETRY_TEXT_LENGTH = 64
+
+internal fun sanitizedTelemetryExtras(extras: Map<String, Any?>?): Map<String, Any?> =
+    extras
+        ?.filter { (key, value) ->
+            key in TELEMETRY_EXTRA_ALLOWLIST &&
+                when (key) {
+                    "illustId" -> value is Number
+                    "thread_name" -> value is String && value.length <= MAX_TELEMETRY_TEXT_LENGTH
+                    else -> false
+                }
+        }.orEmpty()
+
+internal fun sanitizedTelemetryException(throwable: Throwable): Throwable =
+    IllegalStateException("An operation failed").apply {
+        stackTrace = throwable.stackTrace
+    }
+
+internal fun scrubTelemetryEvent(event: SentryEvent) {
+    scrubTelemetryBaseEvent(event)
+    event.message = null
+    event.exceptions?.forEach { it.value = "An operation failed" }
+}
+
+private fun scrubTelemetryEvent(event: SentryTransaction) {
+    scrubTelemetryBaseEvent(event)
+}
+
+private fun scrubTelemetryBaseEvent(event: SentryBaseEvent) {
+    event.request = null
+    event.breadcrumbs = emptyList()
+    event.extras = sanitizedTelemetryExtras(event.extras)
+    event.tags = event.tags.orEmpty().filterKeys { it == "module" || it == "error_type" }
+}
 
 /** Controls the GlitchTip-compatible Sentry SDK without bypassing telemetry consent. */
 @Suppress("TooGenericExceptionCaught")
@@ -35,6 +75,14 @@ object GlitchTipTelemetry {
                     // GlitchTip does not support Sentry session tracking.
                     options.isEnableAutoSessionTracking = false
                     options.isSendDefaultPii = false
+                    options.beforeSend =
+                        SentryOptions.BeforeSendCallback { event, _ ->
+                            scrubTelemetryEvent(event)
+                            event
+                        }
+                    // Transaction spans can embed full request URLs in descriptions. Keep exception
+                    // diagnostics; omit performance transactions until their span payloads can be scrubbed.
+                    options.beforeSendTransaction = SentryOptions.BeforeSendTransactionCallback { _, _ -> null }
                     // Frame metrics and PerformanceV2 use Sentry-specific envelope
                     // types that GlitchTip does not yet process.
                     options.isEnableFramesTracking = false
@@ -60,11 +108,12 @@ object GlitchTipTelemetry {
     ) {
         if (!enabled || throwable.isCancellationFailure()) return
         runCatching {
-            Sentry.captureException(throwable) { scope ->
+            Sentry.captureException(sanitizedTelemetryException(throwable)) { scope ->
                 if (!tag.isNullOrBlank()) {
                     scope.setTag("module", tag)
                 }
-                extras?.forEach { (key, value) ->
+                scope.setTag("error_type", throwable.javaClass.simpleName.take(MAX_TELEMETRY_TEXT_LENGTH))
+                sanitizedTelemetryExtras(extras).forEach { (key, value) ->
                     if (value != null) {
                         scope.setExtra(key, value.toString())
                     }
