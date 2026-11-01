@@ -753,7 +753,7 @@ class SettingsStore internal constructor(
         private const val KEY_STARTUP_PRIVACY_MODE = "startup_privacy_mode_enabled"
         private const val DUMMY_LAUNCHER_ALIAS = "com.yunfie.illustia.MainActivityDummy"
         private const val DEFAULT_IMAGE_CACHE_SIZE_MB = 300
-        private const val MIN_IMAGE_CACHE_SIZE_MB = 100
+        private const val MIN_IMAGE_CACHE_SIZE_MB = 0
         private const val MAX_IMAGE_CACHE_SIZE_MB = 1000
         const val STARTUP_VIEW_HISTORY_LIMIT = 16
     }
