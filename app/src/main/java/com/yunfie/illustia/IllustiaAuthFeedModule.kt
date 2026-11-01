@@ -784,7 +784,7 @@ abstract class IllustiaAuthFeedModule(
                 val error = expectedFailure
                 if (isCancellation(error)) throw error
                 if (handleAuthExpired(error)) return@launch
-                GlitchTipTelemetry.recordException(error, tag = "search_query", extras = mapOf("query" to normalized))
+                GlitchTipTelemetry.recordException(error, tag = "search_query")
                 val snapshot = searchSnapshot
                 if (snapshot != null) {
                     _uiState.update {

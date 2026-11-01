@@ -40,6 +40,7 @@ import com.yunfie.illustia.data.pixiv.CommentStore
 import com.yunfie.illustia.data.proxyPixivImageUrl
 import com.yunfie.illustia.models.pixiv.Comment
 import com.yunfie.illustia.models.pixiv.PixivStamp
+import com.yunfie.illustia.ui.components.AVATAR_IMAGE_MAX_DECODE_DIMENSION_PX
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.AvatarImage
@@ -143,7 +144,11 @@ fun CommentScreen(
                 val url = comment.user?.profileImageUrls?.medium
                 if (!url.isNullOrBlank()) {
                     withContext(Dispatchers.IO) {
-                        prefetchPixivThumbnail(context, proxyPixivImageUrl(url, proxyBaseUrl))
+                        prefetchPixivThumbnail(
+                            context,
+                            proxyPixivImageUrl(url, proxyBaseUrl),
+                            decodeDimensionPx = AVATAR_IMAGE_MAX_DECODE_DIMENSION_PX,
+                        )
                     }
                 }
             }
