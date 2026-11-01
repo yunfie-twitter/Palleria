@@ -290,7 +290,7 @@ abstract class IllustiaBookmarkModule(
         }
     }
 
-    private fun handleRelatedUsersLoadFailure(
+    private suspend fun handleRelatedUsersLoadFailure(
         userId: Long,
         error: Exception,
     ) {
