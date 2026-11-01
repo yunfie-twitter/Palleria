@@ -22,6 +22,7 @@ class BookmarkToggleWorker(
     appContext: Context,
     params: WorkerParameters,
 ) : CoroutineWorker(appContext, params) {
+    @Suppress("CyclomaticComplexMethod", "LongMethod")
     override suspend fun doWork(): Result =
         withContext(Dispatchers.IO) {
             val illustId = inputData.getLong(KEY_ILLUST_ID, 0L)
@@ -61,7 +62,10 @@ class BookmarkToggleWorker(
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (failure: PixivApiException) {
-                return@withContext if (failure.statusCode == 429 || failure.statusCode >= 500) {
+                return@withContext if (
+                    failure.statusCode == HTTP_TOO_MANY_REQUESTS ||
+                    failure.statusCode >= HTTP_INTERNAL_SERVER_ERROR
+                ) {
                     retryOrGiveUp()
                 } else {
                     Result.failure()
@@ -81,7 +85,10 @@ class BookmarkToggleWorker(
                 runCatching {
                     if (settings.autoTagOnBookmark && tags.isNotEmpty()) {
                         val latest = settingsStore.read()
-                        val nextTags = (tags.take(3) + latest.favoriteTags).distinct().take(24)
+                        val nextTags =
+                            (tags.take(MAX_AUTO_TAGS_PER_BOOKMARK) + latest.favoriteTags)
+                                .distinct()
+                                .take(MAX_FAVORITE_TAGS)
                         if (nextTags != latest.favoriteTags) {
                             repository.saveSettings(latest.copy(favoriteTags = nextTags), latest)
                         }
@@ -103,6 +110,10 @@ class BookmarkToggleWorker(
         internal const val KEY_ARTIST_ID = "artist_id"
         internal const val KEY_TAGS = "tags"
 
+        private const val MAX_AUTO_TAGS_PER_BOOKMARK = 3
+        private const val MAX_FAVORITE_TAGS = 24
         private const val MAX_ATTEMPTS = 5
+        private const val HTTP_TOO_MANY_REQUESTS = 429
+        private const val HTTP_INTERNAL_SERVER_ERROR = 500
     }
 }
