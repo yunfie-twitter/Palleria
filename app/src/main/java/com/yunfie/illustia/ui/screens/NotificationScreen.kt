@@ -54,6 +54,7 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
@@ -122,7 +123,23 @@ fun NotificationScreen(
                     NotificationCardSkeleton(shimmerValue = shimmer)
                 }
             } else if (state.notifications.isEmpty()) {
-                item(contentType = "notification_empty") { EmptyState(stringResource(R.string.notifications_empty)) }
+                item(contentType = "notification_empty") {
+                    if (state.notificationsError != null) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Text(state.notificationsError, color = MiuixTheme.colorScheme.error)
+                            TextButton(
+                                text = stringResource(R.string.action_retry),
+                                onClick = viewModel::refreshNotifications,
+                            )
+                        }
+                    } else {
+                        EmptyState(stringResource(R.string.notifications_empty))
+                    }
+                }
             }
 
             items(state.notifications, key = { it.id }, contentType = { "notification_item" }) { notification ->
