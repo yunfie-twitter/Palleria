@@ -463,7 +463,7 @@
     <string name="image_proxy_none">使用しない</string>
     <string name="image_proxy_custom">カスタムサーバー</string>
     <string name="image_proxy_custom_dialog_title">カスタムサーバーの入力</string>
-    <string name="image_proxy_custom_dialog_summary">プロキシサーバーのベースURLを入力してください (例: https://example.com/)</string>
+    <string name="image_proxy_custom_dialog_summary">HTTPS のプロキシサーバーのベースURLを入力してください (例: https://example.com/)。安全でないHTTPは使用せず、入力されたURLをHTTPSに切り替えます。</string>
     <string name="language_system">システム</string>
     <string name="language_japanese">日本語</string>
     <string name="language_english">English</string>
