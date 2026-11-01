@@ -122,6 +122,7 @@ data class IllustiaUiState(
     val notificationNextUrl: String? = null,
     val expandedNotifications: Map<Long, List<PixivNotification>> = emptyMap(),
     val notificationsLoading: Boolean = false,
+    val notificationsError: String? = null,
     val downloadQueue: List<DownloadQueueEntry> = emptyList(),
     val showAccountSwitcher: Boolean = false,
     val appLocked: Boolean = false,
