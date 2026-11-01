@@ -62,7 +62,6 @@
         android:largeHeap="true"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:usesCleartextTraffic="true"
         android:theme="@style/AppTheme.Splash">
 
         <!-- Initialize Sentry only after consent and the first app frame. auto-init=false
