@@ -616,6 +616,8 @@
     <string name="login_token_description">既に発行済みの refresh token を貼り付けて、すばやくログインします。</string>
     <string name="login_token_button">Refresh Tokenでログイン</string>
     <string name="login_refresh_token_label">Pixiv refresh token</string>
+    <string name="login_refresh_token_show">トークンを表示</string>
+    <string name="login_refresh_token_hide">トークンを隠す</string>
     <string name="login_feature_ranking">ランキング</string>
     <string name="login_feature_bookmarks">ブックマーク</string>
     <string name="login_feature_sync">同期</string>
