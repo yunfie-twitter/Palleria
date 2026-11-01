@@ -13,10 +13,11 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import org.robolectric.annotation.SQLiteMode
 
-@RunWith(RobolectricTestRunner::class)
+@RunWith(PallaSyncJniRobolectricRunner::class)
+@Config(sdk = [28], application = android.app.Application::class)
 @SQLiteMode(SQLiteMode.Mode.LEGACY)
 class PallaSyncLogRecordDispositionTest {
     @Test
