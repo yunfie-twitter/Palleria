@@ -115,7 +115,7 @@ fun RelatedUsersScreen(
         val adaptivePadding = adaptiveMainNavigationContentPadding()
         val showInitialSkeletons =
             uiState.selectedRelatedUsersUserId != userId ||
-                relatedUsers.isEmpty() && uiState.selectedRelatedUsersLoading
+                (relatedUsers.isEmpty() && uiState.selectedRelatedUsersLoading)
         val showPaginationSkeletons = settings.autoLoadMore && uiState.selectedRelatedUsersPaginating
         val shimmer = if (showInitialSkeletons || showPaginationSkeletons) rememberIllustSkeletonShimmer() else null
         PullToRefresh(
@@ -186,8 +186,9 @@ fun RelatedUsersScreen(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            if (uiState.selectedRelatedUsersError != null && uiState.selectedRelatedUsersUserId == userId) {
-                                Text(uiState.selectedRelatedUsersError, color = MiuixTheme.colorScheme.error)
+                            val relatedUsersError = uiState.selectedRelatedUsersError
+                            if (relatedUsersError != null && uiState.selectedRelatedUsersUserId == userId) {
+                                Text(relatedUsersError, color = MiuixTheme.colorScheme.error)
                                 Button(onClick = { viewModel.loadSelectedRelatedUsers(targetUserId = userId, force = true) }) {
                                     Text(stringResource(R.string.action_retry))
                                 }
