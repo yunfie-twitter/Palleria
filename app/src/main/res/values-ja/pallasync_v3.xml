@@ -99,6 +99,7 @@
     <string name="pallasync_v3_epoch_title">同期鍵</string>
     <string name="pallasync_v3_epoch_number">保存済みepoch：%1$d · 検証済みepoch：%2$d</string>
     <string name="pallasync_v3_epoch_unknown">鍵の履歴の検証を待っています。</string>
+    <string name="pallasync_v3_epoch_status_unavailable">鍵の履歴を検証できません。同期鍵を確認して、履歴の検証を再試行してください。</string>
     <string name="pallasync_v3_epoch_ready">同期を実行できます。</string>
     <string name="pallasync_v3_epoch_keys_needed">検証済み履歴に新しい鍵があります。ニーモニックを入力して取得・検証してください。</string>
     <string name="pallasync_v3_epoch_edits_pending">未送信の編集を新しい鍵で送信できるよう準備しています。</string>

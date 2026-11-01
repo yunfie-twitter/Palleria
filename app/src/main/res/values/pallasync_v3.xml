@@ -129,6 +129,7 @@
     <string name="pallasync_v3_epoch_title">Synchronization keys</string>
     <string name="pallasync_v3_epoch_number">Stored epoch: %1$d · Verified epoch: %2$d</string>
     <string name="pallasync_v3_epoch_unknown">Awaiting a verified key history.</string>
+    <string name="pallasync_v3_epoch_status_unavailable">Unable to verify the key history. Check the sync key and retry history verification.</string>
     <string name="pallasync_v3_epoch_ready">Ready for synchronization.</string>
     <string name="pallasync_v3_epoch_keys_needed">The verified history has new keys. Enter your mnemonic to fetch and verify them.</string>
     <string name="pallasync_v3_epoch_edits_pending">Pending edits are being prepared for the new keys.</string>
