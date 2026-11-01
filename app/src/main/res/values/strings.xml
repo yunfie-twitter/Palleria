@@ -857,6 +857,7 @@
     <string name="calculator_history">履歴</string>
     <string name="calculator_history_empty">計算履歴はありません</string>
     <string name="shorts_loading">イラストを読み込んでいます…</string>
+    <string name="shorts_empty">表示できる作品はありません</string>
     <string name="settings_footer">アートへの愛を込めて開発</string>
     <string name="ugoira_load_failed">うごイラを読み込めませんでした</string>
     <string name="novel_go_to_page">%1$dページへ移動</string>
