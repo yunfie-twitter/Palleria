@@ -19,6 +19,7 @@ import android.graphics.Color
 import android.graphics.RenderEffect
 import android.graphics.Shader
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.PersistableBundle
 import android.view.Display
@@ -82,6 +83,12 @@ import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.TextStyles
 import top.yukonga.miuix.kmp.theme.defaultTextStyles
+
+internal fun disableNavigationBarContrastEnforcement(window: android.view.Window) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        window.isNavigationBarContrastEnforced = false
+    }
+}
 
 private val MiSansFontFamily by lazy {
     FontFamily(
@@ -231,6 +238,7 @@ class MainActivity : FragmentActivity() {
                     SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
                 },
         )
+        disableNavigationBarContrastEnforcement(window)
         WindowCompat.getInsetsController(window, window.decorView).apply {
             isAppearanceLightStatusBars = !isDark
             isAppearanceLightNavigationBars = !isDark
@@ -346,6 +354,7 @@ class MainActivity : FragmentActivity() {
                             SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
                         },
                 )
+                disableNavigationBarContrastEnforcement(window)
                 WindowCompat.getInsetsController(window, window.decorView).apply {
                     isAppearanceLightStatusBars = !isDarkTheme
                     isAppearanceLightNavigationBars = !isDarkTheme
