@@ -6,12 +6,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.State
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -26,7 +26,7 @@ private const val SHADE_COVER_THRESHOLD_DP = 72f
  * 登録したものが前のものを上書きし、ブラーやうごイラの停止判定が画面によって効かなかった。
  * 更新は [ProvideSystemUiCoverage] の 1 箇所に集約し、各画面はこの値だけを読む。
  */
-internal val LocalSystemUiCovered = staticCompositionLocalOf<Boolean> { false }
+internal val LocalSystemUiCovered = compositionLocalOf<Boolean> { false }
 
 /**
  * coverage state を画面全体で 1 つだけ作り、[LocalSystemUiCovered] として配る。
