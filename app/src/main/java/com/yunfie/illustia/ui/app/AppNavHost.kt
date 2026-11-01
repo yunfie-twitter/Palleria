@@ -383,6 +383,12 @@ internal fun AppNavHost(
                         }
                         IllustDetailSkeletonScreen(
                             onBack = onPopRoute,
+                            errorMessage =
+                                appState.state.selectedIllustError.takeIf {
+                                    appState.state.selectedIllustErrorId ==
+                                        route.illustId
+                                },
+                            onRetry = { viewModel.openIllust(route.illustId) },
                         )
                     }
                 }
