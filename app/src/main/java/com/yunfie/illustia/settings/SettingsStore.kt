@@ -103,6 +103,23 @@ internal data class StartupMaintenanceSettings(
     val autoDownloadUpdates: Boolean,
 )
 
+internal fun hasNewCredentialValues(
+    current: AppSettings,
+    proposed: AppSettings,
+): Boolean {
+    val currentTokens = current.accounts.associate { it.userId to it.refreshToken }
+    val hasRefreshTokenUpdate =
+        proposed.refreshToken.isNotBlank() &&
+            proposed.refreshToken != STARTUP_LOGGED_IN_TOKEN &&
+            proposed.refreshToken != current.refreshToken
+    val hasDiscordTokenUpdate = proposed.discordToken.isNotBlank() && proposed.discordToken != current.discordToken
+    val hasAccountTokenUpdate =
+        proposed.accounts.any { account ->
+            account.refreshToken.isNotBlank() && currentTokens[account.userId] != account.refreshToken
+        }
+    return hasRefreshTokenUpdate || hasDiscordTokenUpdate || hasAccountTokenUpdate
+}
+
 class SettingsStore internal constructor(
     context: Context,
     private val providedSyncEventWriter: PallaSyncEventWriter?,
@@ -158,15 +175,18 @@ class SettingsStore internal constructor(
     internal suspend fun persistAuth(session: com.yunfie.illustia.models.PixivSession) =
         withContext(Dispatchers.IO) {
             persistenceMutex.withLock {
-                val editor = sensitivePreferences.edit().putString(KEY_REFRESH_TOKEN, session.refreshToken)
+                val securePreferences =
+                    encryptedPreferences
+                        ?: error("Secure credential storage is unavailable; login credentials were not saved.")
+                val editor = securePreferences.edit().putString(KEY_REFRESH_TOKEN, session.refreshToken)
                 val tokens = org.json.JSONObject()
                 com.yunfie.illustia.settings.store
                     .decodeAccountTokens(
-                        sensitivePreferences.getString(KEY_ACCOUNT_TOKENS, "").orEmpty(),
+                        securePreferences.getString(KEY_ACCOUNT_TOKENS, "").orEmpty(),
                     ).forEach { (userId, token) -> tokens.put(userId.toString(), token) }
                 session.userId?.let { tokens.put(it.toString(), session.refreshToken) }
                 editor.putString(KEY_ACCOUNT_TOKENS, tokens.toString())
-                if (encryptedPreferences != null) editor.putString(KEY_CACHED_SESSION, encodePersistedSession(session))
+                editor.putString(KEY_CACHED_SESSION, encodePersistedSession(session))
                 check(editor.commit()) { "Could not persist OAuth credentials" }
                 startupDataStoreFor(appContext).edit { preferences ->
                     session.userId?.let { preferences[BOOKMARK_USER_ID] = it }
@@ -314,7 +334,10 @@ class SettingsStore internal constructor(
                         persisted = persisted.syncedCollections(),
                     )
                 val rebased = resolveRebasedSettings(settings, base, persisted, rebasedCollections)
-                writeAppSettingsImpl(dataStore, sensitivePreferences, database, dao, rebased, baseSettings = base)
+                check(encryptedPreferences != null || !hasNewCredentialValues(base, settings)) {
+                    "Secure credential storage is unavailable; updated credentials were not saved."
+                }
+                writeAppSettingsImpl(dataStore, encryptedPreferences, database, dao, rebased, baseSettings = base)
                 writeStartupMirror(rebased, persisted)
                 rebased
             }
