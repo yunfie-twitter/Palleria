@@ -19,10 +19,10 @@ class NativeImageAnalysisTest {
         @BeforeClass
         @JvmStatic
         fun setUp() {
-            val rustTargetDir = File("../rust/target/release").canonicalFile
-            if (rustTargetDir.exists()) {
-                System.setProperty("jna.library.path", rustTargetDir.absolutePath)
-            }
+            // Gradle builds the host test library under target/debug. A cached
+            // release directory may contain Android-only artifacts and shadow it.
+            val rustTargetDir = File("../rust/target/debug").canonicalFile
+            System.setProperty("jna.library.path", rustTargetDir.absolutePath)
         }
     }
 
