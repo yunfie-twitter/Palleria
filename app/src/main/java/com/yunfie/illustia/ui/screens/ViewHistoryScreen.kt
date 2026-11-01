@@ -667,7 +667,11 @@ fun ViewHistoryScreen(
 
             if (visibleHistory.isEmpty()) {
                 item(span = { GridItemSpan(maxLineSpan) }, contentType = "history_empty") {
-                    EmptyState(stringResource(R.string.search_empty_illust))
+                    EmptyState(
+                        stringResource(
+                            if (searchQuery.isNotBlank()) R.string.search_empty_illust else R.string.view_history_empty,
+                        ),
+                    )
                 }
             }
 
