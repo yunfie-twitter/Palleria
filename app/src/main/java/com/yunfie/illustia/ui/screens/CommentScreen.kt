@@ -171,7 +171,7 @@ fun CommentScreen(
         },
         endAction = {
             IconButton(onClick = { scope.launch { store.fetch(forceRefresh = true) } }) {
-                Icon(imageVector = MiuixIcons.Refresh, contentDescription = stringResource(R.string.action_load_more))
+                Icon(imageVector = MiuixIcons.Refresh, contentDescription = stringResource(R.string.dialog_reload))
             }
         },
         onDismissRequest = onDismiss,
