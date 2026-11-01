@@ -169,10 +169,12 @@ fun FavoriteTagsScreen(
                     HeaderIcon(icon = MiuixIcons.Back, onClick = onBack)
                 },
                 actions = {
-                    HeaderIcon(
-                        icon = MiuixIcons.Refresh,
-                        onClick = { selectedTag?.let { viewModel.loadWatchlistTag(it, forceRefresh = true) } },
-                    )
+                    if (selectedTag != null) {
+                        HeaderIcon(
+                            icon = MiuixIcons.Refresh,
+                            onClick = { selectedTag?.let { viewModel.loadWatchlistTag(it, forceRefresh = true) } },
+                        )
+                    }
                 },
             )
         },
