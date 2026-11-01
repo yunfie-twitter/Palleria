@@ -46,6 +46,8 @@ private enum class EpochAction(
     EMERGENCY(R.string.pallasync_v3_epoch_emergency, R.string.pallasync_v3_epoch_emergency_explanation, "emergency", true),
 }
 
+internal fun canFetchEpochHistory(synchronizationEnabled: Boolean): Boolean = synchronizationEnabled
+
 @Composable
 internal fun PallaSyncEpochControls(
     manager: PalleriaSyncManager,
@@ -70,7 +72,7 @@ internal fun PallaSyncEpochControls(
                     if (current ==
                         null
                     ) {
-                        stringResource(R.string.pallasync_v3_epoch_unknown)
+                        stringResource(R.string.pallasync_v3_epoch_status_unavailable)
                     } else {
                         stringResource(R.string.pallasync_v3_epoch_number, current.storedEpoch, current.knownEpoch)
                     },
@@ -90,13 +92,17 @@ internal fun PallaSyncEpochControls(
                 )
                 for (action in EpochAction.entries) {
                     val enabled =
-                        synchronizationEnabled && current != null && (
-                            action == EpochAction.FETCH || (
-                                current.writeState == "active" &&
-                                    (action.admin || current.deviceRotationAllowed) &&
-                                    (action != EpochAction.SCHEDULED || current.rotationDue)
+                        if (action == EpochAction.FETCH) {
+                            canFetchEpochHistory(synchronizationEnabled)
+                        } else {
+                            synchronizationEnabled && current != null && (
+                                (
+                                    current.writeState == "active" &&
+                                        (action.admin || current.deviceRotationAllowed) &&
+                                        (action != EpochAction.SCHEDULED || current.rotationDue)
+                                )
                             )
-                        )
+                        }
                     TextButton(text = stringResource(action.title), enabled = enabled, onClick = { selected = action })
                 }
                 TextButton(
