@@ -302,6 +302,7 @@ internal fun MainSurface(
                             AppTab.ShortsFeed -> {
                                 ShortsFeedScreen(
                                     items = appState.state.shortsFeedItems.visibleWith(appState.state),
+                                    loadState = appState.state.loadState,
                                     currentIllustId = appState.state.shortsFeedCurrentIllustId,
                                     viewModel = viewModel,
                                     onOpenComments = onOpenComments,

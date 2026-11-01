@@ -186,7 +186,7 @@ internal fun FeedTabContent(
 
                 if (items.isEmpty() && loadState != LoadState.Loading && loadState !is LoadState.Error) {
                     item(key = "home_feed_empty", span = { GridItemSpan(maxLineSpan) }) {
-                        EmptyState(stringResource(R.string.home_feed_loading))
+                        EmptyState(stringResource(R.string.home_feed_empty))
                     }
                 }
 

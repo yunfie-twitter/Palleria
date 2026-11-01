@@ -71,6 +71,11 @@ import top.yukonga.miuix.kmp.icon.extended.Messages
 import top.yukonga.miuix.kmp.squircle.squircleBackground
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
+internal fun formatIllustDimensions(
+    width: Int,
+    height: Int,
+): String? = if (width > 0 && height > 0) "$width × $height" else null
+
 @Composable
 internal fun IllustDetailInfo(
     illust: Illust,
@@ -209,8 +214,16 @@ internal fun IllustDetailInfo(
             }
             Text(
                 text =
-                    stringResource(R.string.detail_illust_id) + " ${illust.id}    " + stringResource(R.string.detail_resolution) +
-                        "  ${if (illust.originalImageUrl != null) "original" else "large"}",
+                    buildString {
+                        append(stringResource(R.string.detail_illust_id))
+                        append(" ${illust.id}")
+                        formatIllustDimensions(illust.width, illust.height)?.let { dimensions ->
+                            append("    ")
+                            append(stringResource(R.string.detail_resolution))
+                            append("  ")
+                            append(stringResource(R.string.detail_resolution_dimensions, illust.width, illust.height))
+                        }
+                    },
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 style = MiuixTheme.textStyles.footnote1,
                 fontWeight = FontWeight.Bold,

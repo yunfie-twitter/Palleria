@@ -31,6 +31,8 @@ data class Illust(
     // Local display-cache provenance. PallaSync emits only fields known in this body;
     // placeholder metadata must not become a newly asserted wire value (§8.4.2).
     val viewHistoryBody: kotlinx.serialization.json.JsonObject? = null,
+    val width: Int = 0,
+    val height: Int = 0,
 ) {
     /** サムネイル用URL (square → medium → original のフォールバック) */
     val thumbnailUrl: String = squareImageUrl.ifBlank { mediumImageUrl.ifBlank { imageUrl } }

@@ -98,6 +98,10 @@ pub(crate) struct IllustDto {
     #[serde(default = "default_page_count")]
     page_count: i32,
     #[serde(default)]
+    width: i32,
+    #[serde(default)]
+    height: i32,
+    #[serde(default)]
     is_bookmarked: bool,
     total_comments: Option<i32>,
     series: Option<SeriesDto>,

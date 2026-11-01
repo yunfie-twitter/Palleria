@@ -218,6 +218,8 @@ class PalleriaSyncManager(
 
     internal suspend fun createPeerDeviceOffer(): PallaSyncPeerJournal.Transcript = coordinator.createPeerDeviceOffer()
 
+    internal suspend fun exportVerifiedAuthorityJson(): String = coordinator.exportVerifiedAuthorityJson()
+
     internal suspend fun peerAuthorityForOffer(transcript: PallaSyncPeerJournal.Transcript): String =
         coordinator.peerAuthorityForOffer(transcript)
 

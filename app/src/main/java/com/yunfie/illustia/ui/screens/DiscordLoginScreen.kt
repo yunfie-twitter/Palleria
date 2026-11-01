@@ -109,6 +109,10 @@ fun DiscordLoginScreen(
                             ViewGroup.LayoutParams.MATCH_PARENT,
                         )
 
+                    settings.allowContentAccess = false
+                    settings.allowFileAccess = false
+                    settings.allowFileAccessFromFileURLs = false
+                    settings.allowUniversalAccessFromFileURLs = false
                     settings.javaScriptEnabled = true
                     settings.domStorageEnabled = true
 

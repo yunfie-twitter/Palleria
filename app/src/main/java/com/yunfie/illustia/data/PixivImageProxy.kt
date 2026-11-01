@@ -24,10 +24,11 @@ fun proxyPixivImageUrl(
     url: String,
     proxyBaseUrl: String,
 ): String {
-    if (url.isBlank() || proxyBaseUrl.isBlank()) return url
+    val secureUrl = url.replaceFirst("http://", "https://")
+    if (secureUrl.isBlank() || proxyBaseUrl.isBlank()) return secureUrl
 
-    val sourcePrefix = url.pixivImagePrefixOrNull() ?: return url
-    val relativePath = url.removePrefix(sourcePrefix)
+    val sourcePrefix = secureUrl.pixivImagePrefixOrNull() ?: return secureUrl
+    val relativePath = secureUrl.removePrefix(sourcePrefix)
 
     if (proxyBaseUrl == PALLERIA_IMAGE_PROXY_BASE_URL ||
         proxyBaseUrl.startsWith("https://media.yunfi.f5.si/")
@@ -37,7 +38,7 @@ fun proxyPixivImageUrl(
     }
 
     val proxy = proxyBaseUrl.trim().trimEnd('/')
-    if (!proxy.startsWith("https://") && !proxy.startsWith("http://")) return url
+    if (!proxy.startsWith("https://")) return secureUrl
 
     return "$proxy/$relativePath"
 }
@@ -48,14 +49,12 @@ fun normalizePixivImageProxyBaseUrl(url: String): String =
         "https://media.yunfi.f5.si/image.webp?url",
         -> PALLERIA_IMAGE_PROXY_BASE_URL
 
-        else -> url
+        else -> url.trim().replaceFirst("http://", "https://")
     }
 
 private fun String.pixivImagePrefixOrNull(): String? =
     when {
         startsWith("https://i.pximg.net/") -> "https://i.pximg.net/"
-        startsWith("http://i.pximg.net/") -> "http://i.pximg.net/"
         startsWith("https://i-f.pximg.net/") -> "https://i-f.pximg.net/"
-        startsWith("http://i-f.pximg.net/") -> "http://i-f.pximg.net/"
         else -> null
     }
