@@ -33,6 +33,9 @@ import okio.Path.Companion.toOkioPath
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
+internal fun imageCacheMaximumSizeBytes(cacheSizeMb: Int): Long? = cacheSizeMb.takeIf { it > 0 }?.toLong()?.times(BYTES_PER_MEBIBYTE)
+
+private const val BYTES_PER_MEBIBYTE = 1024L * 1024L
 private const val WIDGET_PREVIEW_DELAY_MILLIS = 6_000L
 private const val BACKGROUND_SCHEDULER_STARTUP_DELAY_MILLIS = 4_000L
 
@@ -126,8 +129,9 @@ class IllustiaApplication : Application() {
                     DiskCache
                         .Builder()
                         .directory(cacheDirectory)
-                        .maxSizeBytes(configuredCacheMb.toLong() * 1024 * 1024)
-                        .build()
+                        .apply {
+                            imageCacheMaximumSizeBytes(configuredCacheMb)?.let(::maxSizeBytes)
+                        }.build()
                 }.build()
         }
     }
