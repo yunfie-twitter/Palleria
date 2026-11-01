@@ -917,6 +917,16 @@
     <string name="pallasync_peer_offer_qr">期限付きPallaSync端末オファーQR</string>
     <string name="pallasync_peer_offer_qr_failed">QRコードを作成できませんでした。新しいオファーを作成して再試行してください。</string>
     <string name="pallasync_peer_authority_guidance">相手端末はこのQRと、ここから書き出す署名済み公開authority履歴のJSONを両方取り込みます。ファイルに端末秘密鍵やepoch secretは含まれません。</string>
+    <string name="pallasync_peer_invitation_progress_title">端末招待の進行中</string>
+    <string name="pallasync_peer_invitation_progress">手順1: このQRを参加側に見せ、Authority JSONを書き出します。参加側はQRを読み取りファイルを読み込んでから、両端末で一致するコードを確認します。</string>
+    <string name="pallasync_peer_offer_show_raw">QRのテキストを表示</string>
+    <string name="pallasync_peer_offer_hide_raw">QRのテキストを隠す</string>
+    <string name="pallasync_peer_request_waiting_guidance">参加側が参加要求ファイルを書き出したら、「要求を確認」をもう一度実行します。要求と照合コードを確認するまでは承認されません。</string>
+    <string name="pallasync_peer_invitation_compare_guidance">手順2: 参加側と目の前で照合コードを確認します。すべて一致した場合のみ確認してください。次に、この端末用の証明書と鍵envelopeのファイルを書き出します。</string>
+    <string name="pallasync_peer_invitation_transfer_guidance">手順3: 証明書と鍵envelopeのファイルを参加側へ渡します。参加側が参加要求ファイルを返すまで待ち、「要求を確認」で再確認してください。</string>
+    <string name="pallasync_peer_invitation_wait_guidance">参加要求を送信しましたが、結果が不明です。同じ要求を再送してリレーの状態を確認してください。新しい要求を作り直さないでください。</string>
+    <string name="pallasync_peer_invitation_acceptance_guidance">手順4: acceptance JSONを書き出し、参加側へ渡します。参加側が読み込むと登録が完了します。</string>
+    <string name="pallasync_peer_invitation_finished_guidance">この招待は終了しました。別の端末を追加する場合は、新しい招待を作成してください。</string>
     <string name="pallasync_peer_authority_export">公開authority履歴を書き出す</string>
     <string name="pallasync_peer_request_check">保留中の申請を確認</string>
     <string name="pallasync_peer_request_checking">申請を確認中…</string>
