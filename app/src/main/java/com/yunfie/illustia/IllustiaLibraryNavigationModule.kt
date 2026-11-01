@@ -751,10 +751,11 @@ abstract class IllustiaLibraryNavigationModule(
                     _uiState.update {
                         it.copy(
                             notificationsLoading = false,
-                            notificationsError = cleanErrorMessage(
-                                error,
-                                getApplication<Application>().getString(R.string.error_notifications_load_failed),
-                            ),
+                            notificationsError =
+                                cleanErrorMessage(
+                                    error,
+                                    getApplication<Application>().getString(R.string.error_notifications_load_failed),
+                                ),
                             message =
                                 cleanErrorMessage(
                                     error,
@@ -787,10 +788,11 @@ abstract class IllustiaLibraryNavigationModule(
                     _uiState.update {
                         it.copy(
                             notificationsLoading = false,
-                            notificationsError = cleanErrorMessage(
-                                error,
-                                getApplication<Application>().getString(R.string.error_notifications_load_failed),
-                            ),
+                            notificationsError =
+                                cleanErrorMessage(
+                                    error,
+                                    getApplication<Application>().getString(R.string.error_notifications_load_failed),
+                                ),
                             message =
                                 cleanErrorMessage(
                                     error,
