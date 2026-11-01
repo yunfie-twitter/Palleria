@@ -53,6 +53,8 @@ private const val CACHE_TTL_SERIES_MILLIS = 15 * 60 * 1000L // 15 minutes
 private const val CACHE_TTL_LONG_MILLIS = 30 * 60 * 1000L // 30 minutes
 private const val CACHE_TTL_HOUR_MILLIS = 60 * 60 * 1000L // 1 hour
 private const val HTTP_TOO_MANY_REQUESTS = 429
+private const val HTTP_NOT_FOUND = 404
+private const val HTTP_GONE = 410
 
 @Suppress("LargeClass")
 class IllustiaRepository(
@@ -701,7 +703,7 @@ class IllustiaRepository(
                     apiClient.removeBookmark(session, illustId)
                 } catch (failure: PixivApiException) {
                     // The desired state is already true; a retried delete can report either.
-                    if (failure.statusCode != 404 && failure.statusCode != 410) throw failure
+                    if (failure.statusCode != HTTP_NOT_FOUND && failure.statusCode != HTTP_GONE) throw failure
                 }
             }
         }
