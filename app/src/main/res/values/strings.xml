@@ -895,6 +895,11 @@
     
     <!-- PallaSync settings -->
     <string name="pallasync_settings_title">PallaSync 同期</string>
+    <string name="pallasync_setup_guide_title">最初の設定</string>
+    <string name="pallasync_setup_guide_summary">1. 同期を有効にし、信頼できるリレーを選びます。2. 招待で別端末を追加するか、既存の回復フレーズで復元します。3. 承認前に、両端末で同じ照合コードを対面で確認します。普段は下の同期状態と参加端末を確認してください。</string>
+    <string name="pallasync_advanced_show">上級者向けメンテナンス</string>
+    <string name="pallasync_advanced_hide">上級者向けメンテナンスを隠す</string>
+    <string name="pallasync_advanced_summary">移行、履歴修復、削除・保持操作、プロトコル証拠、診断ログを表示します。復旧手順またはサポート案内に従う場合のみ使用してください。</string>
     <string name="pallasync_enable">PallaSync を有効にする</string>
     <string name="pallasync_enable_desc">他の端末と閲覧履歴やブックマークなどを同期します</string>
     <string name="pallasync_server_url">サーバー URL</string>
