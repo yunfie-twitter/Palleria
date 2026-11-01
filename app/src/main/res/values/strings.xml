@@ -157,6 +157,7 @@
     <string name="watchlist_empty">検索結果の保存ボタンからタグを追加できます</string>
     <string name="watchlist_series_title">Watchlist</string>
     <string name="watchlist_series_empty">Watchlist に保存したシリーズはまだありません</string>
+    <string name="illust_series_empty">このシリーズに表示できる作品はありません</string>
     <string name="watchlist_series_load_more">さらにシリーズを読み込む</string>
     <string name="following_users_empty">フォロー中のユーザーはいません</string>
 
