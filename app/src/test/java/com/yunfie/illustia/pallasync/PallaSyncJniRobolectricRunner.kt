@@ -13,6 +13,7 @@ class PallaSyncJniRobolectricRunner(
         // JNI adapter wrappers are shared with the parent loader, so their serialized
         // value types must also have one class identity across Robolectric sandboxes.
         builder.doNotAcquirePackage("kotlinx.serialization")
+        builder.doNotAcquirePackage("com.sun.jna")
         builder.doNotAcquirePackage("com.yunfie.illustia.rust")
         listOf(
             "PallaSyncCore",

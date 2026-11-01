@@ -33,9 +33,7 @@ import okio.Path.Companion.toOkioPath
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
-internal fun imageCacheMaximumSizeBytes(cacheSizeMb: Int): Long? {
-    return cacheSizeMb.takeIf { it > 0 }?.toLong()?.times(BYTES_PER_MEBIBYTE)
-}
+internal fun imageCacheMaximumSizeBytes(cacheSizeMb: Int): Long? = cacheSizeMb.takeIf { it > 0 }?.toLong()?.times(BYTES_PER_MEBIBYTE)
 
 private const val BYTES_PER_MEBIBYTE = 1024L * 1024L
 private const val WIDGET_PREVIEW_DELAY_MILLIS = 6_000L
