@@ -248,7 +248,7 @@ fun AvatarImage(
     name: String,
     size: Dp,
     modifier: Modifier = Modifier,
-    maxDecodeDimensionPx: Int = 192,
+    maxDecodeDimensionPx: Int = AVATAR_IMAGE_MAX_DECODE_DIMENSION_PX,
 ) {
     val commonModifier =
         modifier

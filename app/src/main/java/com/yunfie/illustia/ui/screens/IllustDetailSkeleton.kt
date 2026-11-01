@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
+import com.yunfie.illustia.ui.screens.profile.UserProfileErrorScreen
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -50,7 +51,14 @@ fun IllustDetailSkeletonScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     backgroundColor: Color = MiuixTheme.colorScheme.background,
+    errorMessage: String? = null,
+    onRetry: (() -> Unit)? = null,
 ) {
+    if (errorMessage != null) {
+        UserProfileErrorScreen(message = errorMessage, onBack = onBack, onRetry = onRetry, modifier = modifier)
+        return
+    }
+
     PredictiveBackGestureHandler(onBack = onBack)
 
     val transition = rememberInfiniteTransition(label = "illustDetailSkeletonTransition")
