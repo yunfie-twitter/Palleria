@@ -245,9 +245,9 @@ fun DeviceViewHistoryScreen(
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     CircularProgressIndicator(modifier = Modifier.padding(32.dp).fillMaxWidth())
                 }
-            } else if (historyList.isEmpty()) {
+            } else if (historyList.isEmpty() && failure == null) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    EmptyState(stringResource(R.string.search_empty_illust))
+                    EmptyState(stringResource(R.string.device_history_empty))
                 }
             } else {
                 gridItems(historyList, key = { it.id }, contentType = { "illust_card" }) { illust ->
