@@ -85,6 +85,8 @@ data class IllustiaUiState(
     val bookmarkItems: List<Illust> = emptyList(),
     val bookmarkNextUrl: String? = null,
     val selectedIllust: Illust? = null,
+    val selectedIllustError: String? = null,
+    val selectedIllustErrorId: Long? = null,
     val selectedIllustUser: UserProfile? = null,
     val selectedIllustFirstComment: Comment? = null,
     val relatedIllusts: List<Illust> = emptyList(),
