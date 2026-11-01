@@ -66,6 +66,8 @@ fun RelatedUsersScreen(
     val scrollBehavior = MiuixScrollBehavior()
     val coroutineScope = rememberCoroutineScope()
     val performHaptic = rememberHapticFeedbackAction()
+    val relatedUsers = if (uiState.selectedRelatedUsersUserId == userId) uiState.selectedRelatedUsers else emptyList()
+    val relatedUsersNextUrl = if (uiState.selectedRelatedUsersUserId == userId) uiState.selectedRelatedUsersNextUrl else null
 
     LaunchedEffect(userId, uiState.selectedRelatedUsersUserId) {
         viewModel.loadSelectedRelatedUsers(targetUserId = userId)
@@ -74,7 +76,7 @@ fun RelatedUsersScreen(
     AutoLoadMoreEffect(
         listState = listState,
         enabled = settings.autoLoadMore,
-        nextUrl = uiState.selectedRelatedUsersNextUrl,
+        nextUrl = relatedUsersNextUrl,
         isLoading = uiState.selectedRelatedUsersPaginating || uiState.selectedRelatedUsersLoading,
         onLoadMore = { viewModel.loadMoreSelectedRelatedUsers(targetUserId = userId) },
     )
@@ -111,7 +113,9 @@ fun RelatedUsersScreen(
         },
     ) { scaffoldPadding ->
         val adaptivePadding = adaptiveMainNavigationContentPadding()
-        val showInitialSkeletons = uiState.selectedRelatedUsers.isEmpty() && uiState.selectedRelatedUsersLoading
+        val showInitialSkeletons =
+            uiState.selectedRelatedUsersUserId != userId ||
+                relatedUsers.isEmpty() && uiState.selectedRelatedUsersLoading
         val showPaginationSkeletons = settings.autoLoadMore && uiState.selectedRelatedUsersPaginating
         val shimmer = if (showInitialSkeletons || showPaginationSkeletons) rememberIllustSkeletonShimmer() else null
         PullToRefresh(
@@ -147,7 +151,7 @@ fun RelatedUsersScreen(
                 }
 
                 items(
-                    items = uiState.selectedRelatedUsers,
+                    items = relatedUsers,
                     key = { "related_user_${it.id}" },
                     contentType = { "related_user" },
                 ) { relatedUser ->
@@ -157,7 +161,7 @@ fun RelatedUsersScreen(
                     )
                 }
 
-                if (showPaginationSkeletons && uiState.selectedRelatedUsers.isNotEmpty()) {
+                if (showPaginationSkeletons && relatedUsers.isNotEmpty()) {
                     items(
                         count = 3,
                         key = { "related_user_paginating_skeleton_$it" },
@@ -175,22 +179,29 @@ fun RelatedUsersScreen(
                     ) {
                         UserResultCardSkeleton(shimmerValue = shimmer)
                     }
-                } else if (uiState.selectedRelatedUsers.isEmpty() && !uiState.selectedRelatedUsersRefreshing) {
+                } else if (relatedUsers.isEmpty() && !uiState.selectedRelatedUsersRefreshing && !uiState.selectedRelatedUsersLoading) {
                     item(contentType = "related_empty") {
                         Column(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            EmptyState(stringResource(R.string.user_related_empty))
-                            Button(onClick = { viewModel.loadSelectedRelatedUsers(targetUserId = userId, force = true) }) {
-                                Text(stringResource(R.string.action_reload))
+                            if (uiState.selectedRelatedUsersError != null && uiState.selectedRelatedUsersUserId == userId) {
+                                Text(uiState.selectedRelatedUsersError, color = MiuixTheme.colorScheme.error)
+                                Button(onClick = { viewModel.loadSelectedRelatedUsers(targetUserId = userId, force = true) }) {
+                                    Text(stringResource(R.string.action_retry))
+                                }
+                            } else {
+                                EmptyState(stringResource(R.string.user_related_empty))
+                                Button(onClick = { viewModel.loadSelectedRelatedUsers(targetUserId = userId, force = true) }) {
+                                    Text(stringResource(R.string.action_reload))
+                                }
                             }
                         }
                     }
                 }
 
-                if (!settings.autoLoadMore && uiState.selectedRelatedUsersNextUrl != null) {
+                if (!settings.autoLoadMore && relatedUsersNextUrl != null) {
                     item(contentType = "related_more") {
                         Button(
                             onClick = { viewModel.loadMoreSelectedRelatedUsers(targetUserId = userId) },

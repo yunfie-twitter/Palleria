@@ -104,6 +104,7 @@ data class IllustiaUiState(
     val selectedRelatedUsers: List<UserPreview> = emptyList(),
     val selectedRelatedUsersNextUrl: String? = null,
     val selectedRelatedUsersUserId: Long? = null,
+    val selectedRelatedUsersError: String? = null,
     val selectedRelatedUsersLoading: Boolean = false,
     val selectedRelatedUsersRefreshing: Boolean = false,
     val selectedRelatedUsersPaginating: Boolean = false,

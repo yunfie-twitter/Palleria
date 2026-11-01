@@ -241,19 +241,25 @@ abstract class IllustiaBookmarkModule(
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update {
                 it.copy(
-                    selectedRelatedUsersLoading = !force && it.selectedRelatedUsers.isEmpty(),
+                    selectedRelatedUsers = if (cachedForSameUser) it.selectedRelatedUsers else emptyList(),
+                    selectedRelatedUsersNextUrl = if (cachedForSameUser) it.selectedRelatedUsersNextUrl else null,
+                    selectedRelatedUsersUserId = userId,
+                    selectedRelatedUsersLoading = !force && !cachedForSameUser,
                     selectedRelatedUsersRefreshing = force,
+                    selectedRelatedUsersError = null,
                 )
             }
             try {
                 val page = repository.relatedUsers(userId)
                 _uiState.update { state ->
+                    if (state.selectedRelatedUsersUserId != userId) return@update state
                     state.copy(
                         selectedRelatedUsers = page.users.filterNot { it.id == userId },
                         selectedRelatedUsersNextUrl = page.nextUrl,
                         selectedRelatedUsersUserId = userId,
                         selectedRelatedUsersLoading = false,
                         selectedRelatedUsersRefreshing = false,
+                        selectedRelatedUsersError = null,
                     )
                 }
             } catch (expectedFailure: Exception) {
@@ -261,9 +267,13 @@ abstract class IllustiaBookmarkModule(
                 if (isCancellation(error)) throw error
                 if (!handleAuthExpired(error)) {
                     _uiState.update { state ->
+                        if (state.selectedRelatedUsersUserId != userId) return@update state
                         state.copy(
+                            selectedRelatedUsers = emptyList(),
+                            selectedRelatedUsersNextUrl = null,
                             selectedRelatedUsersLoading = false,
                             selectedRelatedUsersRefreshing = false,
+                            selectedRelatedUsersError = cleanErrorMessage(error, str(R.string.error_related_users_load_failed)),
                             message = cleanErrorMessage(error, str(R.string.error_related_users_load_failed)),
                         )
                     }
