@@ -183,6 +183,10 @@ fun PixivWebLoginScreen(
                     WebView(context).apply {
                         webView = this
                         onWebViewChanged(this)
+                        settings.allowContentAccess = false
+                        settings.allowFileAccess = false
+                        settings.allowFileAccessFromFileURLs = false
+                        settings.allowUniversalAccessFromFileURLs = false
                         settings.javaScriptEnabled = true
                         settings.domStorageEnabled = true
                         settings.userAgentString = "PixivAndroidApp/6.184.0 (Android 14; Illustia)"
