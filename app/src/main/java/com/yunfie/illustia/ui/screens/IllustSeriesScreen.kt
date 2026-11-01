@@ -382,7 +382,7 @@ fun IllustSeriesScreen(
                     }
                     if (processedIllusts.isEmpty() && !state.isLoading && state.errorMessage == null) {
                         item(span = { GridItemSpan(maxLineSpan) }) {
-                            EmptyState(stringResource(R.string.detail_related))
+                            EmptyState(stringResource(R.string.illust_series_empty))
                         }
                     }
                     gridItems(processedIllusts, key = { it.id }, contentType = { "illust_card" }) { illust ->
