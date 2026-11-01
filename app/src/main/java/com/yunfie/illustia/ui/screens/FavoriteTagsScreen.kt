@@ -173,11 +173,13 @@ fun FavoriteTagsScreen(
                     )
                 },
                 actions = {
-                    HeaderIcon(
-                        icon = MiuixIcons.Refresh,
-                        onClick = { selectedTag?.let { viewModel.loadWatchlistTag(it, forceRefresh = true) } },
-                        contentDescription = stringResource(R.string.dialog_reload),
-                    )
+                    if (selectedTag != null) {
+                        HeaderIcon(
+                            icon = MiuixIcons.Refresh,
+                            onClick = { selectedTag?.let { viewModel.loadWatchlistTag(it, forceRefresh = true) } },
+                            contentDescription = stringResource(R.string.dialog_reload),
+                        )
+                    }
                 },
             )
         },
