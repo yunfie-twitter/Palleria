@@ -41,6 +41,7 @@ class BookmarkToggleWorker(
             val expectedUserId = inputData.getLong(KEY_BOOKMARK_USER_ID, 0L)
             val artistId = inputData.getLong(KEY_ARTIST_ID, 0L)
             val tags = inputData.getStringArray(KEY_TAGS)?.toList().orEmpty()
+            val bookmarkTags = inputData.getStringArray(KEY_BOOKMARK_TAGS)?.toList().orEmpty()
 
             val settingsStore = SettingsStore(applicationContext)
             val settings =
@@ -63,7 +64,7 @@ class BookmarkToggleWorker(
 
             val repository = IllustiaRepository(settingsStore)
             try {
-                repository.setBookmarkState(illustId, bookmarked, restrict)
+                repository.setBookmarkState(illustId, bookmarked, restrict, bookmarkTags)
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (failure: PixivApiException) {
@@ -115,6 +116,7 @@ class BookmarkToggleWorker(
         internal const val KEY_BOOKMARK_USER_ID = "bookmark_user_id"
         internal const val KEY_ARTIST_ID = "artist_id"
         internal const val KEY_TAGS = "tags"
+        internal const val KEY_BOOKMARK_TAGS = "bookmark_tags"
 
         private const val MAX_AUTO_TAGS_PER_BOOKMARK = 3
         private const val MAX_FAVORITE_TAGS = 24

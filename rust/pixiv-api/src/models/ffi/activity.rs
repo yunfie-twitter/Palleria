@@ -114,6 +114,17 @@ pub struct TrendingTag {
 }
 
 #[derive(Debug, uniffi::Record)]
+pub struct BookmarkTagList {
+    pub items: Vec<BookmarkTag>,
+}
+
+#[derive(Debug, uniffi::Record)]
+pub struct BookmarkTag {
+    pub name: String,
+    pub count: i32,
+}
+
+#[derive(Debug, uniffi::Record)]
 pub struct SpotlightPage {
     pub articles: Vec<SpotlightArticle>,
     pub next_url: Option<String>,

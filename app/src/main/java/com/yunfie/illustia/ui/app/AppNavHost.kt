@@ -310,7 +310,7 @@ internal fun AppNavHost(
                             firstComment = snapshot.firstComment,
                             onBack = onPopRoute,
                             onBookmark = { viewModel.toggleBookmark(illust) },
-                            onBookmarkLongClick = { viewModel.toggleBookmark(illust, com.yunfie.illustia.models.Restrict.Private) },
+                            onBookmarkLongClick = { viewModel.openBookmarkTagPicker(illust) },
                             onRefresh = { viewModel.refreshIllustDetail(illust.id) },
                             onOpenUser = viewModel::openUser,
                             onOpenComments = {

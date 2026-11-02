@@ -32,6 +32,7 @@ object BookmarkToggleScheduler {
         bookmarkUserId: Long,
         artistId: Long,
         tags: List<String>,
+        bookmarkTags: List<String> = emptyList(),
     ) {
         val input =
             workDataOf(
@@ -42,6 +43,7 @@ object BookmarkToggleScheduler {
                 BookmarkToggleWorker.KEY_BOOKMARK_USER_ID to bookmarkUserId,
                 BookmarkToggleWorker.KEY_ARTIST_ID to artistId,
                 BookmarkToggleWorker.KEY_TAGS to tags.toTypedArray(),
+                BookmarkToggleWorker.KEY_BOOKMARK_TAGS to bookmarkTags.toTypedArray(),
             )
         val request =
             OneTimeWorkRequestBuilder<BookmarkToggleWorker>()

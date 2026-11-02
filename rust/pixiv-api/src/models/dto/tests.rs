@@ -1,6 +1,19 @@
 use super::*;
 
 #[test]
+fn parses_illustration_bookmark_tags() {
+    let response: IllustBookmarkTagsResponse = serde_json::from_str(
+        r#"{"bookmark_tags":[{"name":"original","count":12},{"name":"","count":3}]}"#,
+    )
+    .unwrap();
+
+    let tags = response.into_list().items;
+    assert_eq!(tags.len(), 1);
+    assert_eq!(tags[0].name, "original");
+    assert_eq!(tags[0].count, 12);
+}
+
+#[test]
 fn parses_illust_page_and_applies_kotlin_compatible_fallbacks() {
     let response: IllustPageResponse = serde_json::from_str(
             r#"{

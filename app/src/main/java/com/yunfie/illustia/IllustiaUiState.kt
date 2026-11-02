@@ -8,6 +8,7 @@ import com.yunfie.illustia.models.NovelPreview
 import com.yunfie.illustia.models.NovelTextContent
 import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.models.UserProfile
+import com.yunfie.illustia.models.pixiv.BookmarkTag
 import com.yunfie.illustia.models.pixiv.Comment
 import com.yunfie.illustia.models.pixiv.PixivNotification
 import com.yunfie.illustia.settings.AppSettings
@@ -122,6 +123,11 @@ data class IllustiaUiState(
     val webLoginRequest: PixivWebLoginRequest? = null,
     val showReloginRequiredDialog: Boolean = false,
     val pendingBookmarkRemoval: Illust? = null,
+    val bookmarkTagPickerIllust: Illust? = null,
+    val bookmarkTagPickerTags: List<BookmarkTag> = emptyList(),
+    val bookmarkTagPickerLoading: Boolean = false,
+    val bookmarkTagPickerError: String? = null,
+    val bookmarkTagPickerRestrict: com.yunfie.illustia.models.Restrict = com.yunfie.illustia.models.Restrict.Public,
     val notifications: List<PixivNotification> = emptyList(),
     val notificationNextUrl: String? = null,
     val expandedNotifications: Map<Long, List<PixivNotification>> = emptyMap(),

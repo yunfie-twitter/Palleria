@@ -13,15 +13,16 @@ use crate::config::{ECH_HOSTS, ECH_IPS};
 use crate::error::{ApiError, invalid_request, invalid_response, network_error};
 use crate::headers::PixivHeaders;
 use crate::models::{
-    AccountEditResponse, AccountEditResult, AutocompleteResponse, CommentPage, CommentPageResponse,
-    CurrentUserProfile, Illust, IllustDetailResponse, IllustPage, IllustPageResponse,
-    IllustSeriesPage, IllustSeriesPageResponse, LoginSession, NotificationPage,
-    NotificationPageResponse, NovelPage, NovelPageResponse, NovelText, OptionalBoolean,
-    PixivRequest, SimpleBooleanResponse, SpotlightPage, SpotlightResponse, StampList,
-    StampResponse, StringList, TrendingTagList, TrendingTagResponse, UgoiraFrame, UgoiraMetadata,
-    UgoiraMetadataResponse, UgoiraPlayback, UserDetailResponse, UserFollowDetail,
-    UserFollowDetailResponse, UserMeResponse, UserPreviewPage, UserPreviewPageResponse,
-    UserProfile, WatchlistMangaPage, WatchlistMangaResponse,
+    AccountEditResponse, AccountEditResult, AutocompleteResponse, BookmarkTagList, CommentPage,
+    CommentPageResponse, CurrentUserProfile, Illust, IllustBookmarkTagsResponse,
+    IllustDetailResponse, IllustPage, IllustPageResponse, IllustSeriesPage,
+    IllustSeriesPageResponse, LoginSession, NotificationPage, NotificationPageResponse, NovelPage,
+    NovelPageResponse, NovelText, OptionalBoolean, PixivRequest, SimpleBooleanResponse,
+    SpotlightPage, SpotlightResponse, StampList, StampResponse, StringList, TrendingTagList,
+    TrendingTagResponse, UgoiraFrame, UgoiraMetadata, UgoiraMetadataResponse, UgoiraPlayback,
+    UserDetailResponse, UserFollowDetail, UserFollowDetailResponse, UserMeResponse,
+    UserPreviewPage, UserPreviewPageResponse, UserProfile, WatchlistMangaPage,
+    WatchlistMangaResponse,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -247,6 +248,20 @@ impl PixivHttpClient {
         transport::execute_json::<TrendingTagResponse>(self, request, "trending tags")
             .await
             .map(TrendingTagResponse::into_list)
+    }
+
+    #[uniffi::method(async_runtime = "tokio")]
+    pub async fn execute_illust_bookmark_tags(
+        &self,
+        request: PixivRequest,
+    ) -> Result<BookmarkTagList, ApiError> {
+        transport::execute_json::<IllustBookmarkTagsResponse>(
+            self,
+            request,
+            "illustration bookmark tags",
+        )
+        .await
+        .map(IllustBookmarkTagsResponse::into_list)
     }
 
     #[uniffi::method(async_runtime = "tokio")]

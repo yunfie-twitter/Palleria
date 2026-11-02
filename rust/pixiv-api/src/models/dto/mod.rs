@@ -3,12 +3,13 @@ use std::collections::HashMap;
 use serde::Deserialize;
 
 use super::{
-    AccountEditResult, Comment, CommentPage, CommentStamp, CommentUser, CurrentUserProfile, Illust,
-    IllustPage, IllustSeries, IllustSeriesDetail, IllustSeriesPage, MangaSeries, MangaSeriesUser,
-    Notification, NotificationContent, NotificationPage, NotificationViewMore, NovelPage,
-    NovelPreview, OptionalBoolean, ParentComment, SeriesUser, SpotlightArticle, SpotlightPage,
-    Stamp, StampList, StringList, TrendingTag, TrendingTagList, UgoiraFrame, UgoiraMetadata,
-    UserFollowDetail, UserPreview, UserPreviewPage, UserProfile, WatchlistMangaPage,
+    AccountEditResult, BookmarkTag, BookmarkTagList, Comment, CommentPage, CommentStamp,
+    CommentUser, CurrentUserProfile, Illust, IllustPage, IllustSeries, IllustSeriesDetail,
+    IllustSeriesPage, MangaSeries, MangaSeriesUser, Notification, NotificationContent,
+    NotificationPage, NotificationViewMore, NovelPage, NovelPreview, OptionalBoolean,
+    ParentComment, SeriesUser, SpotlightArticle, SpotlightPage, Stamp, StampList, StringList,
+    TrendingTag, TrendingTagList, UgoiraFrame, UgoiraMetadata, UserFollowDetail, UserPreview,
+    UserPreviewPage, UserProfile, WatchlistMangaPage,
 };
 
 #[derive(Debug, Deserialize)]
@@ -329,6 +330,20 @@ struct StampDto {
 pub(crate) struct TrendingTagResponse {
     #[serde(default)]
     trend_tags: Vec<TrendingTagDto>,
+}
+
+#[derive(Debug, Deserialize)]
+pub(crate) struct IllustBookmarkTagsResponse {
+    #[serde(default)]
+    bookmark_tags: Vec<BookmarkTagDto>,
+}
+
+#[derive(Debug, Deserialize)]
+struct BookmarkTagDto {
+    #[serde(default)]
+    name: String,
+    #[serde(default)]
+    count: i32,
 }
 
 #[derive(Debug, Deserialize)]

@@ -158,6 +158,13 @@
     <string name="bookmark_view_artist">作者別</string>
     <string name="bookmark_tag_unclassified">未分類</string>
     <string name="bookmark_tag_watch_later">あとで見る</string>
+    <string name="bookmark_tag_picker_public">公開ブックマーク</string>
+    <string name="bookmark_tag_picker_private">非公開ブックマーク</string>
+    <string name="bookmark_tag_picker_private_toggle">非公開で保存</string>
+    <string name="bookmark_tag_picker_visibility_summary">公開設定は設定のブックマーク設定に従います。ここではこの作品だけ変更できます。</string>
+    <string name="bookmark_tag_picker_empty">ブックマークタグはありません。タグを追加できます。</string>
+    <string name="bookmark_tag_picker_new_tag">新しいタグ</string>
+    <string name="bookmark_tag_picker_confirm">ブックマーク</string>
     <string name="bookmark_empty">ブックマークはまだありません</string>
     <string name="bookmark_following_empty">フォロー中ユーザーの作品はまだありません</string>
     <string name="watchlist_empty">検索結果の保存ボタンからタグを追加できます</string>

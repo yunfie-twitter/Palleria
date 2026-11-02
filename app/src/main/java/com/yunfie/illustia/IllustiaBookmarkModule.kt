@@ -9,6 +9,8 @@ import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.SearchWorkType
+import com.yunfie.illustia.models.pixiv.BookmarkTag
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -18,17 +20,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-/** いいねを押した瞬間の見た目。通信の結果は後から正しい値で上書きする。 */
-private fun Illust.optimisticallyToggled(): Illust =
-    copy(
-        isBookmarked = !isBookmarked,
-        totalBookmarks = (totalBookmarks + if (isBookmarked) -1 else 1).coerceAtLeast(0),
-    )
-
 private const val TARGET_SEARCH_PAGE_BATCH = 24
 private const val MAX_SEARCH_LOAD_MORE_PAGES = 20
 
 /** Pagination for search/profile collections plus bookmark and recommendation behavior. */
+@Suppress("LargeClass")
 abstract class IllustiaBookmarkModule(
     app: Application,
     managedDataRepository: ManagedDataRepository,
@@ -503,6 +499,95 @@ abstract class IllustiaBookmarkModule(
         performToggleBookmark(illust, restrict)
     }
 
+    fun openBookmarkTagPicker(illust: Illust) {
+        val settings = _uiState.value.settings
+        if (settings.refreshToken.isBlank()) {
+            _uiState.update { it.copy(message = str(R.string.error_bookmark_failed)) }
+            return
+        }
+        val restrict =
+            if (settings.privateBookmarkDefault) Restrict.Private else settings.bookmarkRestrict
+        _uiState.update {
+            it.copy(
+                bookmarkTagPickerIllust = illust,
+                bookmarkTagPickerTags = emptyList(),
+                bookmarkTagPickerLoading = settings.bookmarkUserId != null,
+                bookmarkTagPickerError = null,
+                bookmarkTagPickerRestrict = restrict,
+            )
+        }
+        val userId = settings.bookmarkUserId ?: return
+        viewModelScope.launch {
+            loadBookmarkTagOptions(illust.id, userId, settings.refreshToken, restrict)
+        }
+    }
+
+    fun updateBookmarkTagPickerRestrict(restrict: Restrict) {
+        val state = _uiState.value
+        val illust = state.bookmarkTagPickerIllust
+        val userId = state.settings.bookmarkUserId
+        if (illust == null || userId == null || state.bookmarkTagPickerRestrict == restrict) return
+        _uiState.update {
+            it.copy(bookmarkTagPickerRestrict = restrict, bookmarkTagPickerLoading = true, bookmarkTagPickerError = null)
+        }
+        viewModelScope.launch {
+            loadBookmarkTagOptions(illust.id, userId, state.settings.refreshToken, restrict)
+        }
+    }
+
+    private suspend fun loadBookmarkTagOptions(
+        illustId: Long,
+        userId: Long,
+        refreshToken: String,
+        restrict: Restrict,
+    ) {
+        runCatching { repository.illustBookmarkTags(userId, restrict) }
+            .onSuccess { tags ->
+                _uiState.update { state ->
+                    if (state.bookmarkTagPickerIllust?.id == illustId &&
+                        state.settings.refreshToken == refreshToken &&
+                        state.bookmarkTagPickerRestrict == restrict
+                    ) {
+                        state.copy(bookmarkTagPickerTags = tags, bookmarkTagPickerLoading = false, bookmarkTagPickerError = null)
+                    } else {
+                        state
+                    }
+                }
+            }.onFailure { error ->
+                if (error is CancellationException) throw error
+                _uiState.update { state ->
+                    if (state.bookmarkTagPickerIllust?.id == illustId &&
+                        state.settings.refreshToken == refreshToken &&
+                        state.bookmarkTagPickerRestrict == restrict
+                    ) {
+                        state.copy(bookmarkTagPickerLoading = false, bookmarkTagPickerError = cleanErrorMessage(error))
+                    } else {
+                        state
+                    }
+                }
+            }
+    }
+
+    fun closeBookmarkTagPicker() {
+        _uiState.update {
+            it.copy(
+                bookmarkTagPickerIllust = null,
+                bookmarkTagPickerTags = emptyList(),
+                bookmarkTagPickerLoading = false,
+                bookmarkTagPickerError = null,
+            )
+        }
+    }
+
+    fun confirmBookmarkTagPicker(
+        illust: Illust,
+        restrict: Restrict,
+        tags: List<String>,
+    ) {
+        closeBookmarkTagPicker()
+        enqueueBookmarkState(illust, bookmarked = true, restrict = restrict, bookmarkTags = tags)
+    }
+
     fun toggleBookmark(
         illustId: Long,
         fallback: Illust? = null,
@@ -531,17 +616,37 @@ abstract class IllustiaBookmarkModule(
             _uiState.update { it.copy(message = str(R.string.error_bookmark_failed)) }
             return
         }
+        val selectedRestrict =
+            explicitRestrict
+                ?: if (settings.privateBookmarkDefault) Restrict.Private else settings.bookmarkRestrict
+        enqueueBookmarkState(illust, bookmarked = !illust.isBookmarked, restrict = selectedRestrict)
+    }
+
+    private fun enqueueBookmarkState(
+        illust: Illust,
+        bookmarked: Boolean,
+        restrict: Restrict,
+        bookmarkTags: List<String> = emptyList(),
+    ) {
+        val settings = _uiState.value.settings
+        if (settings.refreshToken.isBlank()) {
+            _uiState.update { it.copy(message = str(R.string.error_bookmark_failed)) }
+            return
+        }
         // 見た目はタップした瞬間に反転する。通信は WorkManager の永続ジョブに載せるので、
         // 画面やアプリを閉じてもキャンセルされず、次回起動時にも再試行される。
-        val bookmarked = !illust.isBookmarked
-        val restrict =
-            explicitRestrict
-                ?: if (settings.privateBookmarkDefault) {
-                    com.yunfie.illustia.models.Restrict.Private
-                } else {
-                    settings.bookmarkRestrict
-                }
-        updateIllustEverywhere(illust.optimisticallyToggled())
+        val bookmarkCountDelta =
+            when {
+                bookmarked && !illust.isBookmarked -> 1
+                !bookmarked && illust.isBookmarked -> -1
+                else -> 0
+            }
+        val optimistic =
+            illust.copy(
+                isBookmarked = bookmarked,
+                totalBookmarks = (illust.totalBookmarks + bookmarkCountDelta).coerceAtLeast(0),
+            )
+        updateIllustEverywhere(optimistic)
         val enqueued =
             runCatching {
                 BookmarkToggleScheduler.enqueue(
@@ -553,6 +658,7 @@ abstract class IllustiaBookmarkModule(
                     bookmarkUserId = settings.bookmarkUserId ?: 0L,
                     artistId = illust.artistId,
                     tags = illust.tags.take(3),
+                    bookmarkTags = bookmarkTags.take(10),
                 )
             }.isSuccess
         if (!enqueued) {

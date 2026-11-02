@@ -373,6 +373,12 @@ internal class RustPixivCall(
             }
         }
 
+    suspend fun awaitBookmarkTags(): com.yunfie.illustia.rust.BookmarkTagList =
+        withContext(Dispatchers.IO) {
+            val nativeRequest = lowerRequest()
+            nativeCall { native.executeIllustBookmarkTags(request = nativeRequest) }
+        }
+
     suspend fun awaitSpotlight(): SpotlightResult =
         withContext(Dispatchers.IO) {
             val nativeRequest = lowerRequest()
