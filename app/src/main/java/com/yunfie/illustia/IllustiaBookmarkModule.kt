@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.concurrent.atomic.AtomicLong
 
 private const val TARGET_SEARCH_PAGE_BATCH = 24
 private const val MAX_SEARCH_LOAD_MORE_PAGES = 20
@@ -29,6 +30,8 @@ abstract class IllustiaBookmarkModule(
     app: Application,
     managedDataRepository: ManagedDataRepository,
 ) : IllustiaDetailProfileModule(app, managedDataRepository) {
+    private val bookmarkRefreshGeneration = AtomicLong()
+
     abstract fun saveImage(
         url: String,
         filename: String,
@@ -339,13 +342,17 @@ abstract class IllustiaBookmarkModule(
     }
 
     fun refreshBookmarks(forceRefresh: Boolean = false) {
-        val userId = _uiState.value.settings.bookmarkUserId
+        val requestState = _uiState.value
+        val userId = requestState.settings.bookmarkUserId
         if (userId == null) {
             _uiState.update {
                 it.copy(loadState = LoadState.Error(str(R.string.error_pixiv_user_id_not_set)))
             }
             return
         }
+        val generation = bookmarkRefreshGeneration.incrementAndGet()
+        val restrict = requestState.settings.bookmarkRestrict
+        val tag = requestState.bookmarkTag
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update {
                 it.copy(
@@ -356,8 +363,9 @@ abstract class IllustiaBookmarkModule(
             try {
                 val page =
                     GlitchTipTelemetry.traceAsync("bookmarks.refresh", "bookmarks") {
-                        repository.bookmarks(userId, _uiState.value.settings.bookmarkRestrict, forceRefresh = forceRefresh)
+                        repository.bookmarks(userId, restrict, forceRefresh = forceRefresh, tag = tag)
                     }
+                if (generation != bookmarkRefreshGeneration.get()) return@launch
                 _uiState.update {
                     it.copy(
                         bookmarkItems = page.items.visibleWithSettings(it.settings),
@@ -369,6 +377,7 @@ abstract class IllustiaBookmarkModule(
             } catch (expectedFailure: Exception) {
                 val error = expectedFailure
                 if (isCancellation(error)) throw error
+                if (generation != bookmarkRefreshGeneration.get()) return@launch
                 if (handleAuthExpired(error)) return@launch
                 GlitchTipTelemetry.recordException(error, tag = "bookmarks_refresh")
                 _uiState.update {
@@ -379,6 +388,24 @@ abstract class IllustiaBookmarkModule(
                 }
             }
         }
+    }
+
+    fun selectBookmarkTag(
+        tag: String?,
+        restrict: Restrict,
+    ) {
+        if (_uiState.value.settings.bookmarkRestrict != restrict) {
+            updateSettings { it.copy(bookmarkRestrict = restrict) }
+        }
+        _uiState.update {
+            it.copy(
+                bookmarkTag = tag,
+                bookmarkItems = emptyList(),
+                bookmarkNextUrl = null,
+                isBookmarkPaginating = false,
+            )
+        }
+        refreshBookmarks()
     }
 
     fun refreshRecommendedTags(force: Boolean = false) {
@@ -450,8 +477,10 @@ abstract class IllustiaBookmarkModule(
     }
 
     fun loadMoreBookmarks() {
-        val nextUrl = _uiState.value.bookmarkNextUrl ?: return
-        if (_uiState.value.isBookmarkPaginating) return
+        val requestState = _uiState.value
+        val nextUrl = requestState.bookmarkNextUrl ?: return
+        if (requestState.isBookmarkPaginating) return
+        val generation = bookmarkRefreshGeneration.get()
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update { it.copy(isBookmarkPaginating = true) }
             try {
@@ -459,6 +488,7 @@ abstract class IllustiaBookmarkModule(
                     GlitchTipTelemetry.traceAsync("bookmarks.load_more", "bookmarks") {
                         repository.nextPage(nextUrl)
                     }
+                if (generation != bookmarkRefreshGeneration.get()) return@launch
                 _uiState.update {
                     it.copy(
                         bookmarkItems = it.bookmarkItems.appendIllusts(page.items.visibleWithSettings(it.settings)),
@@ -469,6 +499,7 @@ abstract class IllustiaBookmarkModule(
             } catch (expectedFailure: Exception) {
                 val error = expectedFailure
                 if (isCancellation(error)) throw error
+                if (generation != bookmarkRefreshGeneration.get()) return@launch
                 if (handleAuthExpired(error)) return@launch
                 GlitchTipTelemetry.recordException(error, tag = "bookmarks_load_more")
                 _uiState.update {
