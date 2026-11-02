@@ -50,12 +50,27 @@ fun BookmarkTagPickerBottomSheet(
             mapOf(Restrict.Public to emptySet(), Restrict.Private to emptySet()),
         )
     }
-    var newTag by remember(illust.id) { mutableStateOf("") }
-    var searchQuery by remember(illust.id) { mutableStateOf("") }
+    var tagQuery by remember(illust.id) { mutableStateOf("") }
     val restrict = state.bookmarkTagPickerRestrict
     val selectedTags = selectedByRestrict[restrict].orEmpty()
     val isPrivate = restrict == Restrict.Private
-    val visibleTags = state.bookmarkTagPickerTags.filter { it.name.contains(searchQuery.trim(), ignoreCase = true) }
+    val availableTags =
+        remember(state.bookmarkTagPickerTags, illust.tags) {
+            val bookmarkTags = state.bookmarkTagPickerTags.associateBy { it.name }.toMutableMap()
+            illust.tags.forEach { tag ->
+                if (tag.isNotBlank() && bookmarkTags.keys.none { it.equals(tag, ignoreCase = true) }) {
+                    bookmarkTags[tag] = BookmarkTag(tag, 0)
+                }
+            }
+            bookmarkTags.values.map { tag ->
+                BookmarkPickerTag(
+                    tag.name,
+                    tag.count,
+                    illust.tags.any { it.equals(tag.name, ignoreCase = true) },
+                )
+            }
+        }
+    val visibleTags = availableTags.filter { it.name.contains(tagQuery.trim(), ignoreCase = true) }
 
     OverlayBottomSheet(
         show = true,
@@ -89,14 +104,6 @@ fun BookmarkTagPickerBottomSheet(
                 modifier = Modifier.padding(horizontal = 4.dp),
             )
 
-            TextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                label = stringResource(R.string.bookmark_tag_picker_search),
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -106,9 +113,9 @@ fun BookmarkTagPickerBottomSheet(
                     text = stringResource(R.string.bookmark_tag_picker_selected_count, selectedTags.size, MAX_BOOKMARK_TAGS),
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
-                if (state.bookmarkTagPickerTags.isNotEmpty()) {
+                if (availableTags.isNotEmpty()) {
                     Text(
-                        text = stringResource(R.string.bookmark_tag_picker_tag_count, state.bookmarkTagPickerTags.size),
+                        text = stringResource(R.string.bookmark_tag_picker_tag_count, availableTags.size),
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     )
                 }
@@ -148,7 +155,7 @@ fun BookmarkTagPickerBottomSheet(
                         }
                     }
 
-                    state.bookmarkTagPickerTags.isEmpty() -> {
+                    availableTags.isEmpty() && tagQuery.isBlank() -> {
                         item(key = "empty") {
                             Text(
                                 text = stringResource(R.string.bookmark_tag_picker_empty),
@@ -204,24 +211,25 @@ fun BookmarkTagPickerBottomSheet(
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 TextField(
-                    value = newTag,
-                    onValueChange = { newTag = it },
-                    label = stringResource(R.string.bookmark_tag_picker_new_tag),
+                    value = tagQuery,
+                    onValueChange = { tagQuery = it },
+                    label = stringResource(R.string.bookmark_tag_picker_search_or_add),
                     modifier = Modifier.weight(1f),
                     singleLine = true,
                 )
                 Button(
                     onClick = {
-                        val tag = newTag.trim()
-                        if (tag.isNotEmpty() && selectedTags.size < MAX_BOOKMARK_TAGS) {
-                            val existingTag = state.bookmarkTagPickerTags.firstOrNull { it.name.equals(tag, ignoreCase = true) }
-                            selectedByRestrict = selectedByRestrict + (restrict to (selectedTags + (existingTag?.name ?: tag)))
-                            newTag = ""
+                        val name = tagQuery.trim()
+                        if (name.isNotEmpty() && selectedTags.size < MAX_BOOKMARK_TAGS) {
+                            val existingTag = availableTags.firstOrNull { it.name.equals(name, ignoreCase = true) }
+                            val selectedName = existingTag?.name ?: name
+                            selectedByRestrict = selectedByRestrict + (restrict to (selectedTags + selectedName))
+                            tagQuery = ""
                         }
                     },
-                    enabled = newTag.isNotBlank() && selectedTags.size < MAX_BOOKMARK_TAGS,
+                    enabled = tagQuery.isNotBlank() && selectedTags.size < MAX_BOOKMARK_TAGS,
                 ) {
-                    Text(stringResource(R.string.action_add))
+                    Text(stringResource(R.string.bookmark_tag_picker_select_or_add))
                 }
             }
         }
@@ -251,19 +259,34 @@ private fun SelectedTagChip(
 
 @Composable
 private fun BookmarkTagPickerRow(
-    tag: BookmarkTag,
+    tag: BookmarkPickerTag,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     enabled: Boolean,
 ) {
     CheckboxPreference(
         title = tag.name,
-        summary = stringResource(R.string.bookmark_tag_picker_tag_count, tag.count),
+        summary =
+            if (tag.isArtworkTag) {
+                if (tag.count > 0) {
+                    stringResource(R.string.bookmark_tag_picker_work_tag_with_count, tag.count)
+                } else {
+                    stringResource(R.string.bookmark_tag_picker_work_tag)
+                }
+            } else {
+                stringResource(R.string.bookmark_tag_picker_tag_count, tag.count)
+            },
         checked = checked,
         onCheckedChange = onCheckedChange,
         enabled = enabled,
         modifier = Modifier.fillMaxWidth(),
     )
 }
+
+private data class BookmarkPickerTag(
+    val name: String,
+    val count: Int,
+    val isArtworkTag: Boolean,
+)
 
 private const val MAX_BOOKMARK_TAGS = 10
