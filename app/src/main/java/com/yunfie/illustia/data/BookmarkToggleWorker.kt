@@ -34,6 +34,10 @@ class BookmarkToggleWorker(
                     .getString(KEY_RESTRICT)
                     ?.let { runCatching { Restrict.valueOf(it) }.getOrNull() }
                     ?: Restrict.Public
+            val queuedFollowRestrict =
+                inputData
+                    .getString(KEY_FOLLOW_RESTRICT)
+                    ?.let { runCatching { Restrict.valueOf(it) }.getOrNull() }
             val expectedUserId = inputData.getLong(KEY_BOOKMARK_USER_ID, 0L)
             val artistId = inputData.getLong(KEY_ARTIST_ID, 0L)
             val tags = inputData.getStringArray(KEY_TAGS)?.toList().orEmpty()
@@ -55,6 +59,7 @@ class BookmarkToggleWorker(
             if (settings.refreshToken.isBlank()) {
                 return@withContext Result.failure()
             }
+            val followRestrict = queuedFollowRestrict ?: settings.followRestrict
 
             val repository = IllustiaRepository(settingsStore)
             try {
@@ -79,7 +84,7 @@ class BookmarkToggleWorker(
             if (bookmarked) {
                 runCatching {
                     if (settings.followOnLike && artistId > 0L) {
-                        repository.followUser(artistId, settings.followRestrict)
+                        repository.followUser(artistId, followRestrict)
                     }
                 }
                 runCatching {
@@ -106,6 +111,7 @@ class BookmarkToggleWorker(
         internal const val KEY_ILLUST_ID = "illust_id"
         internal const val KEY_BOOKMARKED = "bookmarked"
         internal const val KEY_RESTRICT = "restrict"
+        internal const val KEY_FOLLOW_RESTRICT = "follow_restrict"
         internal const val KEY_BOOKMARK_USER_ID = "bookmark_user_id"
         internal const val KEY_ARTIST_ID = "artist_id"
         internal const val KEY_TAGS = "tags"

@@ -72,7 +72,11 @@ internal fun readFromDataStore(
         allowR18G = preferences[ALLOW_R18G] ?: true,
         highQualityImages = preferences[HIGH_QUALITY_IMAGES] ?: true,
         bookmarkRestrict = enumValueOrDefault(preferences[BOOKMARK_RESTRICT], com.yunfie.illustia.models.Restrict.Public),
-        followRestrict = enumValueOrDefault(preferences[FOLLOW_RESTRICT], com.yunfie.illustia.models.Restrict.Public),
+        followRestrict =
+            enumValueOrDefault(
+                preferences[FOLLOW_RESTRICT],
+                enumValueOrDefault(preferences[BOOKMARK_RESTRICT], com.yunfie.illustia.models.Restrict.Public),
+            ),
         searchSort = enumValueOrDefault(preferences[SEARCH_SORT], com.yunfie.illustia.models.SearchSort.DateDesc),
         searchTarget = enumValueOrDefault(preferences[SEARCH_TARGET], com.yunfie.illustia.models.SearchTarget.PartialTags),
         searchWorkType = enumValueOrDefault(preferences[SEARCH_WORK_TYPE], com.yunfie.illustia.models.SearchWorkType.Artworks),

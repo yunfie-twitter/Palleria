@@ -997,6 +997,7 @@ abstract class IllustiaAuthFeedModule(
     }
 
     fun refreshTimeline(forceRefresh: Boolean = false) {
+        val requestedRestrict = _uiState.value.settings.followRestrict
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update {
                 it.copy(
@@ -1007,16 +1008,20 @@ abstract class IllustiaAuthFeedModule(
             try {
                 val page =
                     GlitchTipTelemetry.traceAsync("feed.timeline.refresh", "feed.timeline") {
-                        repository.followingIllusts(_uiState.value.settings.followRestrict, forceRefresh = forceRefresh)
+                        repository.followingIllusts(requestedRestrict, forceRefresh = forceRefresh)
                     }
                 _uiState.update {
-                    it.copy(
-                        timelineItems = page.items.visibleWithSettings(it.settings),
-                        timelineNextUrl = page.nextUrl,
-                        isTimelineRefreshing = false,
-                        loadState = LoadState.Loaded,
-                        isOfflineCached = false,
-                    )
+                    if (it.settings.followRestrict != requestedRestrict) {
+                        it.copy(isTimelineRefreshing = false)
+                    } else {
+                        it.copy(
+                            timelineItems = page.items.visibleWithSettings(it.settings),
+                            timelineNextUrl = page.nextUrl,
+                            isTimelineRefreshing = false,
+                            loadState = LoadState.Loaded,
+                            isOfflineCached = false,
+                        )
+                    }
                 }
                 val currentSettings = _uiState.value.settings
                 if (currentSettings.isFeatureEnabled(FeatureFlag.DeltaEtagSync)) {
@@ -1036,6 +1041,7 @@ abstract class IllustiaAuthFeedModule(
                 if (handleAuthExpired(error)) return@launch
                 GlitchTipTelemetry.recordException(error, tag = "feed_timeline_refresh")
                 _uiState.update {
+                    if (it.settings.followRestrict != requestedRestrict) return@update it.copy(isTimelineRefreshing = false)
                     val staleCacheEnabled = it.settings.isFeatureEnabled(FeatureFlag.OfflineStaleCache)
                     val canUseStale = staleCacheEnabled && it.timelineItems.isNotEmpty()
                     it.copy(
@@ -1049,8 +1055,10 @@ abstract class IllustiaAuthFeedModule(
     }
 
     fun loadMoreTimeline() {
-        val nextUrl = _uiState.value.timelineNextUrl ?: return
-        if (_uiState.value.isTimelinePaginating) return
+        val state = _uiState.value
+        val nextUrl = state.timelineNextUrl ?: return
+        if (state.isTimelinePaginating) return
+        val requestedRestrict = state.settings.followRestrict
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update { it.copy(isTimelinePaginating = true) }
             try {
@@ -1059,11 +1067,15 @@ abstract class IllustiaAuthFeedModule(
                         repository.nextPage(nextUrl)
                     }
                 _uiState.update {
-                    it.copy(
-                        timelineItems = it.timelineItems.appendIllusts(page.items.visibleWithSettings(it.settings)),
-                        timelineNextUrl = page.nextUrl,
-                        isTimelinePaginating = false,
-                    )
+                    if (it.settings.followRestrict != requestedRestrict) {
+                        it.copy(isTimelinePaginating = false)
+                    } else {
+                        it.copy(
+                            timelineItems = it.timelineItems.appendIllusts(page.items.visibleWithSettings(it.settings)),
+                            timelineNextUrl = page.nextUrl,
+                            isTimelinePaginating = false,
+                        )
+                    }
                 }
             } catch (expectedFailure: Exception) {
                 val error = expectedFailure
@@ -1071,6 +1083,7 @@ abstract class IllustiaAuthFeedModule(
                 if (handleAuthExpired(error)) return@launch
                 GlitchTipTelemetry.recordException(error, tag = "feed_timeline_load_more")
                 _uiState.update {
+                    if (it.settings.followRestrict != requestedRestrict) return@update it.copy(isTimelinePaginating = false)
                     it.copy(
                         isTimelinePaginating = false,
                         message = cleanErrorMessage(error),
@@ -1207,6 +1220,7 @@ abstract class IllustiaAuthFeedModule(
     }
 
     fun refreshFollowingUsers(forceRefresh: Boolean = false) {
+        val requestedRestrict = _uiState.value.settings.followRestrict
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update {
                 it.copy(
@@ -1215,14 +1229,18 @@ abstract class IllustiaAuthFeedModule(
                 )
             }
             try {
-                val page = repository.followingUsers(_uiState.value.settings.followRestrict, forceRefresh = forceRefresh)
+                val page = repository.followingUsers(requestedRestrict, forceRefresh = forceRefresh)
                 _uiState.update {
-                    it.copy(
-                        followingUsers = page.items,
-                        followingUsersNextUrl = page.nextUrl,
-                        isFollowingRefreshing = false,
-                        loadState = LoadState.Loaded,
-                    )
+                    if (it.settings.followRestrict != requestedRestrict) {
+                        it.copy(isFollowingRefreshing = false)
+                    } else {
+                        it.copy(
+                            followingUsers = page.items,
+                            followingUsersNextUrl = page.nextUrl,
+                            isFollowingRefreshing = false,
+                            loadState = LoadState.Loaded,
+                        )
+                    }
                 }
             } catch (expectedFailure: Exception) {
                 val error = expectedFailure
@@ -1230,6 +1248,7 @@ abstract class IllustiaAuthFeedModule(
                 if (handleAuthExpired(error)) return@launch
                 GlitchTipTelemetry.recordException(error, tag = "feed_following_users_refresh")
                 _uiState.update {
+                    if (it.settings.followRestrict != requestedRestrict) return@update it.copy(isFollowingRefreshing = false)
                     it.copy(
                         isFollowingRefreshing = false,
                         loadState = LoadState.Error(loadFailureMessage(it, error)),
@@ -1240,18 +1259,24 @@ abstract class IllustiaAuthFeedModule(
     }
 
     fun loadMoreFollowingUsers() {
-        val nextUrl = _uiState.value.followingUsersNextUrl ?: return
-        if (_uiState.value.isFollowingPaginating) return
+        val state = _uiState.value
+        val nextUrl = state.followingUsersNextUrl ?: return
+        if (state.isFollowingPaginating) return
+        val requestedRestrict = state.settings.followRestrict
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update { it.copy(isFollowingPaginating = true) }
             try {
                 val page = repository.nextUserSearchPage(nextUrl)
                 _uiState.update {
-                    it.copy(
-                        followingUsers = it.followingUsers + page.items,
-                        followingUsersNextUrl = page.nextUrl,
-                        isFollowingPaginating = false,
-                    )
+                    if (it.settings.followRestrict != requestedRestrict) {
+                        it.copy(isFollowingPaginating = false)
+                    } else {
+                        it.copy(
+                            followingUsers = it.followingUsers + page.items,
+                            followingUsersNextUrl = page.nextUrl,
+                            isFollowingPaginating = false,
+                        )
+                    }
                 }
             } catch (expectedFailure: Exception) {
                 val error = expectedFailure
@@ -1259,6 +1284,7 @@ abstract class IllustiaAuthFeedModule(
                 if (handleAuthExpired(error)) return@launch
                 GlitchTipTelemetry.recordException(error, tag = "feed_following_users_load_more")
                 _uiState.update {
+                    if (it.settings.followRestrict != requestedRestrict) return@update it.copy(isFollowingPaginating = false)
                     it.copy(
                         isFollowingPaginating = false,
                         message = cleanErrorMessage(error),
