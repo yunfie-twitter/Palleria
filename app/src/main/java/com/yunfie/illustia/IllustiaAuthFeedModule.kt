@@ -1007,7 +1007,7 @@ abstract class IllustiaAuthFeedModule(
             try {
                 val page =
                     GlitchTipTelemetry.traceAsync("feed.timeline.refresh", "feed.timeline") {
-                        repository.followingIllusts(_uiState.value.settings.bookmarkRestrict, forceRefresh = forceRefresh)
+                        repository.followingIllusts(_uiState.value.settings.followRestrict, forceRefresh = forceRefresh)
                     }
                 _uiState.update {
                     it.copy(
@@ -1083,7 +1083,7 @@ abstract class IllustiaAuthFeedModule(
     fun refreshShortsFeed(forceRefresh: Boolean = false) {
         runLoading {
             val homePage = repository.loadHome(HomeFeedKind.Recommended, forceRefresh = forceRefresh)
-            val followingPage = repository.followingIllusts(_uiState.value.settings.bookmarkRestrict, forceRefresh = forceRefresh)
+            val followingPage = repository.followingIllusts(_uiState.value.settings.followRestrict, forceRefresh = forceRefresh)
             _uiState.update { state ->
                 val home = homePage.items.visibleWithSettings(state.settings)
                 val following = followingPage.items.visibleWithSettings(state.settings)
@@ -1215,7 +1215,7 @@ abstract class IllustiaAuthFeedModule(
                 )
             }
             try {
-                val page = repository.followingUsers(_uiState.value.settings.bookmarkRestrict, forceRefresh = forceRefresh)
+                val page = repository.followingUsers(_uiState.value.settings.followRestrict, forceRefresh = forceRefresh)
                 _uiState.update {
                     it.copy(
                         followingUsers = page.items,

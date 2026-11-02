@@ -1033,6 +1033,10 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(bookmarkRestrict = value) }
     }
 
+    fun updateFollowRestrict(value: Restrict) {
+        updateSettings { it.copy(followRestrict = value) }
+    }
+
     fun updateBookmarkSelectedTab(index: Int) {
         _uiState.update { it.copy(bookmarkSelectedTab = index) }
     }

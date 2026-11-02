@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.StoredAccount
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.db.IllustiaDatabase
@@ -91,6 +92,7 @@ class SettingsMigrationCredentialsTest {
                     discordToken = "discord-token",
                     themeMode = "dark",
                     allowR18 = false,
+                    followRestrict = Restrict.Private,
                     privacyModeEnabled = true,
                     favoriteTags = listOf("favorite"),
                     searchHistory = listOf("query"),
@@ -110,6 +112,7 @@ class SettingsMigrationCredentialsTest {
                 val restored = readFromDataStore(dataStore.data.value, readRoomSettingsData(database.settingsDao()), secure)
                 restored.themeMode shouldBe settings.themeMode
                 restored.allowR18 shouldBe false
+                restored.followRestrict shouldBe Restrict.Private
                 restored.privacyModeEnabled shouldBe true
                 restored.favoriteTags shouldBe settings.favoriteTags
                 restored.searchHistory shouldBe settings.searchHistory

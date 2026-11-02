@@ -721,6 +721,7 @@
     <string name="bookmark_section_behavior">基本動作</string>
     <string name="bookmark_private_default">非公開を標準にする</string>
     <string name="bookmark_private_default_desc">ブックマーク追加時に非公開で保存します</string>
+    <string name="follow_visibility">フォローの公開範囲</string>
     <string name="bookmark_follow_on_like">ブックマーク時にフォロー</string>
     <string name="bookmark_follow_on_like_desc">作品を保存した作者を自動でフォローします</string>
     <string name="bookmark_auto_tag">ブックマーク時にタグ保存</string>

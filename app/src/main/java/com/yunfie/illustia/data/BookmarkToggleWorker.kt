@@ -79,7 +79,7 @@ class BookmarkToggleWorker(
             if (bookmarked) {
                 runCatching {
                     if (settings.followOnLike && artistId > 0L) {
-                        repository.followUser(artistId, settings.bookmarkRestrict)
+                        repository.followUser(artistId, settings.followRestrict)
                     }
                 }
                 runCatching {

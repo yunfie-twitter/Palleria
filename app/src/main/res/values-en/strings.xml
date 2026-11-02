@@ -715,6 +715,7 @@
     <string name="offline_no_cache">Offline. No cache available.</string>
     <string name="error_data_export_failed">Could not export data.</string>
     <string name="error_data_import_failed">Could not read this file. Select an Illustia backup file.</string>
+    <string name="follow_visibility">Follow visibility</string>
 
     <!-- Ranking modes -->
     <string name="ranking_day">Daily</string>

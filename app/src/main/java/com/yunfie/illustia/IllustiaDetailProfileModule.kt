@@ -666,7 +666,7 @@ abstract class IllustiaDetailProfileModule(
             if (user.isFollowed) {
                 repository.unfollowUser(user.id)
             } else {
-                repository.followUser(user.id, _uiState.value.settings.bookmarkRestrict)
+                repository.followUser(user.id, _uiState.value.settings.followRestrict)
             }
             val updated = repository.userDetail(user.id)
             userProfileCache.updateUser(updated)
