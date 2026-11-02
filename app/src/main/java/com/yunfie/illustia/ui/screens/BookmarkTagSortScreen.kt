@@ -1,17 +1,11 @@
 package com.yunfie.illustia.ui.screens
 
-import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -23,9 +17,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.R
 import com.yunfie.illustia.data.IllustiaRepository
@@ -34,8 +26,10 @@ import com.yunfie.illustia.models.pixiv.BookmarkTag
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.LoadingIndicator
+import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TopAppBar
@@ -51,7 +45,7 @@ internal fun BookmarkTagSortScreen(
     onBack: () -> Unit,
     onSelect: (Restrict, String?) -> Unit,
 ) {
-    BackHandler(onBack = onBack)
+    PredictiveBackGestureHandler(onBack = onBack)
     var restrict by remember(settings.bookmarkRestrict) { mutableStateOf(settings.bookmarkRestrict) }
     var tags by remember(restrict) { mutableStateOf<List<BookmarkTag>>(emptyList()) }
     var query by remember { mutableStateOf("") }
@@ -94,23 +88,12 @@ internal fun BookmarkTagSortScreen(
         Column(
             modifier = Modifier.fillMaxSize().padding(padding),
         ) {
-            Row(
+            TabRowWithContour(
+                tabs = listOf(stringResource(R.string.restrict_public), stringResource(R.string.restrict_private)),
+                selectedTabIndex = if (restrict == Restrict.Public) 0 else 1,
+                onTabSelected = { index -> restrict = if (index == 0) Restrict.Public else Restrict.Private },
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                BookmarkTagRestrictTab(
-                    text = stringResource(R.string.restrict_public),
-                    selected = restrict == Restrict.Public,
-                    modifier = Modifier.weight(1f),
-                    onClick = { restrict = Restrict.Public },
-                )
-                BookmarkTagRestrictTab(
-                    text = stringResource(R.string.restrict_private),
-                    selected = restrict == Restrict.Private,
-                    modifier = Modifier.weight(1f),
-                    onClick = { restrict = Restrict.Private },
-                )
-            }
+            )
             TextField(
                 value = query,
                 onValueChange = { query = it },
@@ -178,29 +161,6 @@ internal fun BookmarkTagSortScreen(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun BookmarkTagRestrictTab(
-    text: String,
-    selected: Boolean,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit,
-) {
-    Column(
-        modifier = modifier.clickable(onClick = onClick).padding(vertical = 10.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            text = text,
-            color = if (selected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface,
-            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-        )
-        Spacer(Modifier.height(6.dp))
-        Box(
-            Modifier.fillMaxWidth(0.34f).height(3.dp).background(if (selected) MiuixTheme.colorScheme.primary else Color.Transparent),
-        )
     }
 }
 

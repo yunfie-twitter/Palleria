@@ -54,6 +54,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Community
+import top.yukonga.miuix.kmp.icon.extended.Filter
 import top.yukonga.miuix.kmp.icon.extended.Lock
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.icon.extended.Tune
@@ -300,20 +301,14 @@ fun BookmarkScreen(
                                 )
                             }
 
-                        OverlayIconCascadingDropdownMenu(
-                            entries = bookmarkMenuEntries,
-                            icon = MiuixIcons.Tune,
-                            backgroundColor = Color.Transparent,
-                            contentColor = MiuixTheme.colorScheme.onBackground,
-                            contentDescription = stringResource(R.string.nav_bookmarks_full),
-                        )
                         IconButton(onClick = {
                             performHaptic(AppHapticEffect.Click)
                             onOpenBookmarkTagSort()
                         }, modifier = Modifier.semantics { contentDescription = tagSortLabel }) {
-                            Text(
-                                text = "#",
-                                color =
+                            Icon(
+                                imageVector = MiuixIcons.Filter,
+                                contentDescription = tagSortLabel,
+                                tint =
                                     if (bookmarkTag != null) {
                                         MiuixTheme.colorScheme.primary
                                     } else {
@@ -321,15 +316,62 @@ fun BookmarkScreen(
                                     },
                             )
                         }
+                        OverlayIconCascadingDropdownMenu(
+                            entries = bookmarkMenuEntries,
+                            icon = MiuixIcons.Tune,
+                            backgroundColor = Color.Transparent,
+                            contentColor = MiuixTheme.colorScheme.onBackground,
+                            contentDescription = stringResource(R.string.nav_bookmarks_full),
+                        )
                     }
                     if (selectedTopTab == 3) {
+                        val publicLabel = stringResource(R.string.restrict_public)
+                        val privateLabel = stringResource(R.string.restrict_private)
                         val sortLabel = stringResource(R.string.action_sort)
                         val sortNewestLabel = stringResource(R.string.sort_date_desc)
                         val sortOldestLabel = stringResource(R.string.sort_date_asc)
                         val sortNameLabel = stringResource(R.string.sort_name_asc)
                         val followingSortEntries =
-                            remember(followingUserSort, sortLabel, sortNewestLabel, sortOldestLabel, sortNameLabel) {
+                            remember(
+                                settings.followRestrict,
+                                followingUserSort,
+                                publicLabel,
+                                privateLabel,
+                                sortLabel,
+                                sortNewestLabel,
+                                sortOldestLabel,
+                                sortNameLabel,
+                            ) {
                                 listOf(
+                                    DropdownEntry(
+                                        items =
+                                            listOf(
+                                                DropdownItem(
+                                                    text = publicLabel,
+                                                    selected = settings.followRestrict == Restrict.Public,
+                                                    onClick = {
+                                                        if (settings.followRestrict != Restrict.Public) {
+                                                            performHaptic(AppHapticEffect.Toggle)
+                                                            viewModel.updateFollowRestrict(Restrict.Public)
+                                                            viewModel.refreshTimeline(forceRefresh = true)
+                                                            viewModel.refreshFollowingUsers(forceRefresh = true)
+                                                        }
+                                                    },
+                                                ),
+                                                DropdownItem(
+                                                    text = privateLabel,
+                                                    selected = settings.followRestrict == Restrict.Private,
+                                                    onClick = {
+                                                        if (settings.followRestrict != Restrict.Private) {
+                                                            performHaptic(AppHapticEffect.Toggle)
+                                                            viewModel.updateFollowRestrict(Restrict.Private)
+                                                            viewModel.refreshTimeline(forceRefresh = true)
+                                                            viewModel.refreshFollowingUsers(forceRefresh = true)
+                                                        }
+                                                    },
+                                                ),
+                                            ),
+                                    ),
                                     DropdownEntry(
                                         items =
                                             listOf(
