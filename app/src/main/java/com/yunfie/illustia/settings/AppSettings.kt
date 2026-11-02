@@ -31,6 +31,7 @@ data class AppSettings(
     val allowR18G: Boolean = true,
     val highQualityImages: Boolean = true,
     val bookmarkRestrict: Restrict = Restrict.Public,
+    val followRestrict: Restrict = Restrict.Public,
     val searchSort: SearchSort = SearchSort.DateDesc,
     val searchTarget: SearchTarget = SearchTarget.PartialTags,
     val searchWorkType: SearchWorkType = SearchWorkType.Artworks,
