@@ -51,6 +51,11 @@ jobs:
         with:
           targets: aarch64-linux-android, armv7-linux-androideabi, x86_64-linux-android
 
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "rust/pixiv-api -> rust/target"
+
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
