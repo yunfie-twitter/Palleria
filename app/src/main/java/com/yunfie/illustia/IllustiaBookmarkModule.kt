@@ -535,6 +535,24 @@ abstract class IllustiaBookmarkModule(
         }
     }
 
+    fun retryBookmarkTagPickerTags() {
+        val state = _uiState.value
+        val illust = state.bookmarkTagPickerIllust ?: return
+        val userId = state.settings.bookmarkUserId ?: return
+        val refreshToken = state.settings.refreshToken
+        val restrict = state.bookmarkTagPickerRestrict
+        _uiState.update { current ->
+            if (current.bookmarkTagPickerIllust?.id == illust.id && current.bookmarkTagPickerRestrict == restrict) {
+                current.copy(bookmarkTagPickerLoading = true, bookmarkTagPickerError = null)
+            } else {
+                current
+            }
+        }
+        viewModelScope.launch {
+            loadBookmarkTagOptions(illust.id, userId, refreshToken, restrict)
+        }
+    }
+
     private suspend fun loadBookmarkTagOptions(
         illustId: Long,
         userId: Long,

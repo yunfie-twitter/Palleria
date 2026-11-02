@@ -302,6 +302,7 @@ internal fun AppOverlayHost(
             state = appState.state,
             onRestrictChange = viewModel::updateBookmarkTagPickerRestrict,
             onDismiss = viewModel::closeBookmarkTagPicker,
+            onRetry = viewModel::retryBookmarkTagPickerTags,
             onConfirm = { restrict, tags -> viewModel.confirmBookmarkTagPicker(illust, restrict, tags) },
         )
     }
