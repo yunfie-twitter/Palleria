@@ -121,6 +121,8 @@ internal sealed interface AppRoute : NavKey {
 
     data object BookmarkSettings : AppRoute
 
+    data object BookmarkTagSort : AppRoute
+
     data object AccountSettings : AppRoute
 
     data object AccountLoginMethod : AppRoute

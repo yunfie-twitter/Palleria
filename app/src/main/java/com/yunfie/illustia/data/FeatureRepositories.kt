@@ -109,6 +109,7 @@ internal interface LibraryRepository {
         userId: Long,
         restrict: Restrict,
         forceRefresh: Boolean = false,
+        tag: String? = null,
     ): PageResult<Illust>
 
     suspend fun toggleBookmark(
@@ -261,7 +262,8 @@ private class LibraryRepositoryAdapter(
         userId: Long,
         restrict: Restrict,
         forceRefresh: Boolean,
-    ) = facade.bookmarks(userId, restrict, forceRefresh)
+        tag: String?,
+    ) = facade.bookmarks(userId, restrict, forceRefresh, tag)
 
     override suspend fun toggleBookmark(
         illust: Illust,

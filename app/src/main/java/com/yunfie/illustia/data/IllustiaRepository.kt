@@ -668,9 +668,10 @@ class IllustiaRepository(
         userId: Long,
         restrict: Restrict,
         forceRefresh: Boolean = false,
+        tag: String? = null,
     ): PageResult<Illust> =
-        withApiCache("bookmarks:$userId:$restrict", CACHE_TTL_MEDIUM_MILLIS, forceRefresh) {
-            withSessionRetry { session -> apiClient.bookmarks(session, userId, restrict) }
+        withApiCache("bookmarks:$userId:$restrict:$tag", CACHE_TTL_MEDIUM_MILLIS, forceRefresh) {
+            withSessionRetry { session -> apiClient.bookmarks(session, userId, restrict, tag) }
         }
 
     suspend fun illustBookmarkTags(

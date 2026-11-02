@@ -99,6 +99,7 @@ internal fun MainSurface(
     onOpenNovels: () -> Unit,
     onOpenComments: (Long) -> Unit,
     onOpenWatchlistSeries: (Long) -> Unit,
+    onOpenBookmarkTagSort: () -> Unit,
     onNavigateToResults: (String) -> Unit,
 ) {
     val performHaptic = rememberHapticFeedbackAction()
@@ -282,11 +283,13 @@ internal fun MainSurface(
                                     settings = appState.settings,
                                     loadState = appState.loadState,
                                     bookmarkItems = appState.bookmarkItems,
+                                    bookmarkTag = appState.state.bookmarkTag,
                                     timelineItems = appState.timelineItems,
                                     followingUsers = appState.followingUsers,
                                     chrome = appState.bookmarkChrome,
                                     viewModel = viewModel,
                                     onOpenWatchlistSeries = onOpenWatchlistSeries,
+                                    onOpenBookmarkTagSort = onOpenBookmarkTagSort,
                                 )
                             }
 
