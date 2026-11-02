@@ -173,7 +173,10 @@
     <string name="bookmark_tag_picker_private_toggle">非公開で保存</string>
     <string name="bookmark_tag_picker_visibility_summary">公開設定は設定のブックマーク設定に従います。ここではこの作品だけ変更できます。</string>
     <string name="bookmark_tag_picker_empty">ブックマークタグはありません。タグを追加できます。</string>
-    <string name="bookmark_tag_picker_search">タグを検索</string>
+    <string name="bookmark_tag_picker_search_or_add">タグを検索または追加</string>
+    <string name="bookmark_tag_picker_select_or_add">選択／追加</string>
+    <string name="bookmark_tag_picker_work_tag">この作品のタグ</string>
+    <string name="bookmark_tag_picker_work_tag_with_count">この作品のタグ · %1$d 件</string>
     <string name="bookmark_tag_picker_no_matches">一致するタグがありません</string>
     <string name="bookmark_tag_picker_selected_count">選択中 %1$d / %2$d</string>
     <string name="bookmark_tag_picker_tag_count">%1$d 件</string>
