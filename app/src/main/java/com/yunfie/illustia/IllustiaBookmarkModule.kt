@@ -549,6 +549,7 @@ abstract class IllustiaBookmarkModule(
                     illustId = illust.id,
                     bookmarked = bookmarked,
                     restrict = restrict,
+                    followRestrict = settings.followRestrict,
                     bookmarkUserId = settings.bookmarkUserId ?: 0L,
                     artistId = illust.artistId,
                     tags = illust.tags.take(3),

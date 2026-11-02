@@ -2,7 +2,6 @@ package com.yunfie.illustia.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -44,22 +43,17 @@ import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.smoothScrollToTop
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.DropdownEntry
-import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Community
-import top.yukonga.miuix.kmp.icon.extended.Filter
 import top.yukonga.miuix.kmp.icon.extended.Lock
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.icon.extended.Tune
-import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 internal enum class BookmarkSort {
@@ -88,7 +82,6 @@ fun BookmarkScreen(
 ) {
     var bookmarkSort by rememberSaveable { mutableStateOf(BookmarkSort.Newest) }
     var followingUserSort by rememberSaveable { mutableStateOf(FollowingUserSort.Newest) }
-    var showSortPopup by remember { mutableStateOf(false) }
     val repository = remember(viewModel) { viewModel.uiRepository() }
     val watchlistStore = remember(repository) { WatchlistStore(repository) }
     val watchlistState by watchlistStore.state.collectAsStateWithLifecycle()
@@ -310,46 +303,57 @@ fun BookmarkScreen(
                         )
                     }
                     if (selectedTopTab == 3) {
-                        val sortOptions =
-                            listOf(
-                                stringResource(R.string.sort_date_desc),
-                                stringResource(R.string.sort_date_asc),
-                                stringResource(R.string.sort_name_asc),
-                            )
-                        Box {
-                            IconButton(
-                                onClick = {
-                                    performHaptic(AppHapticEffect.Click)
-                                    showSortPopup = true
-                                },
-                            ) {
-                                Icon(
-                                    MiuixIcons.Filter,
-                                    contentDescription = stringResource(R.string.action_sort),
+                        val sortLabel = stringResource(R.string.action_sort)
+                        val sortNewestLabel = stringResource(R.string.sort_date_desc)
+                        val sortOldestLabel = stringResource(R.string.sort_date_asc)
+                        val sortNameLabel = stringResource(R.string.sort_name_asc)
+                        val followingSortEntries =
+                            remember(followingUserSort, sortLabel, sortNewestLabel, sortOldestLabel, sortNameLabel) {
+                                listOf(
+                                    DropdownEntry(
+                                        items =
+                                            listOf(
+                                                DropdownItem(
+                                                    text = sortLabel,
+                                                    children =
+                                                        listOf(
+                                                            DropdownItem(
+                                                                text = sortNewestLabel,
+                                                                selected = followingUserSort == FollowingUserSort.Newest,
+                                                                onClick = {
+                                                                    performHaptic(AppHapticEffect.Toggle)
+                                                                    followingUserSort = FollowingUserSort.Newest
+                                                                },
+                                                            ),
+                                                            DropdownItem(
+                                                                text = sortOldestLabel,
+                                                                selected = followingUserSort == FollowingUserSort.Oldest,
+                                                                onClick = {
+                                                                    performHaptic(AppHapticEffect.Toggle)
+                                                                    followingUserSort = FollowingUserSort.Oldest
+                                                                },
+                                                            ),
+                                                            DropdownItem(
+                                                                text = sortNameLabel,
+                                                                selected = followingUserSort == FollowingUserSort.Name,
+                                                                onClick = {
+                                                                    performHaptic(AppHapticEffect.Toggle)
+                                                                    followingUserSort = FollowingUserSort.Name
+                                                                },
+                                                            ),
+                                                        ),
+                                                ),
+                                            ),
+                                    ),
                                 )
                             }
-                            OverlayListPopup(
-                                show = showSortPopup,
-                                alignment = PopupPositionProvider.Align.TopEnd,
-                                onDismissRequest = { showSortPopup = false },
-                            ) {
-                                ListPopupColumn {
-                                    sortOptions.forEachIndexed { index, string ->
-                                        DropdownImpl(
-                                            text = string,
-                                            optionSize = sortOptions.size,
-                                            isSelected = followingUserSort.ordinal == index,
-                                            index = index,
-                                            onSelectedIndexChange = {
-                                                performHaptic(AppHapticEffect.Toggle)
-                                                followingUserSort = FollowingUserSort.entries[index]
-                                                showSortPopup = false
-                                            },
-                                        )
-                                    }
-                                }
-                            }
-                        }
+                        OverlayIconCascadingDropdownMenu(
+                            entries = followingSortEntries,
+                            icon = MiuixIcons.Tune,
+                            backgroundColor = Color.Transparent,
+                            contentColor = MiuixTheme.colorScheme.onBackground,
+                            contentDescription = sortLabel,
+                        )
                     }
                     IconButton(onClick = {
                         performHaptic(AppHapticEffect.Click)

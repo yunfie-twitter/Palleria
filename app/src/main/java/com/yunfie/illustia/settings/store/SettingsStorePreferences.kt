@@ -72,6 +72,11 @@ internal fun readFromDataStore(
         allowR18G = preferences[ALLOW_R18G] ?: true,
         highQualityImages = preferences[HIGH_QUALITY_IMAGES] ?: true,
         bookmarkRestrict = enumValueOrDefault(preferences[BOOKMARK_RESTRICT], com.yunfie.illustia.models.Restrict.Public),
+        followRestrict =
+            enumValueOrDefault(
+                preferences[FOLLOW_RESTRICT],
+                enumValueOrDefault(preferences[BOOKMARK_RESTRICT], com.yunfie.illustia.models.Restrict.Public),
+            ),
         searchSort = enumValueOrDefault(preferences[SEARCH_SORT], com.yunfie.illustia.models.SearchSort.DateDesc),
         searchTarget = enumValueOrDefault(preferences[SEARCH_TARGET], com.yunfie.illustia.models.SearchTarget.PartialTags),
         searchWorkType = enumValueOrDefault(preferences[SEARCH_WORK_TYPE], com.yunfie.illustia.models.SearchWorkType.Artworks),
@@ -433,6 +438,7 @@ internal fun writeToDataStore(
     preferences[ALLOW_R18G] = settings.allowR18G
     preferences[HIGH_QUALITY_IMAGES] = settings.highQualityImages
     preferences[BOOKMARK_RESTRICT] = settings.bookmarkRestrict.name
+    preferences[FOLLOW_RESTRICT] = settings.followRestrict.name
     preferences[SEARCH_SORT] = settings.searchSort.name
     preferences[SEARCH_TARGET] = settings.searchTarget.name
     preferences[SEARCH_WORK_TYPE] = settings.searchWorkType.name

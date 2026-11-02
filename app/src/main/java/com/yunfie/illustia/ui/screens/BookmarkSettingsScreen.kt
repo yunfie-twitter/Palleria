@@ -12,12 +12,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.Section
+import com.yunfie.illustia.ui.components.SettingDropdownRow
 import com.yunfie.illustia.ui.components.SettingSwitchRow
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -70,6 +72,18 @@ fun BookmarkSettingsScreen(
                             settings.privateBookmarkDefault,
                             viewModel::updatePrivateBookmarkDefault,
                             stringResource(R.string.bookmark_private_default_desc),
+                        )
+                        DividerLine()
+                        SettingDropdownRow(
+                            title = stringResource(R.string.follow_visibility),
+                            selected = settings.followRestrict,
+                            values = Restrict.entries,
+                            label = { stringResource(it.labelResId) },
+                            onSelect = { restrict ->
+                                viewModel.updateFollowRestrict(restrict)
+                                viewModel.refreshTimeline(forceRefresh = true)
+                                viewModel.refreshFollowingUsers(forceRefresh = true)
+                            },
                         )
                         DividerLine()
                         SettingSwitchRow(
