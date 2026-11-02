@@ -41,6 +41,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onKeyEvent
@@ -93,6 +94,8 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.icon.extended.Favorites
+import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import android.view.KeyEvent as AndroidKeyEvent
@@ -285,6 +288,7 @@ fun NovelScreen(
                         novel = novel,
                         progress = progress,
                         onClick = { viewModel.openNovel(novel) },
+                        onToggleBookmark = { viewModel.toggleNovelBookmark(novel) },
                         onStatusToggle = {
                             val next =
                                 when (progress?.status) {
@@ -635,6 +639,23 @@ fun NovelReaderScreen(
                         }
                     },
                     actions = {
+                        IconButton(
+                            modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
+                            onClick = { viewModel.toggleNovelBookmark(currentNovel) },
+                        ) {
+                            Icon(
+                                imageVector = if (currentNovel.isBookmarked) MiuixIcons.FavoritesFill else MiuixIcons.Favorites,
+                                contentDescription =
+                                    stringResource(
+                                        if (currentNovel.isBookmarked) {
+                                            R.string.action_remove_bookmark
+                                        } else {
+                                            R.string.action_bookmark
+                                        },
+                                    ),
+                                tint = if (currentNovel.isBookmarked) Color(0xFFFF4D67) else textColor,
+                            )
+                        }
                         IconButton(modifier = Modifier.pointerHoverIcon(PointerIcon.Hand), onClick = onRetry) {
                             Icon(
                                 imageVector = MiuixIcons.Refresh,
