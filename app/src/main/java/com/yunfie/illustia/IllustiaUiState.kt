@@ -85,6 +85,7 @@ data class IllustiaUiState(
     val rankingModeLoadStates: Map<String, LoadState> = emptyMap(),
     val bookmarkItems: List<Illust> = emptyList(),
     val bookmarkNextUrl: String? = null,
+    val bookmarkTag: String? = null,
     val selectedIllust: Illust? = null,
     val selectedIllustError: String? = null,
     val selectedIllustErrorId: Long? = null,

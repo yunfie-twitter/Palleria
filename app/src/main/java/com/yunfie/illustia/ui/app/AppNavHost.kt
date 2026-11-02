@@ -44,6 +44,7 @@ import com.yunfie.illustia.ui.screens.AccountSettingsScreen
 import com.yunfie.illustia.ui.screens.AppDataScreen
 import com.yunfie.illustia.ui.screens.AppLockSetupScreen
 import com.yunfie.illustia.ui.screens.BookmarkSettingsScreen
+import com.yunfie.illustia.ui.screens.BookmarkTagSortScreen
 import com.yunfie.illustia.ui.screens.CardCustomizationSettingsScreen
 import com.yunfie.illustia.ui.screens.DataSettingsScreen
 import com.yunfie.illustia.ui.screens.DetailSectionSettingsScreen
@@ -152,6 +153,7 @@ internal fun AppNavHost(
                             onSelectedWatchlistSeriesIdChange(seriesId)
                             onNavigate(AppRoute.IllustSeries)
                         },
+                        onOpenBookmarkTagSort = { onNavigate(AppRoute.BookmarkTagSort) },
                         onNavigateToResults = { query ->
                             viewModel.submitSearch(query)
                             onNavigate(AppRoute.SearchResults(query))
@@ -506,6 +508,18 @@ internal fun AppNavHost(
             }
             entry(AppRoute.BookmarkSettings) {
                 BookmarkSettingsScreen(settings = appState.state.settings, viewModel = viewModel, onBack = onPopRoute)
+            }
+            entry(AppRoute.BookmarkTagSort) {
+                BookmarkTagSortScreen(
+                    settings = appState.state.settings,
+                    repository = remember(viewModel) { viewModel.uiRepository() },
+                    selectedTag = appState.state.bookmarkTag,
+                    onBack = onPopRoute,
+                    onSelect = { restrict, tag ->
+                        viewModel.selectBookmarkTag(tag, restrict)
+                        onPopRoute()
+                    },
+                )
             }
             entry(AppRoute.AccountSettings) {
                 AccountSettingsScreen(

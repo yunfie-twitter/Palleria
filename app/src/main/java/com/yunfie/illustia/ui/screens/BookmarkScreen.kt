@@ -20,6 +20,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.BookmarkChromeState
@@ -48,6 +50,7 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Surface
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Community
@@ -74,11 +77,13 @@ fun BookmarkScreen(
     settings: AppSettings,
     loadState: LoadState,
     bookmarkItems: List<Illust>,
+    bookmarkTag: String?,
     timelineItems: List<Illust>,
     followingUsers: List<UserPreview>,
     chrome: BookmarkChromeState,
     viewModel: IllustiaViewModel,
     onOpenWatchlistSeries: (Long) -> Unit,
+    onOpenBookmarkTagSort: () -> Unit,
 ) {
     var bookmarkSort by rememberSaveable { mutableStateOf(BookmarkSort.Newest) }
     var followingUserSort by rememberSaveable { mutableStateOf(FollowingUserSort.Newest) }
@@ -182,7 +187,7 @@ fun BookmarkScreen(
                 modifier =
                     Modifier.onTopBarTap(
                         navIconWidth = 0.dp,
-                        actionsWidth = 80.dp,
+                        actionsWidth = 144.dp,
                         hasBottomContent = true,
                     ) {
                         performHaptic(AppHapticEffect.Click)
@@ -200,6 +205,7 @@ fun BookmarkScreen(
                     },
                 actions = {
                     if (selectedTopTab == 1) {
+                        val tagSortLabel = stringResource(R.string.bookmark_tag_sort_button)
                         val publicLabel = stringResource(R.string.restrict_public)
                         val privateLabel = stringResource(R.string.restrict_private)
                         val sortLabel = stringResource(R.string.action_sort)
@@ -301,6 +307,20 @@ fun BookmarkScreen(
                             contentColor = MiuixTheme.colorScheme.onBackground,
                             contentDescription = stringResource(R.string.nav_bookmarks_full),
                         )
+                        IconButton(onClick = {
+                            performHaptic(AppHapticEffect.Click)
+                            onOpenBookmarkTagSort()
+                        }, modifier = Modifier.semantics { contentDescription = tagSortLabel }) {
+                            Text(
+                                text = "#",
+                                color =
+                                    if (bookmarkTag != null) {
+                                        MiuixTheme.colorScheme.primary
+                                    } else {
+                                        MiuixTheme.colorScheme.onSurface
+                                    },
+                            )
+                        }
                     }
                     if (selectedTopTab == 3) {
                         val sortLabel = stringResource(R.string.action_sort)

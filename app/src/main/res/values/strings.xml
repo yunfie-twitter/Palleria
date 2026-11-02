@@ -157,6 +157,12 @@
     <string name="bookmark_view_all">すべて</string>
     <string name="bookmark_view_artist">作者別</string>
     <string name="bookmark_tag_unclassified">未分類</string>
+    <string name="bookmark_tag_sort_title">ブックマークタグ</string>
+    <string name="bookmark_tag_sort_search">タグを検索</string>
+    <string name="bookmark_tag_sort_all">全て</string>
+    <string name="bookmark_tag_sort_empty">該当するタグはありません</string>
+    <string name="bookmark_tag_sort_error">ブックマークタグを取得できませんでした</string>
+    <string name="bookmark_tag_sort_button">タグで絞り込む</string>
     <string name="bookmark_tag_watch_later">あとで見る</string>
     <string name="bookmark_tag_picker_public">公開ブックマーク</string>
     <string name="bookmark_tag_picker_private">非公開ブックマーク</string>
