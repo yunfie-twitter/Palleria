@@ -1,11 +1,11 @@
 mod dto;
 
 pub(crate) use dto::{
-    AccountEditResponse, AutocompleteResponse, CommentPageResponse, IllustDetailResponse,
-    IllustPageResponse, IllustSeriesPageResponse, NotificationPageResponse, NovelPageResponse,
-    SimpleBooleanResponse, SpotlightResponse, StampResponse, TrendingTagResponse,
-    UgoiraMetadataResponse, UserDetailResponse, UserFollowDetailResponse, UserMeResponse,
-    UserPreviewPageResponse, WatchlistMangaResponse,
+    AccountEditResponse, AutocompleteResponse, CommentPageResponse, IllustBookmarkTagsResponse,
+    IllustDetailResponse, IllustPageResponse, IllustSeriesPageResponse, NotificationPageResponse,
+    NovelPageResponse, SimpleBooleanResponse, SpotlightResponse, StampResponse,
+    TrendingTagResponse, UgoiraMetadataResponse, UserDetailResponse, UserFollowDetailResponse,
+    UserMeResponse, UserPreviewPageResponse, WatchlistMangaResponse,
 };
 
 mod ffi;

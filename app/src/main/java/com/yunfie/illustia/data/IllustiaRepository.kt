@@ -17,6 +17,7 @@ import com.yunfie.illustia.models.SearchTarget
 import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.models.pixiv.AccountEditResult
+import com.yunfie.illustia.models.pixiv.BookmarkTag
 import com.yunfie.illustia.models.pixiv.CommentResponse
 import com.yunfie.illustia.models.pixiv.CurrentUserProfile
 import com.yunfie.illustia.models.pixiv.IllustSeriesWithIdModel
@@ -672,6 +673,11 @@ class IllustiaRepository(
             withSessionRetry { session -> apiClient.bookmarks(session, userId, restrict) }
         }
 
+    suspend fun illustBookmarkTags(
+        userId: Long,
+        restrict: Restrict,
+    ): List<BookmarkTag> = withSessionRetry { session -> apiClient.illustBookmarkTags(session, userId, restrict) }
+
     suspend fun nextPage(nextUrl: String): PageResult<Illust> = withSessionRetry { session -> apiClient.nextIllustPage(session, nextUrl) }
 
     suspend fun nextUserSearchPage(nextUrl: String): PageResult<UserPreview> =
@@ -694,10 +700,11 @@ class IllustiaRepository(
         illustId: Long,
         bookmarked: Boolean,
         restrict: Restrict,
+        tags: List<String> = emptyList(),
     ) {
         withSessionRetry { session ->
             if (bookmarked) {
-                apiClient.addBookmark(session, illustId, restrict)
+                apiClient.addBookmark(session, illustId, restrict, tags)
             } else {
                 try {
                     apiClient.removeBookmark(session, illustId)

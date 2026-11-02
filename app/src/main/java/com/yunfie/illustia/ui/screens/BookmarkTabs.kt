@@ -440,7 +440,7 @@ internal fun BookmarkMainTab(
                 val onBookmarkLongClick =
                     remember(
                         illustId,
-                    ) { { viewModel.toggleBookmark(illustId, restrict = com.yunfie.illustia.models.Restrict.Private) } }
+                    ) { { viewModel.openBookmarkTagPicker(illust) } }
                 val onClick = remember(illustId) { { viewModel.openIllust(illustId) } }
                 val onLongClick = remember(illustId) { { viewModel.onIllustLongPress(illustId) } }
                 IllustCard(
@@ -566,7 +566,7 @@ internal fun BookmarkTimelineTab(
                 val onBookmarkLongClick =
                     remember(
                         illustId,
-                    ) { { viewModel.toggleBookmark(illustId, restrict = com.yunfie.illustia.models.Restrict.Private) } }
+                    ) { { viewModel.openBookmarkTagPicker(illust) } }
                 val onClick = remember(illustId) { { viewModel.openIllust(illustId) } }
                 val onLongClick = remember(illustId) { { viewModel.onIllustLongPress(illustId) } }
                 IllustCard(

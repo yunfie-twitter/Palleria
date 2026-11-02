@@ -162,6 +162,22 @@ impl TrendingTagResponse {
     }
 }
 
+impl IllustBookmarkTagsResponse {
+    pub(crate) fn into_list(self) -> BookmarkTagList {
+        BookmarkTagList {
+            items: self
+                .bookmark_tags
+                .into_iter()
+                .filter(|tag| !tag.name.trim().is_empty())
+                .map(|tag| BookmarkTag {
+                    name: tag.name,
+                    count: tag.count,
+                })
+                .collect(),
+        }
+    }
+}
+
 impl SpotlightResponse {
     pub(crate) fn into_page(self) -> SpotlightPage {
         SpotlightPage {

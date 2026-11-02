@@ -14,6 +14,7 @@ import com.yunfie.illustia.models.SearchTarget
 import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.models.pixiv.AccountEditResult
+import com.yunfie.illustia.models.pixiv.BookmarkTag
 import com.yunfie.illustia.models.pixiv.CommentResponse
 import com.yunfie.illustia.models.pixiv.CurrentUserProfile
 import com.yunfie.illustia.models.pixiv.IllustSeriesWithIdModel
@@ -384,6 +385,26 @@ class PixivApiClient(
                 "filter" to "for_android",
             ),
         )
+
+    suspend fun illustBookmarkTags(
+        session: PixivSession,
+        userId: Long,
+        restrict: Restrict,
+    ): List<BookmarkTag> =
+        Request
+            .Builder()
+            .url(
+                pixivApiUrl(
+                    "v1/user/bookmark-tags/illust",
+                    "user_id" to userId.toString(),
+                    "restrict" to restrict.apiValue,
+                ),
+            ).pixivApiHeaders(session)
+            .get()
+            .build()
+            .let { request -> httpClient.newCall(request).awaitBookmarkTags() }
+            .items
+            .map { BookmarkTag(it.name, it.count) }
 
     suspend fun nextIllustPage(
         session: PixivSession,

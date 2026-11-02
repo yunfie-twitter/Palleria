@@ -32,6 +32,7 @@ import com.yunfie.illustia.platform.ImageClipboardHelper
 import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
+import com.yunfie.illustia.ui.components.BookmarkTagPickerBottomSheet
 import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.LoadingIndicator
@@ -292,6 +293,16 @@ internal fun AppOverlayHost(
             destructive = true,
             onConfirm = viewModel::confirmBookmarkRemoval,
             onDismiss = viewModel::cancelBookmarkRemoval,
+        )
+    }
+
+    appState.state.bookmarkTagPickerIllust?.let { illust ->
+        BookmarkTagPickerBottomSheet(
+            illust = illust,
+            state = appState.state,
+            onRestrictChange = viewModel::updateBookmarkTagPickerRestrict,
+            onDismiss = viewModel::closeBookmarkTagPicker,
+            onConfirm = { restrict, tags -> viewModel.confirmBookmarkTagPicker(illust, restrict, tags) },
         )
     }
 

@@ -199,7 +199,7 @@ internal fun SearchResultGrid(
                     val illustId = illust.id
                     val onBookmark = remember(illust) { { viewModel.toggleBookmark(illust) } }
                     val onBookmarkLongClick =
-                        remember(illust) { { viewModel.toggleBookmark(illust, com.yunfie.illustia.models.Restrict.Private) } }
+                        remember(illust) { { viewModel.openBookmarkTagPicker(illust) } }
                     val onClick = remember(illust) { { onIllustSelected?.invoke(illust) ?: viewModel.openIllust(illust) } }
                     val onLongClick = remember(illustId) { { viewModel.onIllustLongPress(illustId) } }
 
