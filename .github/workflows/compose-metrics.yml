@@ -40,10 +40,18 @@ jobs:
           java-version: "21"
           distribution: temurin
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+
       - name: Install stable Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-linux-android, armv7-linux-androideabi, x86_64-linux-android
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "rust/pixiv-api -> rust/target"
 
       - name: Cache cargo-ndk
         uses: actions/cache@v6
