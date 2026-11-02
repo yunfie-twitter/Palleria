@@ -12,6 +12,7 @@ import com.yunfie.illustia.models.HomeFeedKind
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.NovelPreview
+import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.SearchWorkType
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
@@ -37,6 +38,8 @@ abstract class IllustiaAuthFeedModule(
     app: Application,
     managedDataRepository: ManagedDataRepository,
 ) : IllustiaSettingsSecurityModule(app, managedDataRepository) {
+    private val pendingNovelBookmarkIds = mutableSetOf<Long>()
+
     abstract fun openIllust(illustId: Long)
 
     abstract fun openUserPage(userId: Long)
@@ -320,6 +323,52 @@ abstract class IllustiaAuthFeedModule(
                         isNovelPaginating = false,
                         message = cleanErrorMessage(error),
                     )
+                }
+            }
+        }
+    }
+
+    fun toggleNovelBookmark(novel: NovelPreview) {
+        val shouldBookmark = !novel.isBookmarked
+        synchronized(pendingNovelBookmarkIds) {
+            if (!pendingNovelBookmarkIds.add(novel.id)) return
+        }
+        val settings = _uiState.value.settings
+        val bookmarkRestrict =
+            if (settings.privateBookmarkDefault) {
+                Restrict.Private
+            } else {
+                settings.bookmarkRestrict
+            }
+        _uiState.update { it.withNovelBookmark(novel.id, shouldBookmark) }
+
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                if (shouldBookmark) {
+                    repository.addNovelBookmark(novel.id, bookmarkRestrict)
+                } else {
+                    repository.removeNovelBookmark(novel.id)
+                }
+                _uiState.update {
+                    it.copy(
+                        message =
+                            str(
+                                if (shouldBookmark) R.string.msg_bookmark_added else R.string.msg_bookmark_removed,
+                            ),
+                    )
+                }
+            } catch (expectedFailure: Exception) {
+                if (isCancellation(expectedFailure)) throw expectedFailure
+                _uiState.update {
+                    it
+                        .withNovelBookmark(novel.id, !shouldBookmark)
+                        .copy(message = str(R.string.error_bookmark_failed))
+                }
+                if (handleAuthExpired(expectedFailure)) return@launch
+                GlitchTipTelemetry.recordException(expectedFailure, tag = "novel_bookmark_toggle")
+            } finally {
+                synchronized(pendingNovelBookmarkIds) {
+                    pendingNovelBookmarkIds.remove(novel.id)
                 }
             }
         }
@@ -1337,4 +1386,25 @@ abstract class IllustiaAuthFeedModule(
             }
         }
     }
+}
+
+private fun IllustiaUiState.withNovelBookmark(
+    novelId: Long,
+    isBookmarked: Boolean,
+): IllustiaUiState {
+    fun NovelPreview.updated(): NovelPreview =
+        if (id != novelId || this.isBookmarked == isBookmarked) {
+            this
+        } else {
+            copy(
+                isBookmarked = isBookmarked,
+                totalBookmarks = (totalBookmarks + if (isBookmarked) 1 else -1).coerceAtLeast(0),
+            )
+        }
+
+    return copy(
+        novelItems = novelItems.map { it.updated() },
+        searchNovelItems = searchNovelItems.map { it.updated() },
+        selectedNovel = selectedNovel?.updated(),
+    )
 }

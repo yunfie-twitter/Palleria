@@ -139,7 +139,11 @@ internal fun SearchResultGrid(
                 gridItems(state.searchNovelItems, key = { it.id }, contentType = { "novel_card" }) { novel ->
                     val novelId = novel.id
                     val onClick = remember(novelId) { { viewModel.openNovel(novel) } }
-                    NovelCard(novel = novel, onClick = onClick)
+                    NovelCard(
+                        novel = novel,
+                        onClick = onClick,
+                        onToggleBookmark = { viewModel.toggleNovelBookmark(novel) },
+                    )
                 }
                 if (state.settings.autoLoadMore && isPaginating) {
                     item(key = "search_novel_paginating_skeleton", span = { GridItemSpan(maxLineSpan) }, contentType = "novel_skeleton") {
