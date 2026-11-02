@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -48,7 +49,12 @@ import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Favorites
+import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
 import top.yukonga.miuix.kmp.squircle.squircleBackground
 import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -115,6 +121,7 @@ internal fun NovelCard(
     progress: com.yunfie.illustia.models.NovelReadingProgress? = null,
     onClick: () -> Unit,
     onStatusToggle: (() -> Unit)? = null,
+    onToggleBookmark: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val cardPreferences = LocalArtworkCardPreferences.current
@@ -185,6 +192,29 @@ internal fun NovelCard(
                             .squircleBackground(Color.Black.copy(alpha = 0.6f), 6.dp)
                             .padding(horizontal = 5.dp, vertical = 2.dp),
                 )
+
+                if (onToggleBookmark != null) {
+                    IconButton(
+                        modifier =
+                            Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(4.dp)
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(Color.Black.copy(alpha = 0.55f)),
+                        onClick = onToggleBookmark,
+                    ) {
+                        Icon(
+                            imageVector = if (novel.isBookmarked) MiuixIcons.FavoritesFill else MiuixIcons.Favorites,
+                            contentDescription =
+                                stringResource(
+                                    if (novel.isBookmarked) R.string.action_remove_bookmark else R.string.action_bookmark,
+                                ),
+                            modifier = Modifier.size(20.dp),
+                            tint = if (novel.isBookmarked) Color(0xFFFF4D67) else Color.White,
+                        )
+                    }
+                }
 
                 if (progress != null && progress.status != com.yunfie.illustia.models.NovelReadingStatus.Unread) {
                     val (statusText, statusBg, statusFg) =
