@@ -54,7 +54,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Community
-import top.yukonga.miuix.kmp.icon.extended.Filter
+import top.yukonga.miuix.kmp.icon.extended.Folder
 import top.yukonga.miuix.kmp.icon.extended.Lock
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.icon.extended.Tune
@@ -306,7 +306,7 @@ fun BookmarkScreen(
                             onOpenBookmarkTagSort()
                         }, modifier = Modifier.semantics { contentDescription = tagSortLabel }) {
                             Icon(
-                                imageVector = MiuixIcons.Filter,
+                                imageVector = MiuixIcons.Folder,
                                 contentDescription = tagSortLabel,
                                 tint =
                                     if (bookmarkTag != null) {
