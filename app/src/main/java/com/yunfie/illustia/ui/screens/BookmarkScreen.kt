@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.BookmarkChromeState
 import com.yunfie.illustia.BookmarkSort
+import com.yunfie.illustia.FollowingUserSort
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.data.pixiv.WatchlistStore
@@ -60,12 +61,6 @@ import top.yukonga.miuix.kmp.icon.extended.Lock
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.icon.extended.Tune
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-
-internal enum class FollowingUserSort {
-    Newest,
-    Oldest,
-    Name,
-}
 
 @Composable
 fun BookmarkScreen(

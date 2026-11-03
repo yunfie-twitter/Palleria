@@ -9,6 +9,12 @@ enum class BookmarkSort {
     Title,
 }
 
+enum class FollowingUserSort {
+    Newest,
+    Oldest,
+    Name,
+}
+
 data class HomeChromeState(
     val homeKind: HomeFeedKind = HomeFeedKind.Recommended,
     val homeNextUrl: String? = null,
