@@ -11,12 +11,15 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -24,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -54,8 +58,8 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Close
@@ -85,13 +89,24 @@ fun AboutScreen(
         }
 
     val scrollBehavior = MiuixScrollBehavior()
+    val listState = rememberLazyListState()
+    val scrollProgress by remember {
+        derivedStateOf {
+            if (listState.firstVisibleItemIndex > 0) {
+                1f
+            } else {
+                (listState.firstVisibleItemScrollOffset / 180f).coerceIn(0f, 1f)
+            }
+        }
+    }
     Scaffold(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
-            TopAppBar(
+            SmallTopAppBar(
                 title = stringResource(R.string.about_title),
-                largeTitle = stringResource(R.string.about_title),
                 scrollBehavior = scrollBehavior,
+                color = MiuixTheme.colorScheme.surface.copy(alpha = scrollProgress),
+                titleColor = MiuixTheme.colorScheme.onSurface.copy(alpha = scrollProgress),
                 navigationIcon = {
                     HeaderIcon(MiuixIcons.Back, onClick = onBack)
                 },
@@ -104,6 +119,7 @@ fun AboutScreen(
                     .fillMaxSize()
                     .nestedScroll(scrollBehavior.nestedScrollConnection)
                     .background(MiuixTheme.colorScheme.surface),
+            state = listState,
             contentPadding =
                 PaddingValues(
                     start = 16.dp,
@@ -113,50 +129,67 @@ fun AboutScreen(
                 ),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            // アプリアイコン + バージョン
+            // App identity hero
             item {
-                Column(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(270.dp),
+                    contentAlignment = Alignment.Center,
                 ) {
                     Box(
                         modifier =
                             Modifier
-                                .size(96.dp)
-                                .squircleSurface(
-                                    color = MiuixTheme.colorScheme.surfaceContainerHigh,
-                                    cornerRadius = 24.dp,
+                                .fillMaxSize()
+                                .background(
+                                    Brush.radialGradient(
+                                        colors =
+                                            listOf(
+                                                MiuixTheme.colorScheme.primary.copy(alpha = 0.18f),
+                                                MiuixTheme.colorScheme.surface.copy(alpha = 0f),
+                                            ),
+                                    ),
                                 ),
-                        contentAlignment = Alignment.Center,
+                    )
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        Image(
-                            painter = painterResource(R.mipmap.ic_launcher_foreground),
-                            contentDescription = stringResource(R.string.app_name),
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Fit,
+                        Box(
+                            modifier =
+                                Modifier
+                                    .size(112.dp)
+                                    .squircleSurface(
+                                        color = MiuixTheme.colorScheme.surfaceContainerHigh,
+                                        cornerRadius = 30.dp,
+                                    ),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Image(
+                                painter = painterResource(R.mipmap.ic_launcher_foreground),
+                                contentDescription = stringResource(R.string.app_name),
+                                modifier = Modifier.fillMaxSize().padding(10.dp),
+                                contentScale = ContentScale.Fit,
+                            )
+                        }
+                        Text(
+                            text = stringResource(R.string.app_name),
+                            color = MiuixTheme.colorScheme.onBackground,
+                            style = MiuixTheme.textStyles.title1,
+                            fontWeight = FontWeight.Black,
+                        )
+                        Text(
+                            text = stringResource(R.string.about_version, appVersion),
+                            color = MiuixTheme.colorScheme.primary,
+                            style = MiuixTheme.textStyles.footnote1,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Text(
+                            text = stringResource(R.string.about_tagline),
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.75f),
+                            style = MiuixTheme.textStyles.body2,
+                            textAlign = TextAlign.Center,
                         )
                     }
-                    Text(
-                        text = stringResource(R.string.app_name),
-                        color = MiuixTheme.colorScheme.onBackground,
-                        style = MiuixTheme.textStyles.title1,
-                        fontWeight = FontWeight.Black,
-                    )
-                    Text(
-                        text = stringResource(R.string.about_version, appVersion),
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        style = MiuixTheme.textStyles.body2,
-                    )
-                    Text(
-                        text = stringResource(R.string.about_tagline),
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.6f),
-                        style = MiuixTheme.textStyles.footnote1,
-                        textAlign = TextAlign.Center,
-                    )
                 }
             }
 
