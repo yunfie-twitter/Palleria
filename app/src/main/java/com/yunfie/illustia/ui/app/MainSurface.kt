@@ -197,9 +197,6 @@ internal fun MainSurface(
                 }
             },
         ) { paddingValues ->
-            // クイック設定に覆われている間は、覆われた下部ナビのバックドロップ再録画と
-            // 追加のぼかし合成を止める。
-            val systemCovered = LocalSystemUiCovered.current
             Box(
                 modifier =
                     Modifier
@@ -216,17 +213,11 @@ internal fun MainSurface(
                             end = paddingValues.calculateEndPadding(LocalLayoutDirection.current),
                         ),
             ) {
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .then(
-                                if (isBlurEnabled && supportsBlur && !useNavigationRail && !systemCovered) {
-                                    Modifier.layerBackdrop(navBackdrop)
-                                } else {
-                                    Modifier
-                                },
-                            ),
+                SystemUiAwareBackdropBox(
+                    enabled = isBlurEnabled && supportsBlur && !useNavigationRail,
+                    backdrop = navBackdrop,
+                    backdropModifier = { Modifier.layerBackdrop(it) },
+                    modifier = Modifier.fillMaxSize(),
                 ) {
                     HorizontalPager(
                         state = pagerState,
@@ -326,23 +317,22 @@ internal fun MainSurface(
                 if (!useNavigationRail && appState.settings.navigationStyle == "standard" && isBlurEnabled) {
                     val surfaceContainer = MiuixTheme.colorScheme.surfaceContainer
                     val outline = MiuixTheme.colorScheme.outline
-                    Box(
+                    SystemUiAwareBackdropBox(
+                        enabled = supportsBlur,
+                        backdrop = navBackdrop,
+                        backdropModifier = {
+                            Modifier.progressiveTextureBlur(
+                                backdrop = it,
+                                shape = RectangleShape,
+                                blurRadius = 30f,
+                                gradient = ProgressiveBlur.Bottom,
+                            )
+                        },
                         modifier =
                             Modifier
                                 .fillMaxWidth()
                                 .align(Alignment.BottomCenter)
-                                .then(
-                                    if (supportsBlur && !systemCovered) {
-                                        Modifier.progressiveTextureBlur(
-                                            backdrop = navBackdrop,
-                                            shape = RectangleShape,
-                                            blurRadius = 30f,
-                                            gradient = ProgressiveBlur.Bottom,
-                                        )
-                                    } else {
-                                        Modifier
-                                    },
-                                ).drawWithContent {
+                                .drawWithContent {
                                     val baseAlpha = if (supportsBlur) 0.72f else 0.92f
                                     drawRect(color = surfaceContainer.copy(alpha = baseAlpha))
                                     val dividerHeightPx = 1.dp.toPx()
@@ -434,6 +424,35 @@ internal fun MainSurface(
             )
         }
     }
+}
+
+/**
+ * Keep SystemUI coverage changes local to the backdrop layer. Reading the coverage local in
+ * MainSurface invalidated the large tab/pager composition whenever Quick Settings opened or
+ * closed, even though the only required change was to stop recording this backdrop.
+ */
+@Composable
+private fun <Backdrop> SystemUiAwareBackdropBox(
+    enabled: Boolean,
+    backdrop: Backdrop,
+    backdropModifier: (Backdrop) -> Modifier,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    // Keep this state read in a small leaf instead of invalidating MainSurface and its whole
+    // tab/pager tree when Quick Settings opens or closes.
+    val systemCovered = LocalSystemUiCovered.current
+    Box(
+        modifier =
+            modifier.then(
+                if (enabled && !systemCovered) {
+                    backdropModifier(backdrop)
+                } else {
+                    Modifier
+                },
+            ),
+        content = { content() },
+    )
 }
 
 @Composable

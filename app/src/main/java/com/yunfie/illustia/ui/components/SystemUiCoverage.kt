@@ -5,9 +5,9 @@ import android.view.ViewTreeObserver
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.compositionLocalOf
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -15,9 +15,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import kotlinx.coroutines.delay
 
 /** クイック設定（通知シェード）がここまでアプリを覆ったら、背面の描画を止めるしきい値。 */
 private const val SHADE_COVER_THRESHOLD_DP = 72f
+private const val SYSTEM_UI_UNCOVER_SETTLE_MS = 300L
 
 /**
  * アプリウィンドウが SystemUI / キーボードに覆われているか。
@@ -82,7 +84,17 @@ private fun rememberSystemUiCoveredState(): State<Boolean> {
         }
     }
 
-    return remember(view) {
-        derivedStateOf { !hasWindowFocus || insetsCovered }
+    val shouldBeCovered = !hasWindowFocus || insetsCovered
+    val covered = remember(view) { mutableStateOf(shouldBeCovered) }
+    LaunchedEffect(view, shouldBeCovered) {
+        if (shouldBeCovered) {
+            covered.value = true
+        } else {
+            // Re-enabling blur/backdrop work while the shade or Recents animation closes makes
+            // the app compete with SystemUI for the same frames.
+            delay(SYSTEM_UI_UNCOVER_SETTLE_MS)
+            covered.value = false
+        }
     }
+    return covered
 }
