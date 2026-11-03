@@ -77,6 +77,7 @@ data class IllustiaUiState(
     val followingUsers: List<UserPreview> = emptyList(),
     val followingUsersNextUrl: String? = null,
     val bookmarkSelectedTab: Int = 1,
+    val bookmarkSort: BookmarkSort = BookmarkSort.Newest,
     val rankingItems: List<Illust> = emptyList(),
     val rankingNextUrl: String? = null,
     val rankingMode: String = "day",

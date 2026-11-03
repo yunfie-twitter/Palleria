@@ -1,6 +1,7 @@
 package com.yunfie.illustia.ui.app
 
 import com.yunfie.illustia.BookmarkChromeState
+import com.yunfie.illustia.BookmarkSort
 import com.yunfie.illustia.HomeChromeState
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.models.HomeFeedKind
@@ -28,6 +29,7 @@ class IllustiaAppStateBundleTest :
                     activeWatchlistTag = "tag",
                     followingUsersNextUrl = "users-next",
                     bookmarkSelectedTab = 2,
+                    bookmarkSort = BookmarkSort.Oldest,
                     isOfflineCached = true,
                 )
 
@@ -55,6 +57,7 @@ class IllustiaAppStateBundleTest :
                     activeWatchlistTag = "tag",
                     followingUsersNextUrl = "users-next",
                     selectedTab = 2,
+                    bookmarkSort = BookmarkSort.Oldest,
                 )
         }
 
