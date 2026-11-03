@@ -2,6 +2,19 @@ package com.yunfie.illustia
 
 import com.yunfie.illustia.models.HomeFeedKind
 
+enum class BookmarkSort {
+    Newest,
+    Oldest,
+    Popular,
+    Title,
+}
+
+enum class FollowingUserSort {
+    Newest,
+    Oldest,
+    Name,
+}
+
 data class HomeChromeState(
     val homeKind: HomeFeedKind = HomeFeedKind.Recommended,
     val homeNextUrl: String? = null,
@@ -33,6 +46,7 @@ data class BookmarkChromeState(
     val activeWatchlistTag: String? = null,
     val followingUsersNextUrl: String? = null,
     val selectedTab: Int = 1,
+    val bookmarkSort: BookmarkSort = BookmarkSort.Newest,
     val isBookmarkRefreshing: Boolean = false,
     val isBookmarkPaginating: Boolean = false,
     val isTimelineRefreshing: Boolean = false,
