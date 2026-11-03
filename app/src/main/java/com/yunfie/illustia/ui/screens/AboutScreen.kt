@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -28,14 +29,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
@@ -69,6 +73,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
 private const val FDROID_URL = "https://yunfi.f5.si/Illustia-dev/repo"
+private val ABOUT_HERO_SCROLL_DISTANCE = 300.dp
 
 @Composable
 fun AboutScreen(
@@ -90,12 +95,13 @@ fun AboutScreen(
 
     val scrollBehavior = MiuixScrollBehavior()
     val listState = rememberLazyListState()
+    val heroScrollDistancePx = with(LocalDensity.current) { ABOUT_HERO_SCROLL_DISTANCE.toPx() }
     val scrollProgress by remember {
         derivedStateOf {
             if (listState.firstVisibleItemIndex > 0) {
                 1f
             } else {
-                (listState.firstVisibleItemScrollOffset / 180f).coerceIn(0f, 1f)
+                (listState.firstVisibleItemScrollOffset / heroScrollDistancePx).coerceIn(0f, 1f)
             }
         }
     }
@@ -107,388 +113,409 @@ fun AboutScreen(
                 scrollBehavior = scrollBehavior,
                 color = MiuixTheme.colorScheme.surface.copy(alpha = scrollProgress),
                 titleColor = MiuixTheme.colorScheme.onSurface.copy(alpha = scrollProgress),
+                defaultWindowInsetsPadding = false,
                 navigationIcon = {
                     HeaderIcon(MiuixIcons.Back, onClick = onBack)
                 },
             )
         },
     ) { scaffoldPadding ->
-        LazyColumn(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .nestedScroll(scrollBehavior.nestedScrollConnection)
-                    .background(MiuixTheme.colorScheme.surface),
-            state = listState,
-            contentPadding =
-                PaddingValues(
-                    start = 16.dp,
-                    end = 16.dp,
-                    top = scaffoldPadding.calculateTopPadding() + 16.dp,
-                    bottom = 96.dp,
-                ),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            // App identity hero
-            item {
-                Box(
-                    modifier = Modifier.fillMaxWidth().height(270.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .background(
-                                    Brush.radialGradient(
-                                        colors =
-                                            listOf(
-                                                MiuixTheme.colorScheme.primary.copy(alpha = 0.18f),
-                                                MiuixTheme.colorScheme.surface.copy(alpha = 0f),
-                                            ),
+        Box(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(scaffoldPadding.calculateTopPadding() + ABOUT_HERO_SCROLL_DISTANCE)
+                        .graphicsLayer { alpha = 1f - scrollProgress }
+                        .background(
+                            Brush.verticalGradient(
+                                colors =
+                                    listOf(
+                                        MiuixTheme.colorScheme.primary.copy(alpha = 0.18f),
+                                        MiuixTheme.colorScheme.surface.copy(alpha = 0.08f),
+                                        MiuixTheme.colorScheme.surface.copy(alpha = 0f),
                                     ),
-                                ),
-                    )
-                    Column(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        Box(
-                            modifier =
-                                Modifier
-                                    .size(112.dp)
-                                    .squircleSurface(
-                                        color = MiuixTheme.colorScheme.surfaceContainerHigh,
-                                        cornerRadius = 30.dp,
-                                    ),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Image(
-                                painter = painterResource(R.mipmap.ic_launcher_foreground),
-                                contentDescription = stringResource(R.string.app_name),
-                                modifier = Modifier.fillMaxSize().padding(10.dp),
-                                contentScale = ContentScale.Fit,
-                            )
-                        }
-                        Text(
-                            text = stringResource(R.string.app_name),
-                            color = MiuixTheme.colorScheme.onBackground,
-                            style = MiuixTheme.textStyles.title1,
-                            fontWeight = FontWeight.Black,
-                        )
-                        Text(
-                            text = stringResource(R.string.about_version, appVersion),
-                            color = MiuixTheme.colorScheme.primary,
-                            style = MiuixTheme.textStyles.footnote1,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                        Text(
-                            text = stringResource(R.string.about_tagline),
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.75f),
-                            style = MiuixTheme.textStyles.body2,
-                            textAlign = TextAlign.Center,
-                        )
-                    }
-                }
-            }
-
-            // アプリ内アップデーター
-            item {
-                Section(stringResource(R.string.update_in_app_updater)) {
-                    ElevatedPanel {
-                        SettingRow(
-                            title = stringResource(R.string.about_version_label),
-                            summary = appVersion,
-                        ) {
-                            Button(
-                                onClick = { viewModel.checkForUpdates(silent = false) },
-                                enabled = updateState !is UpdateCheckState.Checking && updateState !is UpdateCheckState.Downloading,
-                                colors = ButtonDefaults.buttonColorsPrimary(),
-                                insideMargin = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
-                            ) {
-                                Text(
-                                    stringResource(R.string.update_check_button),
-                                    color = MiuixTheme.colorScheme.onPrimary,
-                                    style = MiuixTheme.textStyles.footnote1,
-                                    fontWeight = FontWeight.Bold,
-                                )
-                            }
-                        }
-
-                        when (val currentUpdate = updateState) {
-                            is UpdateCheckState.Checking -> {
-                                DividerLine()
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(14.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    LoadingIndicator(modifier = Modifier.size(24.dp))
-                                    Text(
-                                        stringResource(R.string.update_checking),
-                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                        style = MiuixTheme.textStyles.body2,
-                                    )
-                                }
-                            }
-
-                            is UpdateCheckState.UpToDate -> {
-                                DividerLine()
-                                Box(modifier = Modifier.fillMaxWidth().padding(14.dp)) {
-                                    Text(
-                                        stringResource(R.string.update_up_to_date, currentUpdate.currentVersion),
-                                        color = MiuixTheme.colorScheme.primary,
-                                        style = MiuixTheme.textStyles.body2,
-                                        fontWeight = FontWeight.Bold,
-                                    )
-                                }
-                            }
-
-                            is UpdateCheckState.UpdateAvailable -> {
-                                val release = currentUpdate.release
-                                DividerLine()
-                                Column(
-                                    modifier = Modifier.fillMaxWidth().padding(14.dp),
-                                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                                ) {
-                                    Text(
-                                        stringResource(R.string.update_available_title, release.versionName),
-                                        color = MiuixTheme.colorScheme.onBackground,
-                                        style = MiuixTheme.textStyles.title2,
-                                        fontWeight = FontWeight.Bold,
-                                    )
-                                    if (release.releaseTitle.isNotBlank() && release.releaseTitle != release.versionName) {
-                                        Text(
-                                            release.releaseTitle,
-                                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                            style = MiuixTheme.textStyles.body2,
-                                        )
-                                    }
-                                    if (release.releaseNotes.isNotBlank()) {
-                                        Box(
-                                            modifier =
-                                                Modifier
-                                                    .fillMaxWidth()
-                                                    .clip(RoundedCornerShape(8.dp))
-                                                    .background(MiuixTheme.colorScheme.surfaceContainer)
-                                                    .padding(10.dp),
-                                        ) {
-                                            com.yunfie.illustia.ui.components.MarkdownText(
-                                                markdown = release.releaseNotes,
-                                            )
-                                        }
-                                    }
-                                    Button(
-                                        onClick = { viewModel.downloadUpdate(release) },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        colors = ButtonDefaults.buttonColorsPrimary(),
-                                    ) {
-                                        Text(
-                                            stringResource(R.string.update_download_button),
-                                            color = MiuixTheme.colorScheme.onPrimary,
-                                            fontWeight = FontWeight.Bold,
-                                        )
-                                    }
-                                }
-                            }
-
-                            is UpdateCheckState.Downloading -> {
-                                DividerLine()
-                                Column(
-                                    modifier = Modifier.fillMaxWidth().padding(14.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                                ) {
-                                    val downloadedMb =
-                                        String.format(
-                                            java.util.Locale.US,
-                                            "%.1f",
-                                            currentUpdate.downloadedBytes / (1024f * 1024f),
-                                        )
-                                    val totalMb =
-                                        String.format(
-                                            java.util.Locale.US,
-                                            "%.1f",
-                                            currentUpdate.totalBytes / (1024f * 1024f),
-                                        )
-                                    val percent = (currentUpdate.progress * 100).toInt()
-                                    Text(
-                                        "$downloadedMb MB / $totalMb MB ($percent%)",
-                                        color = MiuixTheme.colorScheme.onBackground,
-                                        style = MiuixTheme.textStyles.body2,
-                                    )
-                                    LinearProgressIndicator(
-                                        progress = currentUpdate.progress,
-                                        modifier = Modifier.fillMaxWidth(),
-                                    )
-                                    Button(
-                                        onClick = { viewModel.cancelDownloadUpdate() },
-                                        modifier = Modifier.fillMaxWidth(),
-                                    ) {
-                                        Text(
-                                            stringResource(R.string.update_cancel_download),
-                                            style = MiuixTheme.textStyles.footnote1,
-                                        )
-                                    }
-                                }
-                            }
-
-                            is UpdateCheckState.ReadyToInstall -> {
-                                DividerLine()
-                                Column(
-                                    modifier = Modifier.fillMaxWidth().padding(14.dp),
-                                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                                ) {
-                                    Text(
-                                        stringResource(R.string.update_ready_to_install),
-                                        color = MiuixTheme.colorScheme.primary,
-                                        style = MiuixTheme.textStyles.body2,
-                                        fontWeight = FontWeight.Bold,
-                                    )
-                                    Button(
-                                        onClick = { viewModel.installUpdate(currentUpdate.apkFile) },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        colors = ButtonDefaults.buttonColorsPrimary(),
-                                    ) {
-                                        Text(
-                                            stringResource(R.string.update_install_button),
-                                            color = MiuixTheme.colorScheme.onPrimary,
-                                            fontWeight = FontWeight.Bold,
-                                        )
-                                    }
-                                }
-                            }
-
-                            is UpdateCheckState.Installing -> {
-                                DividerLine()
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(14.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    LoadingIndicator(modifier = Modifier.size(24.dp))
-                                    Text(
-                                        stringResource(R.string.update_installing),
-                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                        style = MiuixTheme.textStyles.body2,
-                                    )
-                                }
-                            }
-
-                            is UpdateCheckState.Error -> {
-                                DividerLine()
-                                Column(
-                                    modifier = Modifier.fillMaxWidth().padding(14.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                                ) {
-                                    Text(
-                                        currentUpdate.message,
-                                        color = MiuixTheme.colorScheme.error,
-                                        style = MiuixTheme.textStyles.footnote1,
-                                    )
-                                    Button(
-                                        onClick = {
-                                            val targetRelease = currentUpdate.release
-                                            if (targetRelease != null) {
-                                                viewModel.downloadUpdate(targetRelease)
-                                            } else {
-                                                viewModel.checkForUpdates(silent = false)
-                                            }
-                                        },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        colors = ButtonDefaults.buttonColorsPrimary(),
-                                    ) {
-                                        Text(
-                                            stringResource(R.string.update_retry_download),
-                                            color = MiuixTheme.colorScheme.onPrimary,
-                                            style = MiuixTheme.textStyles.footnote1,
-                                            fontWeight = FontWeight.Bold,
-                                        )
-                                    }
-                                }
-                            }
-
-                            UpdateCheckState.Idle -> {
-                                // No action needed
-                            }
-                        }
-                    }
-                }
-            }
-
-            // リンク
-            item {
-                Section(stringResource(R.string.about_section_links)) {
-                    ElevatedPanel(contentPadding = PaddingValues(0.dp)) {
-                        SettingLinkRow(stringResource(R.string.about_fdroid)) {
-                            runCatching {
-                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(FDROID_URL)))
-                            }
-                        }
-                        DividerLine()
-                        SettingLinkRow(stringResource(R.string.about_pixiv)) {
-                            runCatching {
-                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.pixiv.net/")))
-                            }
-                        }
-                        DividerLine()
-                        SettingLinkRow(stringResource(R.string.update_view_on_github)) {
-                            runCatching {
-                                context.startActivity(
-                                    Intent(
-                                        Intent.ACTION_VIEW,
-                                        Uri.parse("https://github.com/yunfie-twitter/Palleria/releases"),
-                                    ),
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 使用ライブラリ
-            item {
-                Section(stringResource(R.string.about_section_libraries)) {
-                    ElevatedPanel {
-                        listOf(
-                            "Jetpack Compose" to "Google",
-                            "Miuix KMP" to "yukonga",
-                            "Coil 3" to "Coil Contributors",
-                            "OkHttp" to "Square",
-                            "kotlinx.serialization" to "JetBrains",
-                            "Shizuku" to "RikkaApps",
-                        ).forEachIndexed { index, (lib, author) ->
-                            if (index > 0) DividerLine()
-                            SettingRow(lib, author) {}
-                        }
-                        DividerLine()
-                        SettingLinkRow(stringResource(R.string.about_open_source_licenses)) {
-                            showLicensesSheet = true
-                        }
-                    }
-                }
-            }
-
-            item {
-                Column(
+                            ),
+                        ),
+            )
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = scaffoldPadding.calculateTopPadding() + 40.dp)
+                        .height(220.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Top,
+            ) {
+                Image(
+                    painter = painterResource(R.mipmap.ic_launcher_foreground),
+                    contentDescription = stringResource(R.string.app_name),
                     modifier =
                         Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 16.dp),
+                            .size(88.dp)
+                            .graphicsLayer {
+                                val iconProgress = ((scrollProgress - 0.35f) / 0.15f).coerceIn(0f, 1f)
+                                alpha = 1f - iconProgress
+                                scaleX = 1f - iconProgress * 0.05f
+                                scaleY = 1f - iconProgress * 0.05f
+                            },
+                    contentScale = ContentScale.Fit,
+                )
+                Text(
+                    text = stringResource(R.string.app_name),
+                    color = MiuixTheme.colorScheme.onBackground,
+                    fontSize = 35.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier =
+                        Modifier
+                            .padding(top = 12.dp, bottom = 5.dp)
+                            .graphicsLayer {
+                                val nameProgress = ((scrollProgress - 0.20f) / 0.15f).coerceIn(0f, 1f)
+                                alpha = 1f - nameProgress
+                                scaleX = 1f - nameProgress * 0.05f
+                                scaleY = 1f - nameProgress * 0.05f
+                            },
+                )
+                Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier =
+                        Modifier.graphicsLayer {
+                            val detailsProgress = ((scrollProgress - 0.05f) / 0.15f).coerceIn(0f, 1f)
+                            alpha = 1f - detailsProgress
+                            scaleX = 1f - detailsProgress * 0.05f
+                            scaleY = 1f - detailsProgress * 0.05f
+                        },
                 ) {
                     Text(
-                        stringResource(R.string.about_disclaimer),
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.6f),
+                        text = stringResource(R.string.about_version, appVersion),
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         style = MiuixTheme.textStyles.footnote1,
                         textAlign = TextAlign.Center,
                     )
                     Text(
-                        "Developed with ❤️ for Art",
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.6f),
+                        text = stringResource(R.string.about_tagline),
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.75f),
                         style = MiuixTheme.textStyles.footnote1,
+                        textAlign = TextAlign.Center,
                     )
+                }
+            }
+            LazyColumn(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .nestedScroll(scrollBehavior.nestedScrollConnection),
+                state = listState,
+                contentPadding =
+                    PaddingValues(
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = scaffoldPadding.calculateTopPadding(),
+                        bottom = 96.dp,
+                    ),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                item(key = "about_hero_spacer") {
+                    Spacer(modifier = Modifier.height(ABOUT_HERO_SCROLL_DISTANCE))
+                }
+
+                // アプリ内アップデーター
+                item {
+                    Section(stringResource(R.string.update_in_app_updater)) {
+                        ElevatedPanel {
+                            SettingRow(
+                                title = stringResource(R.string.about_version_label),
+                                summary = appVersion,
+                            ) {
+                                Button(
+                                    onClick = { viewModel.checkForUpdates(silent = false) },
+                                    enabled = updateState !is UpdateCheckState.Checking && updateState !is UpdateCheckState.Downloading,
+                                    colors = ButtonDefaults.buttonColorsPrimary(),
+                                    insideMargin = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                                ) {
+                                    Text(
+                                        stringResource(R.string.update_check_button),
+                                        color = MiuixTheme.colorScheme.onPrimary,
+                                        style = MiuixTheme.textStyles.footnote1,
+                                        fontWeight = FontWeight.Bold,
+                                    )
+                                }
+                            }
+
+                            when (val currentUpdate = updateState) {
+                                is UpdateCheckState.Checking -> {
+                                    DividerLine()
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(14.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        LoadingIndicator(modifier = Modifier.size(24.dp))
+                                        Text(
+                                            stringResource(R.string.update_checking),
+                                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                            style = MiuixTheme.textStyles.body2,
+                                        )
+                                    }
+                                }
+
+                                is UpdateCheckState.UpToDate -> {
+                                    DividerLine()
+                                    Box(modifier = Modifier.fillMaxWidth().padding(14.dp)) {
+                                        Text(
+                                            stringResource(R.string.update_up_to_date, currentUpdate.currentVersion),
+                                            color = MiuixTheme.colorScheme.primary,
+                                            style = MiuixTheme.textStyles.body2,
+                                            fontWeight = FontWeight.Bold,
+                                        )
+                                    }
+                                }
+
+                                is UpdateCheckState.UpdateAvailable -> {
+                                    val release = currentUpdate.release
+                                    DividerLine()
+                                    Column(
+                                        modifier = Modifier.fillMaxWidth().padding(14.dp),
+                                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                                    ) {
+                                        Text(
+                                            stringResource(R.string.update_available_title, release.versionName),
+                                            color = MiuixTheme.colorScheme.onBackground,
+                                            style = MiuixTheme.textStyles.title2,
+                                            fontWeight = FontWeight.Bold,
+                                        )
+                                        if (release.releaseTitle.isNotBlank() && release.releaseTitle != release.versionName) {
+                                            Text(
+                                                release.releaseTitle,
+                                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                                style = MiuixTheme.textStyles.body2,
+                                            )
+                                        }
+                                        if (release.releaseNotes.isNotBlank()) {
+                                            Box(
+                                                modifier =
+                                                    Modifier
+                                                        .fillMaxWidth()
+                                                        .clip(RoundedCornerShape(8.dp))
+                                                        .background(MiuixTheme.colorScheme.surfaceContainer)
+                                                        .padding(10.dp),
+                                            ) {
+                                                com.yunfie.illustia.ui.components.MarkdownText(
+                                                    markdown = release.releaseNotes,
+                                                )
+                                            }
+                                        }
+                                        Button(
+                                            onClick = { viewModel.downloadUpdate(release) },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            colors = ButtonDefaults.buttonColorsPrimary(),
+                                        ) {
+                                            Text(
+                                                stringResource(R.string.update_download_button),
+                                                color = MiuixTheme.colorScheme.onPrimary,
+                                                fontWeight = FontWeight.Bold,
+                                            )
+                                        }
+                                    }
+                                }
+
+                                is UpdateCheckState.Downloading -> {
+                                    DividerLine()
+                                    Column(
+                                        modifier = Modifier.fillMaxWidth().padding(14.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                                    ) {
+                                        val downloadedMb =
+                                            String.format(
+                                                java.util.Locale.US,
+                                                "%.1f",
+                                                currentUpdate.downloadedBytes / (1024f * 1024f),
+                                            )
+                                        val totalMb =
+                                            String.format(
+                                                java.util.Locale.US,
+                                                "%.1f",
+                                                currentUpdate.totalBytes / (1024f * 1024f),
+                                            )
+                                        val percent = (currentUpdate.progress * 100).toInt()
+                                        Text(
+                                            "$downloadedMb MB / $totalMb MB ($percent%)",
+                                            color = MiuixTheme.colorScheme.onBackground,
+                                            style = MiuixTheme.textStyles.body2,
+                                        )
+                                        LinearProgressIndicator(
+                                            progress = currentUpdate.progress,
+                                            modifier = Modifier.fillMaxWidth(),
+                                        )
+                                        Button(
+                                            onClick = { viewModel.cancelDownloadUpdate() },
+                                            modifier = Modifier.fillMaxWidth(),
+                                        ) {
+                                            Text(
+                                                stringResource(R.string.update_cancel_download),
+                                                style = MiuixTheme.textStyles.footnote1,
+                                            )
+                                        }
+                                    }
+                                }
+
+                                is UpdateCheckState.ReadyToInstall -> {
+                                    DividerLine()
+                                    Column(
+                                        modifier = Modifier.fillMaxWidth().padding(14.dp),
+                                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                                    ) {
+                                        Text(
+                                            stringResource(R.string.update_ready_to_install),
+                                            color = MiuixTheme.colorScheme.primary,
+                                            style = MiuixTheme.textStyles.body2,
+                                            fontWeight = FontWeight.Bold,
+                                        )
+                                        Button(
+                                            onClick = { viewModel.installUpdate(currentUpdate.apkFile) },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            colors = ButtonDefaults.buttonColorsPrimary(),
+                                        ) {
+                                            Text(
+                                                stringResource(R.string.update_install_button),
+                                                color = MiuixTheme.colorScheme.onPrimary,
+                                                fontWeight = FontWeight.Bold,
+                                            )
+                                        }
+                                    }
+                                }
+
+                                is UpdateCheckState.Installing -> {
+                                    DividerLine()
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(14.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        LoadingIndicator(modifier = Modifier.size(24.dp))
+                                        Text(
+                                            stringResource(R.string.update_installing),
+                                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                            style = MiuixTheme.textStyles.body2,
+                                        )
+                                    }
+                                }
+
+                                is UpdateCheckState.Error -> {
+                                    DividerLine()
+                                    Column(
+                                        modifier = Modifier.fillMaxWidth().padding(14.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                                    ) {
+                                        Text(
+                                            currentUpdate.message,
+                                            color = MiuixTheme.colorScheme.error,
+                                            style = MiuixTheme.textStyles.footnote1,
+                                        )
+                                        Button(
+                                            onClick = {
+                                                val targetRelease = currentUpdate.release
+                                                if (targetRelease != null) {
+                                                    viewModel.downloadUpdate(targetRelease)
+                                                } else {
+                                                    viewModel.checkForUpdates(silent = false)
+                                                }
+                                            },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            colors = ButtonDefaults.buttonColorsPrimary(),
+                                        ) {
+                                            Text(
+                                                stringResource(R.string.update_retry_download),
+                                                color = MiuixTheme.colorScheme.onPrimary,
+                                                style = MiuixTheme.textStyles.footnote1,
+                                                fontWeight = FontWeight.Bold,
+                                            )
+                                        }
+                                    }
+                                }
+
+                                UpdateCheckState.Idle -> {
+                                    // No action needed
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // リンク
+                item {
+                    Section(stringResource(R.string.about_section_links)) {
+                        ElevatedPanel(contentPadding = PaddingValues(0.dp)) {
+                            SettingLinkRow(stringResource(R.string.about_fdroid)) {
+                                runCatching {
+                                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(FDROID_URL)))
+                                }
+                            }
+                            DividerLine()
+                            SettingLinkRow(stringResource(R.string.about_pixiv)) {
+                                runCatching {
+                                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.pixiv.net/")))
+                                }
+                            }
+                            DividerLine()
+                            SettingLinkRow(stringResource(R.string.update_view_on_github)) {
+                                runCatching {
+                                    context.startActivity(
+                                        Intent(
+                                            Intent.ACTION_VIEW,
+                                            Uri.parse("https://github.com/yunfie-twitter/Palleria/releases"),
+                                        ),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 使用ライブラリ
+                item {
+                    Section(stringResource(R.string.about_section_libraries)) {
+                        ElevatedPanel {
+                            listOf(
+                                "Jetpack Compose" to "Google",
+                                "Miuix KMP" to "yukonga",
+                                "Coil 3" to "Coil Contributors",
+                                "OkHttp" to "Square",
+                                "kotlinx.serialization" to "JetBrains",
+                                "Shizuku" to "RikkaApps",
+                            ).forEachIndexed { index, (lib, author) ->
+                                if (index > 0) DividerLine()
+                                SettingRow(lib, author) {}
+                            }
+                            DividerLine()
+                            SettingLinkRow(stringResource(R.string.about_open_source_licenses)) {
+                                showLicensesSheet = true
+                            }
+                        }
+                    }
+                }
+
+                item {
+                    Column(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Text(
+                            stringResource(R.string.about_disclaimer),
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.6f),
+                            style = MiuixTheme.textStyles.footnote1,
+                            textAlign = TextAlign.Center,
+                        )
+                        Text(
+                            "Developed with ❤️ for Art",
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.6f),
+                            style = MiuixTheme.textStyles.footnote1,
+                        )
+                    }
                 }
             }
         }
