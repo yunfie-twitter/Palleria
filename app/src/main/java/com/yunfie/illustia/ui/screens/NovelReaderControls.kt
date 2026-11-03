@@ -53,6 +53,7 @@ import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.squircle.squircleBorder
 import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import kotlin.math.roundToInt
 
 private const val MIN_FONT_SIZE = 13f
@@ -289,6 +290,7 @@ internal fun NovelTocBottomSheet(
     if (!show) return
     OverlayBottomSheet(
         show = true,
+        modifier = Modifier.scrollEndHaptic(),
         title = stringResource(R.string.novel_toc),
         onDismissRequest = onDismiss,
         backgroundColor = LocalBottomSheetBackgroundColor.current,
@@ -497,6 +499,7 @@ internal fun NovelSettingsBottomSheet(
 
     OverlayBottomSheet(
         show = true,
+        modifier = Modifier.scrollEndHaptic(),
         title = stringResource(R.string.novel_display_settings),
         onDismissRequest = onDismiss,
         backgroundColor = LocalBottomSheetBackgroundColor.current,
@@ -982,6 +985,7 @@ private fun NovelTtsDictionarySheet(
 
     OverlayBottomSheet(
         show = true,
+        modifier = Modifier.scrollEndHaptic(),
         title = stringResource(R.string.tts_dictionary_title),
         onDismissRequest = onDismiss,
         backgroundColor = LocalBottomSheetBackgroundColor.current,
