@@ -25,6 +25,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.BookmarkChromeState
+import com.yunfie.illustia.BookmarkSort
+import com.yunfie.illustia.FollowingUserSort
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.data.pixiv.WatchlistStore
@@ -54,24 +56,11 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Community
-import top.yukonga.miuix.kmp.icon.extended.Filter
+import top.yukonga.miuix.kmp.icon.extended.Folder
 import top.yukonga.miuix.kmp.icon.extended.Lock
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.icon.extended.Tune
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-
-internal enum class BookmarkSort {
-    Newest,
-    Oldest,
-    Popular,
-    Title,
-}
-
-internal enum class FollowingUserSort {
-    Newest,
-    Oldest,
-    Name,
-}
 
 @Composable
 fun BookmarkScreen(
@@ -86,7 +75,7 @@ fun BookmarkScreen(
     onOpenWatchlistSeries: (Long) -> Unit,
     onOpenBookmarkTagSort: () -> Unit,
 ) {
-    var bookmarkSort by rememberSaveable { mutableStateOf(BookmarkSort.Newest) }
+    val bookmarkSort = chrome.bookmarkSort
     var followingUserSort by rememberSaveable { mutableStateOf(FollowingUserSort.Newest) }
     val repository = remember(viewModel) { viewModel.uiRepository() }
     val watchlistStore = remember(repository) { WatchlistStore(repository) }
@@ -267,7 +256,7 @@ fun BookmarkScreen(
                                                                 selected = bookmarkSort == BookmarkSort.Newest,
                                                                 onClick = {
                                                                     performHaptic(AppHapticEffect.Toggle)
-                                                                    bookmarkSort = BookmarkSort.Newest
+                                                                    viewModel.updateBookmarkSort(BookmarkSort.Newest)
                                                                 },
                                                             ),
                                                             DropdownItem(
@@ -275,7 +264,7 @@ fun BookmarkScreen(
                                                                 selected = bookmarkSort == BookmarkSort.Oldest,
                                                                 onClick = {
                                                                     performHaptic(AppHapticEffect.Toggle)
-                                                                    bookmarkSort = BookmarkSort.Oldest
+                                                                    viewModel.updateBookmarkSort(BookmarkSort.Oldest)
                                                                 },
                                                             ),
                                                             DropdownItem(
@@ -283,7 +272,7 @@ fun BookmarkScreen(
                                                                 selected = bookmarkSort == BookmarkSort.Popular,
                                                                 onClick = {
                                                                     performHaptic(AppHapticEffect.Toggle)
-                                                                    bookmarkSort = BookmarkSort.Popular
+                                                                    viewModel.updateBookmarkSort(BookmarkSort.Popular)
                                                                 },
                                                             ),
                                                             DropdownItem(
@@ -291,7 +280,7 @@ fun BookmarkScreen(
                                                                 selected = bookmarkSort == BookmarkSort.Title,
                                                                 onClick = {
                                                                     performHaptic(AppHapticEffect.Toggle)
-                                                                    bookmarkSort = BookmarkSort.Title
+                                                                    viewModel.updateBookmarkSort(BookmarkSort.Title)
                                                                 },
                                                             ),
                                                         ),
@@ -306,7 +295,7 @@ fun BookmarkScreen(
                             onOpenBookmarkTagSort()
                         }, modifier = Modifier.semantics { contentDescription = tagSortLabel }) {
                             Icon(
-                                imageVector = MiuixIcons.Filter,
+                                imageVector = MiuixIcons.Folder,
                                 contentDescription = tagSortLabel,
                                 tint =
                                     if (bookmarkTag != null) {

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -28,9 +29,13 @@ import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.pixiv.BookmarkTag
 import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.preference.CheckboxPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -51,6 +56,7 @@ fun BookmarkTagPickerBottomSheet(
         )
     }
     var tagQuery by remember(illust.id) { mutableStateOf("") }
+    var summaryVisible by remember(illust.id) { mutableStateOf(true) }
     val restrict = state.bookmarkTagPickerRestrict
     val selectedTags = selectedByRestrict[restrict].orEmpty()
     val isPrivate = restrict == Restrict.Private
@@ -81,7 +87,7 @@ fun BookmarkTagPickerBottomSheet(
         insideMargin = BottomSheetInsideMargin,
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth().heightIn(max = 680.dp),
+            modifier = Modifier.imePadding().fillMaxWidth().heightIn(max = 680.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             TabRowWithContour(
@@ -95,14 +101,31 @@ fun BookmarkTagPickerBottomSheet(
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            Text(
-                text =
-                    stringResource(
-                        if (isPrivate) R.string.bookmark_tag_picker_private_summary else R.string.bookmark_tag_picker_public_summary,
-                    ),
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                modifier = Modifier.padding(horizontal = 4.dp),
-            )
+            if (summaryVisible) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text =
+                            stringResource(
+                                if (isPrivate) {
+                                    R.string.bookmark_tag_picker_private_summary
+                                } else {
+                                    R.string.bookmark_tag_picker_public_summary
+                                },
+                            ),
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        modifier = Modifier.weight(1f).padding(horizontal = 4.dp),
+                    )
+                    IconButton(onClick = { summaryVisible = false }) {
+                        Icon(
+                            imageVector = MiuixIcons.Close,
+                            contentDescription = stringResource(R.string.action_close),
+                        )
+                    }
+                }
+            }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),

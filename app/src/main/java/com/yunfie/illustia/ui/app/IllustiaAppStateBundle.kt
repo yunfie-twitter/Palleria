@@ -54,6 +54,7 @@ internal data class IllustiaAppStateBundle(
             activeWatchlistTag = state.activeWatchlistTag,
             followingUsersNextUrl = state.followingUsersNextUrl,
             selectedTab = state.bookmarkSelectedTab,
+            bookmarkSort = state.bookmarkSort,
             isBookmarkRefreshing = state.isBookmarkRefreshing,
             isBookmarkPaginating = state.isBookmarkPaginating,
             isTimelineRefreshing = state.isTimelineRefreshing,
