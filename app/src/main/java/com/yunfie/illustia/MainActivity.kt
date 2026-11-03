@@ -820,6 +820,9 @@ class MainActivity : FragmentActivity() {
         val restore =
             Runnable {
                 pendingSystemUiRestore = null
+                if (!lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED) || !decorView.hasWindowFocus()) {
+                    return@Runnable
+                }
                 isSystemUiTransitionSettling = false
                 applyTaskSnapshotBlur(isEnteringBackground = false)
                 applyAdaptiveRefreshRateHint(dynamicHzController.currentMode.value)

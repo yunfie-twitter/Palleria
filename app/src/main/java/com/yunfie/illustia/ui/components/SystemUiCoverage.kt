@@ -86,7 +86,7 @@ private fun rememberSystemUiCoveredState(): State<Boolean> {
 
     val shouldBeCovered = !hasWindowFocus || insetsCovered
     val covered = remember(view) { mutableStateOf(shouldBeCovered) }
-    LaunchedEffect(shouldBeCovered) {
+    LaunchedEffect(view, shouldBeCovered) {
         if (shouldBeCovered) {
             covered.value = true
         } else {
