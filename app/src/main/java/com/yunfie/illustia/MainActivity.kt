@@ -117,6 +117,7 @@ class MainActivity : FragmentActivity() {
         const val REFRESH_RATE_HIGH_MAX = 120f
         const val REFRESH_RATE_CATEGORY_HIGH = 3
         const val TASK_SNAPSHOT_BLUR_RADIUS = 60f
+        const val SYSTEM_UI_TRANSITION_SETTLE_MS = 300L
 
         val hasArrSupportMethod by lazy(LazyThreadSafetyMode.NONE) {
             runCatching { Display::class.java.getMethod("hasArrSupport") }.getOrNull()
@@ -153,6 +154,8 @@ class MainActivity : FragmentActivity() {
     private var appliedSecureWindowFlag: Boolean? = null
     private var appliedRecentsScreenshotEnabled: Boolean? = null
     private var clipboardDetectionJob: Job? = null
+    private var isSystemUiTransitionSettling = false
+    private var pendingSystemUiRestore: Runnable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // プライバシーモード ON 時はスプラッシュも電卓アプリ風にする
@@ -486,9 +489,9 @@ class MainActivity : FragmentActivity() {
         // クイック設定/通知シェードはアクティビティを pause させないため、Boost の
         // ヒントを残したままだと SystemUI のアニメーションがそのレートに引きずられる。
         if (hasFocus) {
-            applyTaskSnapshotBlur(isEnteringBackground = false)
-            applyAdaptiveRefreshRateHint(dynamicHzController.currentMode.value)
+            scheduleSystemUiRestore()
         } else {
+            markSystemUiTransition()
             clearAdaptiveRefreshRateHint()
         }
     }
@@ -499,9 +502,9 @@ class MainActivity : FragmentActivity() {
         // (onWindowFocusChanged(true) / onResume) で解除できることを前提に、
         // ここでは背景化を確定させない。実背景化は onStop が担う。
         if (isTopResumedActivity) {
-            applyTaskSnapshotBlur(isEnteringBackground = false)
-            applyAdaptiveRefreshRateHint(dynamicHzController.currentMode.value)
+            scheduleSystemUiRestore()
         } else {
+            markSystemUiTransition()
             clearAdaptiveRefreshRateHint()
         }
     }
@@ -511,19 +514,20 @@ class MainActivity : FragmentActivity() {
         // ランチャー/タスク切替アニメーション中に全画面 RenderEffect を適用すると、
         // 遷移中の GPU 描画とスナップショット生成が重なる。リフレッシュレートだけ先に外し、
         // タスクスナップショットの保護は背景化が確定する onStop で適用する。
+        markSystemUiTransition()
         clearAdaptiveRefreshRateHint()
     }
 
     override fun onResume() {
         super.onResume()
-        applyTaskSnapshotBlur(isEnteringBackground = false)
-        applyAdaptiveRefreshRateHint(dynamicHzController.currentMode.value)
+        scheduleSystemUiRestore()
         openPixivUrlFromClipboardIfNeeded()
     }
 
     override fun onPause() {
         clipboardDetectionJob?.cancel()
         clipboardDetectionJob = null
+        markSystemUiTransition()
         clearAdaptiveRefreshRateHint()
         // onPause はクイック設定の展開でも呼ばれることがあり、そのままブラーを張ると
         // SystemUI 操作のたびにウィンドウ全体の RenderEffect を構築してしまう。
@@ -533,6 +537,8 @@ class MainActivity : FragmentActivity() {
 
     override fun onStop() {
         // 背景化が確定した地点。クイック設定や通知シェードでは到達しない。
+        cancelPendingSystemUiRestore()
+        isSystemUiTransitionSettling = true
         applyTaskSnapshotBlur(isEnteringBackground = true)
         super.onStop()
     }
@@ -761,6 +767,11 @@ class MainActivity : FragmentActivity() {
             return
         }
 
+        if (isSystemUiTransitionSettling) {
+            clearAdaptiveRefreshRateHint()
+            return
+        }
+
         // SystemUI のウィンドウ（クイック設定・通知シェード・電源メニュー）が前面にある間は
         // このウィンドウにフォーカスがない。その状態で preferredRefreshRate を張ると
         // ディスプレイ全体のモードが固定され、SystemUI 自身のアニメーションがそのレートに
@@ -795,6 +806,31 @@ class MainActivity : FragmentActivity() {
                 preferredRefreshRate = 0f
             }
         appliedRefreshRateHint = null
+    }
+
+    private fun markSystemUiTransition() {
+        cancelPendingSystemUiRestore()
+        isSystemUiTransitionSettling = true
+    }
+
+    private fun scheduleSystemUiRestore() {
+        cancelPendingSystemUiRestore()
+        isSystemUiTransitionSettling = true
+        val decorView = window.decorView
+        val restore =
+            Runnable {
+                pendingSystemUiRestore = null
+                isSystemUiTransitionSettling = false
+                applyTaskSnapshotBlur(isEnteringBackground = false)
+                applyAdaptiveRefreshRateHint(dynamicHzController.currentMode.value)
+            }
+        pendingSystemUiRestore = restore
+        decorView.postDelayed(restore, SYSTEM_UI_TRANSITION_SETTLE_MS)
+    }
+
+    private fun cancelPendingSystemUiRestore() {
+        pendingSystemUiRestore?.let(window.decorView::removeCallbacks)
+        pendingSystemUiRestore = null
     }
 
     private suspend fun updateRecentsTaskDescription(settings: com.yunfie.illustia.settings.AppSettings) {
