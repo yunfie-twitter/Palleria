@@ -33,10 +33,10 @@ import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -61,9 +61,8 @@ internal fun BookmarkTagSortScreen(
     Scaffold(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
-            TopAppBar(
+            SmallTopAppBar(
                 title = stringResource(R.string.bookmark_tag_sort_title),
-                largeTitle = stringResource(R.string.bookmark_tag_sort_title),
                 navigationIcon = {
                     HeaderIcon(
                         icon = MiuixIcons.Back,
