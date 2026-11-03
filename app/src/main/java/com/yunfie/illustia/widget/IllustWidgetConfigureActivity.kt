@@ -130,13 +130,15 @@ class IllustWidgetConfigureActivity : FragmentActivity() {
                         LoadingIndicator()
                     }
                 } else if (state.settings.refreshToken.isBlank()) {
-                    OnboardingScreen(
-                        state = state,
-                        viewModel = viewModel,
-                        onRefreshTokenLogin = { showTokenLogin = true },
-                        showTokenLogin = showTokenLogin,
-                        onTokenLoginDismiss = { showTokenLogin = false },
-                    )
+                    Box(Modifier.fillMaxSize().scrollEndHaptic()) {
+                        OnboardingScreen(
+                            state = state,
+                            viewModel = viewModel,
+                            onRefreshTokenLogin = { showTokenLogin = true },
+                            showTokenLogin = showTokenLogin,
+                            onTokenLoginDismiss = { showTokenLogin = false },
+                        )
+                    }
                 } else {
                     Scaffold(
                         containerColor = MiuixTheme.colorScheme.surface,
