@@ -508,9 +508,10 @@ class MainActivity : FragmentActivity() {
 
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
-        // ランチャー/タスク切替のアニメーションが始まる前に表示モードのヒントを外す。
+        // ランチャー/タスク切替アニメーション中に全画面 RenderEffect を適用すると、
+        // 遷移中の GPU 描画とスナップショット生成が重なる。リフレッシュレートだけ先に外し、
+        // タスクスナップショットの保護は背景化が確定する onStop で適用する。
         clearAdaptiveRefreshRateHint()
-        applyTaskSnapshotBlur(isEnteringBackground = true)
     }
 
     override fun onResume() {
