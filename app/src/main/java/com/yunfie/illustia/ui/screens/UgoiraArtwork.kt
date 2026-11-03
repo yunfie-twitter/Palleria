@@ -24,7 +24,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
@@ -124,13 +123,17 @@ internal fun UgoiraArtwork(
         }
     }
 
-    val playbackResult by produceState<Result<UgoiraPlayback>?>(initialValue = null, reloadKey, isDelayElapsed, playbackActive) {
-        if (!isDelayElapsed || !playbackActive) return@produceState
-        value =
+    // Keep loaded playback across temporary SystemUI coverage. Keying produceState by
+    // playbackActive recreated it when the shade opened, dropping playback and decoded frames.
+    val playbackResultState = remember(reloadKey, isDelayElapsed) { mutableStateOf<Result<UgoiraPlayback>?>(null) }
+    LaunchedEffect(reloadKey, isDelayElapsed, playbackActive) {
+        if (!isDelayElapsed || !playbackActive || playbackResultState.value != null) return@LaunchedEffect
+        playbackResultState.value =
             withContext(Dispatchers.IO) {
                 runCatching { loadPlayback() }
             }
     }
+    val playbackResult = playbackResultState.value
     val playback = playbackResult?.getOrNull()
     val decodedBitmaps = remember(playback) { ConcurrentHashMap<Int, ImageBitmap>() }
     var currentBitmap by remember(playback, reloadKey) { mutableStateOf<ImageBitmap?>(null) }
@@ -216,9 +219,8 @@ internal fun UgoiraArtwork(
     val prefetchAhead = remember(context) { PlatformCapabilities.recommendedUgoiraPrefetchAhead(context) }
     val keepBehind = remember(context) { PlatformCapabilities.recommendedUgoiraKeepBehind(context) }
 
-    DisposableEffect(playbackActive, playback) {
-        onDispose {
-            if (playbackActive) return@onDispose
+    LaunchedEffect(isActive, playback) {
+        if (!isActive) {
             // 画面外（非アクティブ）のページはデコード済みフレームを保持し続けるとメモリを圧迫する。
             // 復帰時は上の LaunchedEffect が現在位置から再デコードするため再生挙動は変わらない���
             decodedBitmaps.clear()
