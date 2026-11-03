@@ -21,8 +21,8 @@ android {
         // Android 7.0 (API 24) and newer.
         minSdk = androidMinSdk
         targetSdk = 37
-        versionCode = 179
-        versionName = "7.1.0-beta.4"
+        versionCode = 180
+        versionName = "7.1.0-beta.5"
         testInstrumentationRunner = "com.yunfie.illustia.pallasync.PallaSyncTestRunner"
     }
 
