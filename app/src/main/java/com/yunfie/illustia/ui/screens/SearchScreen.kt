@@ -80,7 +80,6 @@ import com.yunfie.illustia.ui.components.ScrollBlurScaffold
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.smoothScrollToTop
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Icon
@@ -143,8 +142,7 @@ fun SearchScreen(
     val liveQuery = (if (searchExpanded) state.searchDraft else state.activeSearchWord).trim()
     LaunchedEffect(liveQuery, searchExpanded) {
         if (searchExpanded && liveQuery.isNotEmpty()) {
-            delay(250)
-            suggestionStore.fetch(liveQuery)
+            suggestionStore.fetch(liveQuery, debounceMillis = 250)
         } else if (!searchExpanded || liveQuery.isEmpty()) {
             suggestionStore.fetch("")
         }
