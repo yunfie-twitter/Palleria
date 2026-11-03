@@ -1041,6 +1041,10 @@ abstract class IllustiaSettingsSecurityModule(
         _uiState.update { it.copy(bookmarkSelectedTab = index) }
     }
 
+    fun updateBookmarkSort(value: BookmarkSort) {
+        _uiState.update { it.copy(bookmarkSort = value) }
+    }
+
     fun updateHomeSelectedTab(index: Int) {
         _uiState.update { it.copy(homeSelectedTab = index) }
     }
