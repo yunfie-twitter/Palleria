@@ -83,6 +83,7 @@ import top.yukonga.miuix.kmp.icon.extended.Timer
 import top.yukonga.miuix.kmp.icon.extended.TopDownloads
 import top.yukonga.miuix.kmp.icon.extended.Tune
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
 internal enum class PaletteAction(
     @param:StringRes val title: Int,
@@ -457,6 +458,7 @@ internal fun CommandPalette(
                 state = listState,
                 modifier =
                     Modifier
+                        .scrollEndHaptic()
                         .heightIn(max = 380.dp)
                         .padding(horizontal = 8.dp, vertical = 6.dp),
             ) {
