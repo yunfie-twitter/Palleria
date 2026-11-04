@@ -311,7 +311,6 @@ abstract class IllustiaViewModelFoundation(
                 } else {
                     startupSettings
                 }
-            SettingsStore.updateImageCacheSizeMbCache(normalizedStartupSettings.imageCacheSizeMb)
             val shouldLock = normalizedStartupSettings.appLockEnabled && settingsStore.hasPinSet()
             _uiState.update {
                 it.withSettings(normalizedStartupSettings).copy(

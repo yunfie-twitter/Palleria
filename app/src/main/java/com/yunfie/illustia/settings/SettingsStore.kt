@@ -554,9 +554,6 @@ class SettingsStore internal constructor(
         @Volatile
         private var cachedAppLanguage: String? = null
 
-        @Volatile
-        private var cachedImageCacheSizeMb: Int? = null
-
         fun readStoredAppLanguage(context: Context): String {
             cachedAppLanguage?.let { return it }
             val appContext = context.applicationContext
@@ -595,17 +592,6 @@ class SettingsStore internal constructor(
             return enabled
         }
 
-        fun readImageCacheSizeMbSync(context: Context): Int {
-            cachedImageCacheSizeMb?.let { return it }
-            val size =
-                context.applicationContext
-                    .getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
-                    .getInt(KEY_IMAGE_CACHE_SIZE_MB, DEFAULT_IMAGE_CACHE_SIZE_MB)
-                    .coerceIn(MIN_IMAGE_CACHE_SIZE_MB, MAX_IMAGE_CACHE_SIZE_MB)
-            cachedImageCacheSizeMb = size
-            return size
-        }
-
         fun updatePrivacyModeCache(enabled: Boolean) {
             cachedPrivacyMode = enabled
         }
@@ -614,16 +600,9 @@ class SettingsStore internal constructor(
             cachedAppLanguage = language
         }
 
-        fun updateImageCacheSizeMbCache(sizeMb: Int) {
-            cachedImageCacheSizeMb = sizeMb
-        }
-
         private const val KEY_IMAGE_CACHE_SIZE_MB = "startup_image_cache_size_mb"
         private const val KEY_STARTUP_PRIVACY_MODE = "startup_privacy_mode_enabled"
         private const val DUMMY_LAUNCHER_ALIAS = "com.yunfie.illustia.MainActivityDummy"
-        private const val DEFAULT_IMAGE_CACHE_SIZE_MB = 300
-        private const val MIN_IMAGE_CACHE_SIZE_MB = 0
-        private const val MAX_IMAGE_CACHE_SIZE_MB = 1000
         const val STARTUP_VIEW_HISTORY_LIMIT = 16
     }
 }

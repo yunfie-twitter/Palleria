@@ -871,7 +871,6 @@ abstract class IllustiaSettingsSecurityModule(
 
     fun updateImageCacheSizeMb(value: Int) {
         val normalizedValue = value.coerceIn(0, 1000)
-        SettingsStore.updateImageCacheSizeMbCache(normalizedValue)
         updateSettings { it.copy(imageCacheSizeMb = normalizedValue) }
     }
 
