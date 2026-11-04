@@ -161,13 +161,18 @@ class IllustiaApplication : Application() {
 
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
+        // UI_HIDDEN is also delivered for the notification shade and recents; trimming
+        // there evicts images during SystemUI animations and forces reloads on return.
+        if (level == android.content.ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) return
         runCatching {
             val imageLoader = SingletonImageLoader.get(this)
-            if (level >= android.content.ComponentCallbacks2.TRIM_MEMORY_BACKGROUND) {
-                imageLoader.memoryCache?.clear()
-            } else if (level >= android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW) {
-                val currentSize = imageLoader.memoryCache?.size ?: 0L
-                imageLoader.memoryCache?.trimToSize(currentSize / 2)
+            val memoryCache = imageLoader.memoryCache ?: return@runCatching
+            when (level) {
+                android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW,
+                android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL,
+                -> memoryCache.trimToSize(memoryCache.size / 2)
+
+                android.content.ComponentCallbacks2.TRIM_MEMORY_COMPLETE -> memoryCache.clear()
             }
         }
     }
