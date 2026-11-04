@@ -69,8 +69,10 @@ import com.yunfie.illustia.ui.components.isActiveNetworkMetered
 import com.yunfie.illustia.ui.components.isAppHapticsSupported
 import com.yunfie.illustia.ui.components.rememberScrollRendering
 import com.yunfie.illustia.ui.screens.CalculatorScreen
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.NavigationRail
@@ -494,13 +496,17 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
 
     LaunchedEffect(Unit) {
         val prefs = context.getSharedPreferences("freedroidwarn_prefs", Context.MODE_PRIVATE)
-        val lastWarnedVersion = prefs.getLong("version_code_warn", 0L)
-        val currentVersion =
-            runCatching {
-                val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
-                androidx.core.content.pm.PackageInfoCompat
-                    .getLongVersionCode(pInfo)
-            }.getOrDefault(0L)
+        val (lastWarnedVersion, currentVersion) =
+            withContext(Dispatchers.IO) {
+                val last = prefs.getLong("version_code_warn", 0L)
+                val current =
+                    runCatching {
+                        val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+                        androidx.core.content.pm.PackageInfoCompat
+                            .getLongVersionCode(pInfo)
+                    }.getOrDefault(0L)
+                last to current
+            }
         if (currentVersion > 0L && currentVersion > lastWarnedVersion) {
             delay(1200L)
             val warnMessage = context.getString(org.woheller69.freeDroidWarn.R.string.dialog_Warning)
