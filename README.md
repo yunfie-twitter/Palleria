@@ -60,7 +60,6 @@ Built from the ground up with Jetpack Compose, Miuix design language, and a nati
   * **Courtesy Audio Fade**: 100ms logarithmic volume fade-out when earphones disconnect to protect ears and prevent public audio leaks.
   * **Tactile Haptic Feedback**: Boundary collision thuds (zoom & grid limits), dismiss threshold tick feedback, and bookmark tactile bursts.
   * **Wide Color Gamut (Display P3)**: 10-bit wide color gamut support for vibrant artwork reproduction on OLED screens.
-*  **PallaSync Cross-Device Synchronization**: End-to-end encrypted peer-to-peer sync of bookmarks, history, settings, and mutes across Android devices and browser extensions.
 *  **Deep Reading Experience**: Dedicated Manga viewer and Novel reader with customizable typography, progress resume, and background Text-to-Speech (TTS) audiobook narration.
 *  **Built-in Download & Updater**: Multi-threaded downloader with EXIF privacy stripping, template naming, and seamless background APK updates with Shizuku support.
 *  **Privacy & Security**: PIN lock, biometric authentication, recents task snapshot stealth blur, and tracking URL cleaner.
@@ -134,11 +133,6 @@ Built from the ground up with Jetpack Compose, Miuix design language, and a nati
 * **Custom Path & SAF**: Store images in custom SAF directories or standard Pictures gallery.
 * **Privacy EXIF Stripping**: Strips personal metadata from downloaded files before saving.
 * **Smart Filename Templates**: Format filenames using custom patterns (`{id}`, `{title}`, `{artist}`, `{page}`).
-
-###  PallaSync (Multi-Device Sync)
-* **Secure Synchronization**: End-to-end encrypted synchronization without third-party data tracking.
-* **Ecosystem Integration**: Sync bookmarks, view history, search history, settings, and mute rules between Palleria Android apps and the PallaSync browser extension.
-* **Pairing**: Quick pairing via QR codes or secure pairing phrases.
 
 ###  Micro-UX & Customization
 * **Theming**: System default, Light, Dark, AMOLED Pure Black, and Dynamic Color matching artwork accents.

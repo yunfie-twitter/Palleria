@@ -6,22 +6,8 @@
     <ID>ComplexCondition:IllustComponents.kt:preferences.showTitle || preferences.showArtist || preferences.showTags || preferences.showBookmarkCount || showBookmarkButton</ID>
     <ID>ComplexCondition:IllustiaAppRoot.kt:!state.settingsLoaded || state.settings.refreshToken.isBlank() || state.appLocked || state.privacyLocked</ID>
     <ID>ComplexCondition:MainSurface.kt:isBlurEnabled &amp;&amp; supportsBlur &amp;&amp; !useNavigationRail &amp;&amp; !systemCovered</ID>
-    <ID>ComplexCondition:PallaSyncEventApplier.kt:PallaSyncEventApplier$(bodyKind != null &amp;&amp; bodyKind != kind) || (bodyValue != null &amp;&amp; bodyValue != value)</ID>
-    <ID>ComplexCondition:PallaSyncLocalIntents.kt:PallaSyncLocalIntents$metadata.sourceSequence &gt; selectedSequence || (metadata.sourceSequence == selectedSequence &amp;&amp; metadata.candidateIndex &gt; selectedCandidateIndex) || ( metadata.sourceSequence == selectedSequence &amp;&amp; metadata.candidateIndex == selectedCandidateIndex &amp;&amp; candidate.entryIndex &gt; selectedEntry )</ID>
-    <ID>ComplexCondition:PallaSyncLocalIntents.kt:PallaSyncLocalIntents$original.schema != FAVORITE_TAG_SCHEMA_V3 || original.operation != SYNC_OPERATION_UPSERT || original.favoriteOrder != order || original.entityId !in keyByTag</ID>
-    <ID>ComplexCondition:PallaSyncRecoveryCollectDialog.kt:started &amp;&amp; !busy &amp;&amp; !confirmSas &amp;&amp; !confirmOperation &amp;&amp; stage != PallaSyncRecoveryCollectorOwner.Stage.CLOSED</ID>
-    <ID>ComplexCondition:PallaSyncRecoveryRecipientControls.kt:!busy &amp;&amp; !confirming &amp;&amp; !credentialInput &amp;&amp; stage != PallaSyncRecoveryRecipient.Stage.PERSISTED &amp;&amp; stage != PallaSyncRecoveryRecipient.Stage.CLOSED</ID>
-    <ID>ComplexCondition:PallaSyncRetentionHandoff.kt:PallaSyncRetentionHandoff$publication.status != "published" || publication.chainId != chain || publication.generation != generation || publication.stateSha256 != compaction["state_sha256"]?.jsonPrimitive?.content || compaction["compaction_id"]?.jsonPrimitive?.content != publication.compactionId || compaction["chain_id"]?.jsonPrimitive?.content != chain || compaction["generation"]?.jsonPrimitive?.long != generation || compaction["log_id"]?.jsonPrimitive?.content != logId || compaction["epoch_hash"]?.jsonPrimitive?.content != epochHash || compaction["covered_through_seq"]?.jsonPrimitive?.long != publication.coveredThroughSeq || header["kind"]?.jsonPrimitive?.content != "header" || header["chain_id"]?.jsonPrimitive?.content != chain || header["generation"]?.jsonPrimitive?.long != generation || header["log_id"]?.jsonPrimitive?.content != logId || header["epoch_hash"]?.jsonPrimitive?.content != epochHash || header["covered_through_seq"]?.jsonPrimitive?.long != publication.coveredThroughSeq || header["covered_log_hash"] != compaction["covered_log_hash"]</ID>
-    <ID>ComplexCondition:PallaSyncRetentionHandoff.kt:PallaSyncRetentionHandoff$state.writeState != "active" || state.generation != generation || state.keyEpoch != currentEpoch || state.epochHash != epochHash || state.logId != pin.getValue("log_id").jsonPrimitive.content || state.verifiedSeq &lt; coveredThroughSeq || state.verifiedSeq != state.materializedSeq || state.verifiedHash == null || store.dao.pendingOutboxCount(chain) != 0L || store.snapshotInstallDao().unresolvedQuarantineCount(chain) != 0L || store.protocolDao().unresolvedAuthorGapCount(chain) != 0L</ID>
-    <ID>ComplexCondition:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$candidate.generation != checkpoint.generation || compaction["log_id"]?.jsonPrimitive?.content != checkpoint.logId || compaction["generation"]?.jsonPrimitive?.long != checkpoint.generation || compaction["epoch_hash"]?.jsonPrimitive?.content != checkpoint.epochHash || covered &gt; checkpoint.headSeq</ID>
-    <ID>ComplexCondition:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$current.initialPullCompleted &amp;&amp; current.generation == checkpoint.generation &amp;&amp; current.verifiedSeq == checkpoint.headSeq &amp;&amp; current.materializedSeq == checkpoint.headSeq &amp;&amp; current.verifiedHash == checkpoint.headHash &amp;&amp; current.epochHash == checkpoint.epochHash</ID>
-    <ID>ComplexCondition:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$current.verifiedSeq &gt; 0L &amp;&amp; current.verifiedSeq == current.materializedSeq &amp;&amp; current.lastRelaySeq == current.verifiedSeq &amp;&amp; current.verifiedHash != null</ID>
-    <ID>ComplexCondition:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$installed.status != "installed" || installed.generation != checkpoint.generation || installed.coveredThroughSeq != current.verifiedSeq || installed.coveredLogHash != current.verifiedHash</ID>
-    <ID>ComplexCondition:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$page.nextSeq &lt; afterSeq || (page.nextSeq == afterSeq &amp;&amp; (page.hasMore || page.records.isNotEmpty()))</ID>
     <ID>ComplexCondition:ScrollBlurScaffold.kt:baseAlpha &gt; 0f || (supportsBlur &amp;&amp; progress &gt; 0f &amp;&amp; !systemCovered)</ID>
     <ID>ComplexCondition:SearchScreen.kt:state.loadState == LoadState.Loading &amp;&amp; state.searchItems.isEmpty() &amp;&amp; state.searchNovelItems.isEmpty() &amp;&amp; state.userSearchItems.isEmpty()</ID>
-    <ID>ConstructorParameterNaming:PallaSyncModels.kt:DataPayload$val created_at_ms: Long</ID>
-    <ID>ConstructorParameterNaming:PallaSyncModels.kt:DataPayload$val entity_id: String</ID>
     <ID>CyclomaticComplexMethod:AppLanguage.kt:fun appLanguageLabelRes: Int</ID>
     <ID>CyclomaticComplexMethod:AppLanguage.kt:fun currentAcceptLanguage: String</ID>
     <ID>CyclomaticComplexMethod:Haptics.kt:fun performAppHapticFeedback</ID>
@@ -30,158 +16,20 @@
     <ID>CyclomaticComplexMethod:IllustiaLibraryNavigationModule.kt:IllustiaLibraryNavigationModule$fun removeAccount</ID>
     <ID>CyclomaticComplexMethod:IllustiaViewModelFoundation.kt:IllustiaViewModelFoundation$protected fun IllustiaUiState.hasCachedContent: Boolean</ID>
     <ID>CyclomaticComplexMethod:MainActivity.kt:MainActivity$override fun onCreate</ID>
-    <ID>CyclomaticComplexMethod:PallaSyncErrorGuidance.kt:@StringRes private fun relayHintRes: Int?</ID>
-    <ID>CyclomaticComplexMethod:PallaSyncEventApplier.kt:PallaSyncEventApplier$private fun applyMuteSetting: FoldResult</ID>
-    <ID>CyclomaticComplexMethod:PallaSyncExportArchiveTest.kt:PallaSyncExportArchiveTest$@Test fun sourceReceiptMustMatchTheSignedHistoricalUploadReceipt</ID>
-    <ID>CyclomaticComplexMethod:PallaSyncExportArchiveTest.kt:PallaSyncExportArchiveTest$private fun acceptedEvidenceArchive: Pair&lt;ByteArray, PallaSyncExportArchive.ExpectedSource&gt;</ID>
-    <ID>CyclomaticComplexMethod:PallaSyncExportArchiveVerifier.kt:PallaSyncExportArchiveVerifier$suspend fun verifySuspending: Header</ID>
-    <ID>CyclomaticComplexMethod:PallaSyncExportArchiveVerifier.kt:PallaSyncExportArchiveVerifier.ExportReceiptLinkIndex$suspend fun verifyAuthorityHistory: String</ID>
-    <ID>CyclomaticComplexMethod:PallaSyncExportArchiveVerifier.kt:PallaSyncExportArchiveVerifier.ExportReceiptLinkIndex$suspend fun verifySourceReceipts: Boolean</ID>
-    <ID>CyclomaticComplexMethod:PallaSyncImportRelay.kt:PallaSyncImportRelay.Companion$internal fun chunkHistories: List&lt;History&gt;</ID>
-    <ID>CyclomaticComplexMethod:PallaSyncInitialHistory.kt:PallaSyncInitialHistory$private suspend fun replay: JsonObject</ID>
-    <ID>CyclomaticComplexMethod:PallaSyncInitialHistory.kt:PallaSyncInitialHistory$private suspend fun verifySnapshotCatalogue</ID>
-    <ID>CyclomaticComplexMethod:PallaSyncKeystore.kt:PallaSyncKeystore$internal fun retainTransparencyRecoveryProgress: Boolean</ID>
-    <ID>CyclomaticComplexMethod:PallaSyncLegacyV21Source.kt:PallaSyncLegacyV21Source.Companion$internal fun decodePage: RecordPage</ID>
-    <ID>CyclomaticComplexMethod:PallaSyncLegacyV21Source.kt:PallaSyncLegacyV21Source.Companion$internal suspend fun inspectFrozenExport: PallaSyncHttpResult&lt;FrozenExportProof&gt;</ID>
-    <ID>CyclomaticComplexMethod:PallaSyncLocalIntents.kt:PallaSyncLocalIntents$private suspend fun reconcileLegacyFavoriteNormalizationCollisions</ID>
-    <ID>CyclomaticComplexMethod:PallaSyncLocalIntents.kt:PallaSyncLocalIntents$private suspend fun resolveLegacyGroupSelection: Long</ID>
-    <ID>CyclomaticComplexMethod:PallaSyncLocalIntents.kt:PallaSyncLocalIntents$suspend fun completeLegacyMigrationWithVerifiedSnapshot</ID>
-    <ID>CyclomaticComplexMethod:PallaSyncLocalIntents.kt:PallaSyncLocalIntents$suspend fun finalizeLegacyMigrationChoices</ID>
-    <ID>CyclomaticComplexMethod:PallaSyncLocalIntents.kt:PallaSyncLocalIntents$suspend fun legacyMigrationCandidatePage: LegacyCandidatePage</ID>
-    <ID>CyclomaticComplexMethod:PallaSyncLocalIntents.kt:PallaSyncLocalIntents$suspend fun reindexBlockedFavoriteOrder: Int</ID>
-    <ID>CyclomaticComplexMethod:PallaSyncLocalIntents.kt:PallaSyncLocalIntents$suspend fun stageLegacyBatch</ID>
-    <ID>CyclomaticComplexMethod:PallaSyncLocalIntents.kt:PallaSyncLocalIntents$suspend fun stageNewRootMigrationPage: NewRootMigrationCheckpoint</ID>
-    <ID>CyclomaticComplexMethod:PallaSyncPreparedReseed.kt:internal fun resumePallaSyncPreparedReseed: PallaSyncPreparedReseed</ID>
-    <ID>CyclomaticComplexMethod:PallaSyncRemoteService.kt:PallaSyncRemoteService$@Suppress("SwallowedException") fun &lt;T&gt; execute: PallaSyncHttpResult&lt;T&gt;</ID>
-    <ID>CyclomaticComplexMethod:PallaSyncReseedTransparencyVerifier.kt:PallaSyncReseedTransparencyVerifier$suspend fun verifySuffix: PallaSyncHttpResult&lt;JsonObject&gt;</ID>
-    <ID>CyclomaticComplexMethod:PallaSyncRetentionHandoff.kt:PallaSyncRetentionHandoff$internal suspend fun publishedCompactionForPruneEntry: JsonObject?</ID>
-    <ID>CyclomaticComplexMethod:PallaSyncRetentionHandoff.kt:PallaSyncRetentionHandoff$internal suspend fun verifiedPublishedCompaction: JsonObject?</ID>
-    <ID>CyclomaticComplexMethod:PallaSyncRetentionHandoff.kt:PallaSyncRetentionHandoff$private fun publicationCoversVerifiedPrefix: Boolean</ID>
-    <ID>CyclomaticComplexMethod:PallaSyncRetryGate.kt:PallaSyncRetryGate$fun observe</ID>
-    <ID>CyclomaticComplexMethod:PallaSyncSnapshotStateReader.kt:PallaSyncSnapshotStateReader$private suspend fun streamInternal</ID>
-    <ID>CyclomaticComplexMethod:PallaSyncWireModels.kt:internal fun classifyPallaSyncHttpStatus: PallaSyncHttpResult&lt;Nothing&gt;?</ID>
-    <ID>CyclomaticComplexMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$internal suspend fun beginLegacyV20Migration: PallaSyncHttpResult&lt;PallaSyncLegacyV20Source.FrozenExportProof&gt;</ID>
-    <ID>CyclomaticComplexMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$internal suspend fun commitStagedReseedHistory: PallaSyncHttpResult&lt;JsonObject&gt;</ID>
-    <ID>CyclomaticComplexMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$internal suspend fun importDeviceCheckpoint: String</ID>
-    <ID>CyclomaticComplexMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$internal suspend fun stageReseedHistory: PallaSyncHttpResult&lt;PallaSyncImportStageResponse.Staged&gt;</ID>
-    <ID>CyclomaticComplexMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$private suspend fun applyRecordPageLocked: PallaSyncHttpResult&lt;Unit&gt;</ID>
-    <ID>CyclomaticComplexMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$private suspend fun fetchDevicesLocked: PallaSyncHttpResult&lt;Unit&gt;</ID>
-    <ID>CyclomaticComplexMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$private suspend fun finishReseedCutover</ID>
-    <ID>CyclomaticComplexMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$private suspend fun installExactArchiveSnapshot</ID>
-    <ID>CyclomaticComplexMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$private suspend fun prepareReseedSnapshot</ID>
-    <ID>CyclomaticComplexMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$private suspend fun stageLegacyV21Candidates: PallaSyncHttpResult&lt;Unit&gt;</ID>
-    <ID>CyclomaticComplexMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$private suspend fun synchronizeOnceLocked: SyncCycleOutcome</ID>
-    <ID>CyclomaticComplexMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$private suspend fun verifyExportSnapshotParts</ID>
-    <ID>CyclomaticComplexMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$private suspend fun verifyRelayArchiveLocked: PallaSyncExportArchiveVerifier.Header</ID>
-    <ID>CyclomaticComplexMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$private suspend fun verifyRetainedTransparencyCheckpoint: Boolean</ID>
     <ID>CyclomaticComplexMethod:ProtocolDao.kt:ProtocolDao$suspend fun recordConflict: String?</ID>
     <ID>CyclomaticComplexMethod:ReseedJournalDao.kt:ReseedJournalDao$@Transaction suspend fun restartUncommittedSnapshot</ID>
     <ID>CyclomaticComplexMethod:ReseedJournalDao.kt:ReseedJournalDao$@Transaction suspend fun saveMonotone</ID>
     <ID>CyclomaticComplexMethod:ReseedJournalDao.kt:ReseedJournalDao$private fun monotoneSourceConflict: Boolean</ID>
     <ID>CyclomaticComplexMethod:SettingsStorePreferences.kt:internal fun readFromDataStore: AppSettings</ID>
-    <ID>DestructuringDeclarationWithTooManyEntries:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$val (oldId, oldKeys, oldAuthority, newKeys) = replacement</ID>
     <ID>EmptyFunctionBlock:AppLockScreen.kt:&lt;no name provided&gt;${}</ID>
-    <ID>LargeClass:PallaSyncEpochLifecycle.kt:PallaSyncEpochLifecycle</ID>
-    <ID>LargeClass:PallaSyncExportArchiveTest.kt:PallaSyncExportArchiveTest</ID>
-    <ID>LargeClass:PallaSyncExportArchiveVerifier.kt:PallaSyncExportArchiveVerifier$ExportReceiptLinkIndex : Closeable</ID>
-    <ID>LargeClass:PallaSyncKeystore.kt:PallaSyncKeystore</ID>
-    <ID>LargeClass:PallaSyncLocalIntents.kt:PallaSyncLocalIntents</ID>
-    <ID>LargeClass:PallaSyncLocalIntentsTest.kt:PallaSyncLocalIntentsTest</ID>
-    <ID>LargeClass:PallaSyncProtocolStoreTest.kt:PallaSyncProtocolStoreTest</ID>
-    <ID>LargeClass:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator : PallaSyncEventWriter</ID>
     <ID>LargeClass:PixivApiClient.kt:PixivApiClient</ID>
     <ID>LongMethod:IllustWidgetConfigureActivity.kt:IllustWidgetConfigureActivity$override fun onCreate</ID>
     <ID>LongMethod:IllustiaLibraryNavigationModule.kt:IllustiaLibraryNavigationModule$fun saveOfflineImage</ID>
     <ID>LongMethod:MainActivity.kt:MainActivity$override fun onCreate</ID>
-    <ID>LongMethod:PallaSyncDatabaseTest.kt:PallaSyncDatabaseTest$@Test fun `unresolved protocol dispositions persist without counting as corrupt quarantine`</ID>
-    <ID>LongMethod:PallaSyncEpochLifecycle.kt:PallaSyncEpochLifecycle$suspend fun repairDeviceEnvelope</ID>
-    <ID>LongMethod:PallaSyncExportArchiveTest.kt:PallaSyncExportArchiveTest$@Test fun detachedSourceControlEntryRequiresAndAdvancesExactPriorAuthority</ID>
-    <ID>LongMethod:PallaSyncExportArchiveTest.kt:PallaSyncExportArchiveTest$@Test fun sourceReceiptMustMatchTheSignedHistoricalUploadReceipt</ID>
-    <ID>LongMethod:PallaSyncExportArchiveTest.kt:PallaSyncExportArchiveTest$private fun acceptedEvidenceArchive: Pair&lt;ByteArray, PallaSyncExportArchive.ExpectedSource&gt;</ID>
-    <ID>LongMethod:PallaSyncExportArchiveTest.kt:PallaSyncExportArchiveTest$private fun signHistoricalReceipt: kotlinx.serialization.json.JsonObject</ID>
-    <ID>LongMethod:PallaSyncExportArchiveVerifier.kt:PallaSyncExportArchiveVerifier$suspend fun verifySuspending: Header</ID>
-    <ID>LongMethod:PallaSyncExportArchiveVerifier.kt:PallaSyncExportArchiveVerifier.ExportReceiptLinkIndex$private suspend fun verifyReseedTransition: Pair&lt;String, Long&gt;</ID>
-    <ID>LongMethod:PallaSyncExportArchiveVerifier.kt:PallaSyncExportArchiveVerifier.ExportReceiptLinkIndex$suspend fun verifyAuthorityHistory: String</ID>
-    <ID>LongMethod:PallaSyncExportArchiveVerifier.kt:PallaSyncExportArchiveVerifier.ExportReceiptLinkIndex$suspend fun verifySourceReceipts: Boolean</ID>
-    <ID>LongMethod:PallaSyncImportRelay.kt:PallaSyncImportRelay.Companion$internal fun expectedReseedCommitEntries: JsonArray</ID>
-    <ID>LongMethod:PallaSyncInitialHistory.kt:PallaSyncInitialHistory$private suspend fun replay: JsonObject</ID>
-    <ID>LongMethod:PallaSyncInitialHistory.kt:PallaSyncInitialHistory$private suspend fun transparency: JsonObject</ID>
-    <ID>LongMethod:PallaSyncInitialHistory.kt:PallaSyncInitialHistory$private suspend fun verifySnapshotCatalogue</ID>
-    <ID>LongMethod:PallaSyncInitialHistory.kt:PallaSyncInitialHistory$suspend fun load: PallaSyncGenesisCheckpoint</ID>
-    <ID>LongMethod:PallaSyncLegacyMigrationReportTest.kt:PallaSyncLegacyMigrationReportTest$@Test fun `report streams every keyset page and records migration status`</ID>
-    <ID>LongMethod:PallaSyncLegacyV21Source.kt:PallaSyncLegacyV21Source.Companion$internal fun decodePage: RecordPage</ID>
-    <ID>LongMethod:PallaSyncLegacyV21Source.kt:PallaSyncLegacyV21Source.Companion$internal suspend fun inspectFrozenExport: PallaSyncHttpResult&lt;FrozenExportProof&gt;</ID>
-    <ID>LongMethod:PallaSyncLiveHistory.kt:PallaSyncLiveHistory$private suspend fun replay: JsonObject</ID>
-    <ID>LongMethod:PallaSyncLocalIntents.kt:PallaSyncLocalIntents$private suspend fun reconcileLegacyFavoriteNormalizationCollisions</ID>
-    <ID>LongMethod:PallaSyncLocalIntents.kt:PallaSyncLocalIntents$private suspend fun resolveLegacyGroupSelection: Long</ID>
-    <ID>LongMethod:PallaSyncLocalIntents.kt:PallaSyncLocalIntents$suspend fun completeLegacyMigrationWithVerifiedSnapshot</ID>
-    <ID>LongMethod:PallaSyncLocalIntents.kt:PallaSyncLocalIntents$suspend fun finalizeLegacyMigrationChoices</ID>
-    <ID>LongMethod:PallaSyncLocalIntents.kt:PallaSyncLocalIntents$suspend fun legacyMigrationCandidatePage: LegacyCandidatePage</ID>
-    <ID>LongMethod:PallaSyncLocalIntents.kt:PallaSyncLocalIntents$suspend fun reindexBlockedFavoriteOrder: Int</ID>
-    <ID>LongMethod:PallaSyncLocalIntents.kt:PallaSyncLocalIntents$suspend fun stageLegacyBatch</ID>
-    <ID>LongMethod:PallaSyncLocalIntents.kt:PallaSyncLocalIntents$suspend fun stageNewRootMigrationPage: NewRootMigrationCheckpoint</ID>
-    <ID>LongMethod:PallaSyncLocalIntentsTest.kt:PallaSyncLocalIntentsTest$@Test fun `ambiguous legacy candidates require a persisted user choice before losers are excluded`</ID>
-    <ID>LongMethod:PallaSyncLocalIntentsTest.kt:PallaSyncLocalIntentsTest$@Test fun `frozen legacy source and encrypted export remain unapproved until conflict resolution`</ID>
-    <ID>LongMethod:PallaSyncLocalIntentsTest.kt:PallaSyncLocalIntentsTest$@Test fun `legacy migration completion compares verified snapshot authors audit and waits for receipt`</ID>
-    <ID>LongMethod:PallaSyncLocalIntentsTest.kt:PallaSyncLocalIntentsTest$@Test fun `new root migration checkpoints page and target intents atomically for restart`</ID>
-    <ID>LongMethod:PallaSyncLocalIntentsTest.kt:PallaSyncLocalIntentsTest$@Test fun `normalization collision in favorite snapshot retains alternatives and requires explicit choice`</ID>
-    <ID>LongMethod:PallaSyncLocalIntentsTest.kt:PallaSyncLocalIntentsTest$@Test fun `ordinary repeated entity updates remain separate migration operations`</ID>
-    <ID>LongMethod:PallaSyncLocalIntentsTest.kt:PallaSyncLocalIntentsTest$@Test fun `v20 favorite snapshots reproduce incoming-first distinct merge order`</ID>
-    <ID>LongMethod:PallaSyncNewRootStateComparatorTest.kt:PallaSyncNewRootStateComparatorTest$@Test fun `new root verification compares logical entities tombstones and registers without winner identity`</ID>
-    <ID>LongMethod:PallaSyncPeerApprover.kt:PallaSyncPeerApprover$suspend fun pendingRequest: JsonObject?</ID>
-    <ID>LongMethod:PallaSyncProtocolStoreTest.kt:PallaSyncProtocolStoreTest$@Test fun `verified deletion retains signed proof and minimum authority while erasing chain rows`</ID>
-    <ID>LongMethod:PallaSyncReseedJniTest.kt:PallaSyncReseedJniTest$@Test fun `prepared reseed encrypts full state at staged incarnation boundary`</ID>
-    <ID>LongMethod:PallaSyncReseedJniTest.kt:PallaSyncReseedJniTest$@Test fun `root reseed session prepares a fresh generation identity through JNI`</ID>
-    <ID>LongMethod:PallaSyncReseedJniTest.kt:PallaSyncReseedJniTest$private fun authority: JsonObject</ID>
-    <ID>LongMethod:PallaSyncReseedJournalDaoTest.kt:PallaSyncReseedJournalDaoTest$@Test fun `reseed journal preserves selected target and only advances verified checkpoints`</ID>
-    <ID>LongMethod:PallaSyncReseedSnapshotWorkflow.kt:PallaSyncReseedCommitRelay$suspend fun commit: PallaSyncHttpResult&lt;JsonObject&gt;</ID>
-    <ID>LongMethod:PallaSyncReseedSnapshotWorkflow.kt:internal fun PallaSyncRootSession.createReseedCommitBody: String</ID>
-    <ID>LongMethod:PallaSyncReseedTransparencyVerifier.kt:PallaSyncReseedTransparencyVerifier$suspend fun verifySuffix: PallaSyncHttpResult&lt;JsonObject&gt;</ID>
-    <ID>LongMethod:PallaSyncRetentionHandoff.kt:PallaSyncRetentionHandoff$internal suspend fun publishedCompactionForPruneEntry: JsonObject?</ID>
-    <ID>LongMethod:PallaSyncRetryGate.kt:PallaSyncRetryGate$fun observe</ID>
-    <ID>LongMethod:PallaSyncSnapshotPublicationDaoTest.kt:PallaSyncSnapshotPublicationDaoTest$@Test fun `staged reseed receipts cannot authorize compaction before suffix verification`</ID>
-    <ID>LongMethod:PallaSyncSnapshotStateReaderTest.kt:PallaSyncSnapshotStateReaderTest$@Test fun `new root migration reauthors every entity and register in complete source conflict order`</ID>
-    <ID>LongMethod:PallaSyncSnapshotStateReaderTest.kt:PallaSyncSnapshotStateReaderTest$@Test fun `reseed snapshot header uses new incarnation zero boundary and preserves source lamport`</ID>
-    <ID>LongMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$internal suspend fun auditReseedSource: PallaSyncReseedSourceConflict.Summary?</ID>
-    <ID>LongMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$internal suspend fun beginLegacyV20Migration: PallaSyncHttpResult&lt;PallaSyncLegacyV20Source.FrozenExportProof&gt;</ID>
-    <ID>LongMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$internal suspend fun commitStagedReseedHistory: PallaSyncHttpResult&lt;JsonObject&gt;</ID>
-    <ID>LongMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$internal suspend fun importDeviceCheckpoint: String</ID>
-    <ID>LongMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$internal suspend fun stageReseedHistory: PallaSyncHttpResult&lt;PallaSyncImportStageResponse.Staged&gt;</ID>
-    <ID>LongMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$private fun buildReseedAuthorityCheckpoint: JsonObject</ID>
-    <ID>LongMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$private fun verifyReseedAuthorityFromSavedEvidence: JsonObject</ID>
-    <ID>LongMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$private suspend fun applyRecordPageLocked: PallaSyncHttpResult&lt;Unit&gt;</ID>
-    <ID>LongMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$private suspend fun checkNoVerifiedDeletionLedger</ID>
-    <ID>LongMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$private suspend fun fetchDevicesLocked: PallaSyncHttpResult&lt;Unit&gt;</ID>
-    <ID>LongMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$private suspend fun finishReseedCutover</ID>
-    <ID>LongMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$private suspend fun installExactArchiveSnapshot</ID>
-    <ID>LongMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$private suspend fun prepareReseedSnapshot</ID>
-    <ID>LongMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$private suspend fun resumeReseedAfterSourceCapture</ID>
-    <ID>LongMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$private suspend fun retryQuarantinedRecordEvidence: Boolean</ID>
-    <ID>LongMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$private suspend fun stageLegacyV21Candidates: PallaSyncHttpResult&lt;Unit&gt;</ID>
-    <ID>LongMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$private suspend fun submitDeletionAndErase: PallaSyncDeletionRequestResult</ID>
-    <ID>LongMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$private suspend fun synchronizeOnceLocked: SyncCycleOutcome</ID>
-    <ID>LongMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$private suspend fun verifyExportSnapshotParts</ID>
-    <ID>LongMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$private suspend fun verifyQuarantinedRecordAcceptance</ID>
-    <ID>LongMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$private suspend fun verifyRelayArchiveLocked: PallaSyncExportArchiveVerifier.Header</ID>
-    <ID>LongMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$private suspend fun verifyRetainedTransparencyCheckpoint: Boolean</ID>
-    <ID>LongMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$suspend fun exportRelayArchiveWithRecovery: PallaSyncExportArchive.ExpectedSource</ID>
-    <ID>LongMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$suspend fun getClientStatus: PallaSyncClientStatus?</ID>
-    <ID>LongMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$suspend fun prunePublishedLog: Boolean</ID>
-    <ID>LongMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$suspend fun refreshDeletedChainEvidence: String?</ID>
-    <ID>LongMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$suspend fun restoreRelayArchive</ID>
-    <ID>LongMethod:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$suspend fun retainedDeletedChainEvidenceRevisions: List&lt;PallaSyncDeletionEvidenceRevision&gt;</ID>
     <ID>LongMethod:SettingsStorePreferences.kt:internal fun readFromDataStore: AppSettings</ID>
     <ID>LongMethod:SettingsStorePreferences.kt:internal fun readFromSharedPreferences: AppSettings</ID>
     <ID>LongMethod:SettingsStorePreferences.kt:internal fun writeToDataStore</ID>
     <ID>LoopWithTooManyJumpStatements:IllustiaRepository.kt:IllustiaRepository$while</ID>
-    <ID>LoopWithTooManyJumpStatements:PallaSyncExportArchiveVerifier.kt:PallaSyncExportArchiveVerifier.ExportReceiptLinkIndex$while</ID>
-    <ID>LoopWithTooManyJumpStatements:PallaSyncInitialHistory.kt:PallaSyncInitialHistory$for</ID>
-    <ID>LoopWithTooManyJumpStatements:PallaSyncInitialHistory.kt:PallaSyncInitialHistory$while</ID>
-    <ID>LoopWithTooManyJumpStatements:PallaSyncLiveHistory.kt:PallaSyncLiveHistory$while</ID>
-    <ID>LoopWithTooManyJumpStatements:PallaSyncLocalIntents.kt:PallaSyncLocalIntents$while</ID>
-    <ID>LoopWithTooManyJumpStatements:PallaSyncRetentionHandoff.kt:PallaSyncRetentionHandoff$for</ID>
-    <ID>LoopWithTooManyJumpStatements:PallaSyncRetentionHandoff.kt:PallaSyncRetentionHandoff$while</ID>
-    <ID>LoopWithTooManyJumpStatements:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$for</ID>
     <ID>MagicNumber:AppDataScreen.kt:1024.0</ID>
     <ID>MagicNumber:AppSettings.kt:AppSettings$1024</ID>
     <ID>MagicNumber:AppSettings.kt:AppSettings$5L</ID>
@@ -209,44 +57,6 @@
     <ID>MagicNumber:IllustiaViewModelFoundation.kt:IllustiaViewModelFoundation$401</ID>
     <ID>MagicNumber:MoreScreen.kt:99</ID>
     <ID>MagicNumber:NativeImageAnalysis.kt:NativeImageAnalysis$0.58</ID>
-    <ID>MagicNumber:PallaSyncExportArchiveVerifier.kt:PallaSyncExportArchiveVerifier.ExportReceiptLinkIndex$3</ID>
-    <ID>MagicNumber:PallaSyncImportRelay.kt:PallaSyncImportRelay.Companion$3</ID>
-    <ID>MagicNumber:PallaSyncImportRelay.kt:PallaSyncImportRelay.Companion$4</ID>
-    <ID>MagicNumber:PallaSyncLegacyV21Source.kt:PallaSyncLegacyV21Source$32</ID>
-    <ID>MagicNumber:PallaSyncLegacyV21Source.kt:PallaSyncLegacyV21Source.Companion$32</ID>
-    <ID>MagicNumber:PallaSyncLegacyV21Source.kt:PallaSyncLegacyV21Source.Companion$64</ID>
-    <ID>MagicNumber:PallaSyncLegacyV21Source.kt:PallaSyncLegacyV21Source.Companion$7</ID>
-    <ID>MagicNumber:PallaSyncLocalIntents.kt:PallaSyncLocalIntents$20</ID>
-    <ID>MagicNumber:PallaSyncLocalIntents.kt:PallaSyncLocalIntents$200</ID>
-    <ID>MagicNumber:PallaSyncLocalIntents.kt:PallaSyncLocalIntents$32</ID>
-    <ID>MagicNumber:PallaSyncLocalIntents.kt:PallaSyncLocalIntents$43</ID>
-    <ID>MagicNumber:PallaSyncLocalIntents.kt:PallaSyncLocalIntents$50</ID>
-    <ID>MagicNumber:PallaSyncLocalIntents.kt:PallaSyncLocalIntents$64</ID>
-    <ID>MagicNumber:PallaSyncLocalIntents.kt:PallaSyncLocalIntents$80</ID>
-    <ID>MagicNumber:PallaSyncLocalIntents.kt:PallaSyncLocalIntents$8_388_608</ID>
-    <ID>MagicNumber:PallaSyncLogPruneRelay.kt:PallaSyncLogPruneRelay$9_007_199_254_740_991L</ID>
-    <ID>MagicNumber:PallaSyncLogPruneRelay.kt:PallaSyncLogPruneRelay.Companion$4_096</ID>
-    <ID>MagicNumber:PallaSyncMnemonicDialog.kt:31</ID>
-    <ID>MagicNumber:PallaSyncReseedSnapshotWorkflow.kt:32</ID>
-    <ID>MagicNumber:PallaSyncReseedSnapshotWorkflow.kt:4</ID>
-    <ID>MagicNumber:PallaSyncReseedTransparencyVerifier.kt:32</ID>
-    <ID>MagicNumber:PallaSyncReseedTransparencyVerifier.kt:4</ID>
-    <ID>MagicNumber:PallaSyncReseedTransparencyVerifier.kt:PallaSyncReseedTransparencyVerifier$8</ID>
-    <ID>MagicNumber:PallaSyncRetryGate.kt:PallaSyncRetryGate$503</ID>
-    <ID>MagicNumber:PallaSyncSnapshotStateReader.kt:PallaSyncSnapshotStateReader$32</ID>
-    <ID>MagicNumber:PallaSyncTrustComponents.kt:4</ID>
-    <ID>MagicNumber:PallaSyncTrustComponents.kt:8</ID>
-    <ID>MagicNumber:PallaSyncWireModels.kt:200</ID>
-    <ID>MagicNumber:PallaSyncWireModels.kt:299</ID>
-    <ID>MagicNumber:PallaSyncWireModels.kt:3</ID>
-    <ID>MagicNumber:PallaSyncWireModels.kt:4</ID>
-    <ID>MagicNumber:PallaSyncWireModels.kt:400</ID>
-    <ID>MagicNumber:PallaSyncWireModels.kt:404</ID>
-    <ID>MagicNumber:PallaSyncWireModels.kt:410</ID>
-    <ID>MagicNumber:PallaSyncWireModels.kt:499</ID>
-    <ID>MagicNumber:PallaSyncWireModels.kt:5</ID>
-    <ID>MagicNumber:PallaSyncWireModels.kt:503</ID>
-    <ID>MagicNumber:PallaSyncWireModels.kt:6</ID>
     <ID>MagicNumber:PalleriaLiveWallpaperService.kt:PalleriaLiveWallpaperService.PalleriaEngine$0.08f</ID>
     <ID>MagicNumber:PalleriaLiveWallpaperService.kt:PalleriaLiveWallpaperService.PalleriaEngine$0.1f</ID>
     <ID>MagicNumber:PalleriaLiveWallpaperService.kt:PalleriaLiveWallpaperService.PalleriaEngine$1440</ID>
@@ -261,16 +71,6 @@
     <ID>MagicNumber:PalleriaLiveWallpaperService.kt:PalleriaLiveWallpaperService.PalleriaEngine$38</ID>
     <ID>MagicNumber:PalleriaLiveWallpaperService.kt:PalleriaLiveWallpaperService.PalleriaEngine$44</ID>
     <ID>MagicNumber:PalleriaLiveWallpaperService.kt:PalleriaLiveWallpaperService.PalleriaEngine$60_000L</ID>
-    <ID>MagicNumber:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$128</ID>
-    <ID>MagicNumber:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$3</ID>
-    <ID>MagicNumber:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$4</ID>
-    <ID>MagicNumber:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$404</ID>
-    <ID>MagicNumber:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$5</ID>
-    <ID>MagicNumber:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$50</ID>
-    <ID>MagicNumber:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$6</ID>
-    <ID>MagicNumber:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$7</ID>
-    <ID>MagicNumber:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$8</ID>
-    <ID>MagicNumber:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator.Companion$100</ID>
     <ID>MagicNumber:PixivApiClient.kt:PixivApiClient$10</ID>
     <ID>MagicNumber:PixivApiUrlPolicy.kt:443</ID>
     <ID>MagicNumber:ProfileGridLayout.kt:1_200</ID>
@@ -298,14 +98,7 @@
     <ID>MatchingDeclarationName:HomeScreenTabs.kt:HomeTab</ID>
     <ID>MatchingDeclarationName:OkHttpAwait.kt:PixivApiException : IOException</ID>
     <ID>MatchingDeclarationName:PairingWizardComponents.kt:PairingStep</ID>
-    <ID>MatchingDeclarationName:PallaSyncLegacyMigrationSourceDialog.kt:PallaSyncLegacyMigrationInput</ID>
-    <ID>MatchingDeclarationName:PallaSyncTrustComponents.kt:TrustStep</ID>
     <ID>MatchingDeclarationName:SettingsStoreCodec.kt:RoomSettingsData</ID>
-    <ID>MatchingDeclarationName:SyncedCollections.kt:SyncedCollectionsSnapshot</ID>
-    <ID>NestedBlockDepth:PallaSyncExportArchiveVerifier.kt:PallaSyncExportArchiveVerifier$suspend fun verifySuspending: Header</ID>
-    <ID>NestedBlockDepth:PallaSyncExportArchiveVerifier.kt:PallaSyncExportArchiveVerifier.ExportReceiptLinkIndex$suspend fun verifySourceReceipts: Boolean</ID>
-    <ID>NestedBlockDepth:PallaSyncLocalIntents.kt:PallaSyncLocalIntents$private suspend fun reconcileLegacyFavoriteNormalizationCollisions</ID>
-    <ID>NestedBlockDepth:PallaSyncLocalIntents.kt:PallaSyncLocalIntents$private suspend fun resolveLegacyGroupSelection: Long</ID>
     <ID>ReturnCount:AppLockScreen.kt:fun onDigitPressed</ID>
     <ID>ReturnCount:AppLockSetupScreen.kt:fun onVerifyDigit</ID>
     <ID>ReturnCount:CalculatorEngine.kt:CalculatorEngine$fun evaluate: Double?</ID>
@@ -323,52 +116,10 @@
     <ID>ReturnCount:NativeIntentRouter.kt:NativeIntentRouter$fun parse: NativeIntentEvent?</ID>
     <ID>ReturnCount:NativeIntentRouter.kt:NativeIntentRouter$fun parseText: NativeIntentEvent?</ID>
     <ID>ReturnCount:NativeIntentRouter.kt:NativeIntentRouter$private fun parseUri: NativeIntentEvent?</ID>
-    <ID>ReturnCount:PallaSyncEnvelopeEvidence.kt:PallaSyncEnvelopeEvidence$suspend fun retain</ID>
-    <ID>ReturnCount:PallaSyncErrorGuidance.kt:@StringRes internal fun pallaSyncErrorGuidanceRes: Int</ID>
-    <ID>ReturnCount:PallaSyncEventApplier.kt:PallaSyncEventApplier$private fun applyFavoriteTag: FoldResult</ID>
-    <ID>ReturnCount:PallaSyncEventApplier.kt:PallaSyncEventApplier$private fun applyMuteSetting: FoldResult</ID>
-    <ID>ReturnCount:PallaSyncEventApplier.kt:PallaSyncEventApplier$private fun applySearchHistory: FoldResult</ID>
-    <ID>ReturnCount:PallaSyncEventApplier.kt:private fun JsonElement.toHistoryIllust: Illust?</ID>
-    <ID>ReturnCount:PallaSyncExportArchiveVerifier.kt:PallaSyncExportArchiveVerifier.ExportReceiptLinkIndex$suspend fun verifySourceReceipts: Boolean</ID>
-    <ID>ReturnCount:PallaSyncKeystore.kt:PallaSyncKeystore$fun getActiveChainKeys: PallaSyncKeySnapshot?</ID>
-    <ID>ReturnCount:PallaSyncKeystore.kt:PallaSyncKeystore$fun getPendingChainKeys: PallaSyncKeySnapshot?</ID>
-    <ID>ReturnCount:PallaSyncKeystore.kt:PallaSyncKeystore$internal fun pendingReseed: PallaSyncPendingReseed?</ID>
-    <ID>ReturnCount:PallaSyncKeystore.kt:PallaSyncKeystore$private fun recoveryProgressComplete: Boolean</ID>
-    <ID>ReturnCount:PallaSyncLegacyV21Source.kt:PallaSyncLegacyV21Source.Companion$internal suspend fun inspectFrozenExport: PallaSyncHttpResult&lt;FrozenExportProof&gt;</ID>
-    <ID>ReturnCount:PallaSyncLocalIntents.kt:PallaSyncLocalIntents$private suspend fun confirmNewRootMigrationReceipt</ID>
-    <ID>ReturnCount:PallaSyncLocalIntents.kt:PallaSyncLocalIntents$suspend fun legacyMigrationProgress: LegacyMigrationProgress?</ID>
-    <ID>ReturnCount:PallaSyncLocalIntents.kt:PallaSyncLocalIntents$suspend fun newRootMigrationReceiptStatus: NewRootMigrationReceiptStatus?</ID>
-    <ID>ReturnCount:PallaSyncMnemonicDialog.kt:private fun copyMnemonicSensitive: Boolean</ID>
-    <ID>ReturnCount:PallaSyncRelayOrigin.kt:PallaSyncRelayOrigin$fun resolve: String</ID>
-    <ID>ReturnCount:PallaSyncRemoteService.kt:PallaSyncRemoteService.Companion$internal fun chainIdForAuthorization: String?</ID>
-    <ID>ReturnCount:PallaSyncReseedSnapshotWorkflow.kt:PallaSyncReseedCommitRelay$suspend fun commit: PallaSyncHttpResult&lt;JsonObject&gt;</ID>
-    <ID>ReturnCount:PallaSyncReseedTransparencyVerifier.kt:PallaSyncReseedTransparencyVerifier$suspend fun verifySuffix: PallaSyncHttpResult&lt;JsonObject&gt;</ID>
-    <ID>ReturnCount:PallaSyncRetentionHandoff.kt:PallaSyncRetentionHandoff$internal suspend fun latestVerifiedPublishedCompaction: JsonObject?</ID>
-    <ID>ReturnCount:PallaSyncRetentionHandoff.kt:PallaSyncRetentionHandoff$internal suspend fun publishedCompactionForPruneEntry: JsonObject?</ID>
-    <ID>ReturnCount:PallaSyncRetentionHandoff.kt:PallaSyncRetentionHandoff$internal suspend fun verifiedPublishedCompaction: JsonObject?</ID>
-    <ID>ReturnCount:PallaSyncRetryGate.kt:PallaSyncRetryGate$fun before: PallaSyncHttpResult&lt;Nothing&gt;?</ID>
-    <ID>ReturnCount:PallaSyncSnapshotSemanticComparator.kt:PallaSyncSnapshotSemanticComparator$private suspend fun compareEntities: Boolean</ID>
-    <ID>ReturnCount:PallaSyncSnapshotSemanticComparator.kt:PallaSyncSnapshotSemanticComparator$private suspend fun compareRegisters: Boolean</ID>
-    <ID>ReturnCount:PallaSyncSnapshotSemanticComparator.kt:PallaSyncSnapshotSemanticComparator$private suspend fun verifyControlOnlySuffix: Boolean</ID>
-    <ID>ReturnCount:PallaSyncSnapshotSemanticComparator.kt:PallaSyncSnapshotSemanticComparator$suspend fun compareWithExactLocalReplay: Long?</ID>
-    <ID>ReturnCount:PallaSyncValidationState.kt:internal fun pendingInboxFailureCode: String?</ID>
-    <ID>ReturnCount:PallaSyncWireModels.kt:PallaSyncUrls$fun normalize: PallaSyncHttpResult&lt;HttpUrl&gt;</ID>
     <ID>ReturnCount:PalleriaLiveWallpaperService.kt:PalleriaLiveWallpaperService.PalleriaEngine$override fun onOffsetsChanged</ID>
     <ID>ReturnCount:PalleriaLiveWallpaperService.kt:PalleriaLiveWallpaperService.PalleriaEngine$private fun renderSurface</ID>
     <ID>ReturnCount:PalleriaLiveWallpaperService.kt:internal fun selectCandidate: NativeSavedImage?</ID>
     <ID>ReturnCount:PalleriaLiveWallpaperService.kt:private fun decodeSampledBitmap: Bitmap?</ID>
-    <ID>ReturnCount:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$internal suspend fun beginLegacyV21Migration: PallaSyncHttpResult&lt;PallaSyncLegacyV21Source.FrozenExportProof&gt;</ID>
-    <ID>ReturnCount:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$private fun keysForChainLocked: PallaSyncKeySnapshot?</ID>
-    <ID>ReturnCount:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$private suspend fun activeChainStateLocked: ChainStateEntity?</ID>
-    <ID>ReturnCount:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$private suspend fun applyRecordPageLocked: PallaSyncHttpResult&lt;Unit&gt;</ID>
-    <ID>ReturnCount:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$private suspend fun fetchDevicesLocked: PallaSyncHttpResult&lt;Unit&gt;</ID>
-    <ID>ReturnCount:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$private suspend fun hasCompleteRetainedArchivePrefix: Boolean</ID>
-    <ID>ReturnCount:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$private suspend fun installExactArchiveSnapshot</ID>
-    <ID>ReturnCount:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$private suspend fun processOutboxLocked: PallaSyncHttpResult&lt;Unit&gt;</ID>
-    <ID>ReturnCount:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$private suspend fun pullRecordPagesLocked: PallaSyncHttpResult&lt;Unit&gt;</ID>
-    <ID>ReturnCount:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$private suspend fun submitDeletionAndErase: PallaSyncDeletionRequestResult</ID>
-    <ID>ReturnCount:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$private suspend fun uploadOutboxBatch: PallaSyncHttpResult&lt;Unit&gt;</ID>
-    <ID>ReturnCount:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$private suspend fun verifyRetainedTransparencyCheckpoint: Boolean</ID>
     <ID>ReturnCount:PinSetupScreen.kt:fun onDigitPressed</ID>
     <ID>ReturnCount:PixivImageComponents.kt:internal suspend fun resolveDarkHeaderIcons: Boolean</ID>
     <ID>ReturnCount:PixivImageProxy.kt:fun proxyPixivImageUrl: String</ID>
@@ -376,16 +127,9 @@
     <ID>ReturnCount:ReseedJournalDao.kt:ReseedJournalDao$private fun monotoneReceipts: Boolean</ID>
     <ID>ReturnCount:ReseedJournalDao.kt:ReseedJournalDao$private fun monotoneSourceConflict: Boolean</ID>
     <ID>ReturnCount:SettingsStoreCodec.kt:internal fun decodeLegacyHistoryIllust: Illust?</ID>
-    <ID>SwallowedException:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$stale: PallaSyncReseedSnapshotStaleException</ID>
     <ID>ThrowsCount:IllustiaRepository.kt:IllustiaRepository$private suspend inline fun &lt;T&gt; withSessionRetry: T</ID>
     <ID>ThrowsCount:NativeImageStore.kt:NativeImageStore$private fun saveToMediaStore: Boolean</ID>
-    <ID>ThrowsCount:PallaSyncNewRootRetirementControls.kt:@Composable internal fun PallaSyncNewRootRetirementControls</ID>
-    <ID>ThrowsCount:PallaSyncRecoveryControls.kt:@Composable internal fun PallaSyncRecoveryControls</ID>
-    <ID>ThrowsCount:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$internal suspend fun beginLegacyV20Migration: PallaSyncHttpResult&lt;PallaSyncLegacyV20Source.FrozenExportProof&gt;</ID>
     <ID>ThrowsCount:ViewHistoryScreen.kt:@Composable fun ViewHistoryScreen</ID>
-    <ID>TooGenericExceptionCaught:PallaSyncPreparedReseed.kt:failure: Throwable</ID>
-    <ID>TooGenericExceptionCaught:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$failure: Exception</ID>
-    <ID>TooGenericExceptionCaught:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator$failure: Throwable</ID>
     <ID>TooGenericExceptionCaught:ViewHistoryScreen.kt:failure: Exception</ID>
     <ID>TooManyFunctions:IllustiaBookmarkModule.kt:IllustiaBookmarkModule : IllustiaDetailProfileModule</ID>
     <ID>TooManyFunctions:IllustiaDetailProfileModule.kt:IllustiaDetailProfileModule : IllustiaAuthFeedModule</ID>
@@ -396,18 +140,7 @@
     <ID>TooManyFunctions:MainActivity.kt:MainActivity : FragmentActivity</ID>
     <ID>TooManyFunctions:MoreScreen.kt:com.yunfie.illustia.ui.screens.MoreScreen.kt</ID>
     <ID>TooManyFunctions:NativeImageStore.kt:NativeImageStore</ID>
-    <ID>TooManyFunctions:PallaSyncDao.kt:PallaSyncDao</ID>
-    <ID>TooManyFunctions:PallaSyncEventApplier.kt:PallaSyncEventApplier</ID>
-    <ID>TooManyFunctions:PallaSyncExportArchiveVerifier.kt:PallaSyncExportArchiveVerifier$ExportReceiptLinkIndex : Closeable</ID>
-    <ID>TooManyFunctions:PallaSyncKeystore.kt:PallaSyncKeystore</ID>
-    <ID>TooManyFunctions:PallaSyncLocalIntents.kt:PallaSyncLocalIntents</ID>
-    <ID>TooManyFunctions:PallaSyncOutboxRebase.kt:PallaSyncOutboxRebase</ID>
-    <ID>TooManyFunctions:PallaSyncSettingsEvents.kt:com.yunfie.illustia.pallasync.PallaSyncSettingsEvents.kt</ID>
-    <ID>TooManyFunctions:PallaSyncSnapshotSemanticComparator.kt:PallaSyncSnapshotSemanticComparator</ID>
-    <ID>TooManyFunctions:PallaSyncWireModels.kt:com.yunfie.illustia.pallasync.PallaSyncWireModels.kt</ID>
     <ID>TooManyFunctions:PalleriaLiveWallpaperService.kt:PalleriaLiveWallpaperService$PalleriaEngine : Engine</ID>
-    <ID>TooManyFunctions:PalleriaSyncCoordinator.kt:PalleriaSyncCoordinator : PallaSyncEventWriter</ID>
-    <ID>TooManyFunctions:PalleriaSyncManager.kt:PalleriaSyncManager</ID>
     <ID>TooManyFunctions:PixivApiClient.kt:PixivApiClient</ID>
     <ID>TooManyFunctions:PlatformCapabilities.kt:PlatformCapabilities</ID>
     <ID>TooManyFunctions:RustPixivHttpClient.kt:RustPixivCall</ID>

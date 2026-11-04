@@ -3,7 +3,7 @@ import { defineConfig } from 'vitepress'
 const repository = 'https://github.com/yunfie-twitter/Palleria'
 const siteUrl = 'https://yunfi.f5.si/Palleria/'
 const icon = `${siteUrl}repo/com.yunfie.illustia/en-US/icon.png`
-const description = 'Android向けオープンソースPixivクライアント「Palleria」の公式ガイド。閲覧・同期・プライバシー機能を紹介。'
+const description = 'Android向けオープンソースPixivクライアント「Palleria」の公式ガイド。閲覧・プライバシー機能を紹介。'
 
 export default defineConfig({
   base: '/Palleria/',
@@ -76,7 +76,6 @@ export default defineConfig({
           { text: '画像の保存と一括ダウンロード', link: '/user/downloads' },
           { text: '外観テーマと各種設定', link: '/user/personalization' },
           { text: 'アプリロックと電卓偽装', link: '/user/security' },
-          { text: '端末間データ同期 (PallaSync)', link: '/user/sync' },
           { text: 'ライブ壁紙とウィジェット', link: '/user/wallpaper-widget' }
         ]
       },
@@ -90,7 +89,6 @@ export default defineConfig({
           { text: 'ビルド & 環境構築パイプライン', link: '/dev/build' },
           { text: 'ChromeOS・キーボード操作', link: '/dev/chromeos' },
           { text: 'Rust Native コア (pixiv-api)', link: '/dev/rust-core' },
-          { text: 'PallaSync 同期エンジン仕様', link: '/dev/pallasync-engine' },
           { text: 'セキュリティ & 電卓パーサー仕様', link: '/dev/security-engine' },
           { text: 'データベース & DataStore スキーマ', link: '/dev/database-schema' },
           { text: 'テレメトリ & クラッシュハンドラー仕様', link: '/dev/telemetry-spec' }

@@ -156,18 +156,6 @@ internal enum class PaletteAction(
         R.string.command_palette_category_navigation,
         listOf("notifications", "news", "tsuuchi"),
     ),
-    PallaSyncDevices(
-        R.string.command_palette_pallasync_devices,
-        MiuixIcons.Share,
-        R.string.command_palette_category_settings,
-        listOf("pallasync", "devices", "sync"),
-    ),
-    PallaSyncSync(
-        R.string.command_palette_pallasync_sync,
-        MiuixIcons.Refresh,
-        R.string.command_palette_category_action,
-        listOf("sync now", "push", "sync"),
-    ),
     SwitchAccount(
         R.string.command_palette_switch_account,
         MiuixIcons.Contacts,

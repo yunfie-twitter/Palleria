@@ -33,14 +33,9 @@ import com.yunfie.illustia.models.pixiv.UserFollowDetail
 import com.yunfie.illustia.models.pixiv.UserProfileEdit
 import com.yunfie.illustia.models.pixiv.UserWorkspace
 import com.yunfie.illustia.models.pixiv.WatchlistMangaModel
-import com.yunfie.illustia.pallasync.PallaSyncHistoryEdit
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.SettingsStore
-import com.yunfie.illustia.settings.SyncedCollectionsSnapshot
-import com.yunfie.illustia.settings.rebaseSyncedCollections
 import com.yunfie.illustia.settings.store.STARTUP_LOGGED_IN_TOKEN
-import com.yunfie.illustia.settings.syncedCollections
-import com.yunfie.illustia.settings.withSyncedCollections
 import com.yunfie.illustia.visibleWithSettings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
@@ -171,59 +166,10 @@ class IllustiaRepository(
     suspend fun saveSettings(
         settings: AppSettings,
         baseSettings: AppSettings? = null,
-        historyEdits: List<PallaSyncHistoryEdit> = emptyList(),
     ) {
-        val written = settingsStore.write(settings, baseSettings, historyEdits)
-        val cached =
-            settingsCacheMutex.withLock {
-                val current = cachedSettings ?: settingsStore.read()
-                val base = baseSettings ?: current
-                val collections =
-                    rebaseSyncedCollections(
-                        base.syncedCollections(),
-                        settings.syncedCollections(),
-                        current.syncedCollections(),
-                    )
-                val enabled =
-                    if (base.pallaSyncEnabled == settings.pallaSyncEnabled) {
-                        current.pallaSyncEnabled
-                    } else {
-                        settings.pallaSyncEnabled
-                    }
-                val serverUrl =
-                    if (base.pallaSyncServerUrl == settings.pallaSyncServerUrl) {
-                        current.pallaSyncServerUrl
-                    } else {
-                        settings.pallaSyncServerUrl
-                    }
-                written
-                    .copy(
-                        pallaSyncEnabled = enabled,
-                        pallaSyncServerUrl = serverUrl,
-                    ).withSyncedCollections(collections)
-                    .also { cachedSettings = it }
-            }
-        ensureApiClient(NetworkMode.fromCode(cached.pixivNetworkMode))
-    }
-
-    suspend fun saveSettingsFromSync(settings: AppSettings) {
-        val synced = settings.syncedCollections()
-        settingsStore.writeSyncedCollections(synced)
-        updateCachedSyncedCollections(synced)
-    }
-
-    internal suspend fun updateCachedSyncedCollections(synced: SyncedCollectionsSnapshot) {
-        settingsCacheMutex.withLock {
-            val current = cachedSettings ?: settingsStore.read()
-            cachedSettings = current.withSyncedCollections(synced)
-        }
-    }
-
-    internal suspend fun updateCachedPallaSyncEnabled(enabled: Boolean) {
-        settingsCacheMutex.withLock {
-            val current = cachedSettings ?: settingsStore.read()
-            cachedSettings = current.copy(pallaSyncEnabled = enabled)
-        }
+        val written = settingsStore.write(settings, baseSettings)
+        settingsCacheMutex.withLock { cachedSettings = written }
+        ensureApiClient(NetworkMode.fromCode(written.pixivNetworkMode))
     }
 
     suspend fun login(refreshToken: String): PixivSession =

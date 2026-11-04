@@ -38,4 +38,4 @@ Palleriaは、Android向けの非公式Pixivクライアントです。イラス
 - [検索](/user/search)と[ブックマーク・プロフィール](/user/bookmarks)
 - [保存とオフライン閲覧](/user/downloads)
 - [外観設定](/user/personalization)と[アプリロック](/user/security)
-- [端末間同期](/user/sync)と[壁紙・ウィジェット](/user/wallpaper-widget)
+- [壁紙・ウィジェット](/user/wallpaper-widget)

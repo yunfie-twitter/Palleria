@@ -10,7 +10,6 @@ import com.yunfie.illustia.models.SearchSort
 import com.yunfie.illustia.models.SearchTarget
 import com.yunfie.illustia.models.SearchWorkType
 import com.yunfie.illustia.models.StoredAccount
-import com.yunfie.illustia.pallasync.PallaSyncRelayOrigin
 
 private const val DEFAULT_SEED_COLOR = 0xFF42A5F5L
 
@@ -130,10 +129,6 @@ data class AppSettings(
     val hideNotifications: Boolean = false,
     val dummyAppName: String = "",
     val dummyIconVariant: String = "ic_launcher_dummy",
-    val pallaSyncEnabled: Boolean = false,
-    // A default, not a fixed constant: the relay can move, and PallaSyncRelayOrigin owns the
-    // migration of older shipped defaults.
-    val pallaSyncServerUrl: String = PallaSyncRelayOrigin.DEFAULT_ORIGIN,
     val sendTelemetry: Boolean = false,
     val autoDetectClipboard: Boolean = false,
     val updateInstallMethod: String = "standard_apk",

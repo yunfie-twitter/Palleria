@@ -677,10 +677,6 @@ abstract class IllustiaLibraryNavigationModule(
         _navigationRequests.tryEmit(IllustiaNavigationRequest.UpdateSettings)
     }
 
-    fun openPallaSyncSettings() {
-        _navigationRequests.tryEmit(IllustiaNavigationRequest.PallaSyncSettings)
-    }
-
     fun openDiscordSettings() {
         _navigationRequests.tryEmit(IllustiaNavigationRequest.DiscordSettings)
     }
@@ -717,12 +713,8 @@ abstract class IllustiaLibraryNavigationModule(
         _navigationRequests.tryEmit(IllustiaNavigationRequest.InternalProxySettings)
     }
 
-    fun openPallaSyncDevices() {
-        _navigationRequests.tryEmit(IllustiaNavigationRequest.PallaSyncDevices)
-    }
-
     fun openViewHistory() {
-        if (!_uiState.value.settings.pallaSyncEnabled) loadFullViewHistory()
+        loadFullViewHistory()
         _navigationRequests.tryEmit(IllustiaNavigationRequest.ViewHistory)
     }
 

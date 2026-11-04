@@ -57,11 +57,6 @@ internal data class WallpaperSettings(
     val excludeSensitive: Boolean,
 )
 
-internal data class SyncSettings(
-    val enabled: Boolean,
-    val serverUrl: String,
-)
-
 internal fun AppSettings.searchProjection() =
     SearchSettings(
         searchSort,
@@ -116,5 +111,3 @@ internal fun AppSettings.wallpaperProjection() =
         liveWallpaperCrossfade,
         liveWallpaperExcludeSensitive,
     )
-
-internal fun AppSettings.syncProjection() = SyncSettings(pallaSyncEnabled, pallaSyncServerUrl)

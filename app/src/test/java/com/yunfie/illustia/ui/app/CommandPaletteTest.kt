@@ -15,8 +15,6 @@ class CommandPaletteTest {
 
     @Test fun filtersCommandsByKeywords() {
         val syncActions = matchingPaletteActions("sync", labels)
-        assertTrue(syncActions.contains(PaletteAction.PallaSyncDevices))
-        assertTrue(syncActions.contains(PaletteAction.PallaSyncSync))
         assertTrue(syncActions.contains(PaletteAction.RefreshFeed))
 
         val aiActions = matchingPaletteActions("ai", labels)

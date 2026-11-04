@@ -39,7 +39,6 @@ fun AccountSettingsScreen(
     settings: AppSettings,
     viewModel: IllustiaViewModel,
     onBack: () -> Unit,
-    onOpenPallaSync: () -> Unit,
     onOpenDiscordSettings: () -> Unit,
 ) {
     PredictiveBackGestureHandler(onBack = onBack)
@@ -132,14 +131,6 @@ fun AccountSettingsScreen(
                                 },
                             onClick = onOpenDiscordSettings,
                         )
-                    }
-                }
-            }
-
-            item {
-                Section(stringResource(R.string.pallasync_account_section)) {
-                    ElevatedPanel {
-                        SettingLinkRow(stringResource(R.string.pallasync_settings_title)) { onOpenPallaSync() }
                     }
                 }
             }

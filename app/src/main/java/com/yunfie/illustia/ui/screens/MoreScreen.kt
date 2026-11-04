@@ -155,7 +155,6 @@ private fun rememberQuickActions(
     val context = LocalContext.current
     return remember(
         state.settings.favoriteTags.size,
-        state.settings.pallaSyncEnabled,
         state.settings.hideHomeNovelButton,
     ) {
         buildList {
@@ -192,15 +191,6 @@ private fun rememberQuickActions(
                     onClick = viewModel::openFavoriteTags,
                 ),
             )
-            if (state.settings.pallaSyncEnabled) {
-                add(
-                    MoreAction(
-                        title = context.getString(R.string.login_feature_sync),
-                        icon = MiuixIcons.Refresh,
-                        onClick = viewModel::openPallaSyncDevices,
-                    ),
-                )
-            }
             if (state.settings.hideHomeNovelButton) {
                 add(
                     MoreAction(

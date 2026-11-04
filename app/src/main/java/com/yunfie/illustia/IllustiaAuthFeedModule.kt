@@ -16,7 +16,6 @@ import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.SearchWorkType
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
-import com.yunfie.illustia.pallasync.PallaSyncHistoryEdit
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.app.SearchEntrySnapshot
@@ -994,11 +993,11 @@ abstract class IllustiaAuthFeedModule(
     }
 
     fun clearSearchHistory() {
-        updateSettings(listOf(PallaSyncHistoryEdit.ClearSearch)) { it.copy(searchHistory = emptyList()) }
+        updateSettings { it.copy(searchHistory = emptyList()) }
     }
 
     fun removeSearchHistoryItem(query: String) {
-        updateSettings(listOf(PallaSyncHistoryEdit.RemoveQuery(query))) {
+        updateSettings {
             it.copy(
                 searchHistory =
                     it.searchHistory.filterNot { item ->
@@ -1344,13 +1343,13 @@ abstract class IllustiaAuthFeedModule(
     }
 
     fun clearViewHistory() {
-        updateSettings(listOf(PallaSyncHistoryEdit.ClearViewed)) { it.copy(viewHistory = emptyList()) }
+        updateSettings { it.copy(viewHistory = emptyList()) }
     }
 
     fun removeViewHistory(ids: Collection<Long>) {
         val targetIds = ids.toSet()
         if (targetIds.isEmpty()) return
-        updateSettings(listOf(PallaSyncHistoryEdit.RemoveViewed(targetIds.toList()))) { settings ->
+        updateSettings { settings ->
             settings.copy(
                 viewHistory = settings.viewHistory.filterNot { illust -> illust.id in targetIds },
             )

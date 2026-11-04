@@ -5,7 +5,7 @@ description: Palleria 6.6.0-beta.3 の実装に基づく機能・状態・連携
 
 # アプリケーション仕様
 
-このページは `app`、`rust/pixiv-api`、`rust/pallasync-core` の現行ソースを基準にした実装仕様です。将来の構想ではなく、リポジトリに実装されている振る舞いを記録します。
+このページは `app` と `rust/pixiv-api` の現行ソースを基準にした実装仕様です。将来の構想ではなく、リポジトリに実装されている振る舞いを記録します。
 
 確認日: 2026年10月3日。バージョン値は `app/build.gradle` を基準にしています。
 
@@ -17,10 +17,10 @@ description: Palleria 6.6.0-beta.3 の実装に基づく機能・状態・連携
 | 現行バージョン | `6.6.0-beta.3`（`versionCode` 141） |
 | 最低 / target SDK | API 24（Android 7.0） / API 36 |
 | UI | Kotlin、Jetpack Compose、Navigation 3、Miuix KMP |
-| ネイティブ層 | Rust 2024 edition、UniFFI/JNI 経由で利用 |
+| ネイティブ層 | Rust 2024 edition、UniFFI 経由で利用 |
 | Rust ABI | `arm64-v8a`、`armeabi-v7a`、`x86_64` |
 
-Palleria は Pixiv 非公式クライアントであり、認証と作品取得には Pixiv API を利用します。起動時にはクラッシュハンドラー、画像ローダー、設定ストアを初期化し、設定読込中も保護された空の画面を描画し、ロック・プライバシー状態が確定してからアプリ画面を表示します。アプリ画面の最初のフレーム表示後にアカウント整合、ウィジェットのプレビュー生成、PallaSync の復旧・開始を非同期で実行します。PallaSync が無効でコーディネーターが未生成の場合は、停止処理のために生成しません。Rust の同期ライブラリは初回の暗号処理呼び出し時にロードされます。
+Palleria は Pixiv 非公式クライアントであり、認証と作品取得には Pixiv API を利用します。起動時にはクラッシュハンドラー、画像ローダー、設定ストアを初期化し、設定読込中も保護された空の画面を描画し、ロック・プライバシー状態が確定してからアプリ画面を表示します。アプリ画面の最初のフレーム表示後にアカウント整合、ウィジェットのプレビュー生成を非同期で実行します。
 
 ## 利用者向け機能
 
@@ -53,7 +53,7 @@ Palleria は Pixiv 非公式クライアントであり、認証と作品取得�
 
 ## 画面・外部起動
 
-画面識別子は `AppRoute` で型安全に表現する。値を伴う遷移は検索結果（検索語）、タグ検索（タグ）、作品詳細（作品 ID）、ユーザープロフィール（ユーザー ID）、端末別閲覧履歴（端末 ID・名称）である。設定配下には一般、画像、ブックマーク、アカウント、データ、ミュート、プライバシー、実験的機能、更新、Discord、PallaSync の各画面を置く。
+画面識別子は `AppRoute` で型安全に表現する。値を伴う遷移は検索結果（検索語）、タグ検索（タグ）、作品詳細（作品 ID）、ユーザープロフィール（ユーザー ID）である。設定配下には一般、画像、ブックマーク、アカウント、データ、ミュート、プライバシー、実験的機能、更新、Discord の各画面を置く。
 
 外部からはテキスト・画像の共有、`PROCESS_TEXT`、Pixiv 関連 HTTP(S) URL、`pixiv://`・`palleria://` スキームを受け取る。ファイル共有には `FileProvider` を用い、外部にファイルパスを直接公開しない。
 
@@ -64,7 +64,6 @@ Palleria は Pixiv 非公式クライアントであり、認証と作品取得�
 | UI 状態 | `IllustiaViewModel` と画面の Compose 状態。`StateFlow` とコルーチンで更新する。 |
 | アプリ設定 | `SettingsStore` が `AppSettings` を保存・公開する。一般設定は Preferences DataStore、秘密値は EncryptedSharedPreferences、コレクションの一部は Room を併用する。 |
 | Pixiv データ | `IllustiaRepository` が認証、作品、検索、ブックマーク、フォロー等を API クライアントへ委譲する。 |
-| 同期キュー | `pallasync_database`（Room）。outbox、チェーン状態、端末、受信 inbox を保存する。 |
 | 画像キャッシュ | Coil。`cacheDir/image_cache` に保存し、設定された MB 上限を適用する。 |
 
 秘密値（リフレッシュトークン、Discord トークン等）をログ、仕様例、テレメトリに出力してはならない。
@@ -73,34 +72,25 @@ Palleria は Pixiv 非公式クライアントであり、認証と作品取得�
 
 - 共有 HTTP クライアントは全体 8、ホストあたり 4 の同時リクエスト上限、接続 12 秒、読書き 20 秒、呼び出し全体 30 秒のタイムアウトを持つ。
 - Pixiv API URL は HTTPS、`app-api.pixiv.net`、443 番ポート、埋込み認証情報なしに限定して検証する。
-- PallaSync URL は HTTP(S) のみ許可し、クエリ、フラグメント、埋込み認証情報を拒否する。
-- PallaSync は HTTP 410 をチェーン消失、429 と 5xx を再試行可能、その他の非 2xx をプロトコルエラーとして分類する。
-
-## PallaSync プロトコル
-
-PallaSync はチェーン単位の暗号化イベント同期である。プロトコル版は `2.1`（旧 `2.0` を受信可能）、標準の受信ページサイズは 200 件で、relay cursor と Lamport clock を永続化する。同期対象はお気に入りタグ、検索履歴、ミュート設定、既読フィード作品、閲覧履歴の各 v1/v2 スキーマで、イベント操作は `upsert` または `delete` である。
-
-レコードは暗号化ペイロード、チェーン ID、端末 ID、作成時刻、署名を持つ。Rust コアは XChaCha20-Poly1305（旧形式はChaCha20-Poly1305）、Ed25519、X25519/HPKE、HKDF、PBKDF2、BIP39 を利用する。受信レコードは inbox に耐久保存してから適用し、復号・検証・スキーマ処理に失敗したものは隔離する。初回 pull 完了前のローカル変更は `pending_initial_merge` として待機し、マージ後に送信キューへ投入する。
 
 ## 実装上の境界
 
 ```
 Compose 画面 / ViewModel
           ↓
-IllustiaRepository / SettingsStore / PalleriaSyncCoordinator
-          ↓                    ↓                 ↓
-Pixiv API クライアント      AppSettings       Room outbox/inbox
-          ↓                                      ↓
- Rust pixiv-api (UniFFI)                 Rust pallasync-core (JNI)
+IllustiaRepository / SettingsStore
+          ↓
+Pixiv API クライアント
+          ↓
+ Rust pixiv-api (UniFFI)
 ```
 
-`pixiv-api` は Pixiv 応答の転送・復号・モデル変換、`pallasync-core` は同期暗号プリミティブを担当する。Android 側は UI、永続化、Android 統合、HTTP 実行、同期ライフサイクルを担当する。
+`pixiv-api` は Pixiv 応答の転送・復号・モデル変換を担当する。Android 側は UI、永続化、Android 統合、HTTP 実行を担当する。
 
 ## 変更時の確認事項
 
-- 設定値を追加・変更する場合は、`AppSettings`、保存・復元処理、必要に応じて同期用投影とイベントスキーマを同時に更新する。
+- 設定値を追加・変更する場合は、`AppSettings` と保存・復元処理を同時に更新する。
 - 公開コンポーネントや URL 受信規則を変更する場合は、Manifest の `exported`、権限、受信データ検証を確認する。
-- PallaSync の wire 形式、暗号処理、スキーマ名を変更する場合は、既存端末との互換性、inbox 隔離、移行処理を確認する。
 - Rust API を変更する場合は UniFFI Kotlin バインディングと 3 ABI のネイティブライブラリを再生成する。
 
 ## デスクトップ操作と読み上げ

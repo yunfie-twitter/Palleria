@@ -23,7 +23,7 @@ android {
         targetSdk = 37
         versionCode = 180
         versionName = "7.1.0-beta.5"
-        testInstrumentationRunner = "com.yunfie.illustia.pallasync.PallaSyncTestRunner"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     signingConfigs {
@@ -179,12 +179,12 @@ def uniffiJniDir = layout.buildDirectory.dir("generated/uniffi/jniLibs")
 
 // Local iteration can build only the connected device's ABI and use the fast dev
 // profile. Release builds keep the shipped defaults (all ABIs, optimized profile).
-def androidRustAbis = (findProperty("pallasync.abis") ?: "arm64-v8a,armeabi-v7a,x86_64")
+def androidRustAbis = (findProperty("palleria.abis") ?: "arm64-v8a,armeabi-v7a,x86_64")
     .toString()
     .split(",")
     .collect { it.trim() }
     .findAll { it }
-def androidRustProfile = (findProperty("pallasync.rustProfile") ?: "release").toString()
+def androidRustProfile = (findProperty("palleria.rustProfile") ?: "release").toString()
 def androidRustRelease = androidRustProfile != "debug"
 def androidRustArgs = {
     def args = [cargoExecutable, "ndk", "--platform", androidMinSdk.toString()]
@@ -231,47 +231,6 @@ def buildRustAndroid = tasks.register("buildRustAndroid", Exec) {
     inputs.property("rustProfile", androidRustProfile)
     outputs.files(
         androidRustAbis.collect { abi -> uniffiJniDir.map { it.file("${abi}/libpalleria_pixiv_api.so") } },
-    )
-}
-
-def pallaSyncCoreCrateDir = rootProject.file("rust/pallasync-core")
-def pallaSyncInputs = files(
-    fileTree(new File(pallaSyncCoreCrateDir, "src")) { include "**/*.rs" },
-    new File(pallaSyncCoreCrateDir, "Cargo.toml"),
-    new File(pallaSyncCoreCrateDir, "Cargo.lock"),
-)
-
-// Exercise the Kotlin -> JNI boundary in JVM tests without requiring an Android NDK.
-def pallaSyncHostLibraryName = hostOperatingSystem.isWindows()
-    ? "pallasync_core.dll"
-    : hostOperatingSystem.isMacOsX()
-        ? "libpallasync_core.dylib"
-        : "libpallasync_core.so"
-def pallaSyncHostLibrary = new File(rustTargetDir, "debug/${pallaSyncHostLibraryName}")
-def buildPallaSyncCoreHost = tasks.register("buildPallaSyncCoreHost", Exec) {
-    workingDir pallaSyncCoreCrateDir
-    environment "CARGO_TARGET_DIR", rustTargetDir
-    commandLine cargoExecutable, "build", "--locked", "--lib"
-    inputs.files(pallaSyncInputs)
-    outputs.file(pallaSyncHostLibrary)
-}
-
-tasks.withType(org.gradle.api.tasks.testing.Test).configureEach {
-    dependsOn buildPallaSyncCoreHost
-    systemProperty "java.library.path", pallaSyncHostLibrary.parentFile.absolutePath +
-        File.pathSeparator + System.getProperty("java.library.path")
-    systemProperty "jna.library.path", new File(rustTargetDir, "debug").absolutePath
-}
-
-def buildPallaSyncCoreAndroid = tasks.register("buildPallaSyncCoreAndroid", Exec) {
-    workingDir pallaSyncCoreCrateDir
-    environment "CARGO_TARGET_DIR", rustTargetDir
-    commandLine androidRustArgs()
-    inputs.files(pallaSyncInputs)
-    inputs.property("abis", androidRustAbis.join(","))
-    inputs.property("rustProfile", androidRustProfile)
-    outputs.files(
-        androidRustAbis.collect { abi -> uniffiJniDir.map { it.file("${abi}/libpallasync_core.so") } },
     )
 }
 
@@ -348,7 +307,7 @@ tasks.matching {
     (it.name.startsWith("merge") || it.name.startsWith("strip")) &&
         (it.name.contains("NativeLibs") || it.name.contains("JniLib"))
 }.configureEach {
-    dependsOn(buildRustAndroid, buildPallaSyncCoreAndroid)
+    dependsOn(buildRustAndroid)
 }
 
 tasks.matching {
@@ -398,8 +357,6 @@ dependencies {
     implementation libs.datastore.preferences
     implementation libs.room.runtime
     implementation libs.sentry.android
-    implementation libs.zxing.android
-    implementation libs.zxing.core
     ksp libs.room.compiler
     implementation libs.compose.foundation
     implementation libs.documentfile

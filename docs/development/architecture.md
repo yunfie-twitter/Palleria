@@ -14,13 +14,11 @@ Palleria/
 │     ├─ ui/                    Compose UIと画面
 │     ├─ data/                  API・リポジトリ・永続化
 │     ├─ models/                アプリとAPIのモデル
-│     ├─ pallasync/             同期機能のAndroid側
 │     ├─ settings/              設定
 │     ├─ wallpaper/             壁紙機能
 │     └─ widget/                ホーム画面ウィジェット
 ├─ rust/
-│  ├─ pixiv-api/                Pixiv APIとUniFFI公開層
-│  └─ pallasync-core/           同期コア
+│  └─ pixiv-api/                Pixiv APIとUniFFI公開層
 ├─ fdroid/                      F-Droidメタデータ
 └─ docs/                        VitePressドキュメント
 ```

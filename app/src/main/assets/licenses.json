@@ -74,7 +74,7 @@
   {
     "name": "androidx.datastore:datastore-preferences",
     "category": "Android / Gradle",
-    "version": "1.2.1",
+    "version": "1.3.0",
     "author": "The Android Open Source Project",
     "license": "Apache-2.0",
     "url": "https://developer.android.com/jetpack"
@@ -176,6 +176,14 @@
     "url": "https://developer.android.com/jetpack"
   },
   {
+    "name": "androidx.test.espresso:espresso-core",
+    "category": "Android / Gradle",
+    "version": "3.7.0",
+    "author": "The Android Open Source Project",
+    "license": "Apache-2.0",
+    "url": "https://developer.android.com/jetpack"
+  },
+  {
     "name": "androidx.test.ext:junit",
     "category": "Android / Gradle",
     "version": "1.3.0",
@@ -224,25 +232,9 @@
     "url": "https://search.maven.org/artifact/com.android.tools/desugar_jdk_libs"
   },
   {
-    "name": "com.google.zxing:core",
-    "category": "Android / Gradle",
-    "version": "3.5.4",
-    "author": "ZXing Authors",
-    "license": "Apache-2.0",
-    "url": "https://github.com/zxing/zxing"
-  },
-  {
-    "name": "com.journeyapps:zxing-android-embedded",
-    "category": "Android / Gradle",
-    "version": "4.3.0",
-    "author": "Journey Mobile",
-    "license": "Apache-2.0",
-    "url": "https://github.com/journeyapps/zxing-android-embedded"
-  },
-  {
     "name": "com.squareup.okhttp3:okhttp",
     "category": "Android / Gradle",
-    "version": "5.5.0",
+    "version": "5.5.1",
     "author": "Square, Inc.",
     "license": "Apache-2.0",
     "url": "https://square.github.io/okhttp/"
@@ -290,7 +282,7 @@
   {
     "name": "io.kotest:kotest-assertions-core",
     "category": "Android / Gradle",
-    "version": "6.2.5",
+    "version": "6.2.6",
     "author": "Kotest",
     "license": "Apache-2.0",
     "url": "https://github.com/kotest/kotest"
@@ -298,7 +290,7 @@
   {
     "name": "io.kotest:kotest-property",
     "category": "Android / Gradle",
-    "version": "6.2.5",
+    "version": "6.2.6",
     "author": "Kotest",
     "license": "Apache-2.0",
     "url": "https://github.com/kotest/kotest"
@@ -306,7 +298,7 @@
   {
     "name": "io.kotest:kotest-runner-junit5",
     "category": "Android / Gradle",
-    "version": "6.2.5",
+    "version": "6.2.6",
     "author": "Kotest",
     "license": "Apache-2.0",
     "url": "https://github.com/kotest/kotest"
@@ -314,7 +306,7 @@
   {
     "name": "io.sentry:sentry-android",
     "category": "Android / Gradle",
-    "version": "8.59.0",
+    "version": "8.62.0",
     "author": "Sentry",
     "license": "MIT",
     "url": "https://github.com/getsentry/sentry-java"
@@ -338,7 +330,7 @@
   {
     "name": "org.jetbrains.kotlin:kotlin-bom",
     "category": "Android / Gradle",
-    "version": "2.4.20",
+    "version": "2.4.21",
     "author": "JetBrains s.r.o.",
     "license": "Apache-2.0",
     "url": "https://kotlinlang.org/"
@@ -354,7 +346,7 @@
   {
     "name": "org.jetbrains.kotlinx:kotlinx-serialization-json",
     "category": "Android / Gradle",
-    "version": "1.11.0",
+    "version": "1.12.0",
     "author": "JetBrains s.r.o.",
     "license": "Apache-2.0",
     "url": "https://kotlinlang.org/"
@@ -432,30 +424,6 @@
     "url": "https://crates.io/crates/adler2"
   },
   {
-    "name": "aead",
-    "category": "Rust Crate",
-    "version": "0.5.2",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/aead"
-  },
-  {
-    "name": "aes",
-    "category": "Rust Crate",
-    "version": "0.8.4",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/aes"
-  },
-  {
-    "name": "aes-gcm",
-    "category": "Rust Crate",
-    "version": "0.10.3",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/aes-gcm"
-  },
-  {
     "name": "aho-corasick",
     "category": "Rust Crate",
     "version": "1.1.4",
@@ -518,14 +486,6 @@
     "author": "Rust Community",
     "license": "MIT / Apache-2.0",
     "url": "https://crates.io/crates/arbitrary"
-  },
-  {
-    "name": "arrayvec",
-    "category": "Rust Crate",
-    "version": "0.7.8",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/arrayvec"
   },
   {
     "name": "ascii",
@@ -592,28 +552,12 @@
     "url": "https://crates.io/crates/autocfg"
   },
   {
-    "name": "base16ct",
-    "category": "Rust Crate",
-    "version": "0.2.0",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/base16ct"
-  },
-  {
     "name": "base64",
     "category": "Rust Crate",
     "version": "0.22.1",
     "author": "Rust Community",
     "license": "MIT / Apache-2.0",
     "url": "https://crates.io/crates/base64"
-  },
-  {
-    "name": "base64ct",
-    "category": "Rust Crate",
-    "version": "1.8.3",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/base64ct"
   },
   {
     "name": "basic-toml",
@@ -624,36 +568,12 @@
     "url": "https://crates.io/crates/basic-toml"
   },
   {
-    "name": "bip39",
-    "category": "Rust Crate",
-    "version": "2.2.2",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/bip39"
-  },
-  {
-    "name": "bitcoin_hashes",
-    "category": "Rust Crate",
-    "version": "0.14.101",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/bitcoin_hashes"
-  },
-  {
     "name": "bitflags",
     "category": "Rust Crate",
     "version": "2.13.0",
     "author": "Rust Community",
     "license": "MIT / Apache-2.0",
     "url": "https://crates.io/crates/bitflags"
-  },
-  {
-    "name": "block-buffer",
-    "category": "Rust Crate",
-    "version": "0.10.4",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/block-buffer"
   },
   {
     "name": "brotli",
@@ -728,14 +648,6 @@
     "url": "https://crates.io/crates/cc"
   },
   {
-    "name": "cesu8",
-    "category": "Rust Crate",
-    "version": "1.1.0",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/cesu8"
-  },
-  {
     "name": "cfg-if",
     "category": "Rust Crate",
     "version": "1.0.4",
@@ -758,14 +670,6 @@
     "author": "Rust Community",
     "license": "MIT / Apache-2.0",
     "url": "https://crates.io/crates/chacha20"
-  },
-  {
-    "name": "chacha20poly1305",
-    "category": "Rust Crate",
-    "version": "0.10.1",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/chacha20poly1305"
   },
   {
     "name": "chrono",
@@ -808,14 +712,6 @@
     "url": "https://crates.io/crates/ciborium-ll"
   },
   {
-    "name": "cipher",
-    "category": "Rust Crate",
-    "version": "0.4.4",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/cipher"
-  },
-  {
     "name": "clap",
     "category": "Rust Crate",
     "version": "4.6.1",
@@ -848,14 +744,6 @@
     "url": "https://crates.io/crates/clap_lex"
   },
   {
-    "name": "combine",
-    "category": "Rust Crate",
-    "version": "4.6.7",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/combine"
-  },
-  {
     "name": "compression-codecs",
     "category": "Rust Crate",
     "version": "0.4.38",
@@ -870,14 +758,6 @@
     "author": "Rust Community",
     "license": "MIT / Apache-2.0",
     "url": "https://crates.io/crates/compression-core"
-  },
-  {
-    "name": "const-oid",
-    "category": "Rust Crate",
-    "version": "0.9.6",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/const-oid"
   },
   {
     "name": "core-foundation-sys",
@@ -952,68 +832,12 @@
     "url": "https://crates.io/crates/crunchy"
   },
   {
-    "name": "crypto-bigint",
-    "category": "Rust Crate",
-    "version": "0.5.5",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/crypto-bigint"
-  },
-  {
-    "name": "crypto-common",
-    "category": "Rust Crate",
-    "version": "0.1.7",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/crypto-common"
-  },
-  {
-    "name": "ctr",
-    "category": "Rust Crate",
-    "version": "0.9.2",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/ctr"
-  },
-  {
-    "name": "curve25519-dalek",
-    "category": "Rust Crate",
-    "version": "4.1.3",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/curve25519-dalek"
-  },
-  {
-    "name": "curve25519-dalek-derive",
-    "category": "Rust Crate",
-    "version": "0.1.1",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/curve25519-dalek-derive"
-  },
-  {
-    "name": "der",
-    "category": "Rust Crate",
-    "version": "0.7.10",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/der"
-  },
-  {
     "name": "derive_arbitrary",
     "category": "Rust Crate",
     "version": "1.4.2",
     "author": "Rust Community",
     "license": "MIT / Apache-2.0",
     "url": "https://crates.io/crates/derive_arbitrary"
-  },
-  {
-    "name": "digest",
-    "category": "Rust Crate",
-    "version": "0.10.7",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/digest"
   },
   {
     "name": "displaydoc",
@@ -1024,36 +848,12 @@
     "url": "https://crates.io/crates/displaydoc"
   },
   {
-    "name": "ed25519",
-    "category": "Rust Crate",
-    "version": "2.2.3",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/ed25519"
-  },
-  {
-    "name": "ed25519-dalek",
-    "category": "Rust Crate",
-    "version": "2.2.0",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/ed25519-dalek"
-  },
-  {
     "name": "either",
     "category": "Rust Crate",
     "version": "1.16.0",
     "author": "Rust Community",
     "license": "MIT / Apache-2.0",
     "url": "https://crates.io/crates/either"
-  },
-  {
-    "name": "elliptic-curve",
-    "category": "Rust Crate",
-    "version": "0.13.8",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/elliptic-curve"
   },
   {
     "name": "equivalent",
@@ -1078,22 +878,6 @@
     "author": "Rust Community",
     "license": "MIT / Apache-2.0",
     "url": "https://crates.io/crates/fastrand"
-  },
-  {
-    "name": "ff",
-    "category": "Rust Crate",
-    "version": "0.13.1",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/ff"
-  },
-  {
-    "name": "fiat-crypto",
-    "category": "Rust Crate",
-    "version": "0.2.9",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/fiat-crypto"
   },
   {
     "name": "find-msvc-tools",
@@ -1184,28 +968,12 @@
     "url": "https://crates.io/crates/futures-util"
   },
   {
-    "name": "generic-array",
-    "category": "Rust Crate",
-    "version": "0.14.7",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/generic-array"
-  },
-  {
     "name": "getrandom",
     "category": "Rust Crate",
     "version": "0.2.17",
     "author": "Rust Community",
     "license": "MIT / Apache-2.0",
     "url": "https://crates.io/crates/getrandom"
-  },
-  {
-    "name": "ghash",
-    "category": "Rust Crate",
-    "version": "0.5.1",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/ghash"
   },
   {
     "name": "glob",
@@ -1222,14 +990,6 @@
     "author": "Rust Community",
     "license": "MIT / Apache-2.0",
     "url": "https://crates.io/crates/goblin"
-  },
-  {
-    "name": "group",
-    "category": "Rust Crate",
-    "version": "0.13.0",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/group"
   },
   {
     "name": "half",
@@ -1262,46 +1022,6 @@
     "author": "Rust Community",
     "license": "MIT / Apache-2.0",
     "url": "https://crates.io/crates/hermit-abi"
-  },
-  {
-    "name": "hex",
-    "category": "Rust Crate",
-    "version": "0.4.3",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/hex"
-  },
-  {
-    "name": "hex-conservative",
-    "category": "Rust Crate",
-    "version": "0.2.2",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/hex-conservative"
-  },
-  {
-    "name": "hkdf",
-    "category": "Rust Crate",
-    "version": "0.12.4",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/hkdf"
-  },
-  {
-    "name": "hmac",
-    "category": "Rust Crate",
-    "version": "0.12.1",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/hmac"
-  },
-  {
-    "name": "hpke",
-    "category": "Rust Crate",
-    "version": "0.12.0",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/hpke"
   },
   {
     "name": "http",
@@ -1464,14 +1184,6 @@
     "url": "https://crates.io/crates/indexmap"
   },
   {
-    "name": "inout",
-    "category": "Rust Crate",
-    "version": "0.1.4",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/inout"
-  },
-  {
     "name": "ipnet",
     "category": "Rust Crate",
     "version": "2.12.0",
@@ -1502,30 +1214,6 @@
     "author": "Rust Community",
     "license": "MIT / Apache-2.0",
     "url": "https://crates.io/crates/itoa"
-  },
-  {
-    "name": "jni",
-    "category": "Rust Crate",
-    "version": "0.21.1",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/jni"
-  },
-  {
-    "name": "jni-sys",
-    "category": "Rust Crate",
-    "version": "0.3.1",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/jni-sys"
-  },
-  {
-    "name": "jni-sys-macros",
-    "category": "Rust Crate",
-    "version": "0.4.1",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/jni-sys-macros"
   },
   {
     "name": "js-sys",
@@ -1648,44 +1336,12 @@
     "url": "https://crates.io/crates/oorandom"
   },
   {
-    "name": "opaque-debug",
-    "category": "Rust Crate",
-    "version": "0.3.1",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/opaque-debug"
-  },
-  {
-    "name": "p256",
-    "category": "Rust Crate",
-    "version": "0.13.2",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/p256"
-  },
-  {
-    "name": "pallasync-core",
-    "category": "Rust Crate",
-    "version": "0.1.0",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/pallasync-core"
-  },
-  {
     "name": "palleria_pixiv_api",
     "category": "Rust Crate",
     "version": "0.1.0",
     "author": "Rust Community",
     "license": "MIT / Apache-2.0",
     "url": "https://crates.io/crates/palleria_pixiv_api"
-  },
-  {
-    "name": "pbkdf2",
-    "category": "Rust Crate",
-    "version": "0.12.2",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/pbkdf2"
   },
   {
     "name": "percent-encoding",
@@ -1702,14 +1358,6 @@
     "author": "Rust Community",
     "license": "MIT / Apache-2.0",
     "url": "https://crates.io/crates/pin-project-lite"
-  },
-  {
-    "name": "pkcs8",
-    "category": "Rust Crate",
-    "version": "0.10.2",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/pkcs8"
   },
   {
     "name": "plain",
@@ -1744,44 +1392,12 @@
     "url": "https://crates.io/crates/plotters-svg"
   },
   {
-    "name": "poly1305",
-    "category": "Rust Crate",
-    "version": "0.8.0",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/poly1305"
-  },
-  {
-    "name": "polyval",
-    "category": "Rust Crate",
-    "version": "0.6.2",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/polyval"
-  },
-  {
     "name": "potential_utf",
     "category": "Rust Crate",
     "version": "0.1.5",
     "author": "Rust Community",
     "license": "MIT / Apache-2.0",
     "url": "https://crates.io/crates/potential_utf"
-  },
-  {
-    "name": "ppv-lite86",
-    "category": "Rust Crate",
-    "version": "0.2.21",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/ppv-lite86"
-  },
-  {
-    "name": "primeorder",
-    "category": "Rust Crate",
-    "version": "0.13.6",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/primeorder"
   },
   {
     "name": "proc-macro2",
@@ -1802,7 +1418,7 @@
   {
     "name": "quinn-proto",
     "category": "Rust Crate",
-    "version": "0.11.16",
+    "version": "0.11.18",
     "author": "Rust Community",
     "license": "MIT / Apache-2.0",
     "url": "https://crates.io/crates/quinn-proto"
@@ -1838,14 +1454,6 @@
     "author": "Rust Community",
     "license": "MIT / Apache-2.0",
     "url": "https://crates.io/crates/rand"
-  },
-  {
-    "name": "rand_chacha",
-    "category": "Rust Crate",
-    "version": "0.3.1",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/rand_chacha"
   },
   {
     "name": "rand_core",
@@ -1928,14 +1536,6 @@
     "url": "https://crates.io/crates/rustc-hash"
   },
   {
-    "name": "rustc_version",
-    "category": "Rust Crate",
-    "version": "0.4.1",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/rustc_version"
-  },
-  {
     "name": "rustix",
     "category": "Rust Crate",
     "version": "1.1.4",
@@ -1946,7 +1546,7 @@
   {
     "name": "rustls",
     "category": "Rust Crate",
-    "version": "0.23.41",
+    "version": "0.23.46",
     "author": "Rust Community",
     "license": "MIT / Apache-2.0",
     "url": "https://crates.io/crates/rustls"
@@ -1962,7 +1562,7 @@
   {
     "name": "rustls-webpki",
     "category": "Rust Crate",
-    "version": "0.103.13",
+    "version": "0.103.15",
     "author": "Rust Community",
     "license": "MIT / Apache-2.0",
     "url": "https://crates.io/crates/rustls-webpki"
@@ -1982,14 +1582,6 @@
     "author": "Rust Community",
     "license": "MIT / Apache-2.0",
     "url": "https://crates.io/crates/ryu"
-  },
-  {
-    "name": "ryu-js",
-    "category": "Rust Crate",
-    "version": "0.2.2",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/ryu-js"
   },
   {
     "name": "same-file",
@@ -2014,14 +1606,6 @@
     "author": "Rust Community",
     "license": "MIT / Apache-2.0",
     "url": "https://crates.io/crates/scroll_derive"
-  },
-  {
-    "name": "sec1",
-    "category": "Rust Crate",
-    "version": "0.7.3",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/sec1"
   },
   {
     "name": "semver",
@@ -2056,14 +1640,6 @@
     "url": "https://crates.io/crates/serde_derive"
   },
   {
-    "name": "serde_jcs",
-    "category": "Rust Crate",
-    "version": "0.2.0",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/serde_jcs"
-  },
-  {
     "name": "serde_json",
     "category": "Rust Crate",
     "version": "1.0.150",
@@ -2080,28 +1656,12 @@
     "url": "https://crates.io/crates/serde_urlencoded"
   },
   {
-    "name": "sha2",
-    "category": "Rust Crate",
-    "version": "0.10.9",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/sha2"
-  },
-  {
     "name": "shlex",
     "category": "Rust Crate",
     "version": "2.0.1",
     "author": "Rust Community",
     "license": "MIT / Apache-2.0",
     "url": "https://crates.io/crates/shlex"
-  },
-  {
-    "name": "signature",
-    "category": "Rust Crate",
-    "version": "2.2.0",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/signature"
   },
   {
     "name": "simd-adler32",
@@ -2150,14 +1710,6 @@
     "author": "Rust Community",
     "license": "MIT / Apache-2.0",
     "url": "https://crates.io/crates/socket2"
-  },
-  {
-    "name": "spki",
-    "category": "Rust Crate",
-    "version": "0.7.3",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/spki"
   },
   {
     "name": "stable_deref_trait",
@@ -2384,28 +1936,12 @@
     "url": "https://crates.io/crates/try-lock"
   },
   {
-    "name": "typenum",
-    "category": "Rust Crate",
-    "version": "1.20.1",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/typenum"
-  },
-  {
     "name": "unicode-ident",
     "category": "Rust Crate",
     "version": "1.0.24",
     "author": "Rust Community",
     "license": "MIT / Apache-2.0",
     "url": "https://crates.io/crates/unicode-ident"
-  },
-  {
-    "name": "unicode-normalization",
-    "category": "Rust Crate",
-    "version": "0.1.25",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/unicode-normalization"
   },
   {
     "name": "uniffi",
@@ -2422,14 +1958,6 @@
     "author": "Rust Community",
     "license": "MIT / Apache-2.0",
     "url": "https://crates.io/crates/uniffi_bindgen"
-  },
-  {
-    "name": "uniffi_build",
-    "category": "Rust Crate",
-    "version": "0.29.5",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/uniffi_build"
   },
   {
     "name": "uniffi_core",
@@ -2480,14 +2008,6 @@
     "url": "https://crates.io/crates/uniffi_udl"
   },
   {
-    "name": "universal-hash",
-    "category": "Rust Crate",
-    "version": "0.5.1",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/universal-hash"
-  },
-  {
     "name": "untrusted",
     "category": "Rust Crate",
     "version": "0.9.0",
@@ -2510,22 +2030,6 @@
     "author": "Rust Community",
     "license": "MIT / Apache-2.0",
     "url": "https://crates.io/crates/utf8_iter"
-  },
-  {
-    "name": "uuid",
-    "category": "Rust Crate",
-    "version": "1.24.0",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/uuid"
-  },
-  {
-    "name": "version_check",
-    "category": "Rust Crate",
-    "version": "0.9.5",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/version_check"
   },
   {
     "name": "walkdir",
@@ -2784,14 +2288,6 @@
     "url": "https://crates.io/crates/writeable"
   },
   {
-    "name": "x25519-dalek",
-    "category": "Rust Crate",
-    "version": "2.0.1",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/x25519-dalek"
-  },
-  {
     "name": "yoke",
     "category": "Rust Crate",
     "version": "0.8.3",
@@ -2846,14 +2342,6 @@
     "author": "Rust Community",
     "license": "MIT / Apache-2.0",
     "url": "https://crates.io/crates/zeroize"
-  },
-  {
-    "name": "zeroize_derive",
-    "category": "Rust Crate",
-    "version": "1.5.0",
-    "author": "Rust Community",
-    "license": "MIT / Apache-2.0",
-    "url": "https://crates.io/crates/zeroize_derive"
   },
   {
     "name": "zerotrie",

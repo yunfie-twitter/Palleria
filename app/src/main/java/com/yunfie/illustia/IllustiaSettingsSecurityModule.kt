@@ -84,24 +84,6 @@ abstract class IllustiaSettingsSecurityModule(
                     refreshCurrentAccountProfile(activeSettings)
                 }
             }
-
-            launch {
-                SettingsStore.pallaSyncEnabledUpdates
-                    .filterNotNull()
-                    .collect { update ->
-                        if (update.revision > initialPallaSyncStateRevision) {
-                            applyPallaSyncEnabledUpdate(update.enabled)
-                        }
-                    }
-            }
-
-            SettingsStore.syncUpdates
-                .filterNotNull()
-                .collect { update ->
-                    if (update.revision > initialSyncRevision) {
-                        applySyncedSettings(update.collections)
-                    }
-                }
         }
     }
 
@@ -251,15 +233,6 @@ abstract class IllustiaSettingsSecurityModule(
 
     fun updateHideNotifications(value: Boolean) {
         updateSettings { it.copy(hideNotifications = value) }
-    }
-
-    fun updatePallaSyncEnabled(value: Boolean) {
-        updateSettings { it.copy(pallaSyncEnabled = value) }
-        illustiaApplication?.setPallaSyncEnabled(value)
-    }
-
-    fun updatePallaSyncServerUrl(value: String) {
-        updateSettings { it.copy(pallaSyncServerUrl = value) }
     }
 
     fun updateSendTelemetry(value: Boolean) {

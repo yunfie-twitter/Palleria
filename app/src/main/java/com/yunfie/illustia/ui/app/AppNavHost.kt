@@ -526,7 +526,6 @@ internal fun AppNavHost(
                     settings = appState.state.settings,
                     viewModel = viewModel,
                     onBack = onPopRoute,
-                    onOpenPallaSync = { onNavigate(AppRoute.PallaSyncSettings) },
                     onOpenDiscordSettings = { onNavigate(AppRoute.DiscordSettings) },
                 )
             }
@@ -542,36 +541,6 @@ internal fun AppNavHost(
                 DiscordLoginScreen(
                     viewModel = viewModel,
                     onBack = onPopRoute,
-                )
-            }
-            entry(AppRoute.PallaSyncSettings) {
-                com.yunfie.illustia.ui.screens.pallasync.PallaSyncSettingsScreen(
-                    settings = appState.state.settings,
-                    viewModel = viewModel,
-                    onBack = onPopRoute,
-                    onPairDevice = { onNavigate(AppRoute.DevicePairing) },
-                    onManagePallaSyncDevices = { onNavigate(AppRoute.PallaSyncDevices) },
-                    onDeviceClick = { deviceId, deviceName ->
-                        onNavigate(AppRoute.DeviceViewHistory(deviceId, deviceName))
-                    },
-                )
-            }
-            entry(AppRoute.PallaSyncDevices) {
-                com.yunfie.illustia.ui.screens.pallasync.PallaSyncDevicesScreen(
-                    settings = appState.state.settings,
-                    onBack = onPopRoute,
-                    onDeviceClick = { deviceId, deviceName ->
-                        onNavigate(AppRoute.DeviceViewHistory(deviceId, deviceName))
-                    },
-                )
-            }
-            entry(AppRoute.DevicePairing) {
-                com.yunfie.illustia.ui.screens.pallasync.DevicePairingScreen(
-                    serverUrl = appState.state.settings.pallaSyncServerUrl,
-                    onBack = onPopRoute,
-                    onPairSuccess = {
-                        onPopRoute()
-                    },
                 )
             }
             entry(AppRoute.AccountLoginMethod) {
@@ -791,21 +760,6 @@ internal fun AppNavHost(
             }
             entry(AppRoute.PrivacyModeSettings) {
                 PrivacyModeSettingsScreen(settings = appState.state.settings, viewModel = viewModel, onBack = onPopRoute)
-            }
-            entry<AppRoute.DeviceViewHistory> { route ->
-                ProvideEntrySharedTransitionScope {
-                    com.yunfie.illustia.ui.screens.pallasync.DeviceViewHistoryScreen(
-                        deviceId = route.deviceId,
-                        deviceName = route.deviceName,
-                        state = appState.state,
-                        viewModel = viewModel,
-                        onBack = onPopRoute,
-                        onIllustClick = { illust ->
-                            viewModel.openIllust(illust)
-                            onNavigate(AppRoute.Detail(illust.id))
-                        },
-                    )
-                }
             }
         }
 
