@@ -24,8 +24,6 @@ enum class IllustiaNavigationRequest {
     AppLockPinEntry,
     PrivacyModeSettings,
     FeatureFlags,
-    PallaSyncSettings,
-    PallaSyncDevices,
     UpdateSettings,
     DiscordSettings,
     DiscordLogin,

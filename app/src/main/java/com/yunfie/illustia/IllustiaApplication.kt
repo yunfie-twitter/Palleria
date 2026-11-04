@@ -10,8 +10,6 @@ import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import com.yunfie.illustia.account.PalleriaAccount
 import com.yunfie.illustia.data.IllustiaRepository
-import com.yunfie.illustia.pallasync.PallaSyncSecretLifecycle
-import com.yunfie.illustia.pallasync.PalleriaSyncCoordinator
 import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.SettingsStore
@@ -79,21 +77,8 @@ class IllustiaApplication : Application() {
             .build()
     }
 
-    /** The only stateful PallaSync coordinator in this application process. */
-    private val pallaSyncCoordinatorDelegate =
-        lazy {
-            PalleriaSyncCoordinator(
-                client = sharedHttpClient,
-                context = this,
-                coordinatorScope = appScope,
-            )
-        }
-
-    internal val pallaSyncCoordinator: PalleriaSyncCoordinator by pallaSyncCoordinatorDelegate
-
     override fun onCreate() {
         super.onCreate()
-        PallaSyncSecretLifecycle.install()
         CrashHandler.instance.init(this)
         appScope.launch {
             val startupSettings = repository.readStartupSettings()
@@ -163,22 +148,10 @@ class IllustiaApplication : Application() {
                 RankingWidgetProvider.publishPreview(appContext)
                 IllustWidgetProvider.publishPreview(appContext)
             }
-            if (currentSettings.pallaSyncEnabled) {
-                runCatching { pallaSyncCoordinator.recoverInterruptedActivation() }
-            }
-            setPallaSyncEnabled(currentSettings.pallaSyncEnabled)
             // Mark the end of the cold-start window. finish() is a no-op when
             // startupTransaction is null (telemetry disabled or not yet enabled).
             startupTransaction?.finish(SpanStatus.OK)
             startupTransaction = null
-        }
-    }
-
-    fun setPallaSyncEnabled(enabled: Boolean) {
-        if (enabled) {
-            pallaSyncCoordinator.startBackgroundSync()
-        } else if (pallaSyncCoordinatorDelegate.isInitialized()) {
-            pallaSyncCoordinator.stopBackgroundSync()
         }
     }
 

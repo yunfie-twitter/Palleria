@@ -59,7 +59,7 @@ report-uri https://glitchtip.yunfi.f5.si/api/1/security/?glitchtip_key=b2607da9c
 
 ## 非致命的例外（Non-fatal Exceptions）の集約
 
-各種 ViewModel、フィード読み込み、検索、詳細表示、ブックマーク、ダウンロード、PallaSync 同期処理などで発生した予期せぬ例外を `GlitchTipTelemetry.recordException(...)` で収集します。
+各種 ViewModel、フィード読み込み、検索、詳細表示、ブックマーク、ダウンロードなどで発生した予期せぬ例外を `GlitchTipTelemetry.recordException(...)` で収集します。
 - `CancellationException`（コルーチンキャンセル）は自動的に除外されます。
 - モジュールタグ（`module`）および追加コンテキスト情報（クエリ、URL、作品IDなど）を付与して記録されます。
 - `isSendDefaultPii = false` は呼び出し元が渡す `extras` の自動削除を意味しません。例えば検索失敗経路は検索語を渡しており、個人情報が一切含まれないとは保証できません。
@@ -96,7 +96,6 @@ GlitchTip は Sentry Envelope の `transaction` アイテムタイプを受け�
 | `download.artwork` | `download` | 通常イラスト・マンガ画像の保存 |
 | `ugoira.convert.gif` | `ugoira.convert` | うごイラフレームの GIF エンコード処理 |
 | `ugoira.convert.mp4` | `ugoira.convert` | うごイラフレームの MP4 エンコード処理 |
-| `pallasync.sync` | `sync.operation` | PallaSync デバイス同期、アウトボックス送信、インボックス受信 |
 
 `GlitchTipTelemetry.trace` / `GlitchTipTelemetry.traceAsync` はテレメトリが無効な場合にトランザクションを生成せずブロックを実行するため、呼び出し側で同意状態を別途確認する必要はありません。
 

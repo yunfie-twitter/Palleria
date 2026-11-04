@@ -176,19 +176,6 @@ fun DataSettingsScreen(
                     }
                 }
             }
-
-            item {
-                Section(stringResource(R.string.pallasync_section_title)) {
-                    ElevatedPanel(contentPadding = PaddingValues(0.dp)) {
-                        SettingLinkRow(
-                            title = stringResource(R.string.pallasync_settings_title),
-                            summary = stringResource(R.string.pallasync_enable_desc),
-                        ) {
-                            viewModel.openPallaSyncSettings()
-                        }
-                    }
-                }
-            }
         }
     }
 }

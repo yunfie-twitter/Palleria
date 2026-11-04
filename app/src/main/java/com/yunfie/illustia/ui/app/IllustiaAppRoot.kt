@@ -48,7 +48,6 @@ import com.yunfie.illustia.R
 import com.yunfie.illustia.data.pixiv.CommentArtworkType
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
-import com.yunfie.illustia.pallasync.PalleriaSyncManager
 import com.yunfie.illustia.platform.DesktopCommand
 import com.yunfie.illustia.platform.DesktopEnvironment
 import com.yunfie.illustia.platform.PlatformCapabilities
@@ -550,8 +549,6 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                     IllustiaNavigationRequest.AppLockPinEntry -> AppRoute.AppLockPinEntry
                     IllustiaNavigationRequest.PrivacyModeSettings -> AppRoute.PrivacyModeSettings
                     IllustiaNavigationRequest.FeatureFlags -> AppRoute.FeatureFlags
-                    IllustiaNavigationRequest.PallaSyncSettings -> AppRoute.PallaSyncSettings
-                    IllustiaNavigationRequest.PallaSyncDevices -> AppRoute.PallaSyncDevices
                     IllustiaNavigationRequest.UpdateSettings -> AppRoute.UpdateSettings
                     IllustiaNavigationRequest.DiscordSettings -> AppRoute.DiscordSettings
                     IllustiaNavigationRequest.DiscordLogin -> AppRoute.DiscordLogin
@@ -809,24 +806,6 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
 
                             PaletteAction.Notifications -> {
                                 navigate(AppRoute.Notifications)
-                            }
-
-                            PaletteAction.PallaSyncDevices -> {
-                                navigate(AppRoute.PallaSyncDevices)
-                            }
-
-                            PaletteAction.PallaSyncSync -> {
-                                coroutineScope.launch {
-                                    val syncManager = PalleriaSyncManager(context = context)
-                                    val success = syncManager.syncNow()
-                                    val message =
-                                        if (success) {
-                                            context.getString(R.string.command_palette_pallasync_sync_triggered)
-                                        } else {
-                                            context.getString(R.string.error_pallasync_sync_failed)
-                                        }
-                                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                                }
                             }
 
                             PaletteAction.SwitchAccount -> {

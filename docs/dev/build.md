@@ -39,7 +39,6 @@ Windows PowerShellでは最後のコマンドを `.\gradlew.bat :app:assembleDeb
 | `buildUniFfiHost` | ホスト用の `palleria_pixiv_api` ライブラリをビルド |
 | `generateUniFfiBindings` | `app/build/generated/uniffi/kotlin` にKotlinコードを生成 |
 | `buildRustAndroid` | 3 ABIの `libpalleria_pixiv_api.so` を生成 |
-| `buildPallaSyncCoreAndroid` | 3 ABIの `libpallasync_core.so` を生成 |
 
 Cargoの出力先は共通の `rust/target`、Androidの共有ライブラリの配置先は `app/build/generated/uniffi/jniLibs` です。
 

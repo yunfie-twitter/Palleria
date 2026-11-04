@@ -16,7 +16,6 @@ ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOML_PATH = os.path.join(ROOT_DIR, "gradle", "libs.versions.toml")
 CARGO_LOCKS = [
     os.path.join(ROOT_DIR, "rust", "pixiv-api", "Cargo.lock"),
-    os.path.join(ROOT_DIR, "rust", "pallasync-core", "Cargo.lock"),
 ]
 ASSETS_DIR = os.path.join(ROOT_DIR, "app", "src", "main", "assets")
 JSON_OUTPUT = os.path.join(ASSETS_DIR, "licenses.json")
@@ -32,8 +31,6 @@ KNOWN_ANDROID_LICENSES = {
     "dev.rikka.shizuku": ("RikkaApps", "Apache-2.0", "https://github.com/RikkaApps/Shizuku-API"),
     "io.sentry": ("Sentry", "MIT", "https://github.com/getsentry/sentry-java"),
     "net.java.dev.jna": ("Timothy Wall", "LGPL-2.1 / Apache-2.0", "https://github.com/java-native-access/jna"),
-    "com.google.zxing": ("ZXing Authors", "Apache-2.0", "https://github.com/zxing/zxing"),
-    "com.journeyapps": ("Journey Mobile", "Apache-2.0", "https://github.com/journeyapps/zxing-android-embedded"),
     "io.kotest": ("Kotest", "Apache-2.0", "https://github.com/kotest/kotest"),
     "junit": ("JUnit.org", "EPL-2.0", "https://junit.org/"),
     "org.robolectric": ("Google LLC / Robolectric Authors", "Apache-2.0", "https://robolectric.org/"),

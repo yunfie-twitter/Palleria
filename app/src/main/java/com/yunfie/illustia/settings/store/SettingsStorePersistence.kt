@@ -5,7 +5,6 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import com.yunfie.illustia.settings.AppSettings
-import com.yunfie.illustia.settings.SyncedCollectionsSnapshot
 import com.yunfie.illustia.settings.db.IllustiaDatabase
 import com.yunfie.illustia.settings.db.SettingsDao
 
@@ -49,21 +48,6 @@ internal suspend fun writeAppSettings(
     writeDataStorePreferences(dataStore, settings)
     sensitivePreferences?.let { writeSensitiveSettings(it, settings) }
     writeRoomSettingsData(database, dao, settings, baseSettings)
-}
-
-internal suspend fun writeSyncedCollections(
-    dataStore: DataStore<Preferences>,
-    database: IllustiaDatabase,
-    dao: SettingsDao,
-    synced: SyncedCollectionsSnapshot,
-) {
-    dataStore.edit { preferences ->
-        preferences[MUTED_ILLUSTS_JSON] = encodeLongList(synced.mutedIllusts)
-        preferences[MUTED_USERS_JSON] = encodeLongList(synced.mutedUsers)
-        preferences[MUTED_TAGS_JSON] = encodeStringList(synced.mutedTags)
-        preferences[SEEN_FEED_ILLUSTS_JSON] = encodeLongList(synced.seenFeedIllusts)
-    }
-    writeSyncedRoomSettingsData(database, dao, synced)
 }
 
 internal suspend fun clearSensitiveSettings(

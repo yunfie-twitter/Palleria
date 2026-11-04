@@ -11,7 +11,6 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import com.yunfie.illustia.data.normalizePixivImageProxyBaseUrl
 import com.yunfie.illustia.models.StoredAccount
-import com.yunfie.illustia.pallasync.PallaSyncRelayOrigin
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.DEFAULT_DETAIL_SECTION_ORDER
 import com.yunfie.illustia.settings.DEFAULT_NAVIGATION_ORDER
@@ -193,8 +192,6 @@ internal fun readFromDataStore(
         hideNotifications = preferences[HIDE_NOTIFICATIONS] ?: false,
         dummyAppName = preferences[DUMMY_APP_NAME].orEmpty(),
         dummyIconVariant = preferences[DUMMY_ICON_VARIANT] ?: "ic_launcher_dummy",
-        pallaSyncEnabled = preferences[PALLA_SYNC_ENABLED] ?: false,
-        pallaSyncServerUrl = PallaSyncRelayOrigin.resolve(preferences[PALLA_SYNC_SERVER_URL]),
         sendTelemetry = preferences[SEND_TELEMETRY] ?: false,
         autoDetectClipboard = preferences[AUTO_DETECT_CLIPBOARD] ?: false,
         updateInstallMethod = preferences[UPDATE_INSTALL_METHOD] ?: "standard_apk",
@@ -388,8 +385,6 @@ internal fun readFromSharedPreferences(preferences: SharedPreferences): AppSetti
         hideNotifications = false,
         dummyAppName = "",
         dummyIconVariant = "ic_launcher_dummy",
-        pallaSyncEnabled = false,
-        pallaSyncServerUrl = PallaSyncRelayOrigin.DEFAULT_ORIGIN,
         sendTelemetry = false,
         internalProxyEnabled = preferences.getBoolean(KEY_INTERNAL_PROXY_ENABLED, false),
         internalProxyType = preferences.getSafeString(KEY_INTERNAL_PROXY_TYPE, "HTTP"),
@@ -533,8 +528,6 @@ internal fun writeToDataStore(
     preferences[HIDE_NOTIFICATIONS] = settings.hideNotifications
     preferences[DUMMY_APP_NAME] = settings.dummyAppName
     preferences[DUMMY_ICON_VARIANT] = settings.dummyIconVariant
-    preferences[PALLA_SYNC_ENABLED] = settings.pallaSyncEnabled
-    preferences[PALLA_SYNC_SERVER_URL] = settings.pallaSyncServerUrl
     preferences[SEND_TELEMETRY] = settings.sendTelemetry
     preferences[AUTO_DETECT_CLIPBOARD] = settings.autoDetectClipboard
     preferences[UPDATE_INSTALL_METHOD] = settings.updateInstallMethod

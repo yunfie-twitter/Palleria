@@ -2,7 +2,6 @@ package com.yunfie.illustia.settings.store
 
 import androidx.datastore.preferences.core.Preferences
 import com.yunfie.illustia.settings.AppSettings
-import com.yunfie.illustia.settings.SyncedCollectionsSnapshot
 import com.yunfie.illustia.settings.db.AccountEntity
 import com.yunfie.illustia.settings.db.FavoriteTagEntity
 import com.yunfie.illustia.settings.db.IllustiaDatabase
@@ -125,47 +124,6 @@ internal suspend fun writeRoomSettingsData(
                 }
             },
         )
-    }
-
-/** Writes only PallaSync-owned Room collections, leaving accounts and other data untouched. */
-internal suspend fun writeSyncedRoomSettingsData(
-    database: IllustiaDatabase,
-    dao: SettingsDao,
-    synced: SyncedCollectionsSnapshot,
-): Unit =
-    withContext(Dispatchers.IO) {
-        database.runInTransaction {
-            dao.clearSearchHistory()
-            dao.insertSearchHistory(
-                synced.searchHistory.take(MAX_SEARCH_HISTORY).mapIndexed { index, query ->
-                    SearchHistoryEntity(query, index)
-                },
-            )
-
-            dao.clearFavoriteTags()
-            dao.insertFavoriteTags(
-                synced.favoriteTags.mapIndexed { index, tag -> FavoriteTagEntity(tag, index) },
-            )
-
-            dao.clearViewHistory()
-            dao.insertViewHistory(
-                synced.viewHistory.take(MAX_VIEW_HISTORY).mapIndexed { index, illust ->
-                    ViewHistoryEntity(
-                        illust.id,
-                        illust.title,
-                        illust.artistName,
-                        illust.imageUrl,
-                        illust.pageCount,
-                        illust.type,
-                        index,
-                        illust.isBookmarked,
-                        illust.xRestrict,
-                        encodeStringList(illust.tags),
-                        illust.illustAiType,
-                    )
-                },
-            )
-        }
     }
 
 internal fun savedIllustStorageBytes(directory: File): Long {

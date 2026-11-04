@@ -22,7 +22,6 @@ jobs:
       matrix:
         crate_dir:
           - "rust/pixiv-api"
-          - "rust/pallasync-core"
 
     steps:
       - name: Checkout repository

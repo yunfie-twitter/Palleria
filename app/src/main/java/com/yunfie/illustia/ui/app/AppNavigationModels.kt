@@ -172,17 +172,6 @@ internal sealed interface AppRoute : NavKey {
 
     data object IllustSeries : AppRoute
 
-    data object PallaSyncSettings : AppRoute
-
-    data object PallaSyncDevices : AppRoute
-
-    data object DevicePairing : AppRoute
-
-    data class DeviceViewHistory(
-        val deviceId: String,
-        val deviceName: String,
-    ) : AppRoute
-
     data object UpdateSettings : AppRoute
 
     data object DiscordSettings : AppRoute

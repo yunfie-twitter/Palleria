@@ -31,9 +31,6 @@ import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
-import com.yunfie.illustia.pallasync.PallaSyncClientStatus
-import com.yunfie.illustia.pallasync.PalleriaSyncManager
-import com.yunfie.illustia.pallasync.data.HistoryCursor
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -47,7 +44,6 @@ import com.yunfie.illustia.ui.components.onTopBarTap
 import com.yunfie.illustia.ui.components.pinchToChangeColumns
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.smoothScrollToTop
-import com.yunfie.illustia.ui.screens.pallasync.pallaSyncFailureCode
 import com.yunfie.illustia.visibleWithSettings
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.DropdownEntry
@@ -95,62 +91,8 @@ fun ViewHistoryScreen(
     onBack: () -> Unit,
 ) {
     val performHaptic = rememberHapticFeedbackAction()
-    val context = LocalContext.current
-    val syncManager = remember(context) { PalleriaSyncManager(context = context) }
     PredictiveBackGestureHandler(onBack = onBack)
-    var pallaSyncPaging by remember { mutableStateOf(false) }
-    var pagedHistory by remember { mutableStateOf<List<Illust>>(emptyList()) }
-    var historyStatus by remember { mutableStateOf<PallaSyncClientStatus?>(null) }
-    var historyCursor by remember { mutableStateOf<HistoryCursor?>(null) }
-    var historyPartial by remember { mutableStateOf(false) }
-    var historyPageLoading by remember { mutableStateOf(false) }
-    var historyPageError by remember { mutableStateOf<String?>(null) }
-    var historyReloadKey by remember { mutableIntStateOf(0) }
-    LaunchedEffect(state.settings.pallaSyncEnabled, historyReloadKey) {
-        if (!state.settings.pallaSyncEnabled) {
-            pallaSyncPaging = false
-            pagedHistory = emptyList()
-            historyCursor = null
-            historyStatus = null
-            viewModel.loadFullViewHistory()
-        } else {
-            historyPageLoading = true
-            historyPageError = null
-            try {
-                historyStatus =
-                    try {
-                        syncManager.getClientStatus()
-                    } catch (cancelled: kotlinx.coroutines.CancellationException) {
-                        throw cancelled
-                    } catch (_: Exception) {
-                        null
-                    }
-                val page = syncManager.getViewHistoryPage()
-                if (page == null) {
-                    pallaSyncPaging = false
-                    pagedHistory = emptyList()
-                    historyCursor = null
-                    viewModel.loadFullViewHistory()
-                } else {
-                    pallaSyncPaging = true
-                    pagedHistory = page.items
-                    historyCursor = page.next
-                    historyPartial = page.partial
-                }
-            } catch (cancelled: kotlinx.coroutines.CancellationException) {
-                throw cancelled
-            } catch (failure: Exception) {
-                pallaSyncPaging = true
-                pagedHistory = emptyList()
-                historyCursor = null
-                // Only protocol codes are shown. An uncoded failure keeps "unknown" so the page
-                // still offers a retry without pretending it is pending evidence.
-                historyPageError = pallaSyncFailureCode(failure) ?: "unknown"
-            } finally {
-                historyPageLoading = false
-            }
-        }
-    }
+    LaunchedEffect(Unit) { viewModel.loadFullViewHistory() }
     var deleteTarget by remember { mutableStateOf<ViewHistoryDeleteTarget?>(null) }
     var selectedIds by remember { mutableStateOf(emptySet<Long>()) }
     var showSearch by remember { mutableStateOf(false) }
@@ -176,7 +118,7 @@ fun ViewHistoryScreen(
 
     val visibleHistory =
         remember(
-            if (pallaSyncPaging) pagedHistory else state.settings.viewHistory,
+            state.settings.viewHistory,
             state.settings.mutedTags,
             state.settings.mutedUsers,
             state.settings.mutedIllusts,
@@ -188,9 +130,8 @@ fun ViewHistoryScreen(
             filterType,
             bookmarkedIds,
         ) {
-            val sourceHistory = if (pallaSyncPaging) pagedHistory else state.settings.viewHistory
             val history =
-                sourceHistory.visibleWithSettings(state.settings).map { illust ->
+                state.settings.viewHistory.visibleWithSettings(state.settings).map { illust ->
                     if (illust.id in bookmarkedIds && !illust.isBookmarked) {
                         illust.copy(isBookmarked = true)
                     } else {
@@ -247,7 +188,6 @@ fun ViewHistoryScreen(
                     ViewHistoryDeleteTarget.All -> viewModel.clearViewHistory()
                     ViewHistoryDeleteTarget.Selected -> viewModel.removeViewHistory(selectedIds)
                 }
-                if (pallaSyncPaging) historyReloadKey++
                 selectedIds = emptySet()
                 deleteTarget = null
             },
@@ -459,11 +399,7 @@ fun ViewHistoryScreen(
                                 text = reloadLabel,
                                 onClick = {
                                     performHaptic(AppHapticEffect.Click)
-                                    if (pallaSyncPaging) {
-                                        historyReloadKey++
-                                    } else {
-                                        viewModel.loadFullViewHistory()
-                                    }
+                                    viewModel.loadFullViewHistory()
                                 },
                             ),
                             DropdownItem(
@@ -480,42 +416,6 @@ fun ViewHistoryScreen(
 
     val scrollBehavior = MiuixScrollBehavior()
     val coroutineScope = rememberCoroutineScope()
-    var historyAutoLoadBlocked by remember { mutableStateOf(false) }
-    val loadMoreHistory: (Boolean) -> Unit = { explicitRetry ->
-        if (explicitRetry) historyAutoLoadBlocked = false
-        val cursor = historyCursor
-        if (cursor != null && !historyPageLoading) {
-            historyPageLoading = true
-            historyPageError = null
-            coroutineScope.launch {
-                try {
-                    val page = checkNotNull(syncManager.getViewHistoryPage(cursor)) { "C_MISSING_DEPENDENCY" }
-                    pagedHistory = pagedHistory + page.items
-                    historyCursor = page.next
-                    historyPartial = page.partial
-                } catch (cancelled: kotlinx.coroutines.CancellationException) {
-                    throw cancelled
-                } catch (failure: Exception) {
-                    historyPageError = pallaSyncFailureCode(failure) ?: "unknown"
-                    historyAutoLoadBlocked = true
-                } finally {
-                    historyPageLoading = false
-                }
-            }
-        }
-    }
-    LaunchedEffect(pallaSyncPaging, historyReloadKey, historyCursor, historyPageLoading, historyAutoLoadBlocked) {
-        if (pallaSyncPaging) {
-            snapshotFlow {
-                val layout = gridState.layoutInfo
-                val lastVisible = layout.visibleItemsInfo.lastOrNull()?.index ?: -1
-                val closeToEnd = layout.totalItemsCount > 0 && lastVisible >= layout.totalItemsCount - 8
-                closeToEnd && historyCursor != null && !historyPageLoading && !historyAutoLoadBlocked
-            }.collect { shouldLoad ->
-                if (shouldLoad) loadMoreHistory(false)
-            }
-        }
-    }
     Scaffold(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
@@ -606,34 +506,6 @@ fun ViewHistoryScreen(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            if (pallaSyncPaging) {
-                item(span = { GridItemSpan(maxLineSpan) }, contentType = "history_page_notice") {
-                    val status = historyStatus
-                    Text(
-                        if (status == null) {
-                            stringResource(R.string.pallasync_history_page_notice, pagedHistory.size)
-                        } else {
-                            stringResource(
-                                R.string.pallasync_history_page_totals,
-                                status.viewedCount,
-                                status.viewedProjectionCount,
-                                status.viewedColdCount,
-                                pagedHistory.size,
-                            )
-                        },
-                    )
-                }
-                if (historyPartial) {
-                    item(span = { GridItemSpan(maxLineSpan) }, contentType = "history_page_partial") {
-                        Text(stringResource(R.string.pallasync_history_page_partial))
-                    }
-                }
-            }
-            historyPageError?.let { errorCode ->
-                item(span = { GridItemSpan(maxLineSpan) }, contentType = "history_page_error") {
-                    Text(stringResource(R.string.pallasync_history_page_error, errorCode))
-                }
-            }
             if (showSearch) {
                 item(span = { GridItemSpan(maxLineSpan) }, contentType = "history_search") {
                     SearchBar(
@@ -700,24 +572,6 @@ fun ViewHistoryScreen(
                     highQualityImages = feedHighQuality,
                     showAiBadge = showAiBadge,
                 )
-            }
-            if (pallaSyncPaging && historyCursor != null) {
-                item(span = { GridItemSpan(maxLineSpan) }, contentType = "history_page_more") {
-                    TextButton(
-                        text =
-                            if (historyPageLoading) {
-                                stringResource(R.string.pallasync_history_loading)
-                            } else if (historyPageError != null) {
-                                stringResource(R.string.pallasync_history_retry)
-                            } else {
-                                stringResource(R.string.action_load_more)
-                            },
-                        enabled = !historyPageLoading,
-                        onClick = {
-                            loadMoreHistory(true)
-                        },
-                    )
-                }
             }
         }
     }

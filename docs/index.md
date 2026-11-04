@@ -32,10 +32,6 @@ features:
     details: PINロック、生体認証、本物として使える電卓偽装モードを搭載。
     link: /user/security
     linkText: セキュリティ機能を見る
-  - title: 暗号化された端末間同期
-    details: PallaSyncでお気に入りタグ・履歴・ミュートをペアリングした端末間で同期。
-    link: /user/sync
-    linkText: 同期機能を見る
 ---
 
 ## Palleriaを使い始める
@@ -50,7 +46,6 @@ features:
 - [画像の保存と一括ダウンロード](/user/downloads)
 - [外観テーマと各種設定](/user/personalization)
 - [アプリロックと電卓偽装](/user/security)
-- [PallaSyncによる端末間同期](/user/sync)
 - [ライブ壁紙とウィジェット](/user/wallpaper-widget)
 
 アプリの仕組みや開発への参加方法は、[開発者ドキュメント](/dev/)と[ビルド手順](/dev/build)を参照してください。
