@@ -152,6 +152,10 @@ fun IllustDetailScreen(
     mangaAdaptivePreload: Boolean = true,
     detailSectionOrder: List<String>,
     relatedIllustColumnCount: Int = 3,
+    relatedSectionInitiallyReady: Boolean = false,
+    onRelatedSectionReady: () -> Unit = {},
+    initialPage: Int = 0,
+    onPageChanged: (Int) -> Unit = {},
     listState: LazyListState = rememberLazyListState(),
 ) {
     val context = LocalContext.current
@@ -334,6 +338,8 @@ fun IllustDetailScreen(
             showLikeAnimation = showLikeAnimation,
             expanded = expanded,
             onHeaderIconsThemeChanged = { useDarkHeaderIcons = it },
+            initialPage = initialPage,
+            onPageChanged = onPageChanged,
             modifier = modifier,
         )
     }
@@ -356,6 +362,8 @@ fun IllustDetailScreen(
             onOpenIllust = onOpenIllust,
             onLongPressIllust = onLongPressIllust,
             onRequestUnfollowConfirm = { showUnfollowConfirm = true },
+            relatedSectionInitiallyReady = relatedSectionInitiallyReady,
+            onRelatedSectionReady = onRelatedSectionReady,
         )
     }
 
@@ -535,6 +543,8 @@ private fun DetailHeaderSlot(
     showLikeAnimation: Boolean,
     expanded: Boolean,
     onHeaderIconsThemeChanged: (Boolean) -> Unit,
+    initialPage: Int,
+    onPageChanged: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val currentOnBack by rememberUpdatedState(onBack)
@@ -578,6 +588,8 @@ private fun DetailHeaderSlot(
         showLikeAnimation = showLikeAnimation,
         expanded = expanded,
         onHeaderIconsThemeChanged = { currentOnTheme(it) },
+        initialPage = initialPage,
+        onPageChanged = onPageChanged,
         modifier = modifier,
     )
 }
@@ -602,6 +614,8 @@ private fun DetailInfoSlot(
     onOpenIllust: (Illust) -> Unit,
     onLongPressIllust: (Illust) -> Unit,
     onRequestUnfollowConfirm: () -> Unit,
+    relatedSectionInitiallyReady: Boolean,
+    onRelatedSectionReady: () -> Unit,
 ) {
     val currentOnOpenUser by rememberUpdatedState(onOpenUser)
     val currentOnOpenIllustById by rememberUpdatedState(onOpenIllustById)
@@ -652,5 +666,7 @@ private fun DetailInfoSlot(
                 }
             }
         },
+        relatedSectionInitiallyReady = relatedSectionInitiallyReady,
+        onRelatedSectionReady = onRelatedSectionReady,
     )
 }

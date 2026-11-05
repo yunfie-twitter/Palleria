@@ -92,11 +92,14 @@ internal fun IllustDetailInfo(
     onLongPressTag: (String) -> Unit,
     sectionOrder: List<String>,
     relatedContent: @Composable (isNearViewport: Boolean) -> Unit,
+    relatedSectionInitiallyReady: Boolean = false,
+    onRelatedSectionReady: () -> Unit = {},
 ) {
     val uriHandler = LocalUriHandler.current
     val screenHeightDp = LocalConfiguration.current.screenHeightDp
     val relatedSectionTriggerPx = with(LocalDensity.current) { screenHeightDp.dp.toPx() * 1.05f }
-    val relatedSectionReady = remember(illust.id) { mutableStateOf(false) }
+    val currentOnRelatedSectionReady by rememberUpdatedState(onRelatedSectionReady)
+    var relatedSectionReady by remember(illust.id) { mutableStateOf(relatedSectionInitiallyReady) }
     var followAnimationTrigger by remember(illust.artistId) { mutableIntStateOf(0) }
     // Cached so the link handler survives recomposition; otherwise the whole caption subtree is invalidated.
     val currentOnOpenIllustById by rememberUpdatedState(onOpenIllustById)
@@ -356,10 +359,11 @@ internal fun IllustDetailInfo(
                                 modifier =
                                     Modifier.onGloballyPositioned { coordinates ->
                                         if (
-                                            !relatedSectionReady.value &&
+                                            !relatedSectionReady &&
                                             coordinates.boundsInWindow().top <= relatedSectionTriggerPx
                                         ) {
-                                            relatedSectionReady.value = true
+                                            relatedSectionReady = true
+                                            currentOnRelatedSectionReady()
                                         }
                                     },
                                 verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -372,7 +376,7 @@ internal fun IllustDetailInfo(
                                     fontWeight = FontWeight.Bold,
                                     modifier = Modifier.padding(horizontal = 16.dp),
                                 )
-                                relatedContent(relatedSectionReady.value)
+                                relatedContent(relatedSectionReady)
                             }
                         }
                     }
