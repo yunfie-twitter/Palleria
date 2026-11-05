@@ -202,6 +202,8 @@ abstract class IllustiaViewModelFoundation(
         userProfileGridStates.clear()
         userProfileBookmarkGridStates.clear()
         illustDetailListStates.clear()
+        illustDetailPagerPages.clear()
+        illustDetailRelatedSectionsReady.clear()
     }
 
     protected val rankingGridStates: MutableMap<String, LazyGridState> =
@@ -220,6 +222,11 @@ abstract class IllustiaViewModelFoundation(
         object : java.util.LinkedHashMap<Long, LazyListState>(MAX_CACHED_GRID_STATES, 0.75f, true) {
             override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Long, LazyListState>?): Boolean = size > MAX_CACHED_GRID_STATES
         }
+    protected val illustDetailPagerPages: MutableMap<Long, Int> =
+        object : java.util.LinkedHashMap<Long, Int>(MAX_CACHED_GRID_STATES, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Long, Int>?): Boolean = size > MAX_CACHED_GRID_STATES
+        }
+    protected val illustDetailRelatedSectionsReady: MutableSet<Long> = mutableSetOf()
     protected val downloadClient: OkHttpClient by lazy {
         (getApplication<Application>() as IllustiaApplication)
             .sharedHttpClient
