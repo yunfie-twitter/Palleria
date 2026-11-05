@@ -9,7 +9,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,6 +42,7 @@ import com.yunfie.illustia.ui.components.IllustCardSkeleton
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.ProfileGridHorizontalSpacing
 import com.yunfie.illustia.ui.components.ProfileGridVerticalSpacing
+import com.yunfie.illustia.ui.components.RequestErrorState
 import com.yunfie.illustia.ui.components.adaptiveProfileGridColumns
 import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -275,6 +275,11 @@ internal fun UserProfileStatusPlaceholder(
     onClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
+    if (isError) {
+        RequestErrorState(message = message, onRetry = onClick, modifier = modifier)
+        return
+    }
+
     val iconTint = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.48f)
     val textColor = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.8f)
     Box(
@@ -285,13 +290,7 @@ internal fun UserProfileStatusPlaceholder(
             modifier =
                 Modifier
                     .clip(RoundedCornerShape(16.dp))
-                    .then(
-                        if (onClick != null) {
-                            Modifier.clickable(onClick = onClick)
-                        } else {
-                            Modifier
-                        },
-                    ).padding(horizontal = 24.dp, vertical = 20.dp),
+                    .padding(horizontal = 24.dp, vertical = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
@@ -319,36 +318,20 @@ internal fun UserProfileStatusPlaceholder(
                             .CornerRadius(corner, corner),
                     style = stroke,
                 )
-                if (isError) {
-                    val centerX = size.width / 2f
-                    drawLine(
-                        color = iconTint,
-                        start = Offset(centerX, size.height * 0.31f),
-                        end = Offset(centerX, size.height * 0.54f),
-                        strokeWidth = strokeWidth,
-                        cap = androidx.compose.ui.graphics.StrokeCap.Round,
-                    )
-                    drawCircle(
-                        color = iconTint,
-                        radius = strokeWidth * 0.62f,
-                        center = Offset(centerX, size.height * 0.69f),
-                    )
-                } else {
-                    drawLine(
-                        color = iconTint,
-                        start = Offset(size.width * 0.32f, size.height * 0.43f),
-                        end = Offset(size.width * 0.68f, size.height * 0.43f),
-                        strokeWidth = strokeWidth,
-                        cap = androidx.compose.ui.graphics.StrokeCap.Round,
-                    )
-                    drawLine(
-                        color = iconTint,
-                        start = Offset(size.width * 0.32f, size.height * 0.59f),
-                        end = Offset(size.width * 0.56f, size.height * 0.59f),
-                        strokeWidth = strokeWidth,
-                        cap = androidx.compose.ui.graphics.StrokeCap.Round,
-                    )
-                }
+                drawLine(
+                    color = iconTint,
+                    start = Offset(size.width * 0.32f, size.height * 0.43f),
+                    end = Offset(size.width * 0.68f, size.height * 0.43f),
+                    strokeWidth = strokeWidth,
+                    cap = androidx.compose.ui.graphics.StrokeCap.Round,
+                )
+                drawLine(
+                    color = iconTint,
+                    start = Offset(size.width * 0.32f, size.height * 0.59f),
+                    end = Offset(size.width * 0.56f, size.height * 0.59f),
+                    strokeWidth = strokeWidth,
+                    cap = androidx.compose.ui.graphics.StrokeCap.Round,
+                )
             }
             top.yukonga.miuix.kmp.basic.Text(
                 text = message,

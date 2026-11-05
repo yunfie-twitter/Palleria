@@ -42,6 +42,7 @@ import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.NotificationCardSkeleton
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
+import com.yunfie.illustia.ui.components.RequestErrorState
 import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.onTopBarTap
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
@@ -131,17 +132,10 @@ fun NotificationScreen(
             } else if (state.notifications.isEmpty()) {
                 item(contentType = "notification_empty") {
                     if (state.notificationsError != null) {
-                        Column(
-                            modifier = Modifier.fillMaxWidth().padding(24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            Text(state.notificationsError, color = MiuixTheme.colorScheme.error)
-                            TextButton(
-                                text = stringResource(R.string.action_retry),
-                                onClick = viewModel::refreshNotifications,
-                            )
-                        }
+                        RequestErrorState(
+                            message = state.notificationsError,
+                            onRetry = viewModel::refreshNotifications,
+                        )
                     } else {
                         EmptyState(stringResource(R.string.notifications_empty))
                     }
