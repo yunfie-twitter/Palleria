@@ -244,7 +244,12 @@ fun FavoriteTagsScreen(
                             IllustCardSkeleton(shimmerValue = shimmer)
                         }
                     } else {
-                        item(span = { GridItemSpan(maxLineSpan) }, contentType = "state_banner") { StateBanner(state.loadState) }
+                        item(span = { GridItemSpan(maxLineSpan) }, contentType = "state_banner") {
+                            StateBanner(
+                                state.loadState,
+                                onRetry = { selectedTag?.let { viewModel.loadWatchlistTag(it, forceRefresh = true) } },
+                            )
+                        }
                     }
 
                     val currentSelectedTag = selectedTag

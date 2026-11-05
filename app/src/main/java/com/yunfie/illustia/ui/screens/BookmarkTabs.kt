@@ -65,6 +65,7 @@ import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
 import com.yunfie.illustia.ui.components.ProfileGridHorizontalSpacing
 import com.yunfie.illustia.ui.components.ProfileGridVerticalSpacing
+import com.yunfie.illustia.ui.components.RequestErrorState
 import com.yunfie.illustia.ui.components.ScrollablePullToRefresh
 import com.yunfie.illustia.ui.components.StateBanner
 import com.yunfie.illustia.ui.components.UserResultCardSkeleton
@@ -77,7 +78,6 @@ import com.yunfie.illustia.ui.components.pinchToChangeColumns
 import com.yunfie.illustia.ui.components.profileGridContentPadding
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import com.yunfie.illustia.ui.components.rememberSkeletonShimmer
-import com.yunfie.illustia.ui.screens.profile.UserProfileStatusPlaceholder
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Card
@@ -146,18 +146,11 @@ internal fun BookmarkWatchlistTab(
             }
             if (watchlistState.errorMessage != null && !watchlistState.isLoading) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 20.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        UserProfileStatusPlaceholder(
-                            message = watchlistState.errorMessage.orEmpty(),
-                            modifier = Modifier.fillMaxWidth().heightIn(min = 180.dp),
-                        )
-                        Button(onClick = { scope.launch { watchlistStore.fetch(forceRefresh = true) } }) {
-                            Text(stringResource(R.string.action_retry))
-                        }
-                    }
+                    RequestErrorState(
+                        message = watchlistState.errorMessage.orEmpty(),
+                        onRetry = { scope.launch { watchlistStore.fetch(forceRefresh = true) } },
+                        modifier = Modifier.heightIn(min = 180.dp),
+                    )
                 }
             }
             if (watchlistState.mangaSeries.isEmpty() && !watchlistState.isLoading && watchlistState.errorMessage == null) {
@@ -428,7 +421,9 @@ internal fun BookmarkMainTab(
             if (showInitialSkeletons) {
                 items(6, contentType = { "illust_skeleton" }) { IllustCardSkeleton(shimmerValue = shimmer) }
             } else {
-                item(span = { GridItemSpan(maxLineSpan) }) { StateBanner(loadState) }
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    StateBanner(loadState, onRetry = { viewModel.refreshBookmarks(forceRefresh = true) })
+                }
             }
             if (bookmarkItems.isEmpty() && loadState != LoadState.Loading && loadState !is LoadState.Error) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
@@ -554,7 +549,9 @@ internal fun BookmarkTimelineTab(
             if (showInitialSkeletons) {
                 items(6, contentType = { "illust_skeleton" }) { IllustCardSkeleton(shimmerValue = shimmer) }
             } else {
-                item(span = { GridItemSpan(maxLineSpan) }) { StateBanner(loadState) }
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    StateBanner(loadState, onRetry = { viewModel.refreshTimeline(forceRefresh = true) })
+                }
             }
             if (timelineItems.isEmpty() && loadState != LoadState.Loading && loadState !is LoadState.Error) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
@@ -691,7 +688,9 @@ internal fun BookmarkFollowingTab(
                     UserResultCardSkeleton(shimmerValue = shimmer)
                 }
             } else {
-                item(span = { GridItemSpan(maxLineSpan) }) { StateBanner(loadState) }
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    StateBanner(loadState, onRetry = { viewModel.refreshFollowingUsers(forceRefresh = true) })
+                }
             }
             if (followingUsers.isEmpty() && loadState != LoadState.Loading && loadState !is LoadState.Error) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
