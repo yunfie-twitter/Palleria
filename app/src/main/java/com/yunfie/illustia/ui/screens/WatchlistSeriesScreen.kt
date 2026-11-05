@@ -91,6 +91,7 @@ import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.ProfileGridHorizontalSpacing
 import com.yunfie.illustia.ui.components.ProfileGridVerticalSpacing
+import com.yunfie.illustia.ui.components.RequestErrorState
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
 import com.yunfie.illustia.ui.components.adaptiveProfileGridColumns
@@ -340,22 +341,10 @@ fun WatchlistSeriesScreen(
                     }
                     if (state.errorMessage != null && state.mangaSeries.isEmpty()) {
                         item(span = { GridItemSpan(maxLineSpan) }, contentType = "watchlist_error") {
-                            Column(
-                                modifier = Modifier.fillMaxWidth().padding(32.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(12.dp),
-                            ) {
-                                Text(
-                                    text = state.errorMessage.orEmpty(),
-                                    color = MiuixTheme.colorScheme.error,
-                                    style = MiuixTheme.textStyles.body2,
-                                )
-                                Button(
-                                    onClick = { scope.launch { store.fetch() } },
-                                ) {
-                                    Text(stringResource(R.string.action_retry))
-                                }
-                            }
+                            RequestErrorState(
+                                message = state.errorMessage.orEmpty(),
+                                onRetry = { scope.launch { store.fetch(forceRefresh = true) } },
+                            )
                         }
                     }
                     if (processedSeries.isEmpty() && !state.isLoading && state.errorMessage == null) {

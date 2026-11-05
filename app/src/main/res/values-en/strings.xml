@@ -666,6 +666,7 @@
     <string name="error_browser_failed">Could not open browser.</string>
     <string name="error_share_failed">Could not share.</string>
     <string name="error_load_detail_failed">Failed to load additional details.</string>
+    <string name="error_illust_not_found">This artwork could not be found or is unavailable.</string>
     <string name="error_load_artist_failed">Failed to load artist info.</string>
     <string name="offline_cache_displayed">Connection failed. Showing cached content.</string>
     <string name="offline_no_cache">Offline. No cache available.</string>

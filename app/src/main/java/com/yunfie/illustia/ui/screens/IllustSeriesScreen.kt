@@ -83,6 +83,7 @@ import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
 import com.yunfie.illustia.ui.components.PrefetchPixivImages
 import com.yunfie.illustia.ui.components.ProfileGridHorizontalSpacing
 import com.yunfie.illustia.ui.components.ProfileGridVerticalSpacing
+import com.yunfie.illustia.ui.components.RequestErrorState
 import com.yunfie.illustia.ui.components.ScrollablePullToRefresh
 import com.yunfie.illustia.ui.components.WatchlistPill
 import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
@@ -362,22 +363,10 @@ fun IllustSeriesScreen(
                     }
                     if (state.errorMessage != null && state.illusts.isEmpty()) {
                         item(span = { GridItemSpan(maxLineSpan) }) {
-                            Column(
-                                modifier = Modifier.fillMaxWidth().padding(32.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(12.dp),
-                            ) {
-                                Text(
-                                    text = state.errorMessage.orEmpty(),
-                                    color = MiuixTheme.colorScheme.error,
-                                    style = MiuixTheme.textStyles.body2,
-                                )
-                                Button(
-                                    onClick = { scope.launch { store.fetch() } },
-                                ) {
-                                    Text(stringResource(R.string.action_retry))
-                                }
-                            }
+                            RequestErrorState(
+                                message = state.errorMessage.orEmpty(),
+                                onRetry = { scope.launch { store.fetch(forceRefresh = true) } },
+                            )
                         }
                     }
                     if (processedIllusts.isEmpty() && !state.isLoading && state.errorMessage == null) {

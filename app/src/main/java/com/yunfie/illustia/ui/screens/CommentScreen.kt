@@ -52,6 +52,7 @@ import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
 import com.yunfie.illustia.ui.components.LocalPixivImageProxyBaseUrl
 import com.yunfie.illustia.ui.components.PixivImage
+import com.yunfie.illustia.ui.components.RequestErrorState
 import com.yunfie.illustia.ui.components.ScrollablePullToRefresh
 import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
@@ -207,7 +208,12 @@ fun CommentScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     if (state.errorMessage != null) {
-                        item { Text(state.errorMessage ?: "", color = MiuixTheme.colorScheme.error) }
+                        item {
+                            RequestErrorState(
+                                message = state.errorMessage.orEmpty(),
+                                onRetry = { scope.launch { store.fetch(forceRefresh = true) } },
+                            )
+                        }
                     }
                     if (state.comments.isEmpty() && !state.isLoading && state.errorMessage == null) {
                         item { EmptyState(stringResource(R.string.comments_empty)) }

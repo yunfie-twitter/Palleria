@@ -43,7 +43,7 @@ abstract class IllustiaDetailProfileModule(
                 relatedIllusts = cached?.relatedIllusts ?: emptyList(),
             )
         }
-        _detailNavigationRequests.tryEmit(illust.id)
+        _detailNavigationRequests.trySend(illust.id)
         launchDetailExtras(illust)
     }
 
@@ -136,7 +136,7 @@ abstract class IllustiaDetailProfileModule(
     override fun openIllust(illustId: Long) {
         if (illustId <= 0L) return
         _uiState.update { it.copy(selectedIllustError = null, selectedIllustErrorId = null) }
-        _detailNavigationRequests.tryEmit(illustId)
+        _detailNavigationRequests.trySend(illustId)
         val localIllust = findIllustById(illustId)
         if (localIllust != null && localIllust.artistId > 0L) {
             openIllust(localIllust)
@@ -160,15 +160,22 @@ abstract class IllustiaDetailProfileModule(
                     withContext(Dispatchers.Main) {
                         _uiState.update {
                             it.copy(
-                                selectedIllustError = cleanErrorMessage(error, str(R.string.error_load_detail_failed)),
+                                selectedIllustError = illustOpenErrorMessage(error),
                                 selectedIllustErrorId = illustId,
-                                message = cleanErrorMessage(error, str(R.string.error_load_detail_failed)),
+                                message = illustOpenErrorMessage(error),
                             )
                         }
                     }
                 }
             }
     }
+
+    private fun illustOpenErrorMessage(error: Throwable): String =
+        if (error.findPixivApiException()?.statusCode == 404) {
+            str(R.string.error_illust_not_found)
+        } else {
+            cleanErrorMessage(error, str(R.string.error_load_detail_failed))
+        }
 
     suspend fun getIllustPreviewUrl(illustId: Long): String? =
         withContext(Dispatchers.IO) {

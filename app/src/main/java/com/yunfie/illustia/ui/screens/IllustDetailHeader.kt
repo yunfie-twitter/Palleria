@@ -33,7 +33,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -71,6 +73,7 @@ import com.yunfie.illustia.ui.components.PixivReportDialog
 import com.yunfie.illustia.ui.components.performAppHapticFeedback
 import com.yunfie.illustia.ui.components.sharedArtworkElement
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.DropdownEntry
@@ -115,6 +118,8 @@ internal fun IllustDetailHeader(
     isActive: Boolean = true,
     mangaAdaptivePreload: Boolean = true,
     onHeaderIconsThemeChanged: (Boolean) -> Unit = {},
+    initialPage: Int = 0,
+    onPageChanged: (Int) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -216,7 +221,18 @@ internal fun IllustDetailHeader(
             }
         }
 
-    val pagerState = rememberPagerState(pageCount = { imageUrls.size })
+    val pagerState =
+        rememberPagerState(
+            initialPage = initialPage.coerceIn(0, (imageUrls.size - 1).coerceAtLeast(0)),
+            pageCount = { imageUrls.size },
+        )
+    val currentOnPageChanged by rememberUpdatedState(onPageChanged)
+    LaunchedEffect(pagerState, imageUrls.size) {
+        snapshotFlow { pagerState.currentPage }
+            .collect { page ->
+                if (page in imageUrls.indices) currentOnPageChanged(page)
+            }
+    }
 
     // クイック設定に覆われている間は、覆われたうごイラのフレーム更新（デコード/再描画）を止める。
     val systemCovered = LocalSystemUiCovered.current

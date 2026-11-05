@@ -409,6 +409,21 @@ abstract class IllustiaSettingsSecurityModule(
 
     fun illustDetailListState(illustId: Long): LazyListState = illustDetailListStates.getOrPut(illustId) { LazyListState() }
 
+    fun illustDetailPage(illustId: Long): Int = illustDetailPagerPages[illustId] ?: 0
+
+    fun updateIllustDetailPage(
+        illustId: Long,
+        page: Int,
+    ) {
+        illustDetailPagerPages[illustId] = page.coerceAtLeast(0)
+    }
+
+    fun isIllustDetailRelatedSectionReady(illustId: Long): Boolean = illustId in illustDetailRelatedSectionsReady
+
+    fun markIllustDetailRelatedSectionReady(illustId: Long) {
+        illustDetailRelatedSectionsReady.add(illustId)
+    }
+
     fun rankingGridState(mode: String): LazyGridState = rankingGridStates.getOrPut(mode) { LazyGridState() }
 
     fun updateSaveViewHistory(value: Boolean) {
@@ -871,7 +886,6 @@ abstract class IllustiaSettingsSecurityModule(
 
     fun updateImageCacheSizeMb(value: Int) {
         val normalizedValue = value.coerceIn(0, 1000)
-        SettingsStore.updateImageCacheSizeMbCache(normalizedValue)
         updateSettings { it.copy(imageCacheSizeMb = normalizedValue) }
     }
 

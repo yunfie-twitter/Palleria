@@ -111,33 +111,38 @@ fun StateBanner(
         }
 
         is LoadState.Error -> {
-            Column(
-                modifier =
-                    modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 28.dp, vertical = 6.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text(
-                    text = loadState.message,
-                    color = MiuixTheme.colorScheme.error,
-                    textAlign = TextAlign.Center,
-                )
-                if (onRetry != null) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Button(
-                        onClick = onRetry,
-                    ) {
-                        Text(stringResource(R.string.action_retry))
-                    }
-                }
-            }
+            RequestErrorState(message = loadState.message, onRetry = onRetry, modifier = modifier)
         }
 
         LoadState.Idle,
         LoadState.Loaded,
         -> {
             Unit
+        }
+    }
+}
+
+@Composable
+fun RequestErrorState(
+    message: String,
+    onRetry: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(
+            text = message,
+            color = MiuixTheme.colorScheme.error,
+            textAlign = TextAlign.Center,
+            style = MiuixTheme.textStyles.body2,
+        )
+        if (onRetry != null) {
+            Button(onClick = onRetry) {
+                Text(stringResource(R.string.action_retry))
+            }
         }
     }
 }
