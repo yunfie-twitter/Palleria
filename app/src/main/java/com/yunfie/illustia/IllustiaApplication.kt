@@ -24,6 +24,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
@@ -40,6 +43,8 @@ private const val BACKGROUND_SCHEDULER_STARTUP_DELAY_MILLIS = 4_000L
 class IllustiaApplication : Application() {
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val postStartupWorkStarted = AtomicBoolean(false)
+    private val _imageLoaderReady = MutableStateFlow(false)
+    val imageLoaderReady: StateFlow<Boolean> = _imageLoaderReady.asStateFlow()
 
     /**
      * Tracks the cold-start performance transaction from [onCreate] through
@@ -82,43 +87,44 @@ class IllustiaApplication : Application() {
         CrashHandler.instance.init(this)
         appScope.launch {
             val startupSettings = repository.readStartupSettings()
-            SettingsStore.updateImageCacheSizeMbCache(startupSettings.imageCacheSizeMb)
+            SingletonImageLoader.setSafe { createImageLoader(startupSettings.imageCacheSizeMb) }
+            _imageLoaderReady.value = true
             if (startupSettings.isFeatureEnabled(FeatureFlag.PreDnsSocketWarming)) {
                 com.yunfie.illustia.data.NetworkWarmer
                     .warmUp(sharedHttpClient, scope = appScope)
             }
         }
-        SingletonImageLoader.setSafe {
-            val appContext = applicationContext
-            val cacheDirectory = cacheDir.resolve("image_cache").toOkioPath()
-            val configuredCacheMb = SettingsStore.readImageCacheSizeMbSync(appContext)
-            val isLowRam = PlatformCapabilities.isLowRamDevice(appContext)
-            val memoryCachePercent = PlatformCapabilities.recommendedCoilMemoryCachePercent(appContext)
-            ImageLoader
-                .Builder(appContext)
-                .components {
-                    add(OkHttpNetworkFetcherFactory(callFactory = { sharedHttpClient }))
-                    if (!isLowRam) {
-                        if (PlatformCapabilities.supportsAnimatedImageDecoder()) {
-                            add(AnimatedImageDecoder.Factory())
-                        }
-                        add(GifDecoder.Factory())
+    }
+
+    private fun createImageLoader(cacheSizeMb: Int): ImageLoader {
+        val appContext = applicationContext
+        val cacheDirectory = cacheDir.resolve("image_cache").toOkioPath()
+        val isLowRam = PlatformCapabilities.isLowRamDevice(appContext)
+        val memoryCachePercent = PlatformCapabilities.recommendedCoilMemoryCachePercent(appContext)
+        return ImageLoader
+            .Builder(appContext)
+            .components {
+                add(OkHttpNetworkFetcherFactory(callFactory = { sharedHttpClient }))
+                if (!isLowRam) {
+                    if (PlatformCapabilities.supportsAnimatedImageDecoder()) {
+                        add(AnimatedImageDecoder.Factory())
                     }
-                }.memoryCache {
-                    MemoryCache
-                        .Builder()
-                        .maxSizePercent(appContext, memoryCachePercent)
-                        .weakReferencesEnabled(!isLowRam)
-                        .build()
-                }.diskCache {
-                    DiskCache
-                        .Builder()
-                        .directory(cacheDirectory)
-                        .apply {
-                            imageCacheMaximumSizeBytes(configuredCacheMb)?.let(::maxSizeBytes)
-                        }.build()
-                }.build()
-        }
+                    add(GifDecoder.Factory())
+                }
+            }.memoryCache {
+                MemoryCache
+                    .Builder()
+                    .maxSizePercent(appContext, memoryCachePercent)
+                    .weakReferencesEnabled(!isLowRam)
+                    .build()
+            }.diskCache {
+                DiskCache
+                    .Builder()
+                    .directory(cacheDirectory)
+                    .apply {
+                        imageCacheMaximumSizeBytes(cacheSizeMb)?.let(::maxSizeBytes)
+                    }.build()
+            }.build()
     }
 
     /** Starts non-critical process maintenance after the first app frame is available. */

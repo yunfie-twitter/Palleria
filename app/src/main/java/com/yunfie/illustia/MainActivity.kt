@@ -275,6 +275,7 @@ class MainActivity : FragmentActivity() {
             }
             val appLocked = uiState.appLocked
             val settingsLoaded = uiState.settingsLoaded
+            val imageLoaderReady by (application as IllustiaApplication).imageLoaderReady.collectAsStateWithLifecycle()
             val systemDark = isSystemInDarkTheme()
             var artworkAccent by remember { mutableStateOf<Int?>(null) }
             val selectedArtwork = uiState.selectedIllust
@@ -457,7 +458,7 @@ class MainActivity : FragmentActivity() {
                     com.yunfie.illustia.platform.LocalDynamicHzController provides dynamicHzController,
                 ) {
                     ProvideSystemUiCoverage {
-                        if (settingsLoaded) {
+                        if (settingsLoaded && imageLoaderReady) {
                             IllustiaApp(viewModel)
                         } else {
                             Surface(
