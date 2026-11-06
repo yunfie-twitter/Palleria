@@ -46,6 +46,7 @@ import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
 import com.yunfie.illustia.ui.components.PrefetchPixivImages
+import com.yunfie.illustia.ui.components.RequestErrorState
 import com.yunfie.illustia.ui.components.UserResultCardSkeleton
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
@@ -332,25 +333,7 @@ private fun SearchErrorState(
     message: String,
     onRetry: () -> Unit,
 ) {
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(28.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Text(
-            text = message,
-            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-        )
-        Button(
-            onClick = onRetry,
-            colors = overlayActionButtonColors(),
-        ) {
-            Text(stringResource(R.string.action_reload))
-        }
-    }
+    RequestErrorState(message = message, onRetry = onRetry)
 }
 
 @Composable

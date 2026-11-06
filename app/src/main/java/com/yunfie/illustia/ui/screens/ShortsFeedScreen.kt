@@ -38,6 +38,7 @@ import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.ui.app.AppTab
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.PixivImage
+import com.yunfie.illustia.ui.components.RequestErrorState
 import com.yunfie.illustia.ui.components.cachedVerticalGradient
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -128,15 +129,10 @@ fun ShortsFeedScreen(
                 }
 
                 is LoadState.Error -> {
-                    Column(
-                        modifier = Modifier.fillMaxSize().padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center,
-                    ) {
-                        Text(state.message, color = Color.White)
-                        TextButton(
-                            text = stringResource(R.string.action_retry),
-                            onClick = { viewModel.refreshShortsFeed(forceRefresh = true) },
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        RequestErrorState(
+                            message = state.message,
+                            onRetry = { viewModel.refreshShortsFeed(forceRefresh = true) },
                         )
                     }
                 }

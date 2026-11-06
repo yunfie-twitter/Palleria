@@ -36,6 +36,7 @@ import com.yunfie.illustia.ui.components.IllustCard
 import com.yunfie.illustia.ui.components.LocalScrollHeaderInset
 import com.yunfie.illustia.ui.components.PrefetchPixivImages
 import com.yunfie.illustia.ui.components.RecommendedTagsSkeleton
+import com.yunfie.illustia.ui.components.RequestErrorState
 import com.yunfie.illustia.ui.components.SectionHeader
 import com.yunfie.illustia.ui.components.TagTile
 import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
@@ -173,15 +174,10 @@ internal fun BrowseArea(
             if (recommendedTags.isEmpty()) {
                 when {
                     state.recommendedTagsError != null -> {
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Text(state.recommendedTagsError, color = MiuixTheme.colorScheme.error)
-                            TextButton(
-                                text = stringResource(R.string.action_retry),
-                                onClick = { viewModel.refreshRecommendedTags(force = true) },
-                            )
-                        }
+                        RequestErrorState(
+                            message = state.recommendedTagsError,
+                            onRetry = { viewModel.refreshRecommendedTags(force = true) },
+                        )
                     }
 
                     state.recommendedTagsLoading || state.recommendedTagsFetchedAtMillis == 0L -> {

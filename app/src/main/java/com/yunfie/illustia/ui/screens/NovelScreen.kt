@@ -273,7 +273,9 @@ fun NovelScreen(
                     }
                 }
                 if (filteredItems.isEmpty() && !showInitialSkeletons) {
-                    item(span = { GridItemSpan(maxLineSpan) }) { StateBanner(loadState) }
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        StateBanner(loadState, onRetry = { viewModel.refreshNovels(forceRefresh = true) })
+                    }
                 }
                 if (filteredItems.isEmpty() && loadState != LoadState.Loading && loadState !is LoadState.Error) {
                     item(span = { GridItemSpan(maxLineSpan) }) {

@@ -33,6 +33,7 @@ import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
+import com.yunfie.illustia.ui.components.RequestErrorState
 import com.yunfie.illustia.ui.components.UserResultCardSkeleton
 import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
 import com.yunfie.illustia.ui.components.onTopBarTap
@@ -188,10 +189,10 @@ fun RelatedUsersScreen(
                         ) {
                             val relatedUsersError = uiState.selectedRelatedUsersError
                             if (relatedUsersError != null && uiState.selectedRelatedUsersUserId == userId) {
-                                Text(relatedUsersError, color = MiuixTheme.colorScheme.error)
-                                Button(onClick = { viewModel.loadSelectedRelatedUsers(targetUserId = userId, force = true) }) {
-                                    Text(stringResource(R.string.action_retry))
-                                }
+                                RequestErrorState(
+                                    message = relatedUsersError,
+                                    onRetry = { viewModel.loadSelectedRelatedUsers(targetUserId = userId, force = true) },
+                                )
                             } else {
                                 EmptyState(stringResource(R.string.user_related_empty))
                                 Button(onClick = { viewModel.loadSelectedRelatedUsers(targetUserId = userId, force = true) }) {

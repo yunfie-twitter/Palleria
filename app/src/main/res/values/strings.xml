@@ -706,6 +706,7 @@
     <string name="error_browser_failed">ブラウザを開けませんでした。</string>
     <string name="error_share_failed">シェアできませんでした。</string>
     <string name="error_load_detail_failed">詳細の追加情報を読み込めませんでした。</string>
+    <string name="error_illust_not_found">この作品は見つからないか、閲覧できません。</string>
     <string name="error_load_artist_failed">作者情報を読み込めませんでした。</string>
     <string name="offline_cache_displayed">通信に失敗しました。キャッシュを表示しています。</string>
     <string name="offline_no_cache">オフラインです。キャッシュはありません。</string>
