@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.net.HttpURLConnection
 
 /** Illustration detail, image viewer, user profile, follow, and mute interactions. */
 @Suppress("LargeClass")
@@ -171,7 +172,7 @@ abstract class IllustiaDetailProfileModule(
     }
 
     private fun illustOpenErrorMessage(error: Throwable): String =
-        if (error.findPixivApiException()?.statusCode == 404) {
+        if (error.findPixivApiException()?.statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
             str(R.string.error_illust_not_found)
         } else {
             cleanErrorMessage(error, str(R.string.error_load_detail_failed))
