@@ -48,14 +48,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import coil3.SingletonImageLoader
-import coil3.network.httpHeaders
-import coil3.request.ImageRequest
-import coil3.request.SuccessResult
-import coil3.toBitmap
 import com.yunfie.illustia.R
-import com.yunfie.illustia.data.NativeImageAnalysis
-import com.yunfie.illustia.data.proxyPixivImageUrl
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.pixiv.UgoiraPlayback
 import com.yunfie.illustia.platform.ImageClipboardHelper
@@ -68,14 +61,12 @@ import com.yunfie.illustia.ui.components.LocalPixivImageProxyBaseUrl
 import com.yunfie.illustia.ui.components.LocalSystemUiCovered
 import com.yunfie.illustia.ui.components.OverlayIconCascadingDropdownMenu
 import com.yunfie.illustia.ui.components.PixivImage
-import com.yunfie.illustia.ui.components.PixivImageHeaders
 import com.yunfie.illustia.ui.components.PixivReportDialog
 import com.yunfie.illustia.ui.components.performAppHapticFeedback
+import com.yunfie.illustia.ui.components.resolveDarkHeaderIcons
 import com.yunfie.illustia.ui.components.sharedArtworkElement
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
@@ -239,27 +230,13 @@ internal fun IllustDetailHeader(
     val artworkVisible = isActive && !systemCovered
 
     val proxyBaseUrl = LocalPixivImageProxyBaseUrl.current
-    LaunchedEffect(illust.id, proxyBaseUrl) {
+    LaunchedEffect(illust.id, proxyBaseUrl, isActive) {
+        if (!isActive) return@LaunchedEffect
         val thumbUrl = illust.thumbnailUrl.ifBlank { illust.squareImageUrl.ifBlank { illust.previewUrl } }
         if (thumbUrl.isNotBlank()) {
-            runCatching {
-                val request =
-                    ImageRequest
-                        .Builder(context)
-                        .data(proxyPixivImageUrl(thumbUrl, proxyBaseUrl))
-                        .httpHeaders(PixivImageHeaders)
-                        .size(64)
-                        .build()
-                val result = SingletonImageLoader.get(context).execute(request)
-                if (result is SuccessResult) {
-                    val isDark =
-                        withContext(Dispatchers.Default) {
-                            NativeImageAnalysis.shouldUseDarkHeaderIcons(result.image.toBitmap())
-                        }
-                    useDarkHeaderIcons = isDark
-                    onHeaderIconsThemeChanged(isDark)
-                }
-            }
+            val isDark = runCatching { resolveDarkHeaderIcons(context, thumbUrl, proxyBaseUrl) }.getOrDefault(false)
+            useDarkHeaderIcons = isDark
+            onHeaderIconsThemeChanged(isDark)
         }
     }
 
