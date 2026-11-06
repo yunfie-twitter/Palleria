@@ -274,8 +274,8 @@ abstract class IllustiaViewModelFoundation(
 
     protected val _navigationRequests = MutableSharedFlow<IllustiaNavigationRequest>(extraBufferCapacity = 16)
     val navigationRequests: SharedFlow<IllustiaNavigationRequest> = _navigationRequests
-    protected val _detailNavigationRequests = MutableSharedFlow<Long>(extraBufferCapacity = 16)
-    val detailNavigationRequests: SharedFlow<Long> = _detailNavigationRequests
+    protected val _detailNavigationRequests = Channel<Long>(Channel.BUFFERED)
+    val detailNavigationRequests = _detailNavigationRequests.receiveAsFlow()
 
     @Suppress("VariableNaming")
     protected val _userNavigationRequests = MutableSharedFlow<Long>(extraBufferCapacity = 16)
