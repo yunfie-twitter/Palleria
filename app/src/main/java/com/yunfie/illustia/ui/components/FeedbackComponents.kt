@@ -1,5 +1,6 @@
 package com.yunfie.illustia.ui.components
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,7 +22,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
@@ -128,14 +132,39 @@ fun RequestErrorState(
     onRetry: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
+    val errorColor = MiuixTheme.colorScheme.error
     Column(
         modifier = modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
+        Canvas(modifier = Modifier.size(40.dp)) {
+            val strokeWidth = 2.4.dp.toPx()
+            drawCircle(
+                color = errorColor,
+                radius = size.minDimension / 2f - strokeWidth,
+                style =
+                    Stroke(
+                        width = strokeWidth,
+                    ),
+            )
+            val centerX = size.width / 2f
+            drawLine(
+                color = errorColor,
+                start = Offset(centerX, size.height * 0.27f),
+                end = Offset(centerX, size.height * 0.56f),
+                strokeWidth = strokeWidth,
+                cap = StrokeCap.Round,
+            )
+            drawCircle(
+                color = errorColor,
+                radius = strokeWidth * 0.65f,
+                center = Offset(centerX, size.height * 0.73f),
+            )
+        }
         Text(
             text = message,
-            color = MiuixTheme.colorScheme.error,
+            color = errorColor,
             textAlign = TextAlign.Center,
             style = MiuixTheme.textStyles.body2,
         )
