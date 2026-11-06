@@ -100,19 +100,19 @@ class StealthMicroUxPhase2Test {
     }
 
     @Test
-    fun resolveAdaptivePreloadUrls_forwardPrioritizesUpcomingPages() {
+    fun resolveAdaptivePreloadUrls_forwardPrefetchesBeyondThePagerNeighbor() {
         val pages = listOf("p0.jpg", "p1.jpg", "p2.jpg", "p3.jpg", "p4.jpg")
         val preload = resolveAdaptivePreloadUrls(currentPage = 1, imageUrls = pages, direction = MangaReadingDirection.Forward)
-        // Forward: next pages (+1, +2), then previous (-1)
-        preload shouldBe listOf("p2.jpg", "p3.jpg", "p0.jpg")
+        // The pager composes +1; prefetch only the page beyond it.
+        preload shouldBe listOf("p3.jpg")
     }
 
     @Test
-    fun resolveAdaptivePreloadUrls_reversePrioritizesPrecedingPages() {
+    fun resolveAdaptivePreloadUrls_reversePrefetchesBeyondThePagerNeighbor() {
         val pages = listOf("p0.jpg", "p1.jpg", "p2.jpg", "p3.jpg", "p4.jpg")
         val preload = resolveAdaptivePreloadUrls(currentPage = 3, imageUrls = pages, direction = MangaReadingDirection.Reverse)
-        // Reverse: previous pages (-1, -2), then next (+1)
-        preload shouldBe listOf("p2.jpg", "p1.jpg", "p4.jpg")
+        // The pager composes -1; prefetch only the page beyond it.
+        preload shouldBe listOf("p1.jpg")
     }
 
     // ==========================================

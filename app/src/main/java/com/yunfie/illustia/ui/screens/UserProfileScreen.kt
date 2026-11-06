@@ -33,6 +33,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
+import com.kyant.backdrop.backdrops.layerBackdrop
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.UserPreview
@@ -44,6 +45,7 @@ import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.settings.resolvePageBackgroundColor
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
+import com.yunfie.illustia.ui.components.rememberLiquidGlassBackdrop
 import com.yunfie.illustia.ui.screens.profile.UserProfileAvatarPreviewOverlay
 import com.yunfie.illustia.ui.screens.profile.UserProfilePagerContent
 import com.yunfie.illustia.ui.screens.profile.UserProfileSmallTopAppBar
@@ -249,6 +251,11 @@ fun UserProfileScreen(
             }
         }
     }
+    val liquidGlassBackdrop =
+        rememberLiquidGlassBackdrop(
+            enabled = settings.isFeatureEnabled(FeatureFlag.LiquidGlassButtons),
+            backgroundColor = profileBackgroundColor,
+        )
     val contentModifier =
         modifier
             .then(if (contentHeight != null) Modifier.height(contentHeight) else Modifier.fillMaxSize())
@@ -299,7 +306,11 @@ fun UserProfileScreen(
     }
 
     Box(modifier = contentModifier) {
-        content(Modifier.fillMaxSize())
+        content(
+            Modifier
+                .fillMaxSize()
+                .then(if (liquidGlassBackdrop != null) Modifier.layerBackdrop(liquidGlassBackdrop) else Modifier),
+        )
         if (showHeaderControls) {
             UserProfileSmallTopAppBar(
                 user = user,
@@ -315,6 +326,7 @@ fun UserProfileScreen(
                 onOpenRelatedUsers = onOpenRelatedUsers ?: {},
                 onTitleClick = scrollToTop,
                 compact = isContentScrolled,
+                liquidGlassBackdrop = liquidGlassBackdrop,
             )
         }
         UserProfileAvatarPreviewOverlay(

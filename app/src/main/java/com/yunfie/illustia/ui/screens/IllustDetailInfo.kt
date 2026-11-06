@@ -94,6 +94,8 @@ internal fun IllustDetailInfo(
     relatedContent: @Composable (isNearViewport: Boolean) -> Unit,
     relatedSectionInitiallyReady: Boolean = false,
     onRelatedSectionReady: () -> Unit = {},
+    sectionsOverride: List<String>? = null,
+    showHeader: Boolean = true,
 ) {
     val uriHandler = LocalUriHandler.current
     val screenHeightDp = LocalConfiguration.current.screenHeightDp
@@ -134,9 +136,8 @@ internal fun IllustDetailInfo(
             }
         }
     val orderedSections =
-        remember(sectionOrder) {
-            val defaults = listOf("artist", "tags", "description", "related")
-            sectionOrder.filter { it in defaults }.distinct() + defaults.filterNot { it in sectionOrder }
+        remember(sectionOrder, sectionsOverride) {
+            sectionsOverride ?: orderedDetailSections(sectionOrder)
         }
     val displayTags =
         remember(illust.tags) {
@@ -167,70 +168,72 @@ internal fun IllustDetailInfo(
                 .padding(top = 16.dp, bottom = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(
-                illust.title,
-                color = MiuixTheme.colorScheme.onBackground,
-                style = MiuixTheme.textStyles.title2,
-                fontWeight = FontWeight.Black,
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        if (showHeader) {
+            Column(modifier = Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
-                    "ID ${illust.id}",
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    fontWeight = FontWeight.Bold,
-                    style = MiuixTheme.textStyles.footnote1,
+                    illust.title,
+                    color = MiuixTheme.colorScheme.onBackground,
+                    style = MiuixTheme.textStyles.title2,
+                    fontWeight = FontWeight.Black,
                 )
-                if (illust.series != null && onOpenSeries != null) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = illust.series.title?.takeIf { it.isNotBlank() } ?: stringResource(R.string.detail_series),
-                        color = MiuixTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold,
-                        style = MiuixTheme.textStyles.footnote1,
-                        modifier =
-                            Modifier
-                                .weight(1f)
-                                .miuixClickable(
-                                    pressedScale = 0.96f,
-                                    haptic = true,
-                                    onClick = onOpenSeries,
-                                ),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                } else {
-                    Text(
-                        illust.type,
+                        "ID ${illust.id}",
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         fontWeight = FontWeight.Bold,
                         style = MiuixTheme.textStyles.footnote1,
                     )
+                    if (illust.series != null && onOpenSeries != null) {
+                        Text(
+                            text = illust.series.title?.takeIf { it.isNotBlank() } ?: stringResource(R.string.detail_series),
+                            color = MiuixTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold,
+                            style = MiuixTheme.textStyles.footnote1,
+                            modifier =
+                                Modifier
+                                    .weight(1f)
+                                    .miuixClickable(
+                                        pressedScale = 0.96f,
+                                        haptic = true,
+                                        onClick = onOpenSeries,
+                                    ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    } else {
+                        Text(
+                            illust.type,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            fontWeight = FontWeight.Bold,
+                            style = MiuixTheme.textStyles.footnote1,
+                        )
+                    }
+                    if (illust.pageCount > 1) {
+                        Text(
+                            "${illust.pageCount}P",
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            fontWeight = FontWeight.Bold,
+                            style = MiuixTheme.textStyles.footnote1,
+                        )
+                    }
                 }
-                if (illust.pageCount > 1) {
-                    Text(
-                        "${illust.pageCount}P",
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        fontWeight = FontWeight.Bold,
-                        style = MiuixTheme.textStyles.footnote1,
-                    )
-                }
+                Text(
+                    text =
+                        buildString {
+                            append(stringResource(R.string.detail_illust_id))
+                            append(" ${illust.id}")
+                            formatIllustDimensions(illust.width, illust.height)?.let { dimensions ->
+                                append("    ")
+                                append(stringResource(R.string.detail_resolution))
+                                append("  ")
+                                append(stringResource(R.string.detail_resolution_dimensions, illust.width, illust.height))
+                            }
+                        },
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    style = MiuixTheme.textStyles.footnote1,
+                    fontWeight = FontWeight.Bold,
+                )
             }
-            Text(
-                text =
-                    buildString {
-                        append(stringResource(R.string.detail_illust_id))
-                        append(" ${illust.id}")
-                        formatIllustDimensions(illust.width, illust.height)?.let { dimensions ->
-                            append("    ")
-                            append(stringResource(R.string.detail_resolution))
-                            append("  ")
-                            append(stringResource(R.string.detail_resolution_dimensions, illust.width, illust.height))
-                        }
-                    },
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                style = MiuixTheme.textStyles.footnote1,
-                fontWeight = FontWeight.Bold,
-            )
         }
 
         Column(
@@ -584,6 +587,12 @@ private fun DeferredRelatedIllustRow(
 
 /** Rows of the related grid that are composed as soon as the section appears. */
 private const val RELATED_ROWS_COMPOSED_IMMEDIATELY = 2
+
+/** Resolves the configured detail section order, keeping newly added sections at the end. */
+internal fun orderedDetailSections(sectionOrder: List<String>): List<String> {
+    val defaults = listOf("artist", "tags", "description", "related")
+    return sectionOrder.filter { it in defaults }.distinct() + defaults.filterNot { it in sectionOrder }
+}
 
 /** Splits the related list into grid rows for the given column count. */
 internal fun <T> relatedIllustRows(

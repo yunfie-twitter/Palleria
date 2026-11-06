@@ -10,13 +10,15 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 
 enum class MangaReadingDirection {
     Forward,
     Reverse,
 }
 
-private const val MAX_PRELOAD_PAGES = 3
+private const val MAX_PRELOAD_PAGES = 1
+private const val PRELOAD_SETTLE_DELAY_MS = 250L
 
 /**
  * Calculates reading direction based on page navigation delta.
@@ -44,12 +46,13 @@ fun resolveAdaptivePreloadUrls(
     if (imageUrls.isEmpty()) return emptyList()
     val urls = mutableListOf<String>()
     if (direction == MangaReadingDirection.Reverse) {
-        if (currentPage - 1 in imageUrls.indices) urls.add(imageUrls[currentPage - 1])
+        // The pager composes the adjacent page itself; prefetch only the page beyond it.
         if (currentPage - 2 in imageUrls.indices) urls.add(imageUrls[currentPage - 2])
+        if (currentPage - 1 in imageUrls.indices) urls.add(imageUrls[currentPage - 1])
         if (currentPage + 1 in imageUrls.indices) urls.add(imageUrls[currentPage + 1])
     } else {
-        if (currentPage + 1 in imageUrls.indices) urls.add(imageUrls[currentPage + 1])
         if (currentPage + 2 in imageUrls.indices) urls.add(imageUrls[currentPage + 2])
+        if (currentPage + 1 in imageUrls.indices) urls.add(imageUrls[currentPage + 1])
         if (currentPage - 1 in imageUrls.indices) urls.add(imageUrls[currentPage - 1])
     }
     return urls.take(maxPages)
@@ -80,6 +83,14 @@ fun AdaptiveMangaPreloader(
         }
     }
 
+    // Let the visible page start decoding before adding another thumbnail decode.
+    var preloadReady by remember(imageUrls) { mutableStateOf(false) }
+    LaunchedEffect(pagerState.settledPage, imageUrls) {
+        preloadReady = false
+        delay(PRELOAD_SETTLE_DELAY_MS)
+        preloadReady = true
+    }
+
     val preloadUrls =
         remember(pagerState.currentPage, detectedDirection, imageUrls) {
             resolveAdaptivePreloadUrls(
@@ -92,7 +103,7 @@ fun AdaptiveMangaPreloader(
 
     PrefetchPixivImages(
         urls = preloadUrls,
-        enabled = enabled,
+        enabled = enabled && preloadReady,
         limit = MAX_PRELOAD_PAGES,
     )
 }

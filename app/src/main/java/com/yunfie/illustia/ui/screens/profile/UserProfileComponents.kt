@@ -69,6 +69,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.UserPreview
@@ -83,6 +84,7 @@ import com.yunfie.illustia.ui.components.FollowPill
 import com.yunfie.illustia.ui.components.HeaderOverlayIcon
 import com.yunfie.illustia.ui.components.IllustCard
 import com.yunfie.illustia.ui.components.IllustCardSkeleton
+import com.yunfie.illustia.ui.components.LiquidGlassIconButton
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PixivReportDialog
@@ -367,6 +369,7 @@ internal fun UserProfileSmallTopAppBar(
     onOpenRelatedUsers: () -> Unit,
     onTitleClick: () -> Unit = {},
     compact: Boolean,
+    liquidGlassBackdrop: LayerBackdrop? = null,
 ) {
     val context = LocalContext.current
     val shareLabel = stringResource(R.string.detail_share)
@@ -580,15 +583,30 @@ internal fun UserProfileSmallTopAppBar(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            HeaderOverlayIcon(
-                icon = MiuixIcons.Back,
-                onClick = {
-                    performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Click)
-                    onBack()
-                },
-                backgroundColor = buttonBgColor,
-                contentColor = buttonContentColor,
-            )
+            if (liquidGlassBackdrop != null) {
+                LiquidGlassIconButton(
+                    icon = MiuixIcons.Back,
+                    contentDescription = null,
+                    onClick = {
+                        performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Click)
+                        onBack()
+                    },
+                    backdrop = liquidGlassBackdrop,
+                    iconTint = buttonContentColor,
+                    surfaceColor = buttonBgColor.copy(alpha = buttonBgColor.alpha * 0.55f),
+                    performHaptic = false,
+                )
+            } else {
+                HeaderOverlayIcon(
+                    icon = MiuixIcons.Back,
+                    onClick = {
+                        performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Click)
+                        onBack()
+                    },
+                    backgroundColor = buttonBgColor,
+                    contentColor = buttonContentColor,
+                )
+            }
             TopBarTitle(
                 visible = compact,
                 title = shareTitle,
@@ -599,15 +617,30 @@ internal fun UserProfileSmallTopAppBar(
                         .padding(horizontal = 16.dp),
             )
             Box {
-                HeaderOverlayIcon(
-                    icon = MiuixIcons.More,
-                    onClick = {
-                        performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Click)
-                        showMoreMenu = true
-                    },
-                    backgroundColor = buttonBgColor,
-                    contentColor = buttonContentColor,
-                )
+                if (liquidGlassBackdrop != null) {
+                    LiquidGlassIconButton(
+                        icon = MiuixIcons.More,
+                        contentDescription = null,
+                        onClick = {
+                            performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Click)
+                            showMoreMenu = true
+                        },
+                        backdrop = liquidGlassBackdrop,
+                        iconTint = buttonContentColor,
+                        surfaceColor = buttonBgColor.copy(alpha = buttonBgColor.alpha * 0.55f),
+                        performHaptic = false,
+                    )
+                } else {
+                    HeaderOverlayIcon(
+                        icon = MiuixIcons.More,
+                        onClick = {
+                            performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Click)
+                            showMoreMenu = true
+                        },
+                        backgroundColor = buttonBgColor,
+                        contentColor = buttonContentColor,
+                    )
+                }
                 OverlayCascadingListPopup(
                     show = showMoreMenu,
                     entries = menuEntries,

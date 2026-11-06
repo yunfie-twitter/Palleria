@@ -379,6 +379,7 @@ dependencies {
     implementation libs.miuix.squircle
     implementation libs.miuix.blur
     implementation libs.miuix.navigation3.ui
+    implementation "io.github.kyant0:backdrop:2.0.1"
     implementation libs.shizuku.api
     implementation libs.shizuku.provider
     implementation 'com.github.woheller69:FreeDroidWarn:V1.14'
