@@ -85,10 +85,15 @@ class AppUpdateDownloadWorker(
                     installDownloadedUpdate(updater, release, file)
                     Result.success()
                 } else {
-                    val errorMsg = downloadResult.exceptionOrNull()?.message ?: "Download failed"
+                    val error = downloadResult.exceptionOrNull()
+                    val errorMsg = error?.message ?: "Download failed"
                     _progressFlow.value = DownloadProgressEvent.Failed(errorMsg, release)
                     AppUpdateNotificationHelper.showDownloadFailed(context, release)
-                    Result.failure()
+                    if (isRetryableDownloadFailure(error) && runAttemptCount < MAX_DOWNLOAD_RETRY_ATTEMPTS) {
+                        Result.retry()
+                    } else {
+                        Result.failure()
+                    }
                 }
             } catch (cancellation: kotlinx.coroutines.CancellationException) {
                 updater.cancelDownload()
@@ -99,6 +104,30 @@ class AppUpdateDownloadWorker(
                     updater.cancelDownload()
                     _progressFlow.value = null
                 }
+            }
+        }
+
+    private fun isRetryableDownloadFailure(error: Throwable?): Boolean =
+        when (error) {
+            is SecurityException, is IllegalArgumentException -> {
+                false
+            }
+
+            is java.io.IOException -> {
+                val statusCode =
+                    Regex("HTTP (\\d{3})")
+                        .find(error.message.orEmpty())
+                        ?.groupValues
+                        ?.getOrNull(1)
+                        ?.toIntOrNull()
+                statusCode == null ||
+                    statusCode == HTTP_REQUEST_TIMEOUT ||
+                    statusCode == HTTP_TOO_MANY_REQUESTS ||
+                    statusCode >= HTTP_SERVER_ERROR
+            }
+
+            else -> {
+                true
             }
         }
 
@@ -164,6 +193,10 @@ class AppUpdateDownloadWorker(
         const val KEY_DOWNLOADED_BYTES = "downloaded_bytes"
         const val KEY_TOTAL_BYTES = "total_bytes"
         private const val NOTIFICATION_ID_PROGRESS = 8104
+        private const val MAX_DOWNLOAD_RETRY_ATTEMPTS = 3
+        private const val HTTP_REQUEST_TIMEOUT = 408
+        private const val HTTP_TOO_MANY_REQUESTS = 429
+        private const val HTTP_SERVER_ERROR = 500
         const val WORK_NAME = "AppUpdateDownload"
 
         private val _progressFlow = MutableStateFlow<DownloadProgressEvent?>(null)

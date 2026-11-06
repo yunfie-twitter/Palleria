@@ -1,5 +1,6 @@
 package com.yunfie.illustia.data
 
+import okhttp3.Call
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -39,6 +40,8 @@ object ResumableDownloader {
      * @param partFile The destination file storing partially or fully downloaded bytes.
      * @param resumeEnabled Whether HTTP Range resumption is enabled.
      * @param headers Optional custom headers (e.g. Referer, User-Agent).
+     * @param onProgress Called with the cumulative downloaded byte count and total byte count when known.
+     * @param onCall Called with each OkHttp call so callers can cancel an in-flight download.
      * @return [ResumableDownloadResult] containing metadata and completion status.
      */
     fun downloadToPartFile(
@@ -47,20 +50,28 @@ object ResumableDownloader {
         partFile: File,
         resumeEnabled: Boolean,
         headers: Map<String, String> = emptyMap(),
+        onProgress: (downloadedBytes: Long, totalBytes: Long) -> Unit = { _, _ -> },
+        onCall: (Call) -> Unit = {},
     ): ResumableDownloadResult {
         val existingBytes = preparePartFile(partFile, resumeEnabled)
         val shouldRequestRange = resumeEnabled && existingBytes > 0L
 
-        val response = executeResumableCall(client, url, partFile, shouldRequestRange, existingBytes, headers)
+        val response = executeResumableCall(client, url, partFile, shouldRequestRange, existingBytes, headers, onCall)
         response.use { resp ->
             if (!resp.isSuccessful) {
                 throw IOException("Download failed with HTTP ${resp.code}: ${resp.message}")
             }
 
-            val body = resp.body ?: throw IOException("Empty response body from $url")
-            val contentType = resp.body?.contentType()?.toString() ?: resp.header("Content-Type")
+            val body = resp.body
+            val contentType = body.contentType()?.toString() ?: resp.header("Content-Type")
             val append = resp.code == HTTP_PARTIAL_CONTENT && shouldRequestRange
-            val newlyWritten = writeStreamToFile(body, partFile, append, resumeEnabled)
+            val startingBytes = if (append) existingBytes else 0L
+            val contentLength = body.contentLength()
+            val totalBytes = if (contentLength > 0L) startingBytes + contentLength else 0L
+            val newlyWritten =
+                writeStreamToFile(body, partFile, append, resumeEnabled) { writtenBytes ->
+                    onProgress(startingBytes + writtenBytes, totalBytes)
+                }
 
             return ResumableDownloadResult(
                 file = partFile,
@@ -102,16 +113,21 @@ object ResumableDownloader {
         shouldRequestRange: Boolean,
         existingBytes: Long,
         headers: Map<String, String>,
+        onCall: (Call) -> Unit,
     ): Response {
         val offset = if (shouldRequestRange) existingBytes else null
         var request = buildRequest(url, offset, headers)
-        var response = client.newCall(request).execute()
+        var call = client.newCall(request)
+        onCall(call)
+        var response = call.execute()
 
         if (shouldRequestRange && response.code == HTTP_RANGE_NOT_SATISFIABLE) {
             response.close()
             partFile.delete()
             request = buildRequest(url, null, headers)
-            response = client.newCall(request).execute()
+            call = client.newCall(request)
+            onCall(call)
+            response = call.execute()
         }
         return response
     }
@@ -121,6 +137,7 @@ object ResumableDownloader {
         partFile: File,
         append: Boolean,
         resumeEnabled: Boolean,
+        onBytesWritten: (Long) -> Unit,
     ): Long {
         var newlyWritten = 0L
         try {
@@ -131,6 +148,7 @@ object ResumableDownloader {
                     while (input.read(buffer).also { readBytes = it } != -1) {
                         output.write(buffer, 0, readBytes)
                         newlyWritten += readBytes
+                        onBytesWritten(newlyWritten)
                     }
                     output.flush()
                 }
