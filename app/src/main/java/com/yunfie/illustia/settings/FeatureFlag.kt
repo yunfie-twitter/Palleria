@@ -173,6 +173,12 @@ enum class FeatureFlag(
         descRes = R.string.flag_shared_element_transitions_desc,
         defaultEnabled = false,
     ),
+    LiquidGlassButtons(
+        key = "flag_liquid_glass_buttons",
+        titleRes = R.string.flag_liquid_glass_buttons_title,
+        descRes = R.string.flag_liquid_glass_buttons_desc,
+        defaultEnabled = false,
+    ),
     ;
 
     companion object {

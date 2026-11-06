@@ -10,8 +10,10 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -26,6 +28,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -86,10 +89,12 @@ import com.yunfie.illustia.ui.components.FollowPill
 import com.yunfie.illustia.ui.components.HeaderOverlayIcon
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.LocalAppHapticMode
+import com.yunfie.illustia.ui.components.LocalArtworkCardPreferences
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.ScrollablePullToRefresh
+import com.yunfie.illustia.ui.components.adaptiveRelatedIllustColumns
 import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.performAppHapticFeedback
 import kotlinx.coroutines.delay
@@ -152,6 +157,7 @@ fun IllustDetailScreen(
     mangaAdaptivePreload: Boolean = true,
     detailSectionOrder: List<String>,
     relatedIllustColumnCount: Int = 3,
+    liquidGlassButtons: Boolean = false,
     relatedSectionInitiallyReady: Boolean = false,
     onRelatedSectionReady: () -> Unit = {},
     initialPage: Int = 0,
@@ -338,12 +344,18 @@ fun IllustDetailScreen(
             showLikeAnimation = showLikeAnimation,
             expanded = expanded,
             onHeaderIconsThemeChanged = { useDarkHeaderIcons = it },
+            liquidGlassButtons = liquidGlassButtons,
             initialPage = initialPage,
             onPageChanged = onPageChanged,
             modifier = modifier,
         )
     }
-    val detailInfoContent: @Composable () -> Unit = {
+    val orderedSections = remember(detailSectionOrder) { orderedDetailSections(detailSectionOrder) }
+    val relatedSectionIndex = orderedSections.indexOf("related")
+    val relatedColumns = adaptiveRelatedIllustColumns(relatedIllustColumnCount)
+    val relatedRows = remember(relatedIllusts, relatedColumns) { relatedIllustRows(relatedIllusts, relatedColumns) }
+    val relatedCardPreferences = LocalArtworkCardPreferences.current
+    val detailInfoContent: @Composable (List<String>?, Boolean) -> Unit = { sections, showHeader ->
         DetailInfoSlot(
             illust = illust,
             isArtistFollowed = isArtistFollowed,
@@ -364,6 +376,8 @@ fun IllustDetailScreen(
             onRequestUnfollowConfirm = { showUnfollowConfirm = true },
             relatedSectionInitiallyReady = relatedSectionInitiallyReady,
             onRelatedSectionReady = onRelatedSectionReady,
+            sectionsOverride = sections,
+            showHeader = showHeader,
         )
     }
 
@@ -470,7 +484,7 @@ fun IllustDetailScreen(
                                             .background(MiuixTheme.colorScheme.surface),
                                     contentPadding = PaddingValues(top = 12.dp, bottom = 96.dp),
                                 ) {
-                                    item(key = "detail_info", contentType = "detail_info") { detailInfoContent() }
+                                    item(key = "detail_info", contentType = "detail_info") { detailInfoContent(null, true) }
                                 }
                             }
                         } else {
@@ -483,7 +497,57 @@ fun IllustDetailScreen(
                                 contentPadding = PaddingValues(bottom = 96.dp),
                             ) {
                                 item(key = "detail_header", contentType = "detail_header") { detailHeaderContent(false, Modifier) }
-                                item(key = "detail_info", contentType = "detail_info") { detailInfoContent() }
+                                if (relatedSectionIndex >= 0) {
+                                    val beforeSections = orderedSections.take(relatedSectionIndex)
+                                    val afterSections = orderedSections.drop(relatedSectionIndex + 1)
+                                    item(key = "detail_info_before", contentType = "detail_info") {
+                                        detailInfoContent(beforeSections, true)
+                                    }
+                                    item(key = "related_header", contentType = "related_header") {
+                                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                            Spacer(Modifier.height(8.dp))
+                                            Text(
+                                                text = stringResource(R.string.detail_related),
+                                                color = MiuixTheme.colorScheme.onBackground,
+                                                style = MiuixTheme.textStyles.title4,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.padding(horizontal = 16.dp),
+                                            )
+                                        }
+                                    }
+                                    if (relatedRows.isEmpty()) {
+                                        item(key = "related_loading", contentType = "related_loading") {
+                                            Box(
+                                                modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
+                                                contentAlignment = Alignment.Center,
+                                            ) {
+                                                LoadingIndicator()
+                                            }
+                                        }
+                                    } else {
+                                        itemsIndexed(
+                                            items = relatedRows,
+                                            key = { index, row -> "related_row_${row.firstOrNull()?.id ?: index}" },
+                                            contentType = { _, _ -> "related_row" },
+                                        ) { _, row ->
+                                            RelatedIllustRow(
+                                                rowItems = row,
+                                                columns = relatedColumns,
+                                                cardPreferences = relatedCardPreferences,
+                                                onOpenIllust = onOpenIllust,
+                                                onLongPressIllust = onLongPressIllust,
+                                                modifier = Modifier.padding(bottom = 4.dp),
+                                            )
+                                        }
+                                    }
+                                    if (afterSections.isNotEmpty()) {
+                                        item(key = "detail_info_after", contentType = "detail_info") {
+                                            detailInfoContent(afterSections, false)
+                                        }
+                                    }
+                                } else {
+                                    item(key = "detail_info", contentType = "detail_info") { detailInfoContent(null, true) }
+                                }
                             }
                         }
                     }
@@ -543,6 +607,7 @@ private fun DetailHeaderSlot(
     showLikeAnimation: Boolean,
     expanded: Boolean,
     onHeaderIconsThemeChanged: (Boolean) -> Unit,
+    liquidGlassButtons: Boolean,
     initialPage: Int,
     onPageChanged: (Int) -> Unit,
     modifier: Modifier = Modifier,
@@ -588,6 +653,7 @@ private fun DetailHeaderSlot(
         showLikeAnimation = showLikeAnimation,
         expanded = expanded,
         onHeaderIconsThemeChanged = { currentOnTheme(it) },
+        liquidGlassButtons = liquidGlassButtons,
         initialPage = initialPage,
         onPageChanged = onPageChanged,
         modifier = modifier,
@@ -616,6 +682,8 @@ private fun DetailInfoSlot(
     onRequestUnfollowConfirm: () -> Unit,
     relatedSectionInitiallyReady: Boolean,
     onRelatedSectionReady: () -> Unit,
+    sectionsOverride: List<String>? = null,
+    showHeader: Boolean = true,
 ) {
     val currentOnOpenUser by rememberUpdatedState(onOpenUser)
     val currentOnOpenIllustById by rememberUpdatedState(onOpenIllustById)
@@ -668,5 +736,7 @@ private fun DetailInfoSlot(
         },
         relatedSectionInitiallyReady = relatedSectionInitiallyReady,
         onRelatedSectionReady = onRelatedSectionReady,
+        sectionsOverride = sectionsOverride,
+        showHeader = showHeader,
     )
 }

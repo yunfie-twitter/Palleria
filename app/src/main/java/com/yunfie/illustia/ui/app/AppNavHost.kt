@@ -375,6 +375,7 @@ internal fun AppNavHost(
                             mangaAdaptivePreload = appState.state.settings.isFeatureEnabled(FeatureFlag.MangaAdaptivePreload),
                             detailSectionOrder = appState.state.settings.detailSectionOrder,
                             relatedIllustColumnCount = appState.state.settings.relatedIllustColumnCount,
+                            liquidGlassButtons = appState.state.settings.isFeatureEnabled(FeatureFlag.LiquidGlassButtons),
                             relatedSectionInitiallyReady = viewModel.isIllustDetailRelatedSectionReady(illust.id),
                             onRelatedSectionReady = { viewModel.markIllustDetailRelatedSectionReady(illust.id) },
                             initialPage = viewModel.illustDetailPage(illust.id),
