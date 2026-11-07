@@ -376,6 +376,7 @@ internal fun AppNavHost(
                             detailSectionOrder = appState.state.settings.detailSectionOrder,
                             relatedIllustColumnCount = appState.state.settings.relatedIllustColumnCount,
                             liquidGlassButtons = appState.state.settings.isFeatureEnabled(FeatureFlag.LiquidGlassButtons),
+                            liquidGlassFollowButton = appState.state.settings.isFeatureEnabled(FeatureFlag.LiquidGlassFollowButton),
                             relatedSectionInitiallyReady = viewModel.isIllustDetailRelatedSectionReady(illust.id),
                             onRelatedSectionReady = { viewModel.markIllustDetailRelatedSectionReady(illust.id) },
                             initialPage = viewModel.illustDetailPage(illust.id),

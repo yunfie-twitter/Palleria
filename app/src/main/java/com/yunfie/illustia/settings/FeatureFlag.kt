@@ -179,6 +179,12 @@ enum class FeatureFlag(
         descRes = R.string.flag_liquid_glass_buttons_desc,
         defaultEnabled = false,
     ),
+    LiquidGlassFollowButton(
+        key = "flag_liquid_glass_follow_button",
+        titleRes = R.string.flag_liquid_glass_follow_button_title,
+        descRes = R.string.flag_liquid_glass_follow_button_desc,
+        defaultEnabled = false,
+    ),
     ;
 
     companion object {
