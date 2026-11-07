@@ -294,8 +294,17 @@ internal fun MainSurface(
                             }
 
                             AppTab.ShortsFeed -> {
+                                val shortsFeedItems =
+                                    remember(
+                                        appState.state.shortsFeedItems,
+                                        appState.state.mutedIllustsSet,
+                                        appState.state.mutedUsersSet,
+                                        appState.state.mutedTagsSet,
+                                    ) {
+                                        appState.state.shortsFeedItems.visibleWith(appState.state)
+                                    }
                                 ShortsFeedScreen(
-                                    items = appState.state.shortsFeedItems.visibleWith(appState.state),
+                                    items = shortsFeedItems,
                                     loadState = appState.state.loadState,
                                     currentIllustId = appState.state.shortsFeedCurrentIllustId,
                                     viewModel = viewModel,

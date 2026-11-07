@@ -41,7 +41,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
@@ -77,7 +76,6 @@ private val ABOUT_HERO_SCROLL_DISTANCE = 300.dp
 
 @Composable
 fun AboutScreen(
-    @Suppress("UnusedParameter") state: IllustiaUiState,
     viewModel: IllustiaViewModel,
     onBack: () -> Unit,
 ) {

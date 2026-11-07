@@ -47,12 +47,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -91,6 +93,7 @@ import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.FloatingToolbar
 import top.yukonga.miuix.kmp.basic.Icon
@@ -187,7 +190,15 @@ fun ImageViewerScreen(
     val comicListState =
         androidx.compose.foundation.lazy
             .rememberLazyListState(initialFirstVisibleItemIndex = startPage)
-    val currentPage = if (comicMode) comicListState.firstVisibleItemIndex else pagerState.currentPage
+    // Keep the pager/list position out of the screen's composition scope. Reading it directly
+    // here used to invalidate the whole viewer on every scroll boundary or page change. The
+    // derived state is only read where the current page is actually displayed.
+    val currentPageState =
+        remember(comicMode) {
+            derivedStateOf {
+                if (comicMode) comicListState.firstVisibleItemIndex else pagerState.currentPage
+            }
+        }
 
     var localBookmarked by remember(illust.id, isBookmarked) { mutableStateOf(isBookmarked) }
     LaunchedEffect(isBookmarked) {
@@ -234,16 +245,20 @@ fun ImageViewerScreen(
         }
     }
 
-    LaunchedEffect(currentPage) {
-        isZoomed = false
-        onPageChanged(currentPage)
+    LaunchedEffect(currentPageState) {
+        snapshotFlow { currentPageState.value }
+            .distinctUntilChanged()
+            .collect { page ->
+                isZoomed = false
+                onPageChanged(page)
+            }
     }
 
     com.yunfie.illustia.ui.components
         .ReaderFullscreen(fullscreen)
 
     fun shareCurrentPage() {
-        val url = imageUrls.getOrNull(currentPage) ?: return
+        val url = imageUrls.getOrNull(currentPageState.value) ?: return
         val sendIntent =
             Intent().apply {
                 action = Intent.ACTION_SEND
@@ -264,7 +279,7 @@ fun ImageViewerScreen(
     val dismissThresholdPx = remember(density) { with(density) { 140.dp.toPx() } }
 
     fun copyCurrentPage() {
-        val url = imageUrls.getOrNull(currentPage) ?: return
+        val url = imageUrls.getOrNull(currentPageState.value) ?: return
         coroutineScope.launch {
             val success = ImageClipboardHelper.copyImageToClipboard(context, url)
             if (success) {
@@ -278,8 +293,9 @@ fun ImageViewerScreen(
 
     fun movePage(direction: Int) {
         if (imageUrls.isEmpty()) return
-        val targetPage = (currentPage + direction).coerceIn(0, imageUrls.lastIndex)
-        if (targetPage == currentPage) return
+        val page = currentPageState.value
+        val targetPage = (page + direction).coerceIn(0, imageUrls.lastIndex)
+        if (targetPage == page) return
         coroutineScope.launch {
             if (comicMode) comicListState.animateScrollToItem(targetPage) else pagerState.animateScrollToPage(targetPage)
         }
@@ -320,7 +336,7 @@ fun ImageViewerScreen(
 
                             event.isCtrlPressed && event.keyCode == AndroidKeyEvent.KEYCODE_S -> {
                                 if (event.repeatCount == 0) {
-                                    val page = currentPage
+                                    val page = currentPageState.value
                                     val url =
                                         illust.originalImagePages.getOrNull(page)
                                             ?: illust.originalImageUrl?.takeIf { page == 0 } ?: imageUrls.getOrNull(page)
@@ -384,7 +400,7 @@ fun ImageViewerScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Text(
-                                    text = "${currentPage + 1} / ${imageUrls.size}",
+                                    text = "${currentPageState.value + 1} / ${imageUrls.size}",
                                     color = MiuixTheme.colorScheme.onSurface,
                                     style = MiuixTheme.textStyles.title4,
                                 )
@@ -406,10 +422,10 @@ fun ImageViewerScreen(
                                 }
                             }
                             Slider(
-                                value = (currentPage + 1).toFloat(),
+                                value = (currentPageState.value + 1).toFloat(),
                                 onValueChange = { targetPage ->
                                     val targetIndex = (targetPage.toInt() - 1).coerceIn(0, imageUrls.lastIndex)
-                                    if (targetIndex != currentPage) {
+                                    if (targetIndex != currentPageState.value) {
                                         performHaptic(AppHapticEffect.WheelTick)
                                         coroutineScope.launch {
                                             if (comicMode) {
@@ -462,7 +478,7 @@ fun ImageViewerScreen(
                                         modifier = Modifier.size(20.dp),
                                     )
                                     Text(
-                                        text = "${currentPage + 1} / ${imageUrls.size}",
+                                        text = "${currentPageState.value + 1} / ${imageUrls.size}",
                                         color = MiuixTheme.colorScheme.onSurface,
                                         style = MiuixTheme.textStyles.title4,
                                     )
@@ -616,7 +632,7 @@ fun ImageViewerScreen(
                     .background(Color.Black.copy(alpha = bgAlpha)),
         ) {
             if (ambientLightEnabled && ambientUrls.isNotEmpty() && PlatformCapabilities.supportsHardwareBlur(context)) {
-                val ambientUrl = ambientUrls.getOrNull(currentPage) ?: ambientUrls.first()
+                val ambientUrl = ambientUrls.getOrNull(currentPageState.value) ?: ambientUrls.first()
                 PixivImage(
                     url = ambientUrl,
                     contentDescription = null,

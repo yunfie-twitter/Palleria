@@ -320,7 +320,7 @@ fun UserProfileScreen(
         if (showHeaderControls) {
             UserProfileSmallTopAppBar(
                 user = user,
-                showWorkControls = pagerState.currentPage < 2,
+                showWorkControls = pagerState.settledPage < 2,
                 sortOrder = sortOrder,
                 typeFilter = typeFilter,
                 onSortOrderChange = { sortOrder = it },

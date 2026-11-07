@@ -484,15 +484,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         onDispose { activity?.desktopShortcutHandler = null }
     }
 
-    LaunchedEffect(state.message) {
-        state.message?.let { message ->
-            snackbarHostState.showSnackbar(
-                message = message,
-                duration = SnackbarDuration.Custom(2400L),
-            )
-            viewModel.clearMessage()
-        }
-    }
+    SnackbarMessageEffect(viewModel = viewModel, snackbarHostState = snackbarHostState)
 
     LaunchedEffect(Unit) {
         val prefs = context.getSharedPreferences("freedroidwarn_prefs", Context.MODE_PRIVATE)
@@ -1112,6 +1104,25 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                 viewModel = viewModel,
                 modifier = Modifier.align(Alignment.TopCenter),
             )
+        }
+    }
+}
+
+@Composable
+private fun SnackbarMessageEffect(
+    viewModel: IllustiaViewModel,
+    snackbarHostState: SnackbarHostState,
+) {
+    // Collect only the transient message. Reading state.message in IllustiaAppRoot used to
+    // invalidate the whole root composition every time a toast/snackbar was queued.
+    val message by viewModel.messageState.collectAsStateWithLifecycle()
+    LaunchedEffect(message) {
+        message?.let {
+            snackbarHostState.showSnackbar(
+                message = it,
+                duration = SnackbarDuration.Custom(2400L),
+            )
+            viewModel.clearMessage()
         }
     }
 }
