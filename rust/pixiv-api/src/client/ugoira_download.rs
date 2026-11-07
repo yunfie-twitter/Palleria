@@ -66,7 +66,12 @@ async fn download_and_extract(
     let path = zip_path.path().to_owned();
     tokio::task::spawn_blocking(move || write_archive(&path, &archive))
         .await
-        .map_err(|_| io_error("write ugoira download", std::io::Error::other("worker panicked")))??;
+        .map_err(|_| {
+            io_error(
+                "write ugoira download",
+                std::io::Error::other("worker panicked"),
+            )
+        })??;
     ugoira::prepare(zip_path.path(), cache_dir, frames).await
 }
 
@@ -96,10 +101,7 @@ fn cache_lock(cache_dir: &Path) -> Result<Arc<AsyncMutex<()>>, ApiError> {
     Ok(lock)
 }
 
-async fn read_with_limit(
-    response: reqwest::Response,
-    limit: u64,
-) -> Result<Vec<u8>, ApiError> {
+async fn read_with_limit(response: reqwest::Response, limit: u64) -> Result<Vec<u8>, ApiError> {
     let mut stream = response.bytes_stream();
     let mut archive = Vec::new();
     while let Some(chunk) = stream.next().await {

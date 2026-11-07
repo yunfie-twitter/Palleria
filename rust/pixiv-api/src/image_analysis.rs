@@ -42,7 +42,8 @@ impl AnalysisState {
         self.luminance_sum += relative_luminance(red, green, blue, lut);
         self.sample_count += 1;
 
-        let index = ((red as usize >> 4) << 8) | ((green as usize >> 4) << 4) | (blue as usize >> 4);
+        let index =
+            ((red as usize >> 4) << 8) | ((green as usize >> 4) << 4) | (blue as usize >> 4);
         let bucket = &mut self.buckets[index];
         bucket.count += 1;
         bucket.red += red as u64;
