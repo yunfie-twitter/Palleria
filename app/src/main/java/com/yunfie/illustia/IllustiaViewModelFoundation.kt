@@ -366,6 +366,9 @@ abstract class IllustiaViewModelFoundation(
         }
     }
 
+    private fun canApplyDownloadProgress(state: UpdateCheckState): Boolean =
+        state !is UpdateCheckState.ReadyToInstall && state !is UpdateCheckState.Installing
+
     protected fun observeAppUpdateDownloadWorkerProgress() {
         val workManager = WorkManager.getInstance(getApplication())
         viewModelScope.launch {
@@ -375,7 +378,12 @@ abstract class IllustiaViewModelFoundation(
                     val progress = workInfo.progress.getFloat(AppUpdateDownloadWorker.KEY_PROGRESS, -1f)
                     val downloaded = workInfo.progress.getLong(AppUpdateDownloadWorker.KEY_DOWNLOADED_BYTES, 0L)
                     val total = workInfo.progress.getLong(AppUpdateDownloadWorker.KEY_TOTAL_BYTES, 0L)
-                    if (progress >= 0f && _updateCheckState.value !is UpdateCheckState.Downloading) {
+                    val currentState = _updateCheckState.value
+                    if (
+                        progress >= 0f &&
+                        currentState !is UpdateCheckState.Downloading &&
+                        canApplyDownloadProgress(currentState)
+                    ) {
                         _updateCheckState.value =
                             UpdateCheckState.Downloading(
                                 progress = progress,
@@ -390,12 +398,14 @@ abstract class IllustiaViewModelFoundation(
             AppUpdateDownloadWorker.progressFlow.collect { event ->
                 when (event) {
                     is AppUpdateDownloadWorker.DownloadProgressEvent.Progress -> {
-                        _updateCheckState.value =
-                            UpdateCheckState.Downloading(
-                                progress = event.progress,
-                                downloadedBytes = event.downloadedBytes,
-                                totalBytes = event.totalBytes,
-                            )
+                        if (canApplyDownloadProgress(_updateCheckState.value)) {
+                            _updateCheckState.value =
+                                UpdateCheckState.Downloading(
+                                    progress = event.progress,
+                                    downloadedBytes = event.downloadedBytes,
+                                    totalBytes = event.totalBytes,
+                                )
+                        }
                     }
 
                     is AppUpdateDownloadWorker.DownloadProgressEvent.Completed -> {
@@ -407,8 +417,10 @@ abstract class IllustiaViewModelFoundation(
                     }
 
                     is AppUpdateDownloadWorker.DownloadProgressEvent.Failed -> {
-                        _updateCheckState.value = UpdateCheckState.Error(event.error, event.release)
-                        _uiState.update { it.copy(message = str(R.string.update_download_failed)) }
+                        if (canApplyDownloadProgress(_updateCheckState.value)) {
+                            _updateCheckState.value = UpdateCheckState.Error(event.error, event.release)
+                            _uiState.update { it.copy(message = str(R.string.update_download_failed)) }
+                        }
                     }
 
                     null -> {

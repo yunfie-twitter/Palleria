@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.content.FileProvider
 import com.yunfie.illustia.IllustiaApplication
+import com.yunfie.illustia.data.ResumableDownloader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -17,14 +18,15 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
+import okhttp3.Call
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuProvider
 import java.io.File
-import java.io.FileOutputStream
 import java.io.IOException
 import java.security.MessageDigest
+import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
 
 private const val HTTP_NOT_FOUND = 404
@@ -35,6 +37,9 @@ private const val SHIZUKU_DEFAULT_REQUEST_CODE = 1001
 private const val THREAD_JOIN_TIMEOUT_MS = 5000L
 private const val PROGRESS_THROTTLE_INTERVAL_MS = 500L
 private const val PROGRESS_THROTTLE_DELTA = 0.02f
+private const val DOWNLOAD_CONNECT_TIMEOUT_SECONDS = 30L
+private const val DOWNLOAD_READ_TIMEOUT_SECONDS = 60L
+private const val DOWNLOAD_WRITE_TIMEOUT_SECONDS = 60L
 
 @Suppress("TooManyFunctions")
 class AppUpdaterRepository(
@@ -45,8 +50,17 @@ class AppUpdaterRepository(
     private val json = Json { ignoreUnknownKeys = true }
     private val updatesDir: File
         get() = File(context.filesDir, "updates").apply { if (!exists()) mkdirs() }
+    private val downloadHttpClient: OkHttpClient by lazy {
+        httpClient
+            .newBuilder()
+            .connectTimeout(DOWNLOAD_CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .readTimeout(DOWNLOAD_READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .writeTimeout(DOWNLOAD_WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .callTimeout(0, TimeUnit.MILLISECONDS)
+            .build()
+    }
 
-    private var activeDownloadCall: okhttp3.Call? = null
+    private var activeDownloadCall: Call? = null
     private val downloadLock = Any()
 
     fun getCurrentVersionName(): String =
@@ -223,77 +237,78 @@ class AppUpdaterRepository(
             runCatching {
                 val sanitizedFileName = File(release.apkFileName).name.ifBlank { "Palleria-update.apk" }
                 val targetFile = File(updatesDir, sanitizedFileName)
-                if (targetFile.exists() && targetFile.length() == release.apkSize && release.apkSize > 0) {
+                val expectedSize = release.apkSize
+                if (targetFile.exists() && expectedSize > 0 && targetFile.length() == expectedSize) {
                     if (verifyFileChecksum(targetFile, release.sha256Checksum)) {
-                        onProgress(1.0f, release.apkSize, release.apkSize)
+                        onProgress(1.0f, expectedSize, expectedSize)
                         return@runCatching targetFile
-                    } else {
-                        targetFile.delete()
                     }
+                    targetFile.delete()
                 }
 
-                val request = Request.Builder().url(release.apkDownloadUrl).build()
-                val call = httpClient.newCall(request)
-                synchronized(downloadLock) {
-                    activeDownloadCall = call
+                val tempFile = File(updatesDir, "$sanitizedFileName.tmp")
+                if (expectedSize > 0 && tempFile.exists() && tempFile.length() > expectedSize) {
+                    tempFile.delete()
                 }
+
+                var activeCall: Call? = null
                 try {
-                    call.execute().use { response ->
-                        if (!response.isSuccessful) {
-                            throw IllegalStateException("Download failed (${response.code})")
-                        }
-                        val body = response.body
-                        val totalBytes = if (release.apkSize > 0) release.apkSize else body.contentLength()
-                        val tempFile = File(updatesDir, "$sanitizedFileName.tmp")
-                        val messageDigest = MessageDigest.getInstance("SHA-256")
-                        body.byteStream().use { input ->
-                            FileOutputStream(tempFile).use { output ->
-                                val buffer = ByteArray(8192)
-                                var readBytes: Int
-                                var totalRead = 0L
-                                var lastProgressTime = 0L
-                                var lastReportedProgress = -1f
-                                while (input.read(buffer).also { readBytes = it } != -1) {
-                                    output.write(buffer, 0, readBytes)
-                                    messageDigest.update(buffer, 0, readBytes)
-                                    totalRead += readBytes
-                                    val progress = if (totalBytes > 0) (totalRead.toFloat() / totalBytes.toFloat()).coerceIn(0f, 1f) else 0f
-                                    val now = System.currentTimeMillis()
-                                    if (
-                                        now - lastProgressTime >= PROGRESS_THROTTLE_INTERVAL_MS ||
-                                        progress - lastReportedProgress >= PROGRESS_THROTTLE_DELTA ||
-                                        totalRead == totalBytes
-                                    ) {
-                                        lastProgressTime = now
-                                        lastReportedProgress = progress
-                                        onProgress(progress, totalRead, totalBytes)
-                                    }
+                    var lastProgressTime = 0L
+                    var lastReportedProgress = -1f
+                    ResumableDownloader.downloadToPartFile(
+                        client = downloadHttpClient,
+                        url = release.apkDownloadUrl,
+                        partFile = tempFile,
+                        resumeEnabled = true,
+                        onProgress = { downloadedBytes, reportedTotalBytes ->
+                            val totalBytes = if (expectedSize > 0) expectedSize else reportedTotalBytes
+                            val progress =
+                                if (totalBytes > 0) {
+                                    (downloadedBytes.toFloat() / totalBytes.toFloat()).coerceIn(0f, 0.99f)
+                                } else {
+                                    0f
                                 }
-                                output.flush()
+                            val now = System.currentTimeMillis()
+                            if (
+                                now - lastProgressTime >= PROGRESS_THROTTLE_INTERVAL_MS ||
+                                progress - lastReportedProgress >= PROGRESS_THROTTLE_DELTA
+                            ) {
+                                lastProgressTime = now
+                                lastReportedProgress = progress
+                                onProgress(progress, downloadedBytes, totalBytes)
                             }
-                        }
+                        },
+                        onCall = { call ->
+                            synchronized(downloadLock) {
+                                activeDownloadCall = call
+                                activeCall = call
+                            }
+                        },
+                    )
 
-                        val computedSha256 = messageDigest.digest().joinToString("") { "%02x".format(it) }
-                        val expectedSha256 = release.sha256Checksum?.trim()?.lowercase()
-                        if (!expectedSha256.isNullOrBlank() && !computedSha256.equals(expectedSha256, ignoreCase = true)) {
-                            if (tempFile.exists()) tempFile.delete()
-                            throw SecurityException(
-                                "APK checksum verification failed. Expected: $expectedSha256, Calculated: $computedSha256",
-                            )
-                        }
-
-                        if (targetFile.exists()) targetFile.delete()
-                        if (!tempFile.renameTo(targetFile)) {
-                            tempFile.copyTo(targetFile, overwrite = true)
-                            tempFile.delete()
-                        }
-                        targetFile
+                    val downloadedSize = tempFile.length()
+                    if (expectedSize > 0 && downloadedSize != expectedSize) {
+                        throw IOException("Incomplete APK download: expected $expectedSize bytes, got $downloadedSize")
                     }
+                    if (!verifyFileChecksum(tempFile, release.sha256Checksum)) {
+                        tempFile.delete()
+                        throw SecurityException("APK checksum verification failed")
+                    }
+
+                    if (targetFile.exists()) targetFile.delete()
+                    if (!tempFile.renameTo(targetFile)) {
+                        tempFile.copyTo(targetFile, overwrite = true)
+                        tempFile.delete()
+                    }
+                    val finalSize = targetFile.length()
+                    onProgress(1.0f, finalSize, finalSize)
+                    targetFile
                 } finally {
                     synchronized(downloadLock) {
-                        if (activeDownloadCall === call) {
+                        if (activeDownloadCall === activeCall) {
                             activeDownloadCall = null
                         }
+                        activeCall = null
                     }
                 }
             }
