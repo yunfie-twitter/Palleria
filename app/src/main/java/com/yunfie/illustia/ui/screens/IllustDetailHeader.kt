@@ -48,12 +48,15 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.backdrops.layerBackdrop
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.pixiv.UgoiraPlayback
 import com.yunfie.illustia.platform.ImageClipboardHelper
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.HeaderOverlayIcon
+import com.yunfie.illustia.ui.components.LiquidGlassIconButton
+import com.yunfie.illustia.ui.components.LiquidGlassOverflowMenu
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.LocalAppHapticMode
 import com.yunfie.illustia.ui.components.LocalNavSharedTransitionScope
@@ -63,6 +66,7 @@ import com.yunfie.illustia.ui.components.OverlayIconCascadingDropdownMenu
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PixivReportDialog
 import com.yunfie.illustia.ui.components.performAppHapticFeedback
+import com.yunfie.illustia.ui.components.rememberLiquidGlassBackdrop
 import com.yunfie.illustia.ui.components.resolveDarkHeaderIcons
 import com.yunfie.illustia.ui.components.sharedArtworkElement
 import kotlinx.coroutines.flow.collect
@@ -109,6 +113,7 @@ internal fun IllustDetailHeader(
     isActive: Boolean = true,
     mangaAdaptivePreload: Boolean = true,
     onHeaderIconsThemeChanged: (Boolean) -> Unit = {},
+    liquidGlassButtons: Boolean = false,
     initialPage: Int = 0,
     onPageChanged: (Int) -> Unit = {},
     modifier: Modifier = Modifier,
@@ -240,109 +245,44 @@ internal fun IllustDetailHeader(
         }
     }
 
+    val liquidGlassBackdrop =
+        rememberLiquidGlassBackdrop(
+            enabled = liquidGlassButtons,
+            backgroundColor = MiuixTheme.colorScheme.surfaceContainer,
+        )
     Box(
         modifier =
             modifier
                 .then(if (expanded) Modifier.fillMaxSize() else Modifier.fillMaxWidth().heightIn(min = 320.dp))
                 .background(MiuixTheme.colorScheme.surfaceContainer),
     ) {
-        if (showImage) {
-            if (illust.type == "ugoira") {
-                Box(
-                    modifier =
-                        if (expanded) {
-                            Modifier.fillMaxSize()
-                        } else {
-                            Modifier.fillMaxWidth().heightIn(min = 320.dp)
-                        },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    UgoiraArtwork(
-                        previewUrl = previewUrl,
-                        contentDescription = illust.title,
-                        loadPlayback = { loadUgoiraPlayback(illust.id) },
-                        powerSaveEnabled = ugoiraPowerSave,
-                        isActive = artworkVisible,
-                        onTap = { if (!maskMutedArtwork) onOpenImage(0) },
-                        modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .then(if (maskMutedArtwork) Modifier.blur(18.dp) else Modifier),
-                    )
-                    if (maskMutedArtwork) {
-                        Box(
-                            modifier =
-                                Modifier
-                                    .fillMaxSize()
-                                    .background(Color.Black.copy(alpha = 0.38f)),
-                        )
-                    }
-                }
-            } else {
-                com.yunfie.illustia.ui.components.AdaptiveMangaPreloader(
-                    pagerState = pagerState,
-                    imageUrls = imageUrls,
-                    enabled = prefetchImages,
-                    adaptiveDirectionEnabled = mangaAdaptivePreload,
-                )
-                HorizontalPager(
-                    state = pagerState,
-                    modifier =
-                        if (expanded) {
-                            Modifier.fillMaxSize()
-                        } else {
-                            Modifier.fillMaxWidth().heightIn(min = 320.dp)
-                        },
-                    beyondViewportPageCount = if (prefetchImages) 1 else 0,
-                    key = { it },
-                ) { page ->
-                    // 共有要素の相手はカードのサムネイル（0.75 比率を Crop で埋める箱）なので、
-                    // 1枚目を折りたたみ表示しているあいだは枠と拡大基準をカードに合わせる。
-                    // 揃えないと、移動の補間は枠だけで行われるため、アニメ終了の瞬間に
-                    // FillWidth と Crop の差がそのまま見え方の切り替わりとして出る。
-                    // 共有要素が無効なとき（LocalNavSharedTransitionScope が null）は従来の描画のまま。
-                    val matchesCardThumbnail =
-                        page == 0 && !expanded && LocalNavSharedTransitionScope.current != null
+        Box(
+            modifier =
+                (if (expanded) Modifier.fillMaxSize() else Modifier.fillMaxWidth().heightIn(min = 320.dp))
+                    .then(if (liquidGlassBackdrop != null) Modifier.layerBackdrop(liquidGlassBackdrop) else Modifier),
+        ) {
+            if (showImage) {
+                if (illust.type == "ugoira") {
                     Box(
                         modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .then(if (matchesCardThumbnail) Modifier.clipToBounds() else Modifier),
+                            if (expanded) {
+                                Modifier.fillMaxSize()
+                            } else {
+                                Modifier.fillMaxWidth().heightIn(min = 320.dp)
+                            },
+                        contentAlignment = Alignment.Center,
                     ) {
-                        PixivImage(
-                            url = imageUrls[page],
+                        UgoiraArtwork(
+                            previewUrl = previewUrl,
                             contentDescription = illust.title,
-                            contentScale =
-                                when {
-                                    expanded -> ContentScale.Fit
-                                    matchesCardThumbnail -> ContentScale.Crop
-                                    else -> ContentScale.FillWidth
-                                },
+                            loadPlayback = { loadUgoiraPlayback(illust.id) },
+                            powerSaveEnabled = ugoiraPowerSave,
+                            isActive = artworkVisible,
+                            onTap = { if (!maskMutedArtwork) onOpenImage(0) },
                             modifier =
                                 Modifier
                                     .fillMaxSize()
-                                    // Only the first page and only while the header sits in its
-                                    // collapsed slot: that is the state the card thumbnail grows
-                                    // into. Expanding to full screen or swiping to page 2 would
-                                    // otherwise animate from a box the user never started on.
-                                    .then(if (page == 0 && !expanded) Modifier.sharedArtworkElement(illust.id) else Modifier)
-                                    .then(if (maskMutedArtwork) Modifier.blur(18.dp) else Modifier)
-                                    .combinedClickable(
-                                        enabled = !maskMutedArtwork,
-                                        onClick = { onOpenImage(page) },
-                                        onDoubleClick = onDoubleTapImage,
-                                        onLongClick = {
-                                            performAppHapticFeedback(context, haptic, hapticMode)
-                                            val saveName =
-                                                if (smartDownloadNaming) {
-                                                    com.yunfie.illustia.buildSmartDownloadFilename(illust, page, imageUrls.size)
-                                                } else {
-                                                    "illustia_${illust.id}_p$page"
-                                                }
-                                            onSaveImage(imageUrls[page], saveName, confirmOnLongPressSave)
-                                        },
-                                    ),
-                            crossfade = true,
+                                    .then(if (maskMutedArtwork) Modifier.blur(18.dp) else Modifier),
                         )
                         if (maskMutedArtwork) {
                             Box(
@@ -353,36 +293,115 @@ internal fun IllustDetailHeader(
                             )
                         }
                     }
-                }
-
-                if (maskMutedArtwork) {
-                    MutedArtworkOverlay(
-                        title = mutedArtworkTitle,
-                        summary = mutedArtworkSummary,
-                        onReveal = onRevealMutedArtwork,
-                        modifier = Modifier.align(Alignment.Center),
-                    )
-                }
-
-                if (imageUrls.size > 1) {
-                    HeaderPageIndicator(
+                } else {
+                    com.yunfie.illustia.ui.components.AdaptiveMangaPreloader(
                         pagerState = pagerState,
-                        pageCount = imageUrls.size,
-                        modifier = Modifier.align(Alignment.BottomEnd),
+                        imageUrls = imageUrls,
+                        enabled = prefetchImages,
+                        adaptiveDirectionEnabled = mangaAdaptivePreload,
                     )
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier =
+                            if (expanded) {
+                                Modifier.fillMaxSize()
+                            } else {
+                                Modifier.fillMaxWidth().heightIn(min = 320.dp)
+                            },
+                        beyondViewportPageCount = if (prefetchImages) 1 else 0,
+                        key = { it },
+                    ) { page ->
+                        // 共有要素の相手はカードのサムネイル（0.75 比率を Crop で埋める箱）なので、
+                        // 1枚目を折りたたみ表示しているあいだは枠と拡大基準をカードに合わせる。
+                        // 揃えないと、移動の補間は枠だけで行われるため、アニメ終了の瞬間に
+                        // FillWidth と Crop の差がそのまま見え方の切り替わりとして出る。
+                        // 共有要素が無効なとき（LocalNavSharedTransitionScope が null）は従来の描画のまま。
+                        val matchesCardThumbnail =
+                            page == 0 && !expanded && LocalNavSharedTransitionScope.current != null
+                        Box(
+                            modifier =
+                                Modifier
+                                    .fillMaxSize()
+                                    .then(if (matchesCardThumbnail) Modifier.clipToBounds() else Modifier),
+                        ) {
+                            PixivImage(
+                                url = imageUrls[page],
+                                contentDescription = illust.title,
+                                contentScale =
+                                    when {
+                                        expanded -> ContentScale.Fit
+                                        matchesCardThumbnail -> ContentScale.Crop
+                                        else -> ContentScale.FillWidth
+                                    },
+                                // Off-screen neighbors need only preview resolution; the selected page
+                                // loads at the configured detail quality once the swipe settles.
+                                thumbnail = page != pagerState.settledPage,
+                                modifier =
+                                    Modifier
+                                        .fillMaxSize()
+                                        // Only the first page and only while the header sits in its
+                                        // collapsed slot: that is the state the card thumbnail grows
+                                        // into. Expanding to full screen or swiping to page 2 would
+                                        // otherwise animate from a box the user never started on.
+                                        .then(if (page == 0 && !expanded) Modifier.sharedArtworkElement(illust.id) else Modifier)
+                                        .then(if (maskMutedArtwork) Modifier.blur(18.dp) else Modifier)
+                                        .combinedClickable(
+                                            enabled = !maskMutedArtwork,
+                                            onClick = { onOpenImage(page) },
+                                            onDoubleClick = onDoubleTapImage,
+                                            onLongClick = {
+                                                performAppHapticFeedback(context, haptic, hapticMode)
+                                                val saveName =
+                                                    if (smartDownloadNaming) {
+                                                        com.yunfie.illustia.buildSmartDownloadFilename(illust, page, imageUrls.size)
+                                                    } else {
+                                                        "illustia_${illust.id}_p$page"
+                                                    }
+                                                onSaveImage(imageUrls[page], saveName, confirmOnLongPressSave)
+                                            },
+                                        ),
+                                crossfade = true,
+                            )
+                            if (maskMutedArtwork) {
+                                Box(
+                                    modifier =
+                                        Modifier
+                                            .fillMaxSize()
+                                            .background(Color.Black.copy(alpha = 0.38f)),
+                                )
+                            }
+                        }
+                    }
+
+                    if (maskMutedArtwork) {
+                        MutedArtworkOverlay(
+                            title = mutedArtworkTitle,
+                            summary = mutedArtworkSummary,
+                            onReveal = onRevealMutedArtwork,
+                            modifier = Modifier.align(Alignment.Center),
+                        )
+                    }
+
+                    if (imageUrls.size > 1) {
+                        HeaderPageIndicator(
+                            pagerState = pagerState,
+                            pageCount = imageUrls.size,
+                            modifier = Modifier.align(Alignment.BottomEnd),
+                        )
+                    }
                 }
-            }
-        } else {
-            Box(
-                modifier =
-                    if (expanded) {
-                        Modifier.fillMaxSize()
-                    } else {
-                        Modifier.fillMaxWidth().heightIn(min = 320.dp)
-                    },
-                contentAlignment = Alignment.Center,
-            ) {
-                LoadingIndicator()
+            } else {
+                Box(
+                    modifier =
+                        if (expanded) {
+                            Modifier.fillMaxSize()
+                        } else {
+                            Modifier.fillMaxWidth().heightIn(min = 320.dp)
+                        },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    LoadingIndicator()
+                }
             }
         }
 
@@ -426,12 +445,29 @@ internal fun IllustDetailHeader(
                 } else {
                     Color.White.copy(alpha = 0.92f)
                 }
-            HeaderOverlayIcon(
-                icon = MiuixIcons.Back,
-                onClick = onBack,
-                backgroundColor = headerIconBackground,
-                contentColor = headerIconTint,
-            )
+            val liquidGlassSurfaceColor =
+                if (useDarkHeaderIcons) {
+                    Color.White.copy(alpha = 0.28f)
+                } else {
+                    Color.Black.copy(alpha = 0.18f)
+                }
+            if (liquidGlassBackdrop != null) {
+                LiquidGlassIconButton(
+                    icon = MiuixIcons.Back,
+                    contentDescription = null,
+                    onClick = onBack,
+                    backdrop = liquidGlassBackdrop,
+                    iconTint = headerIconTint,
+                    surfaceColor = liquidGlassSurfaceColor,
+                )
+            } else {
+                HeaderOverlayIcon(
+                    icon = MiuixIcons.Back,
+                    onClick = onBack,
+                    backgroundColor = headerIconBackground,
+                    contentColor = headerIconTint,
+                )
+            }
             val menuEntries =
                 remember(
                     illust.id,
@@ -612,13 +648,23 @@ internal fun IllustDetailHeader(
                         ),
                     )
                 }
-            OverlayIconCascadingDropdownMenu(
-                entries = menuEntries,
-                icon = MiuixIcons.More,
-                backgroundColor = headerIconBackground,
-                contentColor = headerIconTint,
-                contentDescription = moreLabel,
-            )
+            if (liquidGlassBackdrop != null) {
+                LiquidGlassOverflowMenu(
+                    entries = menuEntries,
+                    backdrop = liquidGlassBackdrop,
+                    contentDescription = moreLabel,
+                    iconTint = headerIconTint,
+                    surfaceColor = liquidGlassSurfaceColor,
+                )
+            } else {
+                OverlayIconCascadingDropdownMenu(
+                    entries = menuEntries,
+                    icon = MiuixIcons.More,
+                    backgroundColor = headerIconBackground,
+                    contentColor = headerIconTint,
+                    contentDescription = moreLabel,
+                )
+            }
         }
     }
 }

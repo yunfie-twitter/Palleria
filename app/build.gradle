@@ -21,8 +21,8 @@ android {
         // Android 7.0 (API 24) and newer.
         minSdk = androidMinSdk
         targetSdk = 37
-        versionCode = 183
-        versionName = "7.1.0-beta.8"
+        versionCode = 184
+        versionName = "7.1.0-beta.9"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -379,6 +379,7 @@ dependencies {
     implementation libs.miuix.squircle
     implementation libs.miuix.blur
     implementation libs.miuix.navigation3.ui
+    implementation "io.github.kyant0:backdrop:2.0.1"
     implementation libs.shizuku.api
     implementation libs.shizuku.provider
     implementation 'com.github.woheller69:FreeDroidWarn:V1.14'
