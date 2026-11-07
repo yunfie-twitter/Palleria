@@ -38,8 +38,15 @@ import com.yunfie.illustia.settings.SettingsStore
 import com.yunfie.illustia.settings.store.STARTUP_LOGGED_IN_TOKEN
 import com.yunfie.illustia.visibleWithSettings
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
 
 private const val CACHE_TTL_SHORT_MILLIS = 3 * 60 * 1000L // 3 minutes
@@ -97,6 +104,11 @@ class IllustiaRepository(
 
     val apiCache = PixivApiCache()
 
+    // Shared in-flight requests keyed by cache key, so concurrent callers with the same key join
+    // one network round-trip instead of each firing their own and racing the cache write.
+    private val inFlightRequests = ConcurrentHashMap<String, Deferred<Any>>()
+    private val inFlightScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     fun clearApiCache() {
         apiCache.clear()
     }
@@ -113,7 +125,16 @@ class IllustiaRepository(
         }
         val generation = accountGeneration
         return try {
-            val result = block()
+            val deferred =
+                if (forceRefresh) {
+                    inFlightScope.async { block() }
+                } else {
+                    joinOrStartInFlightRequest(key) { block() }
+                }
+
+            // The shared request is untyped by design; the key fully determines the payload type.
+            @Suppress("UNCHECKED_CAST")
+            val result = deferred.await() as T
             if (accountGeneration == generation) apiCache.put(key, result, ttlMillis = ttlMillis)
             result
         } catch (expectedFailure: Exception) {
@@ -126,6 +147,29 @@ class IllustiaRepository(
                     null
                 }
             fallback ?: throw error
+        }
+    }
+
+    private suspend fun joinOrStartInFlightRequest(
+        key: String,
+        block: suspend () -> Any,
+    ): Deferred<Any> {
+        inFlightRequests[key]?.let { return it }
+        val started =
+            inFlightScope.async(start = CoroutineStart.LAZY) {
+                try {
+                    block()
+                } finally {
+                    inFlightRequests.remove(key)
+                }
+            }
+        val previous = inFlightRequests.putIfAbsent(key, started)
+        return if (previous != null) {
+            started.cancel()
+            previous
+        } else {
+            started.start()
+            started
         }
     }
 

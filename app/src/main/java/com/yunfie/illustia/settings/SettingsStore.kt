@@ -37,6 +37,7 @@ import com.yunfie.illustia.settings.store.KEY_STARTUP_HAS_PIN
 import com.yunfie.illustia.settings.store.KEY_STARTUP_IS_LOGGED_IN
 import com.yunfie.illustia.settings.store.KEY_WIDE_COLOR_GAMUT
 import com.yunfie.illustia.settings.store.LEGACY_PREFS_NAME
+import com.yunfie.illustia.settings.store.MAX_VIEW_HISTORY
 import com.yunfie.illustia.settings.store.MUTED_ILLUSTS_JSON
 import com.yunfie.illustia.settings.store.MUTED_TAGS_JSON
 import com.yunfie.illustia.settings.store.MUTED_USERS_JSON
@@ -287,10 +288,12 @@ class SettingsStore internal constructor(
         baseSettings: AppSettings? = null,
     ): AppSettings {
         ensureMigrated()
-        val base = baseSettings ?: persistenceMutex.withLock { read() }
+        // Reading the persisted base only needs as much history as writeAppSettings persists, so
+        // keep the re-read bounded instead of decoding the full view history on every write.
+        val base = baseSettings ?: persistenceMutex.withLock { read(MAX_VIEW_HISTORY) }
         val saved =
             persistenceMutex.withLock {
-                val persisted = read()
+                val persisted = read(MAX_VIEW_HISTORY)
                 val rebased = resolveRebasedSettings(settings, base, persisted)
                 check(encryptedPreferences != null || !hasNewCredentialValues(base, settings)) {
                     "Secure credential storage is unavailable; updated credentials were not saved."
@@ -410,7 +413,7 @@ class SettingsStore internal constructor(
             }
         }
 
-    fun savePinHash(pin: String) {
+    suspend fun savePinHash(pin: String) {
         savePinHashImpl(sensitivePreferences, pin)
         legacyPreferences.edit().putBoolean(KEY_STARTUP_HAS_PIN, true).apply()
     }
@@ -431,7 +434,7 @@ class SettingsStore internal constructor(
         legacyPreferences.edit().putBoolean(KEY_STARTUP_HAS_PIN, false).apply()
     }
 
-    fun saveUnlockCodeHash(code: String) {
+    suspend fun saveUnlockCodeHash(code: String) {
         saveUnlockCodeHashImpl(sensitivePreferences, code)
     }
 

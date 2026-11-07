@@ -240,9 +240,15 @@ fun IllustSeriesScreen(
                 .nestedScroll(seriesScrollConnection)
                 .background(backgroundColor),
     ) {
-        if (!coverUrl.isNullOrBlank()) {
+        // The blurred cover is invisible until the pull is well underway; composing it up front
+        // would keep a full-screen 36dp RenderEffect alive for the whole screen's lifetime.
+        // derivedStateOf keeps the pull read from recomposing on every drag frame.
+        val showPullCover by remember(pullToRefreshState) {
+            derivedStateOf { pullToRefreshState.pullProgress > 0.06f }
+        }
+        if (showPullCover && !coverUrl.isNullOrBlank()) {
             PixivImage(
-                url = coverUrl,
+                url = coverUrl.orEmpty(),
                 contentDescription = null,
                 thumbnail = true,
                 maxDecodeDimensionPx = 128,

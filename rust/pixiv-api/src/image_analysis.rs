@@ -1,6 +1,10 @@
 const TRANSPARENT_ALPHA: u8 = 16;
 const DOMINANT_BUCKETS: usize = 16 * 16 * 16;
 
+// Callers hand us downscaled color samples (32x32 / 40x40), so the parallel split below must not
+// spin up rayon jobs whose per-job 4 KiB histogram costs more than the pixels they scan.
+const PARALLEL_MIN_CHUNK_PIXELS: usize = 4096;
+
 #[derive(Debug, uniffi::Record)]
 pub struct ImageAnalysis {
     pub average_luminance: f64,
@@ -27,6 +31,26 @@ impl Default for AnalysisState {
     }
 }
 
+impl AnalysisState {
+    #[inline]
+    fn accumulate(&mut self, pixel: &[u8], lut: &[f64; 256]) {
+        let [red, green, blue, alpha] = [pixel[0], pixel[1], pixel[2], pixel[3]];
+        if alpha < TRANSPARENT_ALPHA {
+            return;
+        }
+
+        self.luminance_sum += relative_luminance(red, green, blue, lut);
+        self.sample_count += 1;
+
+        let index = ((red as usize >> 4) << 8) | ((green as usize >> 4) << 4) | (blue as usize >> 4);
+        let bucket = &mut self.buckets[index];
+        bucket.count += 1;
+        bucket.red += red as u64;
+        bucket.green += green as u64;
+        bucket.blue += blue as u64;
+    }
+}
+
 use std::sync::OnceLock;
 
 static LINEARIZE_LUT: OnceLock<[f64; 256]> = OnceLock::new();
@@ -49,39 +73,33 @@ fn get_linearize_lut() -> &'static [f64; 256] {
 #[uniffi::export]
 pub fn analyze_rgba(pixels: Vec<u8>) -> ImageAnalysis {
     let lut = get_linearize_lut();
-    let result = pixels
-        .par_chunks_exact(4)
-        .with_min_len(1024)
-        .fold(AnalysisState::default, |mut state, pixel| {
-            let [red, green, blue, alpha] = [pixel[0], pixel[1], pixel[2], pixel[3]];
-            if alpha < TRANSPARENT_ALPHA {
-                return state;
-            }
-
-            state.luminance_sum += relative_luminance(red, green, blue, lut);
-            state.sample_count += 1;
-
-            let index =
-                ((red as usize >> 4) << 8) | ((green as usize >> 4) << 4) | (blue as usize >> 4);
-            let bucket = &mut state.buckets[index];
-            bucket.count += 1;
-            bucket.red += red as u64;
-            bucket.green += green as u64;
-            bucket.blue += blue as u64;
-
-            state
-        })
-        .reduce(AnalysisState::default, |mut a, b| {
-            a.luminance_sum += b.luminance_sum;
-            a.sample_count += b.sample_count;
-            for i in 0..DOMINANT_BUCKETS {
-                a.buckets[i].count += b.buckets[i].count;
-                a.buckets[i].red += b.buckets[i].red;
-                a.buckets[i].green += b.buckets[i].green;
-                a.buckets[i].blue += b.buckets[i].blue;
-            }
-            a
-        });
+    let pixel_count = pixels.len() / 4;
+    let result = if pixel_count < PARALLEL_MIN_CHUNK_PIXELS {
+        let mut state = AnalysisState::default();
+        for pixel in pixels.as_chunks::<4>().0 {
+            state.accumulate(pixel, lut);
+        }
+        state
+    } else {
+        pixels
+            .par_chunks_exact(4)
+            .with_min_len(PARALLEL_MIN_CHUNK_PIXELS)
+            .fold(AnalysisState::default, |mut state, pixel| {
+                state.accumulate(pixel, lut);
+                state
+            })
+            .reduce(AnalysisState::default, |mut a, b| {
+                a.luminance_sum += b.luminance_sum;
+                a.sample_count += b.sample_count;
+                for i in 0..DOMINANT_BUCKETS {
+                    a.buckets[i].count += b.buckets[i].count;
+                    a.buckets[i].red += b.buckets[i].red;
+                    a.buckets[i].green += b.buckets[i].green;
+                    a.buckets[i].blue += b.buckets[i].blue;
+                }
+                a
+            })
+    };
 
     let dominant_argb = result
         .buckets

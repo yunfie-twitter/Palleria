@@ -37,7 +37,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
@@ -373,7 +372,7 @@ private fun IllustCardThumbnail(
                 .clip(IllustCardCornerShape)
                 .background(MiuixTheme.colorScheme.surfaceContainer),
     ) {
-        Box(modifier = Modifier.fillMaxSize().then(if (isMutedByTag) Modifier.blur(12.dp) else Modifier)) {
+        Box(modifier = Modifier.fillMaxSize()) {
             PixivImage(
                 url = previewUrl,
                 contentDescription = title,
@@ -381,6 +380,11 @@ private fun IllustCardThumbnail(
                 modifier = Modifier.fillMaxSize(),
                 thumbnail = true,
             )
+            // A scrim hides muted artwork without Modifier.blur's per-item RenderEffect, which
+            // would force an offscreen blur pass for every muted card in the scrolling grid.
+            if (isMutedByTag) {
+                Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.55f)))
+            }
         }
         if (ageRestrictionBadgeText != null) {
             Text(

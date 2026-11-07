@@ -96,15 +96,17 @@ class RankingGlanceWidget : GlanceAppWidget() {
         return withContext(Dispatchers.IO) {
             val repository = IllustiaRepository(SettingsStore(context.applicationContext))
             runCatching {
-                repository.login(settings.refreshToken)
+                // No explicit login() here: it clears homeSnapshot and the API cache, wiping the
+                // app's warm feed every widget refresh. loadRanking() resolves/reuses the session.
                 val page = repository.loadRanking("day")
+                val proxyBaseUrl = settings.pixivImageProxyBaseUrl
                 val entries =
                     coroutineScope {
                         page.items
                             .take(MAX_RANKING_ITEMS)
                             .mapIndexed { index, illust ->
                                 async {
-                                    val bitmap = loadThumbnail(context, illust)
+                                    val bitmap = loadThumbnail(context, illust, proxyBaseUrl)
                                     RankingWidgetEntry(
                                         rank = index + 1,
                                         id = illust.id,
@@ -125,8 +127,8 @@ class RankingGlanceWidget : GlanceAppWidget() {
     private suspend fun loadThumbnail(
         context: Context,
         illust: Illust,
+        proxyBaseUrl: String,
     ): Bitmap? {
-        val proxyBaseUrl = SettingsStore(context.applicationContext).read().pixivImageProxyBaseUrl
         val imageUrl = proxyPixivImageUrl(illust.thumbnailUrl, proxyBaseUrl)
         val request =
             Request

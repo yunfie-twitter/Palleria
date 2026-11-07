@@ -135,14 +135,17 @@ fun PinSetupScreen(
                 confirmPin += digit
                 if (confirmPin.length == 6) {
                     if (confirmPin == newPin) {
-                        if (isChange) {
-                            viewModel.changePin(newPin)
-                        } else {
-                            viewModel.setupPin(newPin)
+                        val completedPin = newPin
+                        coroutineScope.launch {
+                            if (isChange) {
+                                viewModel.changePin(completedPin)
+                            } else {
+                                viewModel.setupPin(completedPin)
+                            }
+                            performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Success)
+                            reset()
+                            onBack()
                         }
-                        performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Success)
-                        reset()
-                        onBack()
                     } else {
                         performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Error)
                         error = mismatchError

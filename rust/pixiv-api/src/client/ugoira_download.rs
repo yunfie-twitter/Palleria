@@ -60,15 +60,26 @@ async fn download_and_extract(
     cache_dir: &Path,
     frames: Vec<UgoiraFrame>,
 ) -> Result<UgoiraPlayback, ApiError> {
-    let mut output = zip_path
-        .create_file()
-        .map_err(|error| io_error("create ugoira download", error))?;
-    copy_with_limit(response, &mut output, MAX_ARCHIVE_BYTES).await?;
-    output
-        .flush()
-        .map_err(|error| io_error("flush ugoira download", error))?;
-    drop(output);
+    // Buffer the archive in memory and write it once on the blocking pool: synchronous
+    // write_all() per network chunk would block the async worker for every chunk received.
+    let archive = read_with_limit(response, MAX_ARCHIVE_BYTES).await?;
+    let path = zip_path.path().to_owned();
+    tokio::task::spawn_blocking(move || write_archive(&path, &archive))
+        .await
+        .map_err(|_| io_error("write ugoira download", std::io::Error::other("worker panicked")))??;
     ugoira::prepare(zip_path.path(), cache_dir, frames).await
+}
+
+fn write_archive(path: &Path, archive: &[u8]) -> Result<(), ApiError> {
+    let mut output = std::fs::OpenOptions::new()
+        .create_new(true)
+        .write(true)
+        .open(path)
+        .map_err(|error| io_error("create ugoira download", error))?;
+    output
+        .write_all(archive)
+        .and_then(|()| output.flush())
+        .map_err(|error| io_error("write ugoira download", error))
 }
 
 fn cache_lock(cache_dir: &Path) -> Result<Arc<AsyncMutex<()>>, ApiError> {
@@ -85,24 +96,20 @@ fn cache_lock(cache_dir: &Path) -> Result<Arc<AsyncMutex<()>>, ApiError> {
     Ok(lock)
 }
 
-async fn copy_with_limit(
+async fn read_with_limit(
     response: reqwest::Response,
-    writer: &mut impl Write,
     limit: u64,
-) -> Result<u64, ApiError> {
+) -> Result<Vec<u8>, ApiError> {
     let mut stream = response.bytes_stream();
-    let mut copied = 0;
+    let mut archive = Vec::new();
     while let Some(chunk) = stream.next().await {
         let chunk = chunk.map_err(network_error)?;
-        copied += chunk.len() as u64;
-        if copied > limit {
+        if archive.len() as u64 + chunk.len() as u64 > limit {
             return Err(archive_too_large());
         }
-        writer
-            .write_all(&chunk)
-            .map_err(|error| io_error("write ugoira download", error))?;
+        archive.extend_from_slice(&chunk);
     }
-    Ok(copied)
+    Ok(archive)
 }
 
 fn archive_too_large() -> ApiError {

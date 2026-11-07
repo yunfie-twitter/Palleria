@@ -482,12 +482,12 @@ abstract class IllustiaSettingsSecurityModule(
         return settings.appLockEnabled && settings.appLockTiming == "return" && settingsStore.hasPinSet()
     }
 
-    fun setupPin(pin: String) {
+    suspend fun setupPin(pin: String) {
         settingsStore.savePinHash(pin)
         updateSettings { it.copy(appLockEnabled = true) }
     }
 
-    fun changePin(newPin: String) {
+    suspend fun changePin(newPin: String) {
         settingsStore.savePinHash(newPin)
     }
 
@@ -506,7 +506,7 @@ abstract class IllustiaSettingsSecurityModule(
      * 指定した解除コードを設定してプライバシーモードを有効化する。
      * @return 解除コードが有効な形式であれば true
      */
-    fun enablePrivacyModeWithCode(code: String): Boolean {
+    suspend fun enablePrivacyModeWithCode(code: String): Boolean {
         if (!settingsStore.isValidUnlockCode(code)) return false
         settingsStore.saveUnlockCodeHash(code)
         enablePrivacyMode()
@@ -517,8 +517,9 @@ abstract class IllustiaSettingsSecurityModule(
      * プライバシーモードを有効化する。
      * 解除コードが未設定なら初期コード "168" を保存する。
      */
-    fun enablePrivacyMode() {
+    suspend fun enablePrivacyMode() {
         if (!settingsStore.hasUnlockCodeSet()) {
+            // Seeding the default code hashes with PBKDF2; never do that on the UI thread.
             settingsStore.saveUnlockCodeHash("168")
         }
         updateSettings { it.copy(privacyModeEnabled = true) }

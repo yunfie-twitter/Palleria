@@ -136,6 +136,11 @@ abstract class IllustiaViewModelFoundation(
 
     protected val imageStore by lazy { NativeImageStore(getApplication<Application>().applicationContext) }
     protected val downloadMutex = Mutex()
+
+    // Wakeup for queued downloads: releasing a slot sends one permit and a parked
+    // acquireDownloadSlot() receives it, so waiters suspend instead of spinning on yield().
+    // BUFFERED (not CONFLATED) so simultaneous releases wake distinct waiters.
+    protected val downloadSlotReleased = Channel<Unit>(Channel.BUFFERED)
     protected var searchJob: Job? = null
     protected var detailExtrasJob: Job? = null
 
