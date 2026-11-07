@@ -87,6 +87,7 @@ internal fun rememberArtworkDesktopActions(viewModel: IllustiaViewModel): Artwor
 @Composable
 internal fun Modifier.artworkDesktopMenu(illust: Illust): Modifier {
     val actions = LocalArtworkDesktopActions.current
+    if (actions == null) return this
     val context = LocalContext.current
     val proxyBaseUrl = LocalPixivImageProxyBaseUrl.current
     val scope = rememberCoroutineScope()
@@ -99,7 +100,7 @@ internal fun Modifier.artworkDesktopMenu(illust: Illust): Modifier {
     val copyFailed = stringResource(R.string.copy_image_failed)
     val browserFailed = stringResource(R.string.error_browser_failed)
     val position = menuPosition
-    if (position != null && actions != null) {
+    if (position != null) {
         Popup(
             popupPositionProvider = remember(position) { ArtworkMenuPosition(position) },
             onDismissRequest = { menuPosition = null },
@@ -166,8 +167,7 @@ internal fun Modifier.artworkDesktopMenu(illust: Illust): Modifier {
             scaleX = scale
             scaleY = scale
         }.onGloballyPositioned { origin = it.positionInWindow() }
-        .pointerInput(illust.id, actions != null) {
-            if (actions == null) return@pointerInput
+        .pointerInput(illust.id) {
             awaitPointerEventScope {
                 var secondaryClick = false
                 while (true) {

@@ -124,7 +124,9 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     val paletteEnabled = settings.commandPaletteEnabled
     val paletteAvailable = paletteEnabled && !state.appLocked && !state.privacyLocked
     val fastScrollRenderingEnabled = settings.isFeatureEnabled(FeatureFlag.FastScrollRendering)
-    val (scrollRenderingConnection, fastScrolling) = rememberScrollRendering(enabled = fastScrollRenderingEnabled)
+    val scrollRendering = rememberScrollRendering(enabled = fastScrollRenderingEnabled)
+    val scrollRenderingConnection = scrollRendering.connection
+    val fastScrollingState = scrollRendering.fastScrollingState
     LaunchedEffect(paletteEnabled, state.appLocked, state.privacyLocked) {
         if (!paletteEnabled || state.appLocked || state.privacyLocked) showCommandPalette = false
     }
@@ -142,7 +144,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
             }
         }
 
-    val appState = remember(state) { IllustiaAppStateBundle(state) }
+    val appState = IllustiaAppStateBundle(state)
 
     LaunchedEffect(state.webLoginRequest) {
         val request = state.webLoginRequest ?: return@LaunchedEffect
@@ -707,11 +709,16 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     val platformHapticFeedback = LocalHapticFeedback.current
     val hapticsSupported = remember(context) { isAppHapticsSupported(context) }
     val effectiveHapticMode = effectiveAppHapticMode(state.settings.hapticMode, hapticsSupported)
+    val isDesktopDevice = remember(context) { DesktopEnvironment.isDesktop(context) }
     val desktopActions =
-        com.yunfie.illustia.ui.components
-            .rememberArtworkDesktopActions(viewModel)
+        if (isDesktopDevice) {
+            com.yunfie.illustia.ui.components
+                .rememberArtworkDesktopActions(viewModel)
+        } else {
+            null
+        }
     CompositionLocalProvider(
-        LocalFastScrolling provides (fastScrolling && fastScrollRenderingEnabled),
+        LocalFastScrolling provides fastScrollingState,
         com.yunfie.illustia.ui.components.LocalArtworkDesktopActions provides desktopActions,
         LocalPixivImageProxyBaseUrl provides state.settings.pixivImageProxyBaseUrl,
         LocalPreferLowDataImages provides preferLowDataImages,
@@ -990,7 +997,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                         SnackbarHost(state = snackbarHostState)
                     },
                 ) { rootPadding ->
-                    val isDesktop = remember(context) { DesktopEnvironment.isDesktop(context) }
+                    val isDesktop = isDesktopDevice
                     val rootRailState = rememberNavigationRailState()
                     val isFullscreenRoute = backStack.lastOrNull() == AppRoute.ImageViewer
                     val isPreLogin = state.settings.refreshToken.isBlank() || backStack.lastOrNull() == AppRoute.Onboarding

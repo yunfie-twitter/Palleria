@@ -665,26 +665,24 @@ abstract class IllustiaViewModelFoundation(
 
     protected fun updateSettings(block: (AppSettings) -> AppSettings) {
         synchronized(settingsUpdateLock) {
-            lateinit var previous: AppSettings
-            lateinit var next: AppSettings
+            val previous = _uiState.value.settings
+            val next = block(previous)
+            if (next == previous) return
+            val filtersUnchanged = previous.filtersMatch(next)
             _uiState.update { state ->
-                previous = state.settings
-                next = block(previous)
-                if (next == previous) state else state.withSettings(next)
+                if (filtersUnchanged) state.copy(settings = next) else state.withSettings(next)
             }
-            if (next != previous) {
-                check(
-                    settingsPersistenceRequests
-                        .trySend(
-                            SettingsPersistenceRequest(
-                                settings = next,
-                                baseSettings = previous,
-                                notifyLiveWallpaper = previous.hasLiveWallpaperChangesComparedTo(next),
-                            ),
-                        ).isSuccess,
-                ) {
-                    "Settings persistence queue is unavailable"
-                }
+            check(
+                settingsPersistenceRequests
+                    .trySend(
+                        SettingsPersistenceRequest(
+                            settings = next,
+                            baseSettings = previous,
+                            notifyLiveWallpaper = previous.hasLiveWallpaperChangesComparedTo(next),
+                        ),
+                    ).isSuccess,
+            ) {
+                "Settings persistence queue is unavailable"
             }
         }
     }

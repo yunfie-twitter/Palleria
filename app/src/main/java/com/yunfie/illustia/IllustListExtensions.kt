@@ -106,6 +106,17 @@ private fun List<NovelPreview>.filterRestrictedNovels(
     return if (hasRestricted) filterNot { it.isRestricted(filterR18, filterR18G) } else this
 }
 
+/** True when every setting that affects list filtering is unchanged, so [withSettings] work can be skipped. */
+internal fun AppSettings.filtersMatch(other: AppSettings): Boolean =
+    mutedIllusts == other.mutedIllusts &&
+        mutedUsers == other.mutedUsers &&
+        mutedTags == other.mutedTags &&
+        allowR18 == other.allowR18 &&
+        allowR18G == other.allowR18G &&
+        hideAiWorks == other.hideAiWorks &&
+        showR18Badge == other.showR18Badge &&
+        showRelatedR18 == other.showRelatedR18
+
 @Suppress("CyclomaticComplexMethod")
 internal fun IllustiaUiState.withSettings(settings: AppSettings): IllustiaUiState {
     val filter = settings.toMuteFilter()

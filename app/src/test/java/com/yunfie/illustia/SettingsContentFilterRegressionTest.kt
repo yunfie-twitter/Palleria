@@ -251,4 +251,24 @@ class SettingsContentFilterRegressionTest :
 
             (state.withSettings(settings).relatedIllusts === allIllusts) shouldBe true
         }
+
+        test("filtersMatch detects every setting that withSettings reacts to") {
+            val base = AppSettings()
+            (base.filtersMatch(base)) shouldBe true
+            (base.filtersMatch(base.copy(themeMode = "dark"))) shouldBe true
+            (base.filtersMatch(base.copy(novelFontSize = 22f))) shouldBe true
+
+            listOf(
+                base.copy(mutedIllusts = listOf(1L)),
+                base.copy(mutedUsers = listOf(2L)),
+                base.copy(mutedTags = listOf("tag")),
+                base.copy(allowR18 = !base.allowR18),
+                base.copy(allowR18G = !base.allowR18G),
+                base.copy(hideAiWorks = !base.hideAiWorks),
+                base.copy(showR18Badge = !base.showR18Badge),
+                base.copy(showRelatedR18 = !base.showRelatedR18),
+            ).forEach { changed ->
+                (base.filtersMatch(changed)) shouldBe false
+            }
+        }
     })
