@@ -81,10 +81,12 @@ fun HomeScreen(
             pageCount = { HomeTab.entries.size },
         )
     val coroutineScope = rememberCoroutineScope()
-    val selectedTab = HomeTab.entries[pagerState.currentPage]
+    // Use the settled page so swiping does not recompose the whole screen on every
+    // intermediate page change; the tab only commits once the pager settles.
+    val selectedTab = HomeTab.entries[pagerState.settledPage.coerceIn(0, HomeTab.entries.lastIndex)]
 
-    LaunchedEffect(pagerState.currentPage) {
-        viewModel.updateHomeSelectedTab(pagerState.currentPage)
+    LaunchedEffect(pagerState.settledPage) {
+        viewModel.updateHomeSelectedTab(pagerState.settledPage)
     }
 
     LaunchedEffect(viewModel) {
@@ -248,10 +250,10 @@ fun HomeScreen(
             color = scheme.surface,
         ) {
             var hasVisitedFollowingTab by remember {
-                mutableStateOf(pagerState.currentPage == HomeTab.Following.ordinal)
+                mutableStateOf(pagerState.settledPage == HomeTab.Following.ordinal)
             }
-            LaunchedEffect(pagerState.currentPage) {
-                if (pagerState.currentPage == HomeTab.Following.ordinal) {
+            LaunchedEffect(pagerState.settledPage) {
+                if (pagerState.settledPage == HomeTab.Following.ordinal) {
                     hasVisitedFollowingTab = true
                 }
             }
@@ -278,7 +280,7 @@ fun HomeScreen(
                     }
 
                     HomeTab.Following -> {
-                        if (hasVisitedFollowingTab || pagerState.currentPage == HomeTab.Following.ordinal) {
+                        if (hasVisitedFollowingTab || pagerState.settledPage == HomeTab.Following.ordinal) {
                             FollowingTabContent(
                                 items = timelineItems,
                                 loadState = loadState,

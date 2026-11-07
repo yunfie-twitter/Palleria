@@ -307,6 +307,11 @@ abstract class IllustiaViewModelFoundation(
             .map { it.appLocked }
             .distinctUntilChanged()
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), _uiState.value.appLocked)
+    val messageState: StateFlow<String?> =
+        _uiState
+            .map { it.message }
+            .distinctUntilChanged()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), _uiState.value.message)
 
     init {
         viewModelScope.launch(Dispatchers.IO) {

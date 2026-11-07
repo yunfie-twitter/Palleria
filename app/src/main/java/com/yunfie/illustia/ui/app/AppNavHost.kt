@@ -584,7 +584,6 @@ internal fun AppNavHost(
             }
             entry(AppRoute.About) {
                 AboutScreen(
-                    state = appState.state,
                     viewModel = viewModel,
                     onBack = onPopRoute,
                 )

@@ -89,7 +89,9 @@ fun BookmarkScreen(
             pageCount = { 4 },
         )
     val coroutineScope = rememberCoroutineScope()
-    val selectedTopTab = pagerState.currentPage
+    // Commit the selected tab only when the pager settles, so swiping does not
+    // recompose the whole screen for every intermediate page.
+    val selectedTopTab = pagerState.settledPage
 
     LaunchedEffect(selectedTopTab) {
         viewModel.updateBookmarkSelectedTab(selectedTopTab)

@@ -15,8 +15,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,8 +27,10 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.EmptyState
@@ -41,6 +45,8 @@ import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import com.yunfie.illustia.ui.components.smoothScrollToTop
 import com.yunfie.illustia.ui.screens.UserResultCard
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -52,6 +58,29 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
+@Immutable
+private data class RelatedUsersScreenState(
+    val loadedUserId: Long?,
+    val users: List<UserPreview>,
+    val nextUrl: String?,
+    val error: String?,
+    val loading: Boolean,
+    val refreshing: Boolean,
+    val paginating: Boolean,
+)
+
+private val IllustiaUiState.relatedUsersScreenState: RelatedUsersScreenState
+    get() =
+        RelatedUsersScreenState(
+            loadedUserId = selectedRelatedUsersUserId,
+            users = selectedRelatedUsers,
+            nextUrl = selectedRelatedUsersNextUrl,
+            error = selectedRelatedUsersError,
+            loading = selectedRelatedUsersLoading,
+            refreshing = selectedRelatedUsersRefreshing,
+            paginating = selectedRelatedUsersPaginating,
+        )
+
 @Composable
 fun RelatedUsersScreen(
     userId: Long,
@@ -61,16 +90,22 @@ fun RelatedUsersScreen(
     onOpenUser: (Long) -> Unit,
 ) {
     PredictiveBackGestureHandler(onBack = onBack)
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    // Collect only the related-users slice. Observing the whole uiState made this screen
+    // recompose for unrelated changes such as feed loads or download progress updates.
+    val relatedUsersUiState by remember(viewModel) {
+        viewModel.uiState
+            .map { it.relatedUsersScreenState }
+            .distinctUntilChanged()
+    }.collectAsStateWithLifecycle(initialValue = viewModel.uiState.value.relatedUsersScreenState)
     val settings by viewModel.settingsState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior()
     val coroutineScope = rememberCoroutineScope()
     val performHaptic = rememberHapticFeedbackAction()
-    val relatedUsers = if (uiState.selectedRelatedUsersUserId == userId) uiState.selectedRelatedUsers else emptyList()
-    val relatedUsersNextUrl = if (uiState.selectedRelatedUsersUserId == userId) uiState.selectedRelatedUsersNextUrl else null
+    val relatedUsers = if (relatedUsersUiState.loadedUserId == userId) relatedUsersUiState.users else emptyList()
+    val relatedUsersNextUrl = if (relatedUsersUiState.loadedUserId == userId) relatedUsersUiState.nextUrl else null
 
-    LaunchedEffect(userId, uiState.selectedRelatedUsersUserId) {
+    LaunchedEffect(userId) {
         viewModel.loadSelectedRelatedUsers(targetUserId = userId)
     }
 
@@ -78,7 +113,7 @@ fun RelatedUsersScreen(
         listState = listState,
         enabled = settings.autoLoadMore,
         nextUrl = relatedUsersNextUrl,
-        isLoading = uiState.selectedRelatedUsersPaginating || uiState.selectedRelatedUsersLoading,
+        isLoading = relatedUsersUiState.paginating || relatedUsersUiState.loading,
         onLoadMore = { viewModel.loadMoreSelectedRelatedUsers(targetUserId = userId) },
     )
 
@@ -115,12 +150,12 @@ fun RelatedUsersScreen(
     ) { scaffoldPadding ->
         val adaptivePadding = adaptiveMainNavigationContentPadding()
         val showInitialSkeletons =
-            uiState.selectedRelatedUsersUserId != userId ||
-                (relatedUsers.isEmpty() && uiState.selectedRelatedUsersLoading)
-        val showPaginationSkeletons = settings.autoLoadMore && uiState.selectedRelatedUsersPaginating
+            relatedUsersUiState.loadedUserId != userId ||
+                (relatedUsers.isEmpty() && relatedUsersUiState.loading)
+        val showPaginationSkeletons = settings.autoLoadMore && relatedUsersUiState.paginating
         val shimmer = if (showInitialSkeletons || showPaginationSkeletons) rememberIllustSkeletonShimmer() else null
         PullToRefresh(
-            isRefreshing = uiState.selectedRelatedUsersRefreshing,
+            isRefreshing = relatedUsersUiState.refreshing,
             onRefresh = { viewModel.loadSelectedRelatedUsers(targetUserId = userId, force = true) },
             modifier =
                 Modifier
@@ -180,15 +215,15 @@ fun RelatedUsersScreen(
                     ) {
                         UserResultCardSkeleton(shimmerValue = shimmer)
                     }
-                } else if (relatedUsers.isEmpty() && !uiState.selectedRelatedUsersRefreshing && !uiState.selectedRelatedUsersLoading) {
+                } else if (relatedUsers.isEmpty() && !relatedUsersUiState.refreshing && !relatedUsersUiState.loading) {
                     item(contentType = "related_empty") {
                         Column(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            val relatedUsersError = uiState.selectedRelatedUsersError
-                            if (relatedUsersError != null && uiState.selectedRelatedUsersUserId == userId) {
+                            val relatedUsersError = relatedUsersUiState.error
+                            if (relatedUsersError != null && relatedUsersUiState.loadedUserId == userId) {
                                 RequestErrorState(
                                     message = relatedUsersError,
                                     onRetry = { viewModel.loadSelectedRelatedUsers(targetUserId = userId, force = true) },
@@ -207,10 +242,10 @@ fun RelatedUsersScreen(
                     item(contentType = "related_more") {
                         Button(
                             onClick = { viewModel.loadMoreSelectedRelatedUsers(targetUserId = userId) },
-                            enabled = !uiState.selectedRelatedUsersLoading && !uiState.selectedRelatedUsersPaginating,
+                            enabled = !relatedUsersUiState.loading && !relatedUsersUiState.paginating,
                             modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                         ) {
-                            if (uiState.selectedRelatedUsersLoading || uiState.selectedRelatedUsersPaginating) {
+                            if (relatedUsersUiState.loading || relatedUsersUiState.paginating) {
                                 LoadingIndicator(Modifier.size(20.dp))
                             } else {
                                 Text(stringResource(R.string.action_load_more))
