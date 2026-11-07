@@ -37,24 +37,16 @@ class NativeImageStore(
     ): Boolean {
         val displayName = name.withImageExtension(sourceUrl, imageMimeType(responseMimeType, sourceUrl))
         if (!savingNames.add(displayName)) return false
-        val ext = displayName.substringAfterLast('.', "jpg")
-        val tempFile =
-            if (embedMetadata && illust != null) {
-                ImageMetadataWriter.embedMetadataToStream(input, context.cacheDir, ext, illust)
-            } else {
-                null
-            }
-        val effectiveInput = tempFile?.inputStream() ?: input
+        val metadataTarget = if (embedMetadata) illust else null
         return try {
-            effectiveInput.use { stream ->
+            input.use { stream ->
                 when (saveMode()) {
-                    SAVE_MODE_SAF -> saveToTree(stream, displayName, sourceUrl, responseMimeType, clearOld)
-                    SAVE_MODE_DIRECT -> saveToPath(stream, displayName, sourceUrl, responseMimeType, clearOld)
-                    else -> saveToMediaStore(stream, displayName, sourceUrl, responseMimeType, clearOld)
+                    SAVE_MODE_SAF -> saveToTree(stream, displayName, sourceUrl, responseMimeType, clearOld, metadataTarget)
+                    SAVE_MODE_DIRECT -> saveToPath(stream, displayName, sourceUrl, responseMimeType, clearOld, metadataTarget)
+                    else -> saveToMediaStore(stream, displayName, sourceUrl, responseMimeType, clearOld, metadataTarget)
                 }
             }
         } finally {
-            tempFile?.delete()
             savingNames.remove(displayName)
         }
     }
@@ -361,6 +353,7 @@ class NativeImageStore(
         sourceUrl: String,
         responseMimeType: String?,
         clearOld: Boolean,
+        metadataTarget: Illust?,
     ): Boolean {
         val resolver = context.contentResolver
         val normalizedMimeType = imageMimeType(responseMimeType, sourceUrl)
@@ -380,6 +373,13 @@ class NativeImageStore(
             resolver.openOutputStream(uri, "w")?.use { output ->
                 input.use { it.copyTo(output) }
             } ?: throw IllegalStateException("ファイルの書き込みに失敗しました。")
+            // Patch EXIF after the single byte copy instead of staging a rewritten temp file.
+            ImageMetadataWriter.embedMetadata(
+                resolver,
+                uri,
+                displayName.substringAfterLast('.', "jpg"),
+                metadataTarget,
+            )
             ContentValues()
                 .apply {
                     put(MediaStore.MediaColumns.IS_PENDING, 0)
@@ -397,6 +397,7 @@ class NativeImageStore(
         sourceUrl: String,
         responseMimeType: String?,
         clearOld: Boolean,
+        metadataTarget: Illust?,
     ): Boolean {
         val tree = writableTree() ?: return false
         val names = displayName.split('/').filter { it.isNotBlank() }
@@ -411,6 +412,12 @@ class NativeImageStore(
         context.contentResolver.openOutputStream(target.uri, "w")?.use { output ->
             input.use { it.copyTo(output) }
         } ?: return false
+        ImageMetadataWriter.embedMetadata(
+            context.contentResolver,
+            target.uri,
+            displayName.substringAfterLast('.', "jpg"),
+            metadataTarget,
+        )
         return true
     }
 
@@ -420,6 +427,7 @@ class NativeImageStore(
         sourceUrl: String,
         responseMimeType: String?,
         clearOld: Boolean,
+        metadataTarget: Illust?,
     ): Boolean {
         val target = File(baseDirectPath(), displayName)
         target.parentFile?.mkdirs()
@@ -432,6 +440,7 @@ class NativeImageStore(
         target.outputStream().use { output ->
             input.use { it.copyTo(output) }
         }
+        ImageMetadataWriter.embedMetadata(target, metadataTarget, displayName.substringAfterLast('.', "jpg"))
         MediaScannerConnection.scanFile(
             context,
             arrayOf(target.absolutePath),
