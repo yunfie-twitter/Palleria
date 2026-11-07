@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -27,8 +28,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerIcon
@@ -41,6 +44,11 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.kyant.backdrop.Backdrop
+import com.kyant.backdrop.drawBackdrop
+import com.kyant.backdrop.effects.blur
+import com.kyant.backdrop.effects.lens
+import com.kyant.backdrop.effects.vibrancy
 import com.yunfie.illustia.R
 import kotlinx.coroutines.delay
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -67,6 +75,8 @@ fun FollowPill(
     isFollowed: Boolean,
     followAnimationTrigger: Int = 0,
     modifier: Modifier = Modifier,
+    liquidGlass: Boolean = false,
+    backdrop: Backdrop? = null,
 ) {
     var animationStage by remember { mutableStateOf<FollowPillStage?>(null) }
     var lastHandledTrigger by remember { mutableStateOf(followAnimationTrigger) }
@@ -110,8 +120,30 @@ fun FollowPill(
 
     val isActiveFollow = stage == FollowPillStage.FOLLOWED || stage == FollowPillStage.CHECK
     val scheme = MiuixTheme.colorScheme
-    Box(
-        modifier =
+    val pillShape = RoundedCornerShape(24.dp)
+    val glassBackdrop = if (liquidGlass) backdrop else null
+    val containerModifier =
+        if (glassBackdrop != null) {
+            modifier
+                .drawBackdrop(
+                    backdrop = glassBackdrop,
+                    shape = { pillShape },
+                    effects = {
+                        vibrancy()
+                        blur(3.dp.toPx())
+                        lens(10.dp.toPx(), 20.dp.toPx())
+                    },
+                    onDrawSurface = {
+                        if (isActiveFollow) {
+                            drawRect(scheme.primary, blendMode = BlendMode.Hue)
+                            drawRect(scheme.primary.copy(alpha = 0.55f))
+                        } else {
+                            drawRect(scheme.surfaceContainerHigh.copy(alpha = 0.20f))
+                        }
+                    },
+                ).clip(pillShape)
+                .padding(horizontal = 22.dp, vertical = 11.dp)
+        } else {
             modifier
                 .squircleSurface(
                     color = if (isActiveFollow) scheme.primary else scheme.surfaceContainerHigh,
@@ -126,7 +158,10 @@ fun FollowPill(
                     } else {
                         Modifier
                     },
-                ).padding(horizontal = 22.dp, vertical = 11.dp),
+                ).padding(horizontal = 22.dp, vertical = 11.dp)
+        }
+    Box(
+        modifier = containerModifier,
         contentAlignment = Alignment.Center,
     ) {
         AnimatedContent(

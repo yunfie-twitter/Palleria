@@ -251,11 +251,15 @@ fun UserProfileScreen(
             }
         }
     }
+    val liquidGlassButtonsEnabled = settings.isFeatureEnabled(FeatureFlag.LiquidGlassButtons)
+    val liquidGlassFollowEnabled = settings.isFeatureEnabled(FeatureFlag.LiquidGlassFollowButton)
     val liquidGlassBackdrop =
         rememberLiquidGlassBackdrop(
-            enabled = settings.isFeatureEnabled(FeatureFlag.LiquidGlassButtons),
+            enabled = liquidGlassButtonsEnabled || liquidGlassFollowEnabled,
             backgroundColor = profileBackgroundColor,
         )
+    val liquidGlassHeaderBackdrop = if (liquidGlassButtonsEnabled) liquidGlassBackdrop else null
+    val liquidGlassFollowBackdrop = if (liquidGlassFollowEnabled) liquidGlassBackdrop else null
     val contentModifier =
         modifier
             .then(if (contentHeight != null) Modifier.height(contentHeight) else Modifier.fillMaxSize())
@@ -302,6 +306,8 @@ fun UserProfileScreen(
             onEditProfile = onEditProfile,
             onColumnsChange = onColumnsChange,
             onAvatarClick = { showAvatarPreview = true },
+            liquidGlassFollowButton = liquidGlassFollowEnabled,
+            liquidGlassFollowBackdrop = liquidGlassFollowBackdrop,
         )
     }
 
@@ -326,7 +332,7 @@ fun UserProfileScreen(
                 onOpenRelatedUsers = onOpenRelatedUsers ?: {},
                 onTitleClick = scrollToTop,
                 compact = isContentScrolled,
-                liquidGlassBackdrop = liquidGlassBackdrop,
+                liquidGlassBackdrop = liquidGlassHeaderBackdrop,
             )
         }
         UserProfileAvatarPreviewOverlay(

@@ -73,6 +73,8 @@ import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
+import com.kyant.backdrop.Backdrop
+import com.kyant.backdrop.backdrops.layerBackdrop
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.pixiv.Comment
@@ -97,6 +99,7 @@ import com.yunfie.illustia.ui.components.ScrollablePullToRefresh
 import com.yunfie.illustia.ui.components.adaptiveRelatedIllustColumns
 import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.performAppHapticFeedback
+import com.yunfie.illustia.ui.components.rememberLiquidGlassBackdrop
 import kotlinx.coroutines.delay
 import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.Icon
@@ -158,6 +161,7 @@ fun IllustDetailScreen(
     detailSectionOrder: List<String>,
     relatedIllustColumnCount: Int = 3,
     liquidGlassButtons: Boolean = false,
+    liquidGlassFollowButton: Boolean = false,
     relatedSectionInitiallyReady: Boolean = false,
     onRelatedSectionReady: () -> Unit = {},
     initialPage: Int = 0,
@@ -355,6 +359,11 @@ fun IllustDetailScreen(
     val relatedColumns = adaptiveRelatedIllustColumns(relatedIllustColumnCount)
     val relatedRows = remember(relatedIllusts, relatedColumns) { relatedIllustRows(relatedIllusts, relatedColumns) }
     val relatedCardPreferences = LocalArtworkCardPreferences.current
+    val followGlassBackdrop =
+        rememberLiquidGlassBackdrop(
+            enabled = liquidGlassFollowButton,
+            backgroundColor = MiuixTheme.colorScheme.surface,
+        )
     val detailInfoContent: @Composable (List<String>?, Boolean) -> Unit = { sections, showHeader ->
         DetailInfoSlot(
             illust = illust,
@@ -378,6 +387,8 @@ fun IllustDetailScreen(
             onRelatedSectionReady = onRelatedSectionReady,
             sectionsOverride = sections,
             showHeader = showHeader,
+            liquidGlassFollowButton = liquidGlassFollowButton,
+            followBackdrop = followGlassBackdrop,
         )
     }
 
@@ -448,7 +459,16 @@ fun IllustDetailScreen(
                     color = Color.Transparent,
                     refreshTexts = emptyList(),
                     contentPadding = PaddingValues(top = statusBarTopPadding + 8.dp),
-                    modifier = Modifier.fillMaxSize(),
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .then(
+                                if (followGlassBackdrop != null) {
+                                    Modifier.layerBackdrop(followGlassBackdrop)
+                                } else {
+                                    Modifier
+                                },
+                            ),
                 ) {
                     BoxWithConstraints(
                         modifier =
@@ -684,6 +704,8 @@ private fun DetailInfoSlot(
     onRelatedSectionReady: () -> Unit,
     sectionsOverride: List<String>? = null,
     showHeader: Boolean = true,
+    liquidGlassFollowButton: Boolean,
+    followBackdrop: Backdrop?,
 ) {
     val currentOnOpenUser by rememberUpdatedState(onOpenUser)
     val currentOnOpenIllustById by rememberUpdatedState(onOpenIllustById)
@@ -738,5 +760,7 @@ private fun DetailInfoSlot(
         onRelatedSectionReady = onRelatedSectionReady,
         sectionsOverride = sectionsOverride,
         showHeader = showHeader,
+        liquidGlassFollowButton = liquidGlassFollowButton,
+        followBackdrop = followBackdrop,
     )
 }

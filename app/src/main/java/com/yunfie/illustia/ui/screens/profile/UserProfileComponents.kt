@@ -169,6 +169,8 @@ internal fun UserProfilePagerContent(
     onEditProfile: (() -> Unit)? = null,
     onColumnsChange: (Int) -> Unit = {},
     onAvatarClick: () -> Unit = {},
+    liquidGlassFollowButton: Boolean = false,
+    liquidGlassFollowBackdrop: LayerBackdrop? = null,
 ) {
     val tabListState = rememberLazyListState()
     Column(modifier = modifier.background(backgroundColor)) {
@@ -200,6 +202,8 @@ internal fun UserProfilePagerContent(
                 isOwnProfile = isOwnProfile,
                 isProfileEditEnabled = isProfileEditEnabled,
                 onEditProfile = onEditProfile,
+                liquidGlassFollowButton = liquidGlassFollowButton,
+                liquidGlassFollowBackdrop = liquidGlassFollowBackdrop,
             )
         }
         AnimatedVisibility(
@@ -306,6 +310,8 @@ private fun UserProfileHeader(
     isOwnProfile: Boolean = false,
     isProfileEditEnabled: Boolean = false,
     onEditProfile: (() -> Unit)? = null,
+    liquidGlassFollowButton: Boolean = false,
+    liquidGlassFollowBackdrop: LayerBackdrop? = null,
 ) {
     Column(
         Modifier
@@ -350,6 +356,8 @@ private fun UserProfileHeader(
             isOwnProfile = isOwnProfile,
             isProfileEditEnabled = isProfileEditEnabled,
             onEditProfile = onEditProfile,
+            liquidGlassFollowButton = liquidGlassFollowButton,
+            liquidGlassFollowBackdrop = liquidGlassFollowBackdrop,
         )
     }
 }
@@ -695,6 +703,8 @@ private fun UserProfileInfo(
     isOwnProfile: Boolean = false,
     isProfileEditEnabled: Boolean = false,
     onEditProfile: (() -> Unit)? = null,
+    liquidGlassFollowButton: Boolean = false,
+    liquidGlassFollowBackdrop: LayerBackdrop? = null,
 ) {
     Column(
         Modifier.fillMaxWidth().padding(horizontal = 18.dp).offset(y = (-48).dp),
@@ -716,7 +726,16 @@ private fun UserProfileInfo(
                 }
             } else {
                 Box(Modifier.miuixClickable(pressedScale = 0.94f, haptic = true, onClick = if (isMuted) onUnmuteUser else onToggleFollow)) {
-                    if (isMuted) MutedUserPill() else FollowPill(user.isFollowed, followAnimationTrigger)
+                    if (isMuted) {
+                        MutedUserPill()
+                    } else {
+                        FollowPill(
+                            isFollowed = user.isFollowed,
+                            followAnimationTrigger = followAnimationTrigger,
+                            liquidGlass = liquidGlassFollowButton,
+                            backdrop = liquidGlassFollowBackdrop,
+                        )
+                    }
                 }
             }
         }

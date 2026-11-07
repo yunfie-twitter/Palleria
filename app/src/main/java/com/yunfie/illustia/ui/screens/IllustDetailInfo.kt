@@ -46,6 +46,7 @@ import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.kyant.backdrop.Backdrop
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
@@ -96,6 +97,8 @@ internal fun IllustDetailInfo(
     onRelatedSectionReady: () -> Unit = {},
     sectionsOverride: List<String>? = null,
     showHeader: Boolean = true,
+    liquidGlassFollowButton: Boolean = false,
+    followBackdrop: Backdrop? = null,
 ) {
     val uriHandler = LocalUriHandler.current
     val screenHeightDp = LocalConfiguration.current.screenHeightDp
@@ -303,6 +306,8 @@ internal fun IllustDetailInfo(
                                         FollowPill(
                                             isFollowed = isArtistFollowed,
                                             followAnimationTrigger = followAnimationTrigger,
+                                            liquidGlass = liquidGlassFollowButton,
+                                            backdrop = followBackdrop,
                                         )
                                     }
                                 }
