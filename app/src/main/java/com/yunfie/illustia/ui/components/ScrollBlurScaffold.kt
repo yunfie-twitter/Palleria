@@ -100,24 +100,27 @@ fun ScrollBlurOverlay(
     var measuredHeaderHeight by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
 
-    // fraction() は scrollBehavior.state を読むため、コンポジション内で直接呼ぶとスクロールの
-    // 1 フレームごとにこの関数全体が再コンポーズされ、下の progressiveTextureBlur も作り直される。
-    // derivedStateOf に包むと、参照している側（animateFloatAsState）だけが更新されるようになる。
+    // fraction() reads scrollBehavior.state, so calling it in composition recomposes every scroll
+    // frame. derivedStateOf isolates the scroll read, and the animated value is only read inside
+    // the draw/layer lambdas below, so nothing here recomposes while scrolling.
     val targetFractionState =
         remember(fraction) {
             derivedStateOf { fraction().coerceIn(0f, 1f) }
         }
-    val targetFraction by targetFractionState
-    val animatedFraction by animateFloatAsState(
-        targetValue = targetFraction,
-        animationSpec =
-            spring(
-                stiffness = Spring.StiffnessMediumLow,
-                dampingRatio = Spring.DampingRatioNoBouncy,
-            ),
-        label = "scrollBlurFraction",
-    )
-    val progress = (animatedFraction * animatedFraction * (3f - 2f * animatedFraction)).coerceIn(0f, 1f)
+    val animatedFractionState =
+        animateFloatAsState(
+            targetValue = targetFractionState.value,
+            animationSpec =
+                spring(
+                    stiffness = Spring.StiffnessMediumLow,
+                    dampingRatio = Spring.DampingRatioNoBouncy,
+                ),
+            label = "scrollBlurFraction",
+        )
+    val progressOf: () -> Float = {
+        val animatedFraction = animatedFractionState.value
+        (animatedFraction * animatedFraction * (3f - 2f * animatedFraction)).coerceIn(0f, 1f)
+    }
 
     Box(modifier = modifier.clipToBounds()) {
         Box(
@@ -134,51 +137,51 @@ fun ScrollBlurOverlay(
 
         if (measuredHeaderHeight > 0) {
             val totalBackdropHeightDp = with(density) { measuredHeaderHeight.toDp() }
-            val baseAlpha = ((if (opaqueAtTop) 1f else progress) - 0.28f * progress).coerceIn(0f, 1f)
 
-            if (baseAlpha > 0f || (supportsBlur && progress > 0f && !systemCovered)) {
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(totalBackdropHeightDp)
-                            .then(
-                                if (supportsBlur && progress > 0f && !systemCovered) {
-                                    Modifier.progressiveTextureBlur(
-                                        backdrop = backdrop,
-                                        shape = RectangleShape,
-                                        blurRadius = 24f * progress,
-                                        gradient =
-                                            ProgressiveBlur(
-                                                angle = 90f,
-                                                startFraction = 0.25f,
-                                                endFraction = 1f,
-                                            ),
-                                    )
-                                } else {
-                                    Modifier
-                                },
-                            ).drawBehind {
-                                if (baseAlpha > 0f) {
-                                    drawRect(color = surface.copy(alpha = baseAlpha))
-                                }
-
-                                // Subtle, clean hairline divider on scroll instead of heavy shadow
-                                if (progress > 0f) {
-                                    val dividerHeightPx = 1.dp.toPx()
-                                    drawRect(
-                                        color = outline.copy(alpha = 0.08f * progress),
-                                        topLeft =
-                                            androidx.compose.ui.geometry
-                                                .Offset(0f, size.height - dividerHeightPx),
-                                        size =
-                                            androidx.compose.ui.geometry
-                                                .Size(size.width, dividerHeightPx),
-                                    )
-                                }
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(totalBackdropHeightDp)
+                        .then(
+                            if (supportsBlur && !systemCovered) {
+                                Modifier.progressiveTextureBlur(
+                                    backdrop = backdrop,
+                                    shape = RectangleShape,
+                                    blurRadius = 24f * progressOf(),
+                                    gradient =
+                                        ProgressiveBlur(
+                                            angle = 90f,
+                                            startFraction = 0.25f,
+                                            endFraction = 1f,
+                                        ),
+                                )
+                            } else {
+                                Modifier
                             },
-                )
-            }
+                        ).drawBehind {
+                            val progress = progressOf()
+                            val baseAlpha =
+                                ((if (opaqueAtTop) 1f else progress) - 0.28f * progress).coerceIn(0f, 1f)
+                            if (baseAlpha > 0f) {
+                                drawRect(color = surface.copy(alpha = baseAlpha))
+                            }
+
+                            // Subtle, clean hairline divider on scroll instead of heavy shadow
+                            if (progress > 0f) {
+                                val dividerHeightPx = 1.dp.toPx()
+                                drawRect(
+                                    color = outline.copy(alpha = 0.08f * progress),
+                                    topLeft =
+                                        androidx.compose.ui.geometry
+                                            .Offset(0f, size.height - dividerHeightPx),
+                                    size =
+                                        androidx.compose.ui.geometry
+                                            .Size(size.width, dividerHeightPx),
+                                )
+                            }
+                        },
+            )
         }
 
         Box(

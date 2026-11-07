@@ -136,6 +136,11 @@ abstract class IllustiaViewModelFoundation(
 
     protected val imageStore by lazy { NativeImageStore(getApplication<Application>().applicationContext) }
     protected val downloadMutex = Mutex()
+
+    // Wakeup for queued downloads: releasing a slot sends one permit and a parked
+    // acquireDownloadSlot() receives it, so waiters suspend instead of spinning on yield().
+    // BUFFERED (not CONFLATED) so simultaneous releases wake distinct waiters.
+    protected val downloadSlotReleased = Channel<Unit>(Channel.BUFFERED)
     protected var searchJob: Job? = null
     protected var detailExtrasJob: Job? = null
 
@@ -665,26 +670,24 @@ abstract class IllustiaViewModelFoundation(
 
     protected fun updateSettings(block: (AppSettings) -> AppSettings) {
         synchronized(settingsUpdateLock) {
-            lateinit var previous: AppSettings
-            lateinit var next: AppSettings
+            val previous = _uiState.value.settings
+            val next = block(previous)
+            if (next == previous) return
+            val filtersUnchanged = previous.filtersMatch(next)
             _uiState.update { state ->
-                previous = state.settings
-                next = block(previous)
-                if (next == previous) state else state.withSettings(next)
+                if (filtersUnchanged) state.copy(settings = next) else state.withSettings(next)
             }
-            if (next != previous) {
-                check(
-                    settingsPersistenceRequests
-                        .trySend(
-                            SettingsPersistenceRequest(
-                                settings = next,
-                                baseSettings = previous,
-                                notifyLiveWallpaper = previous.hasLiveWallpaperChangesComparedTo(next),
-                            ),
-                        ).isSuccess,
-                ) {
-                    "Settings persistence queue is unavailable"
-                }
+            check(
+                settingsPersistenceRequests
+                    .trySend(
+                        SettingsPersistenceRequest(
+                            settings = next,
+                            baseSettings = previous,
+                            notifyLiveWallpaper = previous.hasLiveWallpaperChangesComparedTo(next),
+                        ),
+                    ).isSuccess,
+            ) {
+                "Settings persistence queue is unavailable"
             }
         }
     }

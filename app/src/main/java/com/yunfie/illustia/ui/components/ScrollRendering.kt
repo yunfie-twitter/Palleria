@@ -4,11 +4,12 @@ import android.os.SystemClock
 import androidx.compose.foundation.lazy.grid.LazyGridItemScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
-import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -19,12 +20,21 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
-val LocalFastScrolling = compositionLocalOf { false }
+/**
+ * Holds the live fast-scrolling [State] rather than its current value, so providing it never
+ * invalidates composition. Read [State.value] only inside draw/layout/pointer lambdas or
+ * at the leaves that actually need to react to it.
+ */
+val LocalFastScrolling = staticCompositionLocalOf<State<Boolean>> { STATIC_FALSE }
+
+private val STATIC_FALSE: State<Boolean> =
+    object : State<Boolean> {
+        override val value: Boolean = false
+    }
 
 internal data class ScrollRenderingResult(
     val connection: NestedScrollConnection,
-    val isFastScrolling: Boolean,
-    val fastScrollingState: State<Boolean>,
+    val fastScrollingState: MutableState<Boolean>,
 )
 
 internal class ScrollSpeedTracker {
@@ -96,7 +106,6 @@ internal fun rememberScrollRendering(enabled: Boolean): ScrollRenderingResult {
     }
     return ScrollRenderingResult(
         connection = connection,
-        isFastScrolling = fast.value,
         fastScrollingState = fast,
     )
 }

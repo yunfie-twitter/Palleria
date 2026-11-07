@@ -396,15 +396,17 @@ fun PrivacyModeSettingsScreen(
                                 } else if (!viewModel.isValidUnlockCode(enableCodeInput)) {
                                     enableCodeError = enableCodeInvalidText
                                 } else {
-                                    val success = viewModel.enablePrivacyModeWithCode(enableCodeInput)
-                                    if (success) {
-                                        showEnableCodeDialog = false
-                                        isResettingCode = false
-                                        enableCodeInput = ""
-                                        enableCodeConfirm = ""
-                                        enableCodeError = null
-                                    } else {
-                                        enableCodeError = enableCodeInvalidText
+                                    coroutineScope.launch {
+                                        val success = viewModel.enablePrivacyModeWithCode(enableCodeInput)
+                                        if (success) {
+                                            showEnableCodeDialog = false
+                                            isResettingCode = false
+                                            enableCodeInput = ""
+                                            enableCodeConfirm = ""
+                                            enableCodeError = null
+                                        } else {
+                                            enableCodeError = enableCodeInvalidText
+                                        }
                                     }
                                 }
                             } else {

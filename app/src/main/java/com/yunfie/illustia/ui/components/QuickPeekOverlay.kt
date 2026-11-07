@@ -155,7 +155,7 @@ fun QuickPeekOverlay(
                             .padding(24.dp)
                             .widthIn(max = 400.dp)
                             .heightIn(max = 620.dp)
-                            .shadow(if (LocalFastScrolling.current) 0.dp else 24.dp, RoundedCornerShape(24.dp))
+                            .shadow(if (LocalFastScrolling.current.value) 0.dp else 24.dp, RoundedCornerShape(24.dp))
                             .clip(RoundedCornerShape(24.dp))
                             .background(MiuixTheme.colorScheme.surface)
                             .clickable(

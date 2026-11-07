@@ -10,17 +10,21 @@ import java.security.SecureRandom
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
 
-internal fun savePinHash(
+internal suspend fun savePinHash(
     prefs: SharedPreferences,
     pin: String,
 ) {
-    val salt = generateSalt()
-    val hash = pbkdf2(pin, salt)
-    prefs
-        .edit()
-        .putString(KEY_PIN_HASH, hash)
-        .putString(KEY_PIN_SALT, salt)
-        .apply()
+    // PBKDF2 is deliberately slow; hashing on the caller's (usually main) thread janks the UI for
+    // the full iteration count, so derive on Default like verifyPinHash already does.
+    withContext(Dispatchers.Default) {
+        val salt = generateSalt()
+        val hash = pbkdf2(pin, salt)
+        prefs
+            .edit()
+            .putString(KEY_PIN_HASH, hash)
+            .putString(KEY_PIN_SALT, salt)
+            .apply()
+    }
 }
 
 internal suspend fun verifyPinHash(
@@ -51,17 +55,19 @@ internal fun clearPinHash(prefs: SharedPreferences) {
         .apply()
 }
 
-internal fun saveUnlockCodeHash(
+internal suspend fun saveUnlockCodeHash(
     prefs: SharedPreferences,
     code: String,
 ) {
-    val salt = generateSalt()
-    val hash = pbkdf2(code, salt)
-    prefs
-        .edit()
-        .putString(KEY_UNLOCK_CODE_HASH, hash)
-        .putString(KEY_UNLOCK_CODE_SALT, salt)
-        .apply()
+    withContext(Dispatchers.Default) {
+        val salt = generateSalt()
+        val hash = pbkdf2(code, salt)
+        prefs
+            .edit()
+            .putString(KEY_UNLOCK_CODE_HASH, hash)
+            .putString(KEY_UNLOCK_CODE_SALT, salt)
+            .apply()
+    }
 }
 
 internal suspend fun verifyUnlockCodeHash(

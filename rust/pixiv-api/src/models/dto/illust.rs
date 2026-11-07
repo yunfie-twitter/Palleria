@@ -22,20 +22,36 @@ impl IllustDetailResponse {
 impl IllustDto {
     pub(crate) fn into_illust(self) -> Option<Illust> {
         let id = self.id?;
-        let medium_pages = page_urls(&self.meta_pages, |urls| {
-            urls.medium.as_ref().or(urls.large.as_ref())
-        });
-        let image_pages = page_urls(&self.meta_pages, |urls| {
-            urls.large.as_ref().or(urls.medium.as_ref())
-        });
-        let original_pages = page_urls(&self.meta_pages, |urls| {
-            urls.original.as_ref().or(urls.large.as_ref())
-        });
+
+        // Fill all three page lists in one walk. Each URL variant used to get its own traversal
+        // of meta_pages, so every page was visited three times.
+        let page_count = self.meta_pages.len();
+        let mut medium_pages = Vec::with_capacity(page_count);
+        let mut image_pages = Vec::with_capacity(page_count);
+        let mut original_pages = Vec::with_capacity(page_count);
+        for page in &self.meta_pages {
+            let Some(urls) = page.image_urls.as_ref() else {
+                continue;
+            };
+            if let Some(url) = urls.medium.as_ref().or(urls.large.as_ref()) {
+                medium_pages.push(url.clone());
+            }
+            if let Some(url) = urls.large.as_ref().or(urls.medium.as_ref()) {
+                image_pages.push(url.clone());
+            }
+            if let Some(url) = urls.original.as_ref().or(urls.large.as_ref()) {
+                original_pages.push(url.clone());
+            }
+        }
+
         let original = self
             .meta_single_page
             .as_ref()
             .and_then(|urls| urls.original.as_deref())
-            .or_else(|| original_pages.first().map(|s| s.as_str()));
+            .or_else(|| original_pages.first().map(String::as_str));
+
+        // Same fallback chains as before, but each resolves to a borrowed source and is copied
+        // once, rather than cloning every candidate along the way.
         let medium = self
             .image_urls
             .medium
@@ -85,17 +101,6 @@ impl IllustDto {
             illust_ai_type: self.illust_ai_type,
         })
     }
-}
-
-pub(super) fn page_urls<'a>(
-    pages: &'a [MetaPage],
-    select: impl Fn(&'a ImageUrls) -> Option<&'a String>,
-) -> Vec<String> {
-    pages
-        .iter()
-        .filter_map(|page| page.image_urls.as_ref())
-        .filter_map(|urls| select(urls).cloned())
-        .collect()
 }
 
 fn fallback_pages(primary: Vec<String>, secondary: &[String], tertiary: &[String]) -> Vec<String> {

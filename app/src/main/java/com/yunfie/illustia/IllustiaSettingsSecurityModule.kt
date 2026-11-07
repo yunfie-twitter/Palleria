@@ -22,6 +22,7 @@ import com.yunfie.illustia.settings.store.STARTUP_LOGGED_IN_TOKEN
 import com.yunfie.illustia.ui.screens.CalculatorEngine
 import com.yunfie.illustia.widget.IllustWidgetProvider
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.update
@@ -34,6 +35,7 @@ private const val MIN_TTS_SPEECH_RATE = 0.5f
 private const val MAX_TTS_SPEECH_RATE = 2.5f
 private const val MIN_TTS_PITCH = 0.5f
 private const val MAX_TTS_PITCH = 2.0f
+private const val SEARCH_DRAFT_DEBOUNCE_MILLIS = 300L
 
 private fun canRefreshProfileOnStartup(
     settings: com.yunfie.illustia.settings.AppSettings,
@@ -49,6 +51,8 @@ abstract class IllustiaSettingsSecurityModule(
     app: Application,
     managedDataRepository: ManagedDataRepository,
 ) : IllustiaViewModelFoundation(app, managedDataRepository) {
+    private var searchDraftJob: Job? = null
+
     abstract fun refreshHome(forceRefresh: Boolean = false)
 
     abstract fun submitSearch(
@@ -478,12 +482,12 @@ abstract class IllustiaSettingsSecurityModule(
         return settings.appLockEnabled && settings.appLockTiming == "return" && settingsStore.hasPinSet()
     }
 
-    fun setupPin(pin: String) {
+    suspend fun setupPin(pin: String) {
         settingsStore.savePinHash(pin)
         updateSettings { it.copy(appLockEnabled = true) }
     }
 
-    fun changePin(newPin: String) {
+    suspend fun changePin(newPin: String) {
         settingsStore.savePinHash(newPin)
     }
 
@@ -502,7 +506,7 @@ abstract class IllustiaSettingsSecurityModule(
      * 指定した解除コードを設定してプライバシーモードを有効化する。
      * @return 解除コードが有効な形式であれば true
      */
-    fun enablePrivacyModeWithCode(code: String): Boolean {
+    suspend fun enablePrivacyModeWithCode(code: String): Boolean {
         if (!settingsStore.isValidUnlockCode(code)) return false
         settingsStore.saveUnlockCodeHash(code)
         enablePrivacyMode()
@@ -513,8 +517,9 @@ abstract class IllustiaSettingsSecurityModule(
      * プライバシーモードを有効化する。
      * 解除コードが未設定なら初期コード "168" を保存する。
      */
-    fun enablePrivacyMode() {
+    suspend fun enablePrivacyMode() {
         if (!settingsStore.hasUnlockCodeSet()) {
+            // Seeding the default code hashes with PBKDF2; never do that on the UI thread.
             settingsStore.saveUnlockCodeHash("168")
         }
         updateSettings { it.copy(privacyModeEnabled = true) }
@@ -1090,8 +1095,28 @@ abstract class IllustiaSettingsSecurityModule(
         refreshActiveSearch()
     }
 
+    /**
+     * Keystroke-level calls are debounced before touching the global UI state; [updateSearchDraftNow]
+     * remains synchronous for one-shot resets (cancel, back, expand).
+     */
     fun updateSearchDraft(value: String) {
-        _uiState.update { it.copy(searchDraft = value) }
+        searchDraftJob?.cancel()
+        searchDraftJob =
+            viewModelScope.launch {
+                delay(SEARCH_DRAFT_DEBOUNCE_MILLIS)
+                applySearchDraft(value)
+            }
+    }
+
+    fun updateSearchDraftNow(value: String) {
+        searchDraftJob?.cancel()
+        applySearchDraft(value)
+    }
+
+    private fun applySearchDraft(value: String) {
+        _uiState.update { state ->
+            if (state.searchDraft == value) state else state.copy(searchDraft = value)
+        }
     }
 
     private fun refreshActiveSearch() {
