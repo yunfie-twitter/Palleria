@@ -195,7 +195,8 @@ fun SearchScreen(
                 }
             }
         }
-    val onUpdateDraft: (String) -> Unit = remember(viewModel) { { viewModel.updateSearchDraft(it) } }
+    val onUpdateDraft: (String) -> Unit = remember(viewModel) { { viewModel.updateSearchDraftNow(it) } }
+    val onDraftInput: (String) -> Unit = remember(viewModel) { { viewModel.updateSearchDraft(it) } }
     val onSubmit: (String) -> Unit =
         remember(onClearResults, onNavigateToResults, viewModel) {
             { word ->
@@ -354,7 +355,7 @@ fun SearchScreen(
                             val sanitized =
                                 com.yunfie.illustia.nativebridge.NativeIntentRouter
                                     .sanitizeSearchInput(input, isCleanerEnabled)
-                            onUpdateDraft(sanitized)
+                            onDraftInput(sanitized)
                         },
                         onSearch = {
                             val target = state.searchDraft.ifBlank { state.activeSearchWord }

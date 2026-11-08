@@ -204,7 +204,10 @@ private fun NotificationCard(
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                     if (!notification.isRead) Box(Modifier.size(7.dp).clip(CircleShape).background(MiuixTheme.colorScheme.primary))
                     Text(
-                        text = notification.content?.text.toPlainNotificationText(),
+                        text =
+                            remember(notification.content?.text) {
+                                notification.content?.text.toPlainNotificationText()
+                            },
                         style = MiuixTheme.textStyles.body1,
                         fontWeight = if (notification.isRead) FontWeight.Normal else FontWeight.Bold,
                         maxLines = if (compact) 2 else 3,

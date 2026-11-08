@@ -59,6 +59,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
@@ -567,9 +568,11 @@ fun ImageViewerScreen(
         },
         floatingToolbarPosition = ToolbarPosition.BottomCenter,
     ) {
-        val dismissProgress = (dismissOffsetY.value / (dismissThresholdPx * 2f)).coerceIn(0f, 1f)
-        val bgAlpha = (1f - dismissProgress * 1.2f).coerceIn(0f, 1f)
-        val contentScale = (1f - dismissProgress * 0.2f).coerceIn(0.7f, 1f)
+        // dismissOffsetY is an Animatable updated on every drag frame. Deriving these inside the
+        // draw/layer lambdas keeps the drag from recomposing the whole viewer (backdrop blur + pager).
+        val dismissProgressOf: () -> Float = { (dismissOffsetY.value / (dismissThresholdPx * 2f)).coerceIn(0f, 1f) }
+        val bgAlphaOf: () -> Float = { (1f - dismissProgressOf() * 1.2f).coerceIn(0f, 1f) }
+        val contentScaleOf: () -> Float = { (1f - dismissProgressOf() * 0.2f).coerceIn(0.7f, 1f) }
 
         val currentIsZoomed by rememberUpdatedState(isZoomed)
         val swipeModifier =
@@ -629,7 +632,7 @@ fun ImageViewerScreen(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = bgAlpha)),
+                    .drawBehind { drawRect(Color.Black.copy(alpha = bgAlphaOf())) },
         ) {
             if (ambientLightEnabled && ambientUrls.isNotEmpty() && PlatformCapabilities.supportsHardwareBlur(context)) {
                 val ambientUrl = ambientUrls.getOrNull(currentPageState.value) ?: ambientUrls.first()
@@ -644,6 +647,7 @@ fun ImageViewerScreen(
                         Modifier
                             .fillMaxSize()
                             .graphicsLayer {
+                                val bgAlpha = bgAlphaOf()
                                 alpha = 0.40f * bgAlpha
                                 scaleX = 1.35f
                                 scaleY = 1.35f
@@ -653,7 +657,7 @@ fun ImageViewerScreen(
                     modifier =
                         Modifier
                             .fillMaxSize()
-                            .background(Color.Black.copy(alpha = 0.30f * bgAlpha)),
+                            .drawBehind { drawRect(Color.Black.copy(alpha = 0.30f * bgAlphaOf())) },
                 )
             }
             Box(
@@ -662,6 +666,7 @@ fun ImageViewerScreen(
                         .fillMaxSize()
                         .then(swipeModifier)
                         .graphicsLayer {
+                            val contentScale = contentScaleOf()
                             translationY = dismissOffsetY.value
                             scaleX = contentScale
                             scaleY = contentScale

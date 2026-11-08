@@ -27,6 +27,7 @@ impl TempPath {
         &self.path
     }
 
+    #[cfg_attr(not(test), allow(dead_code))]
     pub(crate) fn create_file(&self) -> io::Result<File> {
         OpenOptions::new()
             .create_new(true)

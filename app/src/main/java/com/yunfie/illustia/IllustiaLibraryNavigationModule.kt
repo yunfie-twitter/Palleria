@@ -31,12 +31,23 @@ import okhttp3.Request
 import java.io.File
 import java.io.FileOutputStream
 
+private const val MAX_SIMULTANEOUS_DOWNLOADS = 4
+private const val STORAGE_SIZE_CACHE_MILLIS = 5_000L
+
+private data class StorageSizeSample(
+    val bytes: Long,
+    val measuredAtMillis: Long,
+)
+
 /** Downloads, offline library, notifications, settings navigation, and account switching. */
 @Suppress("LargeClass")
 abstract class IllustiaLibraryNavigationModule(
     app: Application,
     managedDataRepository: ManagedDataRepository,
 ) : IllustiaBookmarkModule(app, managedDataRepository) {
+    private val storageSizeLock = Any()
+    private var cachedStorageBytes: StorageSizeSample? = null
+
     override fun saveImage(
         url: String,
         filename: String,
@@ -223,8 +234,7 @@ abstract class IllustiaLibraryNavigationModule(
                     return@launch
                 }
                 val requestUrl = proxyPixivImageUrl(url, _uiState.value.settings.pixivImageProxyBaseUrl)
-                val currentSize = settingsStore.getSavedIllustStorageBytes()
-                if (currentSize >= _uiState.value.settings.offlineStorageLimitBytes) {
+                if (savedIllustStorageBytesAtLeast(_uiState.value.settings.offlineStorageLimitBytes)) {
                     _uiState.update { it.copy(message = str(R.string.offline_capacity_limit_desc)) }
                     return@launch
                 }
@@ -354,17 +364,14 @@ abstract class IllustiaLibraryNavigationModule(
     }
 
     private suspend fun acquireDownloadSlot() {
-        val limit =
-            _uiState.value.settings.simultaneousDownloads
-                .coerceIn(1, 4)
-        // Semaphore を動的な limit に合わせるため downloadMutex でシリアライズし、
-        // スロットが空くまで効率的にサスペンドする。
+        // Waiters park on a channel and are woken by releaseDownloadSlot(); a yield() spin would
+        // burn a CPU core per queued download (e.g. 30 pages queued) until a slot frees up.
         while (true) {
             val acquired =
                 downloadMutex.withLock {
                     val currentLimit =
                         _uiState.value.settings.simultaneousDownloads
-                            .coerceIn(1, 4)
+                            .coerceIn(1, MAX_SIMULTANEOUS_DOWNLOADS)
                     if (_activeDownloads.value < currentLimit) {
                         _activeDownloads.update { it + 1 }
                         true
@@ -373,9 +380,7 @@ abstract class IllustiaLibraryNavigationModule(
                     }
                 }
             if (acquired) return
-            // スロットが埋まっている間は release まで待つ。Mutex でシリアライズ済みなので
-            // yield() で他のコルーチンに制御を渡し、過剰な busy-loop を避ける。
-            kotlinx.coroutines.yield()
+            downloadSlotReleased.receive()
         }
     }
 
@@ -383,6 +388,8 @@ abstract class IllustiaLibraryNavigationModule(
         downloadMutex.withLock {
             _activeDownloads.update { (it - 1).coerceAtLeast(0) }
         }
+        // Wake one parked waiter; it re-checks the limit under the mutex.
+        downloadSlotReleased.trySend(Unit)
     }
 
     private fun enqueueDownloadQueue(
@@ -445,6 +452,24 @@ abstract class IllustiaLibraryNavigationModule(
             groupByWork = settings.downloadFolderByWork,
             customPathTemplate = customTemplate,
         )
+    }
+
+    /**
+     * Whether the offline library already reached [limitBytes]. The directory walk is expensive
+     * and a multi-page save queues many downloads at once, so concurrent checks share one walk
+     * instead of rescanning the whole storage tree per page.
+     */
+    private suspend fun savedIllustStorageBytesAtLeast(limitBytes: Long): Boolean {
+        val now = System.currentTimeMillis()
+        synchronized(storageSizeLock) {
+            val cached = cachedStorageBytes
+            if (cached != null && now - cached.measuredAtMillis < STORAGE_SIZE_CACHE_MILLIS) {
+                return cached.bytes >= limitBytes
+            }
+        }
+        val bytes = settingsStore.getSavedIllustStorageBytes()
+        synchronized(storageSizeLock) { cachedStorageBytes = StorageSizeSample(bytes, now) }
+        return bytes >= limitBytes
     }
 
     private fun saveOfflineFile(
