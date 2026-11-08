@@ -190,12 +190,6 @@ fun AboutScreen(
                         style = MiuixTheme.textStyles.footnote1,
                         textAlign = TextAlign.Center,
                     )
-                    Text(
-                        text = stringResource(R.string.about_tagline),
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.75f),
-                        style = MiuixTheme.textStyles.footnote1,
-                        textAlign = TextAlign.Center,
-                    )
                 }
             }
             LazyColumn(

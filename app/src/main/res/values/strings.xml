@@ -614,7 +614,6 @@
     <!-- About screen -->
     <string name="about_title">Palleria について</string>
     <string name="about_version">バージョン %1$s</string>
-    <string name="about_tagline">Pixivイラスト専用ビューアー</string>
     <string name="about_section_info">情報</string>
     <string name="about_section_links">リンク</string>
     <string name="about_section_libraries">使用ライブラリ</string>

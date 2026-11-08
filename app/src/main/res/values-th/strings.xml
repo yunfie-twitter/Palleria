@@ -552,7 +552,6 @@
     <!-- About screen -->
     <string name="about_title">เกี่ยวกับ ปาเลเรีย</string>
     <string name="about_version">เวอร์ชัน %1$s</string>
-    <string name="about_tagline">โปรแกรมดูภาพประกอบ Pixiv โดยเฉพาะ</string>
     <string name="about_section_info">ข้อมูล</string>
     <string name="about_section_links">ลิงค์</string>
     <string name="about_section_libraries">ห้องสมุด</string>

@@ -552,7 +552,6 @@
     <!-- About screen -->
     <string name="about_title">Về Palleria</string>
     <string name="about_version">Phiên bản %1$s</string>
-    <string name="about_tagline">Trình xem minh họa Pixiv chuyên dụng</string>
     <string name="about_section_info">Thông tin</string>
     <string name="about_section_links">Liên kết</string>
     <string name="about_section_libraries">Thư viện</string>
