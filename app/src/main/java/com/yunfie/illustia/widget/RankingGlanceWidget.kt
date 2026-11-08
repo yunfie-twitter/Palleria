@@ -61,7 +61,10 @@ class RankingGlanceWidget : GlanceAppWidget() {
         context: Context,
         id: GlanceId,
     ) {
-        val settings = SettingsStore(context.applicationContext).read()
+        val application = context.applicationContext as? IllustiaApplication
+        val settings =
+            application?.repository?.readSettings()
+                ?: SettingsStore(context.applicationContext).read()
         val state = fetchRankingState(context, settings)
 
         provideContent {
@@ -94,7 +97,11 @@ class RankingGlanceWidget : GlanceAppWidget() {
         if (!loggedIn) return RankingWidgetState.LoggedOut
 
         return withContext(Dispatchers.IO) {
-            val repository = IllustiaRepository(SettingsStore(context.applicationContext))
+            // Reuse the warm app repository so the widget hits the shared API cache instead of
+            // rebuilding its own cache and refetching the ranking on every update.
+            val repository =
+                (context.applicationContext as? IllustiaApplication)?.repository
+                    ?: IllustiaRepository(SettingsStore(context.applicationContext))
             runCatching {
                 // No explicit login() here: it clears homeSnapshot and the API cache, wiping the
                 // app's warm feed every widget refresh. loadRanking() resolves/reuses the session.
