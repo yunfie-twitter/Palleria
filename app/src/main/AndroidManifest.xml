@@ -37,6 +37,11 @@
             <data android:scheme="https" />
         </intent>
 
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:mimeType="application/vnd.android.package-archive" />
+        </intent>
+
         <package android:name="com.google.android.apps.translate" />
         <package android:name="com.deepl.mobiletranslator" />
         <package android:name="com.microsoft.translator" />
