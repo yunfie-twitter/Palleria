@@ -1208,6 +1208,8 @@
     <string name="flag_delta_etag_sync_desc">Uses ETags and delta caching during following sync to fetch only new artworks without duplicate downloads, enabling instant offline-ready access</string>
     <string name="flag_shared_element_transitions_title">Shared element transitions</string>
     <string name="flag_shared_element_transitions_desc">Animates an artwork card thumbnail into the detail image, in both directions. Moving between related artworks keeps the existing transition</string>
+    <string name="flag_progressive_image_quality_title">Dynamic image quality (progressive)</string>
+    <string name="flag_progressive_image_quality_desc">Shows the next-lower quality tier while the selected quality loads on detail and full-screen images.</string>
     <string name="offline_cached_banner_label">Viewing offline cache</string>
     <string name="offline_retry_button">Retry</string>
 

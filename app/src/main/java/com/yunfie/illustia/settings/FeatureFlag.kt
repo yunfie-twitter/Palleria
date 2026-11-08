@@ -185,6 +185,12 @@ enum class FeatureFlag(
         descRes = R.string.flag_liquid_glass_follow_button_desc,
         defaultEnabled = false,
     ),
+    ProgressiveImageQuality(
+        key = "flag_progressive_image_quality",
+        titleRes = R.string.flag_progressive_image_quality_title,
+        descRes = R.string.flag_progressive_image_quality_desc,
+        defaultEnabled = false,
+    ),
     ;
 
     companion object {
