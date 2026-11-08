@@ -1315,6 +1315,8 @@
     <string name="flag_liquid_glass_buttons_desc">作品ページとプロフィールページの戻る・メニューボタンをLiquid Glass表示にします。</string>
     <string name="flag_liquid_glass_follow_button_title">Liquid Glass フォローボタン</string>
     <string name="flag_liquid_glass_follow_button_desc">作品ページとプロフィールページのフォローボタンをLiquid Glass表示にします。</string>
+    <string name="flag_progressive_image_quality_title">動的画質（プログレッシブ表示）</string>
+    <string name="flag_progressive_image_quality_desc">詳細画像・全画面画像を開いたとき、選択中の画質で読み込みが終わるまで一段下の画質を先に表示します。</string>
     <string name="offline_cached_banner_label">オフライン表示中（キャッシュ）</string>
     <string name="offline_retry_button">再試行</string>
 

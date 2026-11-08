@@ -377,6 +377,7 @@ internal fun AppNavHost(
                             relatedIllustColumnCount = appState.state.settings.relatedIllustColumnCount,
                             liquidGlassButtons = appState.state.settings.isFeatureEnabled(FeatureFlag.LiquidGlassButtons),
                             liquidGlassFollowButton = appState.state.settings.isFeatureEnabled(FeatureFlag.LiquidGlassFollowButton),
+                            progressiveQuality = appState.state.settings.isFeatureEnabled(FeatureFlag.ProgressiveImageQuality),
                             relatedSectionInitiallyReady = viewModel.isIllustDetailRelatedSectionReady(illust.id),
                             onRelatedSectionReady = { viewModel.markIllustDetailRelatedSectionReady(illust.id) },
                             initialPage = viewModel.illustDetailPage(illust.id),
@@ -427,6 +428,7 @@ internal fun AppNavHost(
                             swipeToDismissEnabled = appState.state.settings.imageViewerSwipeToDismissEnabled,
                             ugoiraPowerSave = appState.state.settings.isFeatureEnabled(FeatureFlag.UgoiraPowerSave),
                             mangaAdaptivePreload = appState.state.settings.isFeatureEnabled(FeatureFlag.MangaAdaptivePreload),
+                            progressiveQuality = appState.state.settings.isFeatureEnabled(FeatureFlag.ProgressiveImageQuality),
                         )
                     }
                 }

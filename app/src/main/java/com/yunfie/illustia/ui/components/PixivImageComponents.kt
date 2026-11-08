@@ -127,6 +127,7 @@ fun PixivImage(
     maxDecodeDimensionPx: Int? = null,
     allowRgb565: Boolean = false,
     showLoadingSpinner: Boolean = false,
+    placeholderUrl: String? = null,
     onSuccess: ((Bitmap) -> Unit)? = null,
     onLoadingStateChanged: ((Boolean) -> Unit)? = null,
 ) {
@@ -138,9 +139,14 @@ fun PixivImage(
         remember(url, proxyBaseUrl) {
             proxyPixivImageUrl(url, proxyBaseUrl)
         }
+    val hasPlaceholder = !thumbnail && !placeholderUrl.isNullOrBlank() && placeholderUrl != url
+    val effectivePlaceholderUrl =
+        remember(placeholderUrl, proxyBaseUrl) {
+            if (hasPlaceholder) proxyPixivImageUrl(placeholderUrl!!, proxyBaseUrl) else null
+        }
 
     val hasSuccessListener = onSuccess != null
-    val hasLoadingListener = onLoadingStateChanged != null || showLoadingSpinner
+    val hasLoadingListener = onLoadingStateChanged != null || showLoadingSpinner || hasPlaceholder
     var isLoading by remember(effectiveUrl, hasLoadingListener) { mutableStateOf(hasLoadingListener) }
     val currentOnSuccess by rememberUpdatedState(onSuccess)
     val currentOnLoadingStateChanged by rememberUpdatedState(onLoadingStateChanged)
@@ -247,7 +253,50 @@ fun PixivImage(
                 }.build()
         }
 
-    if (showLoadingSpinner) {
+    val placeholderRequest =
+        effectivePlaceholderUrl?.let { placeholder ->
+            remember(placeholder, refreshRequest) {
+                ImageRequest
+                    .Builder(context)
+                    .data(placeholder)
+                    .httpHeaders(PixivImageHeaders)
+                    .diskCachePolicy(if (refreshRequest == 0) CachePolicy.ENABLED else CachePolicy.WRITE_ONLY)
+                    .memoryCacheKey(pixivImageMemoryCacheKey(placeholder, thumbnail = true, decodeDimensionPx = null))
+                    .memoryCachePolicy(CachePolicy.ENABLED)
+                    .size(PlatformCapabilities.recommendedThumbnailDecodeDimension(context))
+                    .scale(Scale.FILL)
+                    .precision(Precision.INEXACT)
+                    .allowRgb565(true)
+                    .build()
+            }
+        }
+
+    if (placeholderRequest != null) {
+        Box(
+            modifier = modifier,
+            contentAlignment = Alignment.Center,
+        ) {
+            if (isLoading) {
+                AsyncImage(
+                    model = placeholderRequest,
+                    contentDescription = null,
+                    contentScale = contentScale,
+                    modifier = Modifier.matchParentSize(),
+                )
+            }
+            AsyncImage(
+                model = imageRequest,
+                contentDescription = contentDescription,
+                contentScale = contentScale,
+                modifier = Modifier.matchParentSize(),
+            )
+            if (showLoadingSpinner && isLoading) {
+                LoadingIndicator(
+                    modifier = Modifier.size(36.dp),
+                )
+            }
+        }
+    } else if (showLoadingSpinner) {
         Box(
             modifier = modifier,
             contentAlignment = Alignment.Center,
