@@ -745,6 +745,30 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     val platformHapticFeedback = LocalHapticFeedback.current
     val hapticsSupported = remember(context) { isAppHapticsSupported(context) }
     val effectiveHapticMode = effectiveAppHapticMode(state.settings.hapticMode, hapticsSupported)
+    val artworkCardPreferences =
+        remember(
+            settings.showCardTitle,
+            settings.showCardArtist,
+            settings.showCardTags,
+            settings.showCardBookmarkCount,
+            settings.showAiBadge,
+            settings.showR18Badge,
+            settings.showRelatedR18,
+            settings.showCardBookmarkButton,
+            settings.doubleTapToBookmark,
+        ) {
+            ArtworkCardPreferences(
+                showTitle = settings.showCardTitle,
+                showArtist = settings.showCardArtist,
+                showTags = settings.showCardTags,
+                showBookmarkCount = settings.showCardBookmarkCount,
+                showAiBadge = settings.showAiBadge,
+                showR18Badge = settings.showR18Badge,
+                showRelatedR18 = settings.showRelatedR18,
+                showBookmarkButton = settings.showCardBookmarkButton,
+                doubleTapToBookmark = settings.doubleTapToBookmark,
+            )
+        }
     val isDesktopDevice = remember(context) { DesktopEnvironment.isDesktop(context) }
     val desktopActions =
         if (isDesktopDevice) {
@@ -762,18 +786,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         com.yunfie.illustia.ui.components.LocalVelocityLandingPrefetchEnabled provides
             settings.isFeatureEnabled(FeatureFlag.VelocityLandingPrefetch),
         LocalBottomSheetBackgroundColor provides MiuixTheme.colorScheme.surfaceContainerHigh,
-        LocalArtworkCardPreferences provides
-            ArtworkCardPreferences(
-                showTitle = settings.showCardTitle,
-                showArtist = settings.showCardArtist,
-                showTags = settings.showCardTags,
-                showBookmarkCount = settings.showCardBookmarkCount,
-                showAiBadge = settings.showAiBadge,
-                showR18Badge = settings.showR18Badge,
-                showRelatedR18 = settings.showRelatedR18,
-                showBookmarkButton = settings.showCardBookmarkButton,
-                doubleTapToBookmark = settings.doubleTapToBookmark,
-            ),
+        LocalArtworkCardPreferences provides artworkCardPreferences,
         LocalAppHapticMode provides effectiveHapticMode,
         LocalHapticFeedback provides
             if (effectiveHapticMode == AppHapticMode.Off) {
