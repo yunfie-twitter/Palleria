@@ -43,19 +43,22 @@ fun resolveAdaptivePreloadUrls(
     direction: MangaReadingDirection,
     maxPages: Int = MAX_PRELOAD_PAGES,
 ): List<String> {
-    if (imageUrls.isEmpty()) return emptyList()
-    val urls = mutableListOf<String>()
+    if (imageUrls.isEmpty() || maxPages <= 0) return emptyList()
+    val urls = ArrayList<String>(maxPages)
+    fun addIfPresent(page: Int) {
+        if (urls.size < maxPages && page in imageUrls.indices) urls.add(imageUrls[page])
+    }
     if (direction == MangaReadingDirection.Reverse) {
         // The pager composes the adjacent page itself; prefetch only the page beyond it.
-        if (currentPage - 2 in imageUrls.indices) urls.add(imageUrls[currentPage - 2])
-        if (currentPage - 1 in imageUrls.indices) urls.add(imageUrls[currentPage - 1])
-        if (currentPage + 1 in imageUrls.indices) urls.add(imageUrls[currentPage + 1])
+        addIfPresent(currentPage - 2)
+        addIfPresent(currentPage - 1)
+        addIfPresent(currentPage + 1)
     } else {
-        if (currentPage + 2 in imageUrls.indices) urls.add(imageUrls[currentPage + 2])
-        if (currentPage + 1 in imageUrls.indices) urls.add(imageUrls[currentPage + 1])
-        if (currentPage - 1 in imageUrls.indices) urls.add(imageUrls[currentPage - 1])
+        addIfPresent(currentPage + 2)
+        addIfPresent(currentPage + 1)
+        addIfPresent(currentPage - 1)
     }
-    return urls.take(maxPages)
+    return urls
 }
 
 /**
@@ -91,10 +94,13 @@ fun AdaptiveMangaPreloader(
         preloadReady = true
     }
 
+    // Key on settledPage, not currentPage: currentPage changes on every drag frame and would
+    // re-run the preload resolution (and PrefetchPixivImages) mid-swipe for no benefit.
+    val settledPage = pagerState.settledPage
     val preloadUrls =
-        remember(pagerState.currentPage, detectedDirection, imageUrls) {
+        remember(settledPage, detectedDirection, imageUrls) {
             resolveAdaptivePreloadUrls(
-                currentPage = pagerState.currentPage,
+                currentPage = settledPage,
                 imageUrls = imageUrls,
                 direction = detectedDirection,
                 maxPages = MAX_PRELOAD_PAGES,

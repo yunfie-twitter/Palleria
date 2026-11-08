@@ -15,17 +15,11 @@ internal object NativeImageAnalysis {
         if (sample.pixels.isEmpty()) return false
         val insetX = (sample.width / 6).coerceAtLeast(1)
         val insetY = (sample.height / 6).coerceAtLeast(1)
-        val rgba =
-            pixelsToRgba(sample.pixels) { index ->
-                val x = index % sample.width
-                val y = index / sample.width
-                y < insetY || y >= sample.height - insetY ||
-                    x < insetX || x >= sample.width - insetX
-            }
+        val rgba = pixelsToRgba(sample.pixels, sample.width, sample.height, insetX, insetY)
         val analysis = analyzeRgba(rgba)
         val effectiveAnalysis =
             if (analysis.sampleCount == 0u) {
-                analyzeRgba(pixelsToRgba(sample.pixels))
+                analyzeRgba(pixelsToRgba(sample.pixels, sample.width, sample.height))
             } else {
                 analysis
             }
@@ -35,7 +29,7 @@ internal object NativeImageAnalysis {
     fun dominantColor(bitmap: Bitmap): Int {
         val sample = sampledPixels(bitmap, COLOR_SAMPLE_SIZE)
         if (sample.pixels.isEmpty()) return Color.BLACK
-        return analyzeRgba(pixelsToRgba(sample.pixels)).dominantArgb
+        return analyzeRgba(pixelsToRgba(sample.pixels, sample.width, sample.height)).dominantArgb
     }
 
     private fun sampledPixels(
@@ -85,19 +79,36 @@ internal object NativeImageAnalysis {
 
     private fun pixelsToRgba(
         pixels: IntArray,
-        include: (Int) -> Boolean = { true },
+        width: Int,
+        height: Int,
+        insetX: Int = 0,
+        insetY: Int = 0,
     ): ByteArray {
-        val included = pixels.indices.count(include)
-        val rgba = ByteArray(included * 4)
-        var offset = 0
-        pixels.forEachIndexed { index, color ->
-            if (!include(index)) return@forEachIndexed
-            rgba[offset++] = Color.red(color).toByte()
-            rgba[offset++] = Color.green(color).toByte()
-            rgba[offset++] = Color.blue(color).toByte()
-            rgba[offset++] = Color.alpha(color).toByte()
+        if (insetX == 0 && insetY == 0) {
+            val rgba = ByteArray(pixels.size * 4)
+            var offset = 0
+            for (color in pixels) {
+                rgba[offset++] = Color.red(color).toByte()
+                rgba[offset++] = Color.green(color).toByte()
+                rgba[offset++] = Color.blue(color).toByte()
+                rgba[offset++] = Color.alpha(color).toByte()
+            }
+            return rgba
         }
-        return rgba
+        val rgba = ByteArray(pixels.size * 4)
+        var offset = 0
+        for (y in 0 until height) {
+            if (y < insetY || y >= height - insetY) continue
+            val rowStart = y * width
+            for (x in insetX until width - insetX) {
+                val color = pixels[rowStart + x]
+                rgba[offset++] = Color.red(color).toByte()
+                rgba[offset++] = Color.green(color).toByte()
+                rgba[offset++] = Color.blue(color).toByte()
+                rgba[offset++] = Color.alpha(color).toByte()
+            }
+        }
+        return if (offset == rgba.size) rgba else rgba.copyOf(offset)
     }
 
     private data class PixelSample(

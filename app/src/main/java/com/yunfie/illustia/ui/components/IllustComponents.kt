@@ -131,18 +131,29 @@ fun IllustCardSkeleton(
 
 @Composable
 fun rememberIllustSkeletonShimmer(): State<Float> {
-    if (LocalFastScrolling.current.value) return remember { androidx.compose.runtime.mutableStateOf(0f) }
+    // LocalFastScrolling holds the State (not the value) so providing it never invalidates
+    // composition. Reading .value here would recompose every skeleton each time fast-scroll
+    // flips and would also destroy/recreate the InfiniteTransition on the branch change.
+    // Instead keep one stable transition and gate only the emitted value at read time.
+    val fastScrolling = LocalFastScrolling.current
     val transition = rememberInfiniteTransition(label = "illustSkeleton")
-    return transition.animateFloat(
-        initialValue = -1f,
-        targetValue = 2f,
-        animationSpec =
-            infiniteRepeatable(
-                animation = tween(durationMillis = 1250, easing = FastOutSlowInEasing),
-                repeatMode = RepeatMode.Restart,
-            ),
-        label = "illustSkeletonShimmer",
-    )
+    val animated =
+        transition.animateFloat(
+            initialValue = -1f,
+            targetValue = 2f,
+            animationSpec =
+                infiniteRepeatable(
+                    animation = tween(durationMillis = 1250, easing = FastOutSlowInEasing),
+                    repeatMode = RepeatMode.Restart,
+                ),
+            label = "illustSkeletonShimmer",
+        )
+    return remember(animated, fastScrolling) {
+        object : State<Float> {
+            override val value: Float
+                get() = if (fastScrolling.value) 0f else animated.value
+        }
+    }
 }
 
 @Composable
@@ -429,6 +440,17 @@ private fun IllustCardInfo(
     preferences: ArtworkCardPreferences,
     onBookmarkLongClick: (() -> Unit)? = null,
 ) {
+    // These are shown per grid cell and would otherwise be re-built on every recomposition,
+    // allocating a Formatter/String per card in the hot scroll path.
+    val tagLine =
+        remember(tags) {
+            when {
+                tags.size >= 2 -> "#${tags[0]}  #${tags[1]}"
+                tags.size == 1 -> "#${tags[0]}"
+                else -> ""
+            }
+        }
+    val bookmarkLine = remember(totalBookmarks) { "♥ ${formatCompactCount(totalBookmarks)}" }
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier =
@@ -464,7 +486,7 @@ private fun IllustCardInfo(
                 ) {
                     if (preferences.showTags && tags.isNotEmpty()) {
                         Text(
-                            text = tags.take(2).joinToString("  ") { "#$it" },
+                            text = tagLine,
                             modifier = Modifier.weight(1f),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -474,7 +496,7 @@ private fun IllustCardInfo(
                     }
                     if (preferences.showBookmarkCount) {
                         Text(
-                            text = "♥ ${formatCompactCount(totalBookmarks)}",
+                            text = bookmarkLine,
                             maxLines = 1,
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             style = MiuixTheme.textStyles.footnote2,
@@ -496,10 +518,17 @@ private fun IllustCardInfo(
     }
 }
 
+private const val COMPACT_COUNT_THOUSAND = 1_000
+private const val COMPACT_COUNT_MILLION = 1_000_000
+private const val COMPACT_COUNT_TENTH_THOUSAND = 100
+private const val COMPACT_COUNT_TENTH_MILLION = 100_000
+
 private fun formatCompactCount(value: Int): String =
     when {
-        value >= 1_000_000 -> "%.1fM".format(value / 1_000_000f)
-        value >= 1_000 -> "%.1fK".format(value / 1_000f)
+        value >= COMPACT_COUNT_MILLION ->
+            "${value / COMPACT_COUNT_MILLION}.${(value % COMPACT_COUNT_MILLION) / COMPACT_COUNT_TENTH_MILLION}M"
+        value >= COMPACT_COUNT_THOUSAND ->
+            "${value / COMPACT_COUNT_THOUSAND}.${(value % COMPACT_COUNT_THOUSAND) / COMPACT_COUNT_TENTH_THOUSAND}K"
         else -> value.toString()
     }
 
