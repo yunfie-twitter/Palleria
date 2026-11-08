@@ -28,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -61,6 +62,7 @@ import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
@@ -254,21 +256,22 @@ internal fun UgoiraArtwork(
                     }
                 }
             } else {
+                val needed = BooleanArray(frames.size)
                 while (playbackActive) {
                     val current = currentFrameIndex
-                    val needed =
-                        (-keepBehind..prefetchAhead)
-                            .map {
-                                (current + it + frames.size) % frames.size
-                            }.toSet()
+                    needed.fill(false)
+                    for (offset in -keepBehind..prefetchAhead) {
+                        needed[(current + offset + frames.size) % frames.size] = true
+                    }
 
-                    val removedKeys = decodedBitmaps.keys - needed
-                    for (k in removedKeys) {
-                        decodedBitmaps.remove(k)?.let { bmp ->
-                            val androidBmp = bmp.asAndroidBitmap()
-                            if (androidBmp.isMutable && !androidBmp.isRecycled) {
-                                bitmapPool.add(androidBmp)
-                            }
+                    val entries = decodedBitmaps.entries.iterator()
+                    while (entries.hasNext()) {
+                        val entry = entries.next()
+                        if (needed[entry.key]) continue
+                        entries.remove()
+                        val androidBmp = entry.value.asAndroidBitmap()
+                        if (androidBmp.isMutable && !androidBmp.isRecycled) {
+                            bitmapPool.add(androidBmp)
                         }
                     }
 
@@ -320,8 +323,10 @@ internal fun UgoiraArtwork(
                         }
                     }
 
-                    while (playbackActive && currentFrameIndex == current) {
-                        delay(10)
+                    if (playbackActive) {
+                        // Wake on the next frame change (playback or seek) instead of polling at
+                        // 100 Hz for the whole time the frames stay cached.
+                        snapshotFlow { currentFrameIndex }.first { it != current }
                     }
                 }
             }

@@ -18,7 +18,7 @@ const DEFAULT_FRAME_DELAY_MILLIS: i32 = 100;
 
 pub(crate) fn cached(cache_dir: &Path, frames: &[UgoiraFrame]) -> Option<UgoiraPlayback> {
     validate_frame_names(frames).ok()?;
-    cache_is_complete(cache_dir, frames).then(|| playback(cache_dir, frames.to_vec()))
+    cache_is_complete(cache_dir, frames).then(|| playback(cache_dir, frames))
 }
 
 pub(crate) async fn prepare(
@@ -28,7 +28,7 @@ pub(crate) async fn prepare(
 ) -> Result<UgoiraPlayback, ApiError> {
     validate_frame_names(&frames)?;
     if cache_is_complete(cache_dir, &frames) {
-        return Ok(playback(cache_dir, frames));
+        return Ok(playback(cache_dir, &frames));
     }
 
     let parent = cache_dir
@@ -46,7 +46,7 @@ pub(crate) async fn prepare(
     fs::rename(staging.path(), cache_dir)
         .map_err(|error| io_error("publish ugoira cache", error))?;
 
-    Ok(playback(cache_dir, frames))
+    Ok(playback(cache_dir, &frames))
 }
 
 async fn extract_required(
@@ -68,24 +68,31 @@ async fn extract_required(
         }
 
         let required: HashSet<&str> = frames.iter().map(|frame| frame.file.as_str()).collect();
-        let mut extracted = HashSet::with_capacity(required.len());
+        let mut extracted: HashSet<&str> = HashSet::with_capacity(required.len());
         let mut total_bytes = 0_u64;
         let mut created_dirs = HashSet::new();
 
         for index in 0..archive.len() {
             let mut entry = archive.by_index(index).map_err(zip_error)?;
-            let name = entry.name().replace('\\', "/");
-            validate_relative_path(&name)?;
+            // Normalize only the rare entry that actually needs it: allocating a String for
+            // every entry adds up on 100+ frame archives.
+            let raw_name = entry.name();
+            let normalized = raw_name.contains('\\').then(|| raw_name.replace('\\', "/"));
+            let name = normalized.as_deref().unwrap_or(raw_name);
+            validate_relative_path(name)?;
             if entry
                 .unix_mode()
                 .is_some_and(|mode| mode & 0o170000 == 0o120000)
             {
                 return Err(invalid("ugoira archive contains a symbolic link"));
             }
-            if entry.is_dir() || !required.contains(name.as_str()) {
+            if entry.is_dir() {
                 continue;
             }
-            if !extracted.insert(name.clone()) {
+            let Some(&canonical) = required.get(name) else {
+                continue;
+            };
+            if !extracted.insert(canonical) {
                 return Err(invalid("ugoira archive contains duplicate frame entries"));
             }
             if entry.size() > MAX_ENTRY_BYTES {
@@ -98,7 +105,7 @@ async fn extract_required(
                 return Err(invalid("ugoira archive exceeds the total size limit"));
             }
 
-            let target = staging.path().join(&name);
+            let target = staging.path().join(canonical);
             if let Some(parent) = target.parent().filter(|p| !created_dirs.contains(*p)) {
                 fs::create_dir_all(parent)
                     .map_err(|error| io_error("create ugoira frame directory", error))?;
@@ -171,12 +178,12 @@ fn cache_is_complete(cache_dir: &Path, frames: &[UgoiraFrame]) -> bool {
             .all(|frame| cache_dir.join(&frame.file).is_file())
 }
 
-fn playback(cache_dir: &Path, frames: Vec<UgoiraFrame>) -> UgoiraPlayback {
+fn playback(cache_dir: &Path, frames: &[UgoiraFrame]) -> UgoiraPlayback {
     UgoiraPlayback {
         frames: frames
-            .into_iter()
+            .iter()
             .map(|frame| UgoiraFrame {
-                file: cache_dir.join(frame.file).to_string_lossy().into_owned(),
+                file: cache_dir.join(&frame.file).to_string_lossy().into_owned(),
                 delay_millis: normalized_frame_delay(frame.delay_millis),
             })
             .collect(),

@@ -938,11 +938,17 @@ private fun UserIllustGridPage(
         verticalArrangement = Arrangement.spacedBy(ProfileGridVerticalSpacing),
     ) {
         items(illusts, key = { "${keyPrefix}_${it.id}" }, contentType = { "illust_card" }) { illust ->
+            val onClick = remember(illust, onOpenIllust) { { onOpenIllust(illust) } }
+            val onBookmarkClick = remember(illust, onBookmark) { { onBookmark(illust) } }
+            val onLongClick =
+                remember(illust, onIllustLongClick) {
+                    onIllustLongClick?.let { callback -> { callback(illust) } }
+                }
             IllustCard(
                 illust = illust,
-                onBookmark = { onBookmark(illust) },
-                onClick = { onOpenIllust(illust) },
-                onLongClick = onIllustLongClick?.let { { it(illust) } },
+                onBookmark = onBookmarkClick,
+                onClick = onClick,
+                onLongClick = onLongClick,
                 modifier = animatedGridPlacement(),
                 highQualityImages = settings.useHighQualityFeedImages,
                 showAiBadge = settings.showAiBadge,

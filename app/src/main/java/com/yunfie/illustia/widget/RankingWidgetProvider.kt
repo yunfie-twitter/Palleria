@@ -6,6 +6,7 @@ import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.updateAll
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
 class RankingWidgetProvider : GlanceAppWidgetReceiver() {
@@ -14,8 +15,10 @@ class RankingWidgetProvider : GlanceAppWidgetReceiver() {
     companion object {
         const val ACTION_REFRESH_RANKING_WIDGET = "com.yunfie.illustia.widget.ACTION_REFRESH_RANKING_WIDGET"
 
+        private val refreshScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
         fun refreshAll(context: Context) {
-            CoroutineScope(Dispatchers.IO).launch {
+            refreshScope.launch {
                 refreshAllSuspend(context)
             }
         }

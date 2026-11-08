@@ -144,7 +144,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
             }
         }
 
-    val appState = IllustiaAppStateBundle(state)
+    val appState = remember(state) { IllustiaAppStateBundle(state) }
 
     LaunchedEffect(state.webLoginRequest) {
         val request = state.webLoginRequest ?: return@LaunchedEffect
