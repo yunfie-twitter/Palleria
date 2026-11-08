@@ -12,13 +12,11 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
-import android.net.Uri
 import android.os.Build
 import android.os.SystemClock
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import androidx.core.content.FileProvider
 import com.yunfie.illustia.MainActivity
 import com.yunfie.illustia.R
 import java.io.File
@@ -151,18 +149,17 @@ object AppUpdateNotificationHelper {
         if (!hasNotificationPermission(context)) return
         createNotificationChannel(context)
 
-        val uri: Uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", apkFile)
         val installIntent =
-            Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(uri, "application/vnd.android.package-archive")
-                flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
-            }
+            runCatching { ApkInstallIntents.build(context, apkFile) }.getOrNull()
+                ?: return
+        // FLAG_MUTABLE is required so the receiver can attach the content URI grant added by the
+        // installer when it launches from this PendingIntent; an immutable pending intent drops it.
         val pendingIntent =
             PendingIntent.getActivity(
                 context,
                 NOTIFICATION_ID_DOWNLOADED,
                 installIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE,
             )
 
         val title = context.getString(R.string.update_notification_downloaded_title, release.versionName)
