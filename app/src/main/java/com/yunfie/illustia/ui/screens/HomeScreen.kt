@@ -81,8 +81,10 @@ fun HomeScreen(
             pageCount = { HomeTab.entries.size },
         )
     val coroutineScope = rememberCoroutineScope()
-    // Use the settled page so swiping does not recompose the whole screen on every
-    // intermediate page change; the tab only commits once the pager settles.
+    // Drive the tab indicator from targetPage so it reacts immediately on tap.
+    // Commit selectedTab only when the pager settles, so swiping does not
+    // recompose the whole screen on every intermediate page change.
+    val indicatorTab = pagerState.targetPage.coerceIn(0, HomeTab.entries.lastIndex)
     val selectedTab = HomeTab.entries[pagerState.settledPage.coerceIn(0, HomeTab.entries.lastIndex)]
 
     LaunchedEffect(pagerState.settledPage) {
@@ -218,9 +220,9 @@ fun HomeScreen(
                 },
                 bottomContent = {
                     HomeTabRow(
-                        selectedTabIndex = selectedTab.ordinal,
+                        selectedTabIndex = indicatorTab,
                         onTabSelected = { index ->
-                            if (index != selectedTab.ordinal) {
+                            if (index != pagerState.currentPage) {
                                 performHaptic(AppHapticEffect.Toggle)
                                 coroutineScope.launch { pagerState.animateScrollToPage(index) }
                             } else {
