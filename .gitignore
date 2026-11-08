@@ -18,12 +18,10 @@ app/release/
 *.jks
 debug.keystore
 release.keystore
-<<<<<<< HEAD
 mcp/
 .kotlin/
 rust/**/target/
 app/release/
-=======
 release.properties
 
 # Node.js / VitePress
@@ -32,7 +30,6 @@ docs/.vitepress/dist/
 docs/.vitepress/cache/
 .npm/
 
->>>>>>> b85653cb264de3137e8bad14d61ebfcb28489357
 # Rust build output
 /target/
 rust/**/target/
@@ -45,7 +42,6 @@ rust/**/target/
 .env
 .env.*
 !.env.example
-<<<<<<< HEAD
 
 # VitePress
 node_modules/
@@ -53,13 +49,10 @@ docs/.vitepress/cache/
 docs/.vitepress/dist/
 
 # Local files
-=======
->>>>>>> b85653cb264de3137e8bad14d61ebfcb28489357
 *.log
 *.tmp
 
 # Miscellaneous / Local artifacts
-pixez/
 mcp/
 AGENTs.md
 .agents/
@@ -67,3 +60,5 @@ AGENTs.md
 # Local Python tooling caches
 __pycache__/
 *.pyc
+
+.commandcode/
