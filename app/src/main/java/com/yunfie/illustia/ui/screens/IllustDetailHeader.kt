@@ -59,6 +59,7 @@ import com.yunfie.illustia.ui.components.LiquidGlassIconButton
 import com.yunfie.illustia.ui.components.LiquidGlassOverflowMenu
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.LocalAppHapticMode
+import com.yunfie.illustia.ui.components.LocalArtworkTransitionInFlight
 import com.yunfie.illustia.ui.components.LocalNavSharedTransitionScope
 import com.yunfie.illustia.ui.components.LocalPixivImageProxyBaseUrl
 import com.yunfie.illustia.ui.components.LocalSystemUiCovered
@@ -167,9 +168,21 @@ internal fun IllustDetailHeader(
         remember(illust.id, effectiveDetailQuality) {
             resolveQualityImageUrls(illust, effectiveDetailQuality)
         }
+    val cardThumbnailUrl =
+        remember(illust.id, highQualityImages) {
+            if (highQualityImages) illust.previewUrl else illust.thumbnailUrl
+        }
+    val transitionInFlight = LocalArtworkTransitionInFlight.current
     val placeholderUrls =
-        remember(illust.id, effectiveDetailQuality, progressiveQuality) {
-            resolveProgressivePlaceholderUrls(illust, effectiveDetailQuality, progressiveQuality)
+        remember(illust.id, effectiveDetailQuality, progressiveQuality, transitionInFlight) {
+            // During the card-to-detail flight the card bitmap is already on screen and is a better
+            // underlay than a fresh lower-tier request. Suppressing it here avoids replacing the
+            // image mid-flight, which reads as the quality dropping while it grows.
+            if (transitionInFlight) {
+                emptyList()
+            } else {
+                resolveProgressivePlaceholderUrls(illust, effectiveDetailQuality, progressiveQuality)
+            }
         }
     val previewUrl: String = imageUrls.firstOrNull() ?: ""
 
@@ -274,6 +287,10 @@ internal fun IllustDetailHeader(
                         // 共有要素が無効なとき（LocalNavSharedTransitionScope が null）は従来の描画のまま。
                         val matchesCardThumbnail =
                             page == 0 && !expanded && LocalNavSharedTransitionScope.current != null
+                        // Framing follows the collapsed-card look for as long as the header sits in
+                        // that slot, but the bitmap tier may only follow the flight itself: keeping
+                        // the card's small decode past the animation would leave the hero blurry.
+                        val followsCardBitmap = matchesCardThumbnail && transitionInFlight
                         Box(
                             modifier =
                                 Modifier
@@ -281,7 +298,12 @@ internal fun IllustDetailHeader(
                                     .then(if (matchesCardThumbnail) Modifier.clipToBounds() else Modifier),
                         ) {
                             PixivImage(
-                                url = imageUrls[page],
+                                // While the shared element flies, page 0 shows the exact bitmap the
+                                // card was already painting. The shared element carries bounds only,
+                                // so loading a different tier here would pop the resolution in the
+                                // middle of the grow animation. Once the flight ends this falls back
+                                // to the selected detail tier.
+                                url = if (followsCardBitmap) cardThumbnailUrl.ifBlank { imageUrls[page] } else imageUrls[page],
                                 contentDescription = illust.title,
                                 contentScale =
                                     when {
@@ -291,7 +313,13 @@ internal fun IllustDetailHeader(
                                     },
                                 // Off-screen neighbors need only preview resolution; the selected page
                                 // loads at the configured detail quality once the swipe settles.
-                                thumbnail = page != pagerState.settledPage,
+                                // While matching the card, use the card's own decode too so the
+                                // first frame of the flight is byte-for-byte the same bitmap.
+                                thumbnail = followsCardBitmap || page != pagerState.settledPage,
+                                // A hard swap beats a crossfade here: the underlay is the card image
+                                // the flight started from, so fading the detail tier over it would
+                                // double up on the transition instead of continuing it.
+                                crossfade = !followsCardBitmap,
                                 placeholderUrl = placeholderUrls.getOrNull(page),
                                 modifier =
                                     Modifier
@@ -317,7 +345,6 @@ internal fun IllustDetailHeader(
                                                 onSaveImage(imageUrls[page], saveName, confirmOnLongPressSave)
                                             },
                                         ),
-                                crossfade = true,
                             )
                             if (maskMutedArtwork) {
                                 Box(

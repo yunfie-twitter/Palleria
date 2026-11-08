@@ -6,6 +6,7 @@ import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 
 /**
@@ -40,6 +41,16 @@ internal val LocalSuppressSharedArtworkTransition = compositionLocalOf { false }
  * rather than a composable instance is what lets the two screens match up.
  */
 internal fun sharedArtworkKey(illustId: Long): String = "artwork-image-$illustId"
+
+/**
+ * True while a card-to-detail shared element flight is still running.
+ *
+ * The progressive quality placeholder is suppressed during the flight: the card bitmap the
+ * shared element is already showing is a better underlay than a second, lower-tier request that
+ * would replace it for a frame, and drawing both makes the image look like it steps down in
+ * quality while it grows.
+ */
+internal val LocalArtworkTransitionInFlight = staticCompositionLocalOf { false }
 
 /**
  * Marks this element as the artwork image for [illustId]. Returns the modifier unchanged when the

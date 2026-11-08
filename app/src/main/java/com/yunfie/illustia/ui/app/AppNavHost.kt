@@ -35,6 +35,7 @@ import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.LoadingIndicator
+import com.yunfie.illustia.ui.components.LocalArtworkTransitionInFlight
 import com.yunfie.illustia.ui.components.LocalNavSharedTransitionScope
 import com.yunfie.illustia.ui.components.LocalNavigationPrefetchEnabled
 import com.yunfie.illustia.ui.components.ProvideEntrySharedTransitionScope
@@ -100,6 +101,7 @@ internal fun AppNavHost(
     pagerState: androidx.compose.foundation.pager.PagerState,
     homeScrollBehavior: ScrollBehavior,
     artworkPopSettling: Boolean = false,
+    artworkEnterSettling: Boolean = false,
     showTokenLogin: Boolean,
     onShowTokenLoginChange: (Boolean) -> Unit,
     selectedWatchlistSeriesId: Long?,
@@ -778,7 +780,10 @@ internal fun AppNavHost(
     CompositionLocalProvider(LocalNavigationPrefetchEnabled provides !artworkPopSettling) {
         if (sharedArtworkTransitionsEnabled) {
             SharedTransitionLayout(modifier = Modifier.fillMaxSize()) {
-                CompositionLocalProvider(LocalNavSharedTransitionScope provides this) {
+                CompositionLocalProvider(
+                    LocalNavSharedTransitionScope provides this,
+                    LocalArtworkTransitionInFlight provides artworkEnterSettling,
+                ) {
                     NavDisplay(
                         entries = entries,
                         onBack = onPopRoute,
