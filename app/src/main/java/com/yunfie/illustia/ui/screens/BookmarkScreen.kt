@@ -16,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
@@ -45,6 +46,7 @@ import com.yunfie.illustia.ui.components.ScrollBlurScaffold
 import com.yunfie.illustia.ui.components.onTopBarTap
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.smoothScrollToTop
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
@@ -89,12 +91,16 @@ fun BookmarkScreen(
             pageCount = { 4 },
         )
     val coroutineScope = rememberCoroutineScope()
-    // Commit the selected tab only when the pager settles, so swiping does not
-    // recompose the whole screen for every intermediate page.
+    // Drive the tab indicator from targetPage so it reacts immediately on tap,
+    // like RankingScreen. Commit selected tab only when the pager settles, so
+    // swiping does not recompose the whole screen for every intermediate page.
+    val indicatorTab = pagerState.targetPage.coerceIn(0, 3)
     val selectedTopTab = pagerState.settledPage
 
-    LaunchedEffect(selectedTopTab) {
-        viewModel.updateBookmarkSelectedTab(selectedTopTab)
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.settledPage }
+            .distinctUntilChanged()
+            .collect { viewModel.updateBookmarkSelectedTab(it) }
     }
 
     LaunchedEffect(selectedTopTab) {
@@ -427,9 +433,9 @@ fun BookmarkScreen(
                 },
                 bottomContent = {
                     CompactBookmarkTabs(
-                        selectedTab = selectedTopTab,
+                        selectedTab = indicatorTab,
                         onSelect = { index ->
-                            if (index != selectedTopTab) {
+                            if (index != pagerState.currentPage) {
                                 performHaptic(AppHapticEffect.Toggle)
                                 coroutineScope.launch { pagerState.animateScrollToPage(index) }
                             } else {
@@ -461,6 +467,7 @@ fun BookmarkScreen(
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize(),
+                beyondViewportPageCount = 0,
             ) { page ->
                 when (page) {
                     0 -> {

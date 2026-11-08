@@ -35,6 +35,14 @@ import coil3.toBitmap
 import com.yunfie.illustia.data.NativeImageAnalysis
 import com.yunfie.illustia.data.proxyPixivImageUrl
 import com.yunfie.illustia.platform.PlatformCapabilities
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.withContext
+import java.util.concurrent.ConcurrentHashMap
 
 val PixivImageHeaders =
     NetworkHeaders
@@ -56,11 +64,13 @@ private val headerThemeAnalysisCache: MutableMap<String, Boolean> =
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Boolean>?): Boolean = size > HEADER_THEME_ANALYSIS_CACHE_SIZE
     }
 
-private val headerThemeAnalysisMutex = kotlinx.coroutines.sync.Mutex()
+private val headerThemeAnalysisScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+private val headerThemeAnalysisInFlight = ConcurrentHashMap<String, Deferred<Boolean>>()
 
 /**
  * Resolves whether the header overlay should use dark icons for [thumbnailUrl], reusing the cached
- * result when this artwork was analyzed before. Never blocks the caller on the result path.
+ * result when this artwork was analyzed before. Concurrent callers for the same artwork share one
+ * analysis; different artworks are analyzed in parallel. Never blocks the caller on the result path.
  */
 internal suspend fun resolveDarkHeaderIcons(
     context: android.content.Context,
@@ -69,26 +79,40 @@ internal suspend fun resolveDarkHeaderIcons(
 ): Boolean {
     val key = proxyPixivImageUrl(thumbnailUrl, proxyBaseUrl)
     synchronized(headerThemeAnalysisCache) { headerThemeAnalysisCache[key] }?.let { return it }
-    headerThemeAnalysisMutex.lock()
-    try {
-        synchronized(headerThemeAnalysisCache) { headerThemeAnalysisCache[key] }?.let { return it }
-        val request =
-            ImageRequest
-                .Builder(context)
-                .data(key)
-                .httpHeaders(PixivImageHeaders)
-                .size(64)
-                .build()
-        val result = SingletonImageLoader.get(context).execute(request)
-        if (result !is SuccessResult) return false
-        val isDark =
-            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
-                runCatching { NativeImageAnalysis.shouldUseDarkHeaderIcons(result.image.toBitmap()) }.getOrDefault(false)
+    val analysis =
+        headerThemeAnalysisInFlight.computeIfAbsent(key) { cacheKey ->
+            headerThemeAnalysisScope.async(start = CoroutineStart.LAZY) {
+                try {
+                    synchronized(headerThemeAnalysisCache) { headerThemeAnalysisCache[cacheKey] }
+                        ?: runCatching { analyzeDarkHeaderIcons(context, cacheKey) }
+                            .getOrDefault(false)
+                            .also { isDark ->
+                                synchronized(headerThemeAnalysisCache) { headerThemeAnalysisCache[cacheKey] = isDark }
+                            }
+                } finally {
+                    headerThemeAnalysisInFlight.remove(cacheKey)
+                }
             }
-        synchronized(headerThemeAnalysisCache) { headerThemeAnalysisCache[key] = isDark }
-        return isDark
-    } finally {
-        headerThemeAnalysisMutex.unlock()
+        }
+    analysis.start()
+    return analysis.await()
+}
+
+private suspend fun analyzeDarkHeaderIcons(
+    context: android.content.Context,
+    key: String,
+): Boolean {
+    val request =
+        ImageRequest
+            .Builder(context)
+            .data(key)
+            .httpHeaders(PixivImageHeaders)
+            .size(64)
+            .build()
+    val result = SingletonImageLoader.get(context).execute(request)
+    if (result !is SuccessResult) return false
+    return withContext(Dispatchers.Default) {
+        runCatching { NativeImageAnalysis.shouldUseDarkHeaderIcons(result.image.toBitmap()) }.getOrDefault(false)
     }
 }
 

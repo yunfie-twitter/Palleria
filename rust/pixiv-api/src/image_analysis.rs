@@ -18,7 +18,7 @@ use rayon::prelude::*;
 struct AnalysisState {
     luminance_sum: f64,
     sample_count: u32,
-    buckets: Vec<ColorBucket>,
+    bucket_counts: Vec<u32>,
 }
 
 impl Default for AnalysisState {
@@ -26,7 +26,7 @@ impl Default for AnalysisState {
         Self {
             luminance_sum: 0.0,
             sample_count: 0,
-            buckets: vec![ColorBucket::default(); DOMINANT_BUCKETS],
+            bucket_counts: vec![0; DOMINANT_BUCKETS],
         }
     }
 }
@@ -41,15 +41,13 @@ impl AnalysisState {
 
         self.luminance_sum += relative_luminance(red, green, blue, lut);
         self.sample_count += 1;
-
-        let index =
-            ((red as usize >> 4) << 8) | ((green as usize >> 4) << 4) | (blue as usize >> 4);
-        let bucket = &mut self.buckets[index];
-        bucket.count += 1;
-        bucket.red += red as u64;
-        bucket.green += green as u64;
-        bucket.blue += blue as u64;
+        self.bucket_counts[bucket_index(red, green, blue)] += 1;
     }
+}
+
+#[inline(always)]
+fn bucket_index(red: u8, green: u8, blue: u8) -> usize {
+    ((red as usize >> 4) << 8) | ((green as usize >> 4) << 4) | (blue as usize >> 4)
 }
 
 use std::sync::OnceLock;
@@ -92,30 +90,37 @@ pub fn analyze_rgba(pixels: Vec<u8>) -> ImageAnalysis {
             .reduce(AnalysisState::default, |mut a, b| {
                 a.luminance_sum += b.luminance_sum;
                 a.sample_count += b.sample_count;
-                for i in 0..DOMINANT_BUCKETS {
-                    a.buckets[i].count += b.buckets[i].count;
-                    a.buckets[i].red += b.buckets[i].red;
-                    a.buckets[i].green += b.buckets[i].green;
-                    a.buckets[i].blue += b.buckets[i].blue;
+                for (left, right) in a.bucket_counts.iter_mut().zip(b.bucket_counts) {
+                    *left += right;
                 }
                 a
             })
     };
 
-    let dominant_argb = result
-        .buckets
-        .into_iter()
-        .max_by_key(|bucket| bucket.count)
-        .filter(|bucket| bucket.count > 0)
-        .map(|bucket| {
-            let count = bucket.count as u64;
+    // Ties resolve to the last bucket, matching the previous per-bucket max_by_key scan.
+    let winner = result
+        .bucket_counts
+        .iter()
+        .enumerate()
+        .max_by_key(|(_, count)| **count)
+        .filter(|(_, count)| **count > 0)
+        .map(|(index, _)| index);
+
+    let dominant_argb = match winner {
+        Some(index) => {
+            // Counts alone would not give us the bucket's average colour, so rescan the sample
+            // for that one bucket. The samples are tiny; this is cheaper than carrying 3 u64
+            // sums per bucket through the histogram.
+            let (red, green, blue) = dominant_bucket_sums(&pixels, index);
+            let count = u64::from(result.bucket_counts[index]);
             argb(
-                (bucket.red / count) as u8,
-                (bucket.green / count) as u8,
-                (bucket.blue / count) as u8,
+                (red / count) as u8,
+                (green / count) as u8,
+                (blue / count) as u8,
             )
-        })
-        .unwrap_or(argb(0, 0, 0));
+        }
+        None => argb(0, 0, 0),
+    };
 
     ImageAnalysis {
         average_luminance: if result.sample_count == 0 {
@@ -128,12 +133,40 @@ pub fn analyze_rgba(pixels: Vec<u8>) -> ImageAnalysis {
     }
 }
 
-#[derive(Clone, Copy, Default)]
-struct ColorBucket {
-    count: u32,
-    red: u64,
-    green: u64,
-    blue: u64,
+fn dominant_bucket_sums(pixels: &[u8], index: usize) -> (u64, u64, u64) {
+    if pixels.len() / 4 < PARALLEL_MIN_CHUNK_PIXELS {
+        let mut totals = (0_u64, 0_u64, 0_u64);
+        for pixel in pixels.as_chunks::<4>().0 {
+            add_to_bucket(pixel, index, &mut totals);
+        }
+        totals
+    } else {
+        pixels
+            .par_chunks_exact(4)
+            .with_min_len(PARALLEL_MIN_CHUNK_PIXELS)
+            .fold(
+                || (0_u64, 0_u64, 0_u64),
+                |mut totals, pixel| {
+                    add_to_bucket(pixel, index, &mut totals);
+                    totals
+                },
+            )
+            .reduce(
+                || (0_u64, 0_u64, 0_u64),
+                |a, b| (a.0 + b.0, a.1 + b.1, a.2 + b.2),
+            )
+    }
+}
+
+#[inline]
+fn add_to_bucket(pixel: &[u8], index: usize, totals: &mut (u64, u64, u64)) {
+    let [red, green, blue, alpha] = [pixel[0], pixel[1], pixel[2], pixel[3]];
+    if alpha < TRANSPARENT_ALPHA || bucket_index(red, green, blue) != index {
+        return;
+    }
+    totals.0 += u64::from(red);
+    totals.1 += u64::from(green);
+    totals.2 += u64::from(blue);
 }
 
 #[inline(always)]
@@ -171,5 +204,23 @@ mod tests {
         let result = analyze_rgba(vec![255, 0, 0]);
         assert_eq!(result.sample_count, 0);
         assert_eq!(result.dominant_argb, argb(0, 0, 0));
+    }
+
+    #[test]
+    fn breaks_dominant_bucket_ties_toward_the_last_bucket() {
+        let result = analyze_rgba(vec![0, 0, 0, 255, 255, 255, 255, 255]);
+        assert_eq!(result.dominant_argb, argb(255, 255, 255));
+    }
+
+    #[test]
+    fn analyzes_large_samples_on_the_parallel_path() {
+        let mut pixels = Vec::with_capacity(64 * 64 * 4);
+        for _ in 0..(64 * 64) {
+            pixels.extend_from_slice(&[255, 0, 0, 255]);
+        }
+        let result = analyze_rgba(pixels);
+        assert_eq!(result.sample_count, 64 * 64);
+        assert_eq!(result.dominant_argb, argb(255, 0, 0));
+        assert!((result.average_luminance - 0.2126).abs() < 1e-9);
     }
 }

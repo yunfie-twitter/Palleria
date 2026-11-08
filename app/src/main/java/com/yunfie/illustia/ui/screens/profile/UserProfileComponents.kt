@@ -938,18 +938,28 @@ private fun UserIllustGridPage(
         verticalArrangement = Arrangement.spacedBy(ProfileGridVerticalSpacing),
     ) {
         items(illusts, key = { "${keyPrefix}_${it.id}" }, contentType = { "illust_card" }) { illust ->
+            val onClick = remember(illust, onOpenIllust) { { onOpenIllust(illust) } }
+            val onBookmarkClick = remember(illust, onBookmark) { { onBookmark(illust) } }
+            val onLongClick =
+                remember(illust, onIllustLongClick) {
+                    onIllustLongClick?.let { callback -> { callback(illust) } }
+                }
             IllustCard(
                 illust = illust,
-                onBookmark = { onBookmark(illust) },
-                onClick = { onOpenIllust(illust) },
-                onLongClick = onIllustLongClick?.let { { it(illust) } },
+                onBookmark = onBookmarkClick,
+                onClick = onClick,
+                onLongClick = onLongClick,
                 modifier = animatedGridPlacement(),
                 highQualityImages = settings.useHighQualityFeedImages,
                 showAiBadge = settings.showAiBadge,
             )
         }
         if (illusts.isEmpty()) {
-            if (isPaginating) {
+            // Not loaded yet and no error reported is still a loading state, not a
+            // failure: the fetch may not have flipped isPaginating on the first
+            // frame after the tab is opened. Showing skeletons avoids flashing the
+            // error placeholder before the request starts.
+            if (isPaginating || (!loaded && errorMessage == null)) {
                 items(
                     count = columns * 2,
                     key = { "${keyPrefix}_initial_skeleton_$it" },
@@ -957,10 +967,10 @@ private fun UserIllustGridPage(
                 ) {
                     IllustCardSkeleton(shimmerValue = shimmer)
                 }
-            } else if (errorMessage != null || !loaded) {
+            } else if (errorMessage != null) {
                 item(span = { GridItemSpan(maxLineSpan) }, contentType = "illust_error") {
                     UserProfileStatusPlaceholder(
-                        message = errorMessage ?: stringResource(R.string.error_load_artist_failed),
+                        message = errorMessage,
                         isError = true,
                         onClick = onLoadMore,
                         modifier =
@@ -969,7 +979,7 @@ private fun UserIllustGridPage(
                                 .padding(vertical = 64.dp),
                     )
                 }
-            } else if (loaded) {
+            } else {
                 item(span = { GridItemSpan(maxLineSpan) }, contentType = "illust_empty") {
                     UserProfileStatusPlaceholder(
                         message = emptyLabel,

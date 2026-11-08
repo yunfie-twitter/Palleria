@@ -1,10 +1,11 @@
+use bytes::Bytes;
 use futures_util::StreamExt;
 use std::collections::HashMap;
 use std::fs;
-use std::io::Write;
+use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, OnceLock, Weak};
-use tokio::sync::Mutex as AsyncMutex;
+use tokio::sync::{Mutex as AsyncMutex, mpsc};
 
 use super::{PixivHttpClient, transport};
 use crate::error::{ApiError, invalid_request, io_error, network_error};
@@ -13,6 +14,7 @@ use crate::temp_path::TempPath;
 use crate::ugoira;
 
 const MAX_ARCHIVE_BYTES: u64 = 512 * 1024 * 1024;
+const DOWNLOAD_CHANNEL_DEPTH: usize = 4;
 static CACHE_LOCKS: OnceLock<Mutex<HashMap<PathBuf, Weak<AsyncMutex<()>>>>> = OnceLock::new();
 
 pub(super) async fn prepare(
@@ -51,39 +53,62 @@ pub(super) async fn prepare(
         .ok_or_else(|| invalid_request("ugoira cache directory has no parent"))?;
     fs::create_dir_all(parent).map_err(|error| io_error("create ugoira cache parent", error))?;
     let zip_path = TempPath::sibling(&cache_dir, "zip.download");
-    download_and_extract(response, &zip_path, &cache_dir, frames).await
+    download_to_file(response, zip_path.path(), MAX_ARCHIVE_BYTES).await?;
+    ugoira::prepare(zip_path.path(), &cache_dir, frames).await
 }
 
-async fn download_and_extract(
+/// Streams the archive to disk through the blocking pool. Buffering the whole download (up to
+/// `MAX_ARCHIVE_BYTES`) on the heap doubles peak memory on low-RAM devices, and writing every
+/// network chunk synchronously would block the async worker.
+async fn download_to_file(
     response: reqwest::Response,
-    zip_path: &TempPath,
-    cache_dir: &Path,
-    frames: Vec<UgoiraFrame>,
-) -> Result<UgoiraPlayback, ApiError> {
-    // Buffer the archive in memory and write it once on the blocking pool: synchronous
-    // write_all() per network chunk would block the async worker for every chunk received.
-    let archive = read_with_limit(response, MAX_ARCHIVE_BYTES).await?;
-    let path = zip_path.path().to_owned();
-    tokio::task::spawn_blocking(move || write_archive(&path, &archive))
-        .await
-        .map_err(|_| {
-            io_error(
-                "write ugoira download",
-                std::io::Error::other("worker panicked"),
-            )
-        })??;
-    ugoira::prepare(zip_path.path(), cache_dir, frames).await
+    path: &Path,
+    limit: u64,
+) -> Result<(), ApiError> {
+    let (sender, receiver) = mpsc::channel::<Bytes>(DOWNLOAD_CHANNEL_DEPTH);
+    let writer_path = path.to_owned();
+    let writer = tokio::task::spawn_blocking(move || write_chunks(&writer_path, receiver));
+
+    let mut stream = response.bytes_stream();
+    let mut total = 0_u64;
+    while let Some(chunk) = stream.next().await {
+        let chunk = chunk.map_err(network_error)?;
+        total = total.saturating_add(chunk.len() as u64);
+        if total > limit {
+            // Drop the sender so the writer drains what it already received and closes the
+            // partial file; the caller's TempPath removes it.
+            drop(sender);
+            let _ = writer.await;
+            return Err(archive_too_large());
+        }
+        if sender.send(chunk).await.is_err() {
+            break;
+        }
+    }
+    drop(sender);
+    writer.await.map_err(|_| {
+        io_error(
+            "write ugoira download",
+            std::io::Error::other("worker panicked"),
+        )
+    })??;
+    Ok(())
 }
 
-fn write_archive(path: &Path, archive: &[u8]) -> Result<(), ApiError> {
-    let mut output = std::fs::OpenOptions::new()
+fn write_chunks(path: &Path, mut receiver: mpsc::Receiver<Bytes>) -> Result<(), ApiError> {
+    let output = fs::OpenOptions::new()
         .create_new(true)
         .write(true)
         .open(path)
         .map_err(|error| io_error("create ugoira download", error))?;
+    let mut output = BufWriter::new(output);
+    while let Some(chunk) = receiver.blocking_recv() {
+        output
+            .write_all(&chunk)
+            .map_err(|error| io_error("write ugoira download", error))?;
+    }
     output
-        .write_all(archive)
-        .and_then(|()| output.flush())
+        .flush()
         .map_err(|error| io_error("write ugoira download", error))
 }
 
@@ -92,26 +117,13 @@ fn cache_lock(cache_dir: &Path) -> Result<Arc<AsyncMutex<()>>, ApiError> {
     let mut locks = locks
         .lock()
         .map_err(|_| invalid_request("ugoira lock registry is poisoned"))?;
-    locks.retain(|_, lock| lock.strong_count() > 0);
     if let Some(lock) = locks.get(cache_dir).and_then(Weak::upgrade) {
         return Ok(lock);
     }
+    locks.retain(|_, lock| lock.strong_count() > 0);
     let lock = Arc::new(AsyncMutex::new(()));
     locks.insert(cache_dir.to_path_buf(), Arc::downgrade(&lock));
     Ok(lock)
-}
-
-async fn read_with_limit(response: reqwest::Response, limit: u64) -> Result<Vec<u8>, ApiError> {
-    let mut stream = response.bytes_stream();
-    let mut archive = Vec::new();
-    while let Some(chunk) = stream.next().await {
-        let chunk = chunk.map_err(network_error)?;
-        if archive.len() as u64 + chunk.len() as u64 > limit {
-            return Err(archive_too_large());
-        }
-        archive.extend_from_slice(&chunk);
-    }
-    Ok(archive)
 }
 
 fn archive_too_large() -> ApiError {
