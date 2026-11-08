@@ -3,6 +3,7 @@ package com.yunfie.illustia.ui.components
 import android.graphics.Bitmap
 import android.os.Build
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -141,10 +142,9 @@ fun PixivImage(
         }
     val hasPlaceholder = !thumbnail && !placeholderUrl.isNullOrBlank() && placeholderUrl != url
     val effectivePlaceholderUrl =
-        remember(placeholderUrl, proxyBaseUrl) {
-            if (hasPlaceholder) proxyPixivImageUrl(placeholderUrl!!, proxyBaseUrl) else null
+        remember(placeholderUrl, proxyBaseUrl, hasPlaceholder) {
+            if (hasPlaceholder) proxyPixivImageUrl(placeholderUrl.orEmpty(), proxyBaseUrl) else null
         }
-
     val hasSuccessListener = onSuccess != null
     val hasLoadingListener = onLoadingStateChanged != null || showLoadingSpinner || hasPlaceholder
     var isLoading by remember(effectiveUrl, hasLoadingListener) { mutableStateOf(hasLoadingListener) }
@@ -272,10 +272,11 @@ fun PixivImage(
         }
 
     if (placeholderRequest != null) {
-        Box(
-            modifier = modifier,
-            contentAlignment = Alignment.Center,
-        ) {
+        Box(modifier = modifier) {
+            // The placeholder is painted first so it sits *under* the real image, never over it.
+            // The main image keeps the caller's size instead of matchParentSize(): a box whose
+            // children all match the parent measures to zero height under wrapContentHeight(),
+            // which left the paged/vertical readers showing nothing at all.
             if (isLoading) {
                 AsyncImage(
                     model = placeholderRequest,
@@ -288,13 +289,8 @@ fun PixivImage(
                 model = imageRequest,
                 contentDescription = contentDescription,
                 contentScale = contentScale,
-                modifier = Modifier.matchParentSize(),
+                modifier = Modifier.fillMaxSize(),
             )
-            if (showLoadingSpinner && isLoading) {
-                LoadingIndicator(
-                    modifier = Modifier.size(36.dp),
-                )
-            }
         }
     } else if (showLoadingSpinner) {
         Box(
