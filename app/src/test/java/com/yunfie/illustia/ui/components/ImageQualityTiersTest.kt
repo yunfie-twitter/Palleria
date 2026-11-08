@@ -66,9 +66,24 @@ class ImageQualityTiersTest {
     }
 
     @Test
-    fun `placeholders use exactly one tier below the selection`() {
-        val target = illust(imagePages = listOf("i"), mediumPages = listOf("m"), originalPages = listOf("o"))
-        assertEquals(listOf("m"), resolveProgressivePlaceholderUrls(target, QUALITY_MEDIUM, progressiveQuality = true))
-        assertEquals(listOf("i"), resolveProgressivePlaceholderUrls(target, QUALITY_HIGH, progressiveQuality = true))
+    fun `placeholders always use the thumbnail rather than the tier below`() {
+        // Pixiv often serves the same URL for mediumImagePages and imagePages, so stepping down
+        // one tier would hand PixivImage a placeholder equal to the real URL and drop the underlay.
+        val target =
+            illust(
+                square = "square",
+                medium = "medium",
+                imagePages = listOf("medium"),
+                mediumPages = listOf("medium"),
+                originalPages = listOf("original"),
+            )
+        assertEquals(listOf("square"), resolveProgressivePlaceholderUrls(target, QUALITY_MEDIUM, progressiveQuality = true))
+        assertEquals(listOf("square"), resolveProgressivePlaceholderUrls(target, QUALITY_HIGH, progressiveQuality = true))
+    }
+
+    @Test
+    fun `placeholders stay empty without a distinct thumbnail`() {
+        val target = illust(square = "square", medium = "square", imagePages = listOf("square"))
+        assertTrue(resolveProgressivePlaceholderUrls(target, QUALITY_HIGH, progressiveQuality = true).isEmpty())
     }
 }
