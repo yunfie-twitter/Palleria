@@ -58,15 +58,23 @@ internal fun lowerQualityTier(quality: String): String? =
 /**
  * 本画像を表示する前に下地として読む URL 一覧を解決する。
  * [progressiveQuality] が false のときは空 (= 従来動作)。
+ *
+ * 下地には tier の一段下ではなくサムネイル (square) を使う。Pixiv の medium は
+ * `imagePages` と `mediumImagePages` の両方が同じ URL を指すことが多く、一段下では
+ * 本画像と同じ URL になって下地が消えてしまうため。
  */
 internal fun resolveProgressivePlaceholderUrls(
     illust: Illust,
     quality: String,
     progressiveQuality: Boolean,
-): List<String> =
-    lowerQualityTier(quality)
-        ?.takeIf { progressiveQuality }
-        ?.let { resolveQualityImageUrls(illust, it) }
+): List<String> {
+    // low より下は無い。ここで空を返すのは従来動作の維持のため。
+    val tierHasUnderlay = lowerQualityTier(quality) != null
+    val thumbnail = illust.thumbnailUrl
+    return listOf(thumbnail)
+        .takeIf { progressiveQuality && tierHasUnderlay }
         .orEmpty()
+        .filter { it.isNotBlank() && it != illust.previewUrl }
+}
 
 private fun firstNonBlank(vararg candidates: String?): String? = candidates.firstOrNull { !it.isNullOrBlank() }
