@@ -65,9 +65,12 @@ import com.yunfie.illustia.ui.components.LocalSystemUiCovered
 import com.yunfie.illustia.ui.components.OverlayIconCascadingDropdownMenu
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PixivReportDialog
+import com.yunfie.illustia.ui.components.QUALITY_LOW
 import com.yunfie.illustia.ui.components.performAppHapticFeedback
 import com.yunfie.illustia.ui.components.rememberLiquidGlassBackdrop
 import com.yunfie.illustia.ui.components.resolveDarkHeaderIcons
+import com.yunfie.illustia.ui.components.resolveProgressivePlaceholderUrls
+import com.yunfie.illustia.ui.components.resolveQualityImageUrls
 import com.yunfie.illustia.ui.components.sharedArtworkElement
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -116,6 +119,7 @@ internal fun IllustDetailHeader(
     liquidGlassButtons: Boolean = false,
     initialPage: Int = 0,
     onPageChanged: (Int) -> Unit = {},
+    progressiveQuality: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -158,64 +162,16 @@ internal fun IllustDetailHeader(
     val urlCopiedMessage = stringResource(R.string.msg_url_copied)
     val coroutineScope = rememberCoroutineScope()
     var useDarkHeaderIcons by remember(illust.id) { mutableStateOf(false) }
-    val previewUrl: String =
-        remember(illust.id, highQualityImages, detailQuality) {
-            when {
-                !highQualityImages || detailQuality == "low" -> {
-                    illust.mediumImagePages.firstOrNull()
-                        ?: detailFallbackImageUrl(illust.mediumImageUrl, illust.squareImageUrl, illust.imageUrl)
-                }
-
-                detailQuality == "medium" -> {
-                    illust.imagePages.firstOrNull()
-                        ?: detailFallbackImageUrl(illust.imageUrl, illust.mediumImageUrl, illust.squareImageUrl)
-                }
-
-                else -> {
-                    illust.originalImagePages.firstOrNull()
-                        ?: illust.imagePages.firstOrNull()
-                        ?: detailFallbackImageUrl(
-                            illust.imageUrl,
-                            illust.mediumImageUrl,
-                            illust.squareImageUrl,
-                            illust.originalImageUrl,
-                        )
-                }
-            }
-        } ?: ""
+    val effectiveDetailQuality = if (!highQualityImages) QUALITY_LOW else detailQuality
     val imageUrls =
-        remember(illust.id, highQualityImages, detailQuality) {
-            when {
-                !highQualityImages || detailQuality == "low" -> {
-                    illust.mediumImagePages.ifEmpty {
-                        listOfNotNull(
-                            detailFallbackImageUrl(illust.mediumImageUrl, illust.squareImageUrl, illust.imageUrl),
-                        )
-                    }
-                }
-
-                detailQuality == "medium" -> {
-                    illust.imagePages.ifEmpty {
-                        listOfNotNull(detailFallbackImageUrl(illust.imageUrl, illust.mediumImageUrl, illust.squareImageUrl))
-                    }
-                }
-
-                else -> {
-                    illust.originalImagePages.ifEmpty {
-                        illust.imagePages.ifEmpty {
-                            listOfNotNull(
-                                detailFallbackImageUrl(
-                                    illust.imageUrl,
-                                    illust.mediumImageUrl,
-                                    illust.squareImageUrl,
-                                    illust.originalImageUrl,
-                                ),
-                            )
-                        }
-                    }
-                }
-            }
+        remember(illust.id, effectiveDetailQuality) {
+            resolveQualityImageUrls(illust, effectiveDetailQuality)
         }
+    val placeholderUrls =
+        remember(illust.id, effectiveDetailQuality, progressiveQuality) {
+            resolveProgressivePlaceholderUrls(illust, effectiveDetailQuality, progressiveQuality)
+        }
+    val previewUrl: String = imageUrls.firstOrNull() ?: ""
 
     val pagerState =
         rememberPagerState(
@@ -336,6 +292,7 @@ internal fun IllustDetailHeader(
                                 // Off-screen neighbors need only preview resolution; the selected page
                                 // loads at the configured detail quality once the swipe settles.
                                 thumbnail = page != pagerState.settledPage,
+                                placeholderUrl = placeholderUrls.getOrNull(page),
                                 modifier =
                                     Modifier
                                         .fillMaxSize()
@@ -668,8 +625,6 @@ internal fun IllustDetailHeader(
         }
     }
 }
-
-private fun detailFallbackImageUrl(vararg candidates: String?): String? = candidates.firstOrNull { !it.isNullOrBlank() }
 
 @Composable
 internal fun MutedArtworkOverlay(

@@ -89,6 +89,7 @@ internal fun ZoomablePixivImage(
     isActive: Boolean,
     onZoomChanged: (Boolean) -> Unit,
     onTap: () -> Unit,
+    placeholderUrl: String? = null,
 ) {
     var scale by remember(url) { mutableFloatStateOf(1f) }
     var offset by remember(url) { mutableStateOf(Offset.Zero) }
@@ -247,9 +248,10 @@ internal fun ZoomablePixivImage(
                         translationY = offset.y
                     },
             crossfade = false,
+            placeholderUrl = placeholderUrl,
             onLoadingStateChanged = { loading -> isLoading = loading },
         )
-        if (isLoading) {
+        if (isLoading && placeholderUrl.isNullOrBlank()) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,

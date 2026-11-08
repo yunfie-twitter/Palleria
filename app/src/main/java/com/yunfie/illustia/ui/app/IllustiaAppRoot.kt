@@ -97,9 +97,16 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     val settings = state.settings
     val startupScreen = state.settings.startupScreen
     val tabs = remember(settings.shortsFeedEnabled, settings.navigationOrder) { mainTabs(settings) }
+    val rootVisibleTabs =
+        remember(settings.shortsFeedEnabled, settings.navigationOrder, settings.hiddenNavigationTabs) {
+            visibleTabs(settings)
+        }
     val initialTab =
-        remember(startupScreen, tabs) {
-            viewModel.activeTab?.takeIf { it in tabs } ?: startupTabFor(startupScreen, tabs)
+        remember(startupScreen, tabs, rootVisibleTabs) {
+            viewModel.activeTab?.takeIf { it in rootVisibleTabs }
+                ?: startupTabFor(startupScreen, tabs).takeIf { it in rootVisibleTabs }
+                ?: rootVisibleTabs.firstOrNull()
+                ?: tabs.first()
         }
     val initialPage = remember(initialTab, tabs) { tabs.indexOf(initialTab).coerceAtLeast(0) }
     var selectedTab by remember(initialTab) { mutableStateOf(initialTab) }
@@ -341,8 +348,16 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         viewModel.activeTab = tab
     }
 
-    LaunchedEffect(tabs) {
-        val targetTab = selectedTab.takeIf { it in tabs } ?: initialTab
+    LaunchedEffect(tabs, rootVisibleTabs) {
+        // Hiding the selected tab (or a start-tab change) must not leave the selection on a tab
+        // whose NavigationBarItem no longer exists: the bar would show nothing selected.
+        val targetTab =
+            selectedTab
+                .takeIf { it in rootVisibleTabs }
+                ?: initialTab.takeIf { it in rootVisibleTabs }
+                ?: rootVisibleTabs.firstOrNull()
+                ?: tabs.firstOrNull()
+                ?: return@LaunchedEffect
         val targetIndex = tabs.indexOf(targetTab).coerceAtLeast(0)
         selectedTab = targetTab
         viewModel.activeTab = targetTab
@@ -1012,7 +1027,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                             ((isDesktop && maxWidth >= 480.dp) || isLandscape) &&
                                 !isFullscreenRoute &&
                                 !isPreLogin
-                        val navigationTabs = visibleTabs(appState.settings)
+                        val navigationTabs = rootVisibleTabs
 
                         CompositionLocalProvider(LocalUseNavigationRail provides showRootNavigationRail) {
                             Row(modifier = Modifier.fillMaxSize()) {
