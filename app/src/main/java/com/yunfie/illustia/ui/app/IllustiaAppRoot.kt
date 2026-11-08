@@ -141,6 +141,8 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     var viewerRefreshRequest by remember { mutableStateOf(0) }
     var artworkPopSettling by remember { mutableStateOf(false) }
     var artworkPopGeneration by remember { mutableIntStateOf(0) }
+    var artworkEnterSettling by remember { mutableStateOf(false) }
+    var artworkEnterGeneration by remember { mutableIntStateOf(0) }
     val discordRpcManager =
         remember(state.settings.discordRpcEnabled) {
             if (state.settings.discordRpcEnabled) {
@@ -170,6 +172,25 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     fun navigate(route: AppRoute) {
         if (backStack.lastOrNull() != route) {
             backStack.add(route)
+            if (route is AppRoute.Detail) {
+                // The detail header joins the card as a shared element, so its first frames are the
+                // flight itself. Keep the progressive placeholder out of those frames; the card
+                // bitmap is already on screen and would otherwise be replaced mid-flight.
+                val transitionDelay =
+                    if (settings.smoothTransitions && PlatformCapabilities.supportsRichAnimations(context)) {
+                        ARTWORK_PREDICTIVE_POP_SETTLE_MS
+                    } else {
+                        0L
+                    }
+                if (transitionDelay > 0L) {
+                    val generation = ++artworkEnterGeneration
+                    artworkEnterSettling = true
+                    coroutineScope.launch {
+                        delay(transitionDelay)
+                        if (artworkEnterGeneration == generation) artworkEnterSettling = false
+                    }
+                }
+            }
         }
     }
 
@@ -1083,6 +1104,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                                         pagerState = pagerState,
                                         homeScrollBehavior = homeScrollBehavior,
                                         artworkPopSettling = artworkPopSettling,
+                                        artworkEnterSettling = artworkEnterSettling,
                                         showTokenLogin = showTokenLogin,
                                         onShowTokenLoginChange = { showTokenLogin = it },
                                         selectedWatchlistSeriesId = selectedWatchlistSeriesIds.lastOrNull(),

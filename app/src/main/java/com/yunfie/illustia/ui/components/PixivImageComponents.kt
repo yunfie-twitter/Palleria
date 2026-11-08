@@ -194,7 +194,9 @@ fun PixivImage(
                     .diskCachePolicy(if (refreshRequest == 0) CachePolicy.ENABLED else CachePolicy.WRITE_ONLY)
                     .memoryCacheKey(memoryCacheKey)
                     .memoryCachePolicy(CachePolicy.ENABLED)
-                    .crossfade(!thumbnail && crossfade && PlatformCapabilities.supportsImageCrossfade(context))
+                    // The lower tier is already painted underneath. Fading the real image in over it
+                    // makes it look translucent for the length of the crossfade, so swap hard.
+                    .crossfade(!thumbnail && crossfade && !hasPlaceholder && PlatformCapabilities.supportsImageCrossfade(context))
 
             if (hasLoadingListener || hasSuccessListener) {
                 builder.listener(
