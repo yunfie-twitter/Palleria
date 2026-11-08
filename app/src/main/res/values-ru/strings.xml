@@ -552,7 +552,6 @@
     <!-- About screen -->
     <string name="about_title">О Паллерии</string>
     <string name="about_version">Версия %1$s</string>
-    <string name="about_tagline">Специальный просмотрщик иллюстраций Pixiv</string>
     <string name="about_section_info">Информация</string>
     <string name="about_section_links">Ссылки</string>
     <string name="about_section_libraries">Библиотеки</string>
