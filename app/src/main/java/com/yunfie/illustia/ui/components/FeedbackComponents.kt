@@ -34,6 +34,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.LoadState
 import top.yukonga.miuix.kmp.basic.Button
@@ -178,8 +180,12 @@ fun RequestErrorState(
 }
 
 /**
- * Screen-centred error card. Shown as a modal overlay so the message is visible regardless of
- * scroll position, with a scrim that dismisses on tap.
+ * Error card shown dead centre of the window.
+ *
+ * Rendered in a full-screen [Dialog] rather than as a Box inside the app tree: the app root
+ * applies [appNavigationSafeArea] and the Scaffold's content padding, so a Box there centres
+ * inside the *inset* area and lands visibly off-centre. A Dialog uses the whole window and
+ * also draws above the navigation bar and rails.
  */
 @Composable
 fun CenteredErrorOverlay(
@@ -189,39 +195,49 @@ fun CenteredErrorOverlay(
     onRetry: (() -> Unit)? = null,
 ) {
     if (message == null) return
-    val dismissState = remember { MutableInteractionSource() }
-    Box(
-        modifier =
-            modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.45f))
-                .clickable(
-                    interactionSource = dismissState,
-                    indication = null,
-                    onClick = onDismiss,
-                ),
-        contentAlignment = Alignment.Center,
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties =
+            DialogProperties(
+                usePlatformDefaultWidth = false,
+                dismissOnBackPress = true,
+                dismissOnClickOutside = true,
+            ),
     ) {
-        val shape = RoundedCornerShape(18.dp)
-        Column(
+        val dismissState = remember { MutableInteractionSource() }
+        Box(
             modifier =
-                Modifier
-                    .padding(horizontal = 32.dp)
-                    .clip(shape)
-                    .background(MiuixTheme.colorScheme.surfaceContainerHighest)
-                    // Swallow taps on the card itself so they don't reach the dismissing scrim.
+                modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.45f))
                     .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
+                        interactionSource = dismissState,
                         indication = null,
-                        onClick = {},
-                    )
-                    .padding(horizontal = 24.dp, vertical = 26.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+                        onClick = onDismiss,
+                    ),
+            contentAlignment = Alignment.Center,
         ) {
-            RequestErrorState(message = message, onRetry = onRetry)
-            Button(onClick = onDismiss, colors = overlayActionButtonColors()) {
-                Text(stringResource(R.string.action_close))
+            val shape = RoundedCornerShape(18.dp)
+            Column(
+                modifier =
+                    Modifier
+                        .padding(horizontal = 32.dp)
+                        .clip(shape)
+                        .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                        // Swallow taps on the card itself so they don't reach the dismissing scrim.
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = {},
+                        )
+                        .padding(horizontal = 24.dp, vertical = 26.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                RequestErrorState(message = message, onRetry = onRetry)
+                Button(onClick = onDismiss, colors = overlayActionButtonColors()) {
+                    Text(stringResource(R.string.action_close))
+                }
             }
         }
     }

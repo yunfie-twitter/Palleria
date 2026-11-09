@@ -61,6 +61,7 @@ import com.yunfie.illustia.R
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.NovelPreview
 import com.yunfie.illustia.models.NovelTextContent
+import com.yunfie.illustia.models.isEmptyAfterLoad
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
@@ -277,7 +278,7 @@ fun NovelScreen(
                         StateBanner(loadState, onRetry = { viewModel.refreshNovels(forceRefresh = true) })
                     }
                 }
-                if (filteredItems.isEmpty() && loadState != LoadState.Loading && loadState !is LoadState.Error) {
+                if (isEmptyAfterLoad(filteredItems.isEmpty(), loadState)) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         EmptyState(stringResource(R.string.novel_empty))
                     }
