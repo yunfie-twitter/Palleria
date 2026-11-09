@@ -421,6 +421,10 @@ abstract class IllustiaBookmarkModule(
         _uiState.update { it.copy(recommendedTagsLoading = true, recommendedTagsError = null) }
         recommendedTagsJob =
             viewModelScope.launch(Dispatchers.IO) {
+                if (isOffline()) {
+                    failRecommendedTagsOffline()
+                    return@launch
+                }
                 runCatching {
                     val tags =
                         repository
@@ -460,6 +464,16 @@ abstract class IllustiaBookmarkModule(
                     }
                 }
             }
+    }
+
+    // Recommended tags are never cached locally, so there is nothing to fall back to offline.
+    private fun failRecommendedTagsOffline() {
+        _uiState.update {
+            it.copy(
+                recommendedTagsLoading = false,
+                recommendedTagsError = str(R.string.offline_no_cache),
+            )
+        }
     }
 
     private fun scheduleRecommendedTagsExpiry(fetchedAt: Long) {

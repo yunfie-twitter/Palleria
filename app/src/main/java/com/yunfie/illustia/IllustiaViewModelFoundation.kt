@@ -317,6 +317,11 @@ abstract class IllustiaViewModelFoundation(
             .map { it.message }
             .distinctUntilChanged()
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), _uiState.value.message)
+    val centeredErrorState: StateFlow<String?> =
+        _uiState
+            .map { it.centeredError }
+            .distinctUntilChanged()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), _uiState.value.centeredError)
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
@@ -788,8 +793,26 @@ abstract class IllustiaViewModelFoundation(
         return when {
             message.isNullOrBlank() || message.contains("CancellationException") -> fallback
             e.isPixivRateLimited() -> str(R.string.error_rate_limited)
+            // Never surface raw API payloads such as "Pixiv API error 500: {...}". They are
+            // meaningless to users, so map them to a generic message.
+            e.containsPixivApiFailure() -> fallback
             else -> message
         }
+    }
+
+    protected fun Throwable.containsPixivApiFailure(): Boolean {
+        var current: Throwable? = this
+        while (current != null) {
+            if (current is PixivApiException) return true
+            current = current.cause
+        }
+        return false
+    }
+
+    protected fun isOffline(): Boolean {
+        val context = getApplication<Application>().applicationContext
+        val connectivity = context.getSystemService(ConnectivityManager::class.java) ?: return false
+        return connectivity.activeNetwork == null
     }
 
     protected fun loadFailureMessage(
