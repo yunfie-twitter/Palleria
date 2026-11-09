@@ -57,6 +57,7 @@ import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.effectiveAppHapticMode
 import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.ArtworkCardPreferences
+import com.yunfie.illustia.ui.components.CenteredErrorOverlay
 import com.yunfie.illustia.ui.components.LocalAppHapticMode
 import com.yunfie.illustia.ui.components.LocalArtworkCardPreferences
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
@@ -1161,8 +1162,25 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                 viewModel = viewModel,
                 modifier = Modifier.align(Alignment.TopCenter),
             )
+            CenteredErrorMessageEffect(
+                viewModel = viewModel,
+                modifier = Modifier.align(Alignment.Center),
+            )
         }
     }
+}
+
+@Composable
+private fun CenteredErrorMessageEffect(
+    viewModel: IllustiaViewModel,
+    modifier: Modifier = Modifier,
+) {
+    val centeredError by viewModel.centeredErrorState.collectAsStateWithLifecycle()
+    CenteredErrorOverlay(
+        message = centeredError,
+        onDismiss = viewModel::clearCenteredError,
+        modifier = modifier,
+    )
 }
 
 @Composable
@@ -1173,7 +1191,14 @@ private fun SnackbarMessageEffect(
     // Collect only the transient message. Reading state.message in IllustiaAppRoot used to
     // invalidate the whole root composition every time a toast/snackbar was queued.
     val message by viewModel.messageState.collectAsStateWithLifecycle()
-    LaunchedEffect(message) {
+    val centeredError by viewModel.centeredErrorState.collectAsStateWithLifecycle()
+    LaunchedEffect(message, centeredError) {
+        // The centred error already explains the failure. Showing a toast on top of it just
+        // duplicates the message in a second place, so drop the queued message.
+        if (centeredError != null) {
+            if (message != null) viewModel.clearMessage()
+            return@LaunchedEffect
+        }
         message?.let {
             snackbarHostState.showSnackbar(
                 message = it,

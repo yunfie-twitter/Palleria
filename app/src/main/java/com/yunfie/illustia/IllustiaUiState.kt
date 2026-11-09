@@ -141,6 +141,7 @@ data class IllustiaUiState(
     val showLockRecoveryDialog: Boolean = false,
     val loadState: LoadState = LoadState.Idle,
     val message: String? = null,
+    val centeredError: String? = null,
     val pendingPermissionRationale: PermissionRationaleType? = null,
     val privacyLocked: Boolean = false,
     val calculatorBuffer: String = "",

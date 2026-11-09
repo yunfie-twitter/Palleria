@@ -320,7 +320,7 @@ abstract class IllustiaAuthFeedModule(
                 _uiState.update {
                     it.copy(
                         isNovelPaginating = false,
-                        message = cleanErrorMessage(error),
+                        centeredError = cleanErrorMessage(error),
                     )
                 }
             }
@@ -397,7 +397,7 @@ abstract class IllustiaAuthFeedModule(
                 _uiState.update {
                     if (it.selectedNovel?.id == novel.id) {
                         it.copy(
-                            message = cleanErrorMessage(error, getApplication<Application>().getString(R.string.error_novel_load_failed)),
+                            centeredError = cleanErrorMessage(error, str(R.string.error_novel_load_failed)),
                         )
                     } else {
                         it
@@ -580,7 +580,7 @@ abstract class IllustiaAuthFeedModule(
                 _uiState.update { current ->
                     current.copy(
                         isRankingPaginating = current.isRankingPaginating + (mode to false),
-                        message = cleanErrorMessage(error),
+                        centeredError = cleanErrorMessage(error),
                     )
                 }
             }
@@ -623,7 +623,7 @@ abstract class IllustiaAuthFeedModule(
                 _uiState.update {
                     it.copy(
                         isHomePaginating = false,
-                        message = cleanErrorMessage(error),
+                        centeredError = cleanErrorMessage(error),
                     )
                 }
             }
@@ -905,6 +905,14 @@ abstract class IllustiaAuthFeedModule(
         _uiState.update { it.copy(message = message) }
     }
 
+    fun showCenteredError(message: String) {
+        _uiState.update { it.copy(centeredError = message) }
+    }
+
+    fun clearCenteredError() {
+        _uiState.update { it.copy(centeredError = null) }
+    }
+
     fun handleIncomingIntent(intent: Intent?) {
         if (intent == null) return
         if (intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY != 0) return
@@ -1134,7 +1142,7 @@ abstract class IllustiaAuthFeedModule(
                     if (it.settings.followRestrict != requestedRestrict) return@update it.copy(isTimelinePaginating = false)
                     it.copy(
                         isTimelinePaginating = false,
-                        message = cleanErrorMessage(error),
+                        centeredError = cleanErrorMessage(error),
                     )
                 }
             }
@@ -1260,7 +1268,7 @@ abstract class IllustiaAuthFeedModule(
                 _uiState.update {
                     it.copy(
                         isWatchlistPaginating = false,
-                        message = cleanErrorMessage(error),
+                        centeredError = cleanErrorMessage(error),
                     )
                 }
             }
@@ -1335,7 +1343,7 @@ abstract class IllustiaAuthFeedModule(
                     if (it.settings.followRestrict != requestedRestrict) return@update it.copy(isFollowingPaginating = false)
                     it.copy(
                         isFollowingPaginating = false,
-                        message = cleanErrorMessage(error),
+                        centeredError = cleanErrorMessage(error),
                     )
                 }
             }
@@ -1365,7 +1373,7 @@ abstract class IllustiaAuthFeedModule(
                 _uiState.update { it.copy(message = str(R.string.msg_data_exported)) }
             }.onFailure { expectedFailure ->
                 if (isCancellation(expectedFailure)) throw expectedFailure
-                _uiState.update { it.copy(message = str(R.string.error_data_export_failed)) }
+                _uiState.update { it.copy(centeredError = str(R.string.error_data_export_failed)) }
             }
         }
     }
@@ -1381,7 +1389,7 @@ abstract class IllustiaAuthFeedModule(
                 _uiState.update { it.withSettings(imported).copy(message = str(R.string.msg_data_imported)) }
             }.onFailure { expectedFailure ->
                 if (isCancellation(expectedFailure)) throw expectedFailure
-                _uiState.update { it.copy(message = str(R.string.error_data_import_failed)) }
+                _uiState.update { it.copy(centeredError = str(R.string.error_data_import_failed)) }
             }
         }
     }
