@@ -1162,24 +1162,17 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                 viewModel = viewModel,
                 modifier = Modifier.align(Alignment.TopCenter),
             )
-            CenteredErrorMessageEffect(
-                viewModel = viewModel,
-                modifier = Modifier.align(Alignment.Center),
-            )
+            CenteredErrorMessageEffect(viewModel = viewModel)
         }
     }
 }
 
 @Composable
-private fun CenteredErrorMessageEffect(
-    viewModel: IllustiaViewModel,
-    modifier: Modifier = Modifier,
-) {
+private fun CenteredErrorMessageEffect(viewModel: IllustiaViewModel) {
     val centeredError by viewModel.centeredErrorState.collectAsStateWithLifecycle()
     CenteredErrorOverlay(
         message = centeredError,
         onDismiss = viewModel::clearCenteredError,
-        modifier = modifier,
     )
 }
 

@@ -50,6 +50,7 @@ import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.UserPreview
+import com.yunfie.illustia.models.isEmptyAfterLoad
 import com.yunfie.illustia.models.pixiv.MangaSeriesModel
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.FeatureFlag
@@ -425,7 +426,7 @@ internal fun BookmarkMainTab(
                     StateBanner(loadState, onRetry = { viewModel.refreshBookmarks(forceRefresh = true) })
                 }
             }
-            if (bookmarkItems.isEmpty() && loadState != LoadState.Loading && loadState !is LoadState.Error) {
+            if (isEmptyAfterLoad(bookmarkItems.isEmpty(), loadState)) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     EmptyState(stringResource(R.string.bookmark_empty))
                 }
@@ -553,7 +554,7 @@ internal fun BookmarkTimelineTab(
                     StateBanner(loadState, onRetry = { viewModel.refreshTimeline(forceRefresh = true) })
                 }
             }
-            if (timelineItems.isEmpty() && loadState != LoadState.Loading && loadState !is LoadState.Error) {
+            if (isEmptyAfterLoad(timelineItems.isEmpty(), loadState)) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     EmptyState(stringResource(R.string.bookmark_following_empty))
                 }
@@ -692,7 +693,7 @@ internal fun BookmarkFollowingTab(
                     StateBanner(loadState, onRetry = { viewModel.refreshFollowingUsers(forceRefresh = true) })
                 }
             }
-            if (followingUsers.isEmpty() && loadState != LoadState.Loading && loadState !is LoadState.Error) {
+            if (isEmptyAfterLoad(followingUsers.isEmpty(), loadState)) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     EmptyState(stringResource(R.string.following_users_empty))
                 }
