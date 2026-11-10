@@ -1,6 +1,7 @@
 package com.yunfie.illustia.data.pixiv
 
 import com.yunfie.illustia.data.IllustiaRepository
+import com.yunfie.illustia.data.toUserMessage
 import com.yunfie.illustia.models.pixiv.Comment
 import com.yunfie.illustia.models.pixiv.CommentResponse
 import kotlinx.coroutines.CancellationException
@@ -101,7 +102,7 @@ class CommentStore(
                 it.copy(
                     isLoading = false,
                     isRefreshing = false,
-                    errorMessage = expectedFailure.toString(),
+                    errorMessage = expectedFailure.toUserMessage(),
                 )
             }
         }
@@ -120,7 +121,7 @@ class CommentStore(
             _state.update {
                 it.copy(
                     isPaginating = false,
-                    errorMessage = expectedFailure.toString(),
+                    errorMessage = expectedFailure.toUserMessage(),
                 )
             }
         }

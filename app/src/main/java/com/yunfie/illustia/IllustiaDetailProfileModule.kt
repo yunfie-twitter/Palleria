@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.yunfie.illustia.GlitchTipTelemetry
 import com.yunfie.illustia.data.ManagedDataRepository
 import com.yunfie.illustia.data.proxyPixivImageUrl
+import com.yunfie.illustia.settings.FeatureFlag
+import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.UserPreview
@@ -348,7 +350,9 @@ abstract class IllustiaDetailProfileModule(
     }
 
     fun onIllustLongPress(illust: Illust) {
-        _uiState.update { it.copy(longPressedIllust = illust, longPressedTag = null) }
+        _uiState.update {
+            it.copy(longPressedIllust = illust, longPressedUser = null, longPressedTag = null)
+        }
     }
 
     fun onIllustLongPress(
@@ -361,6 +365,42 @@ abstract class IllustiaDetailProfileModule(
 
     fun closeIllustOptions() {
         _uiState.update { it.copy(longPressedIllust = null) }
+    }
+
+    // Only reachable while the Miuix QuickPeek flag is on; the cards gate the long-press on it.
+    fun onUserLongPress(user: UserPreview) {
+        if (!_uiState.value.settings.isFeatureEnabled(FeatureFlag.MiuixQuickPeek)) return
+        _uiState.update {
+            it.copy(longPressedUser = user, longPressedIllust = null, longPressedTag = null)
+        }
+    }
+
+    fun closeUserOptions() {
+        _uiState.update { it.copy(longPressedUser = null) }
+    }
+
+    fun toggleFollowPreview(user: UserPreview) {
+        runLoading {
+            if (user.isFollowed) {
+                repository.unfollowUser(user.id)
+            } else {
+                repository.followUser(user.id, _uiState.value.settings.followRestrict)
+            }
+            val followed = !user.isFollowed
+            _uiState.update { state ->
+                state.copy(
+                    longPressedUser = state.longPressedUser?.takeIf { it.id == user.id }?.copy(isFollowed = followed),
+                    userSearchItems =
+                        state.userSearchItems.map {
+                            if (it.id == user.id) it.copy(isFollowed = followed) else it
+                        },
+                    followingUsers =
+                        state.followingUsers.map {
+                            if (it.id == user.id) it.copy(isFollowed = followed) else it
+                        },
+                )
+            }
+        }
     }
 
     fun openTagOptions(

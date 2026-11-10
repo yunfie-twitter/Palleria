@@ -83,4 +83,34 @@ class SuggestionStoreTest :
 
             store.autoWords.value shouldBe listOf("new result")
         }
+
+        test("switching to a new query clears the previous suggestions while it loads") {
+            val firstQueryDone = CompletableDeferred<Unit>()
+            val releaseSecond = CompletableDeferred<Unit>()
+            val store =
+                SuggestionStore { query ->
+                    if (query == "first") {
+                        listOf("first result")
+                    } else {
+                        firstQueryDone.complete(Unit)
+                        releaseSecond.await()
+                        listOf("second result")
+                    }
+                }
+
+            coroutineScope {
+                store.fetch("first")
+                store.autoWords.value shouldBe listOf("first result")
+
+                val secondRequest = async(start = CoroutineStart.UNDISPATCHED) { store.fetch("second") }
+                firstQueryDone.await()
+                // The old query's suggestions must not linger while the new one is in flight.
+                store.autoWords.value shouldBe emptyList()
+
+                releaseSecond.complete(Unit)
+                secondRequest.await()
+            }
+
+            store.autoWords.value shouldBe listOf("second result")
+        }
     })

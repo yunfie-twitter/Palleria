@@ -671,6 +671,13 @@
     <string name="offline_no_cache">Offline. No cache available.</string>
     <string name="error_data_export_failed">Could not export data.</string>
     <string name="error_data_import_failed">Could not read this file. Select an Illustia backup file.</string>
+    <string name="error_server_unreachable">Could not reach the server. Check your connection and try again.</string>
+    <string name="error_forbidden">You do not have permission to do this. Sign in again.</string>
+    <string name="error_not_found">Not found. It may have been deleted.</string>
+    <string name="error_server_error">The server ran into a problem. Wait a moment and try again.</string>
+    <string name="error_bad_request">The request was rejected. Check your settings or search terms.</string>
+    <string name="error_unexpected">Something unexpected happened. Restart the app if it keeps occurring.</string>
+    <string name="error_timeout">The connection timed out. Check your network and try again.</string>
     <string name="follow_visibility">Follow visibility</string>
 
     <!-- Ranking modes -->
@@ -1209,6 +1216,13 @@
     <string name="flag_shared_element_transitions_desc">Animates an artwork card thumbnail into the detail image, in both directions. Moving between related artworks keeps the existing transition</string>
     <string name="flag_progressive_image_quality_title">Dynamic image quality (progressive)</string>
     <string name="flag_progressive_image_quality_desc">Shows the next-lower quality tier while the selected quality loads on detail and full-screen images.</string>
+    <string name="flag_miuix_quick_peek_title">Miuix-style QuickPeek</string>
+    <string name="flag_miuix_quick_peek_desc">Rebuilds the long-press preview as a bottom sheet that follows the Miuix guidelines. Long-pressing a user in Following or search results also shows a user version of the preview.</string>
+    <string name="quick_peek_show_profile">Open profile</string>
+    <string name="quick_peek_follow">Follow</string>
+    <string name="quick_peek_unfollow">Following</string>
+    <string name="quick_peek_illust_count">%1$d works</string>
+    <string name="quick_peek_view_profile">View profile</string>
     <string name="offline_cached_banner_label">Viewing offline cache</string>
     <string name="offline_retry_button">Retry</string>
 

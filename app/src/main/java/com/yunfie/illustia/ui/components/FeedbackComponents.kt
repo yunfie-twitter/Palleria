@@ -30,12 +30,15 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.DialogWindowProvider
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.LoadState
 import top.yukonga.miuix.kmp.basic.Button
@@ -180,12 +183,15 @@ fun RequestErrorState(
 }
 
 /**
- * Error card shown dead centre of the window.
+ * Error card shown dead centre of the screen.
  *
  * Rendered in a full-screen [Dialog] rather than as a Box inside the app tree: the app root
  * applies [appNavigationSafeArea] and the Scaffold's content padding, so a Box there centres
- * inside the *inset* area and lands visibly off-centre. A Dialog uses the whole window and
- * also draws above the navigation bar and rails.
+ * inside the *inset* area and lands visibly off-centre.
+ *
+ * The dialog surface is forced to the whole display and consumes no window insets, so the card
+ * centres on the true horizontal and vertical middle of the screen instead of on the area left
+ * between the status and navigation bars.
  */
 @Composable
 fun CenteredErrorOverlay(
@@ -195,6 +201,8 @@ fun CenteredErrorOverlay(
     onRetry: (() -> Unit)? = null,
 ) {
     if (message == null) return
+    val view = LocalView.current
+    val containerSize = LocalWindowInfo.current.containerSize
     Dialog(
         onDismissRequest = onDismiss,
         properties =
@@ -202,8 +210,15 @@ fun CenteredErrorOverlay(
                 usePlatformDefaultWidth = false,
                 dismissOnBackPress = true,
                 dismissOnClickOutside = true,
+                decorFitsSystemWindows = false,
             ),
     ) {
+        // Match the dialog surface to the full display so "centre" means the real screen centre,
+        // not the space between the status and navigation bars.
+        (view.parent as? DialogWindowProvider)?.window?.setLayout(
+            containerSize.width,
+            containerSize.height,
+        )
         val dismissState = remember { MutableInteractionSource() }
         Box(
             modifier =

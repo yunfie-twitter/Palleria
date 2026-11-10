@@ -38,6 +38,8 @@ import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
+import com.yunfie.illustia.ui.components.MiuixArtworkQuickPeek
+import com.yunfie.illustia.ui.components.MiuixUserQuickPeek
 import com.yunfie.illustia.ui.components.PermissionRationaleDialog
 import com.yunfie.illustia.ui.components.QuickPeekOverlay
 import com.yunfie.illustia.ui.components.TagPreviewBottomSheet
@@ -98,12 +100,34 @@ internal fun AppOverlayHost(
 
     appState.state.longPressedIllust?.let { illust ->
         val isQuickPeekActive = appState.state.settings.quickPeekEnabled
-        val useSharedTransition = appState.state.settings.quickPeekSharedElementTransition
+        val useMiuixPeek = appState.state.settings.isFeatureEnabled(FeatureFlag.MiuixQuickPeek)
 
-        if (isQuickPeekActive) {
+        if (isQuickPeekActive && useMiuixPeek) {
+            MiuixArtworkQuickPeek(
+                illust = illust,
+                onDismiss = viewModel::closeIllustOptions,
+                onOpenDetail = {
+                    viewModel.closeIllustOptions()
+                    viewModel.openIllust(illust)
+                },
+                onBookmark = { viewModel.toggleBookmark(illust) },
+                onCopyImage = {
+                    viewModel.closeIllustOptions()
+                    val url = illust.originalImageUrl ?: illust.imageUrl
+                    coroutineScope.launch {
+                        val success = ImageClipboardHelper.copyImageToClipboard(context, url)
+                        if (success) {
+                            viewModel.showMessage(copiedMessage)
+                        } else {
+                            viewModel.showMessage(copyFailedMessage)
+                        }
+                    }
+                },
+            )
+        } else if (isQuickPeekActive) {
             QuickPeekOverlay(
                 illust = illust,
-                useSharedElementTransition = useSharedTransition,
+                useSharedElementTransition = appState.state.settings.quickPeekSharedElementTransition,
                 onDismiss = viewModel::closeIllustOptions,
                 onOpenDetail = {
                     viewModel.closeIllustOptions()
@@ -228,6 +252,18 @@ internal fun AppOverlayHost(
                 }
             }
         }
+    }
+
+    appState.state.longPressedUser?.let { user ->
+        MiuixUserQuickPeek(
+            user = user,
+            onDismiss = viewModel::closeUserOptions,
+            onOpenProfile = {
+                viewModel.closeUserOptions()
+                viewModel.openUserPage(user)
+            },
+            onToggleFollow = { viewModel.toggleFollowPreview(user) },
+        )
     }
 
     appState.state.longPressedTag?.let { preview ->

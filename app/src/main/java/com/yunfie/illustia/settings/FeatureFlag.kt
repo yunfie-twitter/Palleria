@@ -191,6 +191,12 @@ enum class FeatureFlag(
         descRes = R.string.flag_progressive_image_quality_desc,
         defaultEnabled = false,
     ),
+    MiuixQuickPeek(
+        key = "flag_miuix_quick_peek",
+        titleRes = R.string.flag_miuix_quick_peek_title,
+        descRes = R.string.flag_miuix_quick_peek_desc,
+        defaultEnabled = false,
+    ),
     ;
 
     companion object {
