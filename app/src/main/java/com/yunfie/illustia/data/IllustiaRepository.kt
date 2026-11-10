@@ -59,6 +59,7 @@ private const val CACHE_TTL_HOUR_MILLIS = 60 * 60 * 1000L // 1 hour
 private const val HTTP_TOO_MANY_REQUESTS = 429
 private const val HTTP_NOT_FOUND = 404
 private const val HTTP_GONE = 410
+private const val TRENDING_TAGS_CACHE_KEY = "trending_tags"
 
 @Suppress("LargeClass")
 class IllustiaRepository(
@@ -110,6 +111,13 @@ class IllustiaRepository(
     private val inFlightRequests = ConcurrentHashMap<String, Deferred<Any>>()
     private val inFlightScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    // Keys whose most recent response came from the stale offline fallback rather than the
+    // network. Callers must not treat that data as freshly fetched: doing so re-stamps caches
+    // with the current time and makes an offline session look like a successful refresh.
+    private val staleFallbacks = StaleFallbackTracker()
+
+    internal fun wasServedStale(key: String): Boolean = staleFallbacks.isStale(key)
+
     fun clearApiCache() {
         apiCache.clear()
     }
@@ -122,7 +130,11 @@ class IllustiaRepository(
     ): T {
         if (!forceRefresh) {
             val cached = apiCache.get<T>(key)
-            if (cached != null) return cached
+            if (cached != null) {
+                // A fresh cache hit is real data again, so clear any earlier stale marking.
+                staleFallbacks.clear(key)
+                return cached
+            }
         }
         val generation = accountGeneration
         return try {
@@ -137,6 +149,7 @@ class IllustiaRepository(
             @Suppress("UNCHECKED_CAST")
             val result = deferred.await() as T
             if (accountGeneration == generation) apiCache.put(key, result, ttlMillis = ttlMillis)
+            staleFallbacks.clear(key)
             result
         } catch (expectedFailure: Exception) {
             if (expectedFailure.isCancellationFailure()) throw expectedFailure
@@ -147,6 +160,7 @@ class IllustiaRepository(
                 } else {
                     null
                 }
+            if (fallback != null) staleFallbacks.markStale(key)
             fallback ?: throw error
         }
     }
@@ -361,9 +375,13 @@ class IllustiaRepository(
         }
 
     suspend fun trendingTags(forceRefresh: Boolean = false): List<String> =
-        withApiCache("trending_tags", CACHE_TTL_LONG_MILLIS, forceRefresh) {
+        withApiCache(TRENDING_TAGS_CACHE_KEY, CACHE_TTL_LONG_MILLIS, forceRefresh) {
             withSessionRetry { session -> apiClient.trendingTags(session) }
         }
+
+    // True when the last trendingTags() call was answered by the stale offline fallback, so its
+    // result must not be recorded as a freshly fetched cache entry.
+    internal fun trendingTagsServedStale(): Boolean = wasServedStale(TRENDING_TAGS_CACHE_KEY)
 
     suspend fun popularPreview(
         word: String,
