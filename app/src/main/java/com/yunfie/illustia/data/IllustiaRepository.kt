@@ -54,6 +54,7 @@ private const val CACHE_TTL_MEDIUM_MILLIS = 5 * 60 * 1000L // 5 minutes
 private const val CACHE_TTL_STANDARD_MILLIS = 10 * 60 * 1000L // 10 minutes
 private const val CACHE_TTL_SERIES_MILLIS = 15 * 60 * 1000L // 15 minutes
 private const val CACHE_TTL_LONG_MILLIS = 30 * 60 * 1000L // 30 minutes
+private const val CACHE_TTL_AUTOCOMPLETE_MILLIS = 60 * 1000L // 1 minute
 private const val CACHE_TTL_HOUR_MILLIS = 60 * 60 * 1000L // 1 hour
 private const val HTTP_TOO_MANY_REQUESTS = 429
 private const val HTTP_NOT_FOUND = 404
@@ -378,7 +379,9 @@ class IllustiaRepository(
     ): List<String> {
         val trimmed = word.trim()
         if (trimmed.isBlank()) return emptyList()
-        return withApiCache("autocomplete:${trimmed.lowercase()}", CACHE_TTL_LONG_MILLIS, forceRefresh) {
+        // Autocomplete goes stale fast (trending words move), so cache it for a minute at most
+        // rather than the 30 minutes used for stable content.
+        return withApiCache("autocomplete:${trimmed.lowercase()}", CACHE_TTL_AUTOCOMPLETE_MILLIS, forceRefresh) {
             withSessionRetry { session -> apiClient.searchAutocomplete(session, trimmed) }
         }
     }

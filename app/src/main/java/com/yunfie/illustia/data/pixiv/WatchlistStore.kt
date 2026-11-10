@@ -1,6 +1,7 @@
 package com.yunfie.illustia.data.pixiv
 
 import com.yunfie.illustia.data.IllustiaRepository
+import com.yunfie.illustia.data.toUserMessage
 import com.yunfie.illustia.models.pixiv.MangaSeriesModel
 import com.yunfie.illustia.models.pixiv.WatchlistMangaModel
 import kotlinx.coroutines.CancellationException
@@ -52,7 +53,7 @@ class WatchlistStore(
                 it.copy(
                     isLoading = false,
                     isRefreshing = false,
-                    errorMessage = expectedFailure.toString(),
+                    errorMessage = expectedFailure.toUserMessage(),
                 )
             }
         }
@@ -78,7 +79,7 @@ class WatchlistStore(
             _state.update {
                 it.copy(
                     isPaginating = false,
-                    errorMessage = expectedFailure.toString(),
+                    errorMessage = expectedFailure.toUserMessage(),
                 )
             }
         }

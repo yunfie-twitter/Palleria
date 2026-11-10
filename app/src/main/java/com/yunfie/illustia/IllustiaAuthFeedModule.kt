@@ -26,6 +26,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.IOException
 
 private const val TARGET_INITIAL_SEARCH_COUNT = 30
 private const val MAX_SEARCH_PAGES_ACCUMULATION = 20
@@ -238,6 +239,17 @@ abstract class IllustiaAuthFeedModule(
                     it.homeItems.isEmpty() -> it.copy(loadState = LoadState.Loading, isHomeRefreshing = false)
                     else -> it.copy(isHomeRefreshing = forceRefresh)
                 }
+            }
+            // Skip the loading frame when the request cannot succeed: otherwise the user sees the
+            // skeleton animate in and then vanish before the error appears.
+            if (isOffline()) {
+                _uiState.update {
+                    it.copy(
+                        isHomeRefreshing = false,
+                        loadState = LoadState.Error(loadFailureMessage(it, IOException("offline"))),
+                    )
+                }
+                return@launch
             }
             try {
                 GlitchTipTelemetry.traceAsync("feed.home.refresh", "feed.home") {

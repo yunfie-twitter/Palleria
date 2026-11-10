@@ -1,6 +1,7 @@
 package com.yunfie.illustia.data.pixiv
 
 import com.yunfie.illustia.data.IllustiaRepository
+import com.yunfie.illustia.data.toUserMessage
 import com.yunfie.illustia.models.pixiv.IllustSeriesWithIdModel
 import com.yunfie.illustia.models.pixiv.Illusts
 import kotlinx.coroutines.CancellationException
@@ -53,7 +54,7 @@ class IllustSeriesStore(
                 it.copy(
                     isLoading = false,
                     isRefreshing = false,
-                    errorMessage = expectedFailure.toString(),
+                    errorMessage = expectedFailure.toUserMessage(),
                     watchlistAdded = false,
                 )
             }
@@ -80,7 +81,7 @@ class IllustSeriesStore(
             _state.update {
                 it.copy(
                     isPaginating = false,
-                    errorMessage = expectedFailure.toString(),
+                    errorMessage = expectedFailure.toUserMessage(),
                 )
             }
         }

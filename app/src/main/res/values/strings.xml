@@ -711,6 +711,13 @@
     <string name="offline_no_cache">オフラインです。キャッシュはありません。</string>
     <string name="error_data_export_failed">データをエクスポートできませんでした。</string>
     <string name="error_data_import_failed">ファイルを読み込めませんでした。Illustiaのバックアップファイルを選択してください。</string>
+    <string name="error_server_unreachable">サーバーに接続できませんでした。通信環境を確認して再度お試しください。</string>
+    <string name="error_forbidden">この操作を行う権限がありません。ログインし直してください。</string>
+    <string name="error_not_found">対象が見つかりませんでした。削除された可能性があります。</string>
+    <string name="error_server_error">サーバー側で問題が発生しました。しばらく待ってから再度お試しください。</string>
+    <string name="error_bad_request">リクエストが受け付けられませんでした。設定や検索条件を確認してください。</string>
+    <string name="error_unexpected">予期しないエラーが発生しました。改善しない場合はアプリを再起動してください。</string>
+    <string name="error_timeout">接続がタイムアウトしました。通信環境を確認して再度お試しください。</string>
 
     <!-- Ranking modes -->
     <string name="ranking_day">デイリー</string>
@@ -1316,6 +1323,13 @@
     <string name="flag_liquid_glass_follow_button_desc">作品ページとプロフィールページのフォローボタンをLiquid Glass表示にします。</string>
     <string name="flag_progressive_image_quality_title">動的画質（プログレッシブ表示）</string>
     <string name="flag_progressive_image_quality_desc">詳細画像・全画面画像を開いたとき、選択中の画質で読み込みが終わるまで一段下の画質を先に表示します。</string>
+    <string name="flag_miuix_quick_peek_title">MiuixデザインのQuickPeek</string>
+    <string name="flag_miuix_quick_peek_desc">長押しプレビューをMiuixガイドラインに沿ったボトムシート表示に作り直します。フォロー中や検索結果のユーザーを長押しすると、ユーザー版のプレビューも表示されます。</string>
+    <string name="quick_peek_show_profile">プロフィールを開く</string>
+    <string name="quick_peek_follow">フォロー</string>
+    <string name="quick_peek_unfollow">フォロー中</string>
+    <string name="quick_peek_illust_count">作品 %1$d件</string>
+    <string name="quick_peek_view_profile">プロフィールを見る</string>
     <string name="offline_cached_banner_label">オフライン表示中（キャッシュ）</string>
     <string name="offline_retry_button">再試行</string>
 

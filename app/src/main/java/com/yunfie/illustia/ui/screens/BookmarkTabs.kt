@@ -624,6 +624,7 @@ internal fun BookmarkFollowingTab(
     scrollBehavior: ScrollBehavior? = null,
 ) {
     val gridState = viewModel.bookmarkFollowingGridState
+    val miuixPeekEnabled = settings.isFeatureEnabled(FeatureFlag.MiuixQuickPeek)
     val sortedUsers =
         remember(followingUsers, sort) {
             when (sort) {
@@ -699,7 +700,19 @@ internal fun BookmarkFollowingTab(
                 }
             }
             gridItems(sortedUsers, key = { "follow_user_${it.id}" }, contentType = { "user_card" }) { user ->
-                UserResultCard(user = user, onClick = { viewModel.openUserPage(user) })
+                val onLongClick =
+                    remember(user, miuixPeekEnabled) {
+                        if (miuixPeekEnabled) {
+                            { viewModel.onUserLongPress(user) }
+                        } else {
+                            null
+                        }
+                    }
+                UserResultCard(
+                    user = user,
+                    onClick = { viewModel.openUserPage(user) },
+                    onLongClick = onLongClick,
+                )
             }
             if (showPaginationSkeletons) {
                 items(
