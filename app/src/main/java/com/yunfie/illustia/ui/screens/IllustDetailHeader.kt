@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -228,6 +229,7 @@ internal fun IllustDetailHeader(
         Box(
             modifier =
                 (if (expanded) Modifier.fillMaxSize() else Modifier.fillMaxWidth().heightIn(min = 320.dp))
+                    .animateContentSize()
                     .then(if (liquidGlassBackdrop != null) Modifier.layerBackdrop(liquidGlassBackdrop) else Modifier),
         ) {
             if (showImage) {

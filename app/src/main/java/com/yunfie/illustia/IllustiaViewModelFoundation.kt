@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.os.Looper
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.core.content.pm.PackageInfoCompat
@@ -288,6 +289,25 @@ abstract class IllustiaViewModelFoundation(
     @Suppress("VariableNaming")
     protected val _detailNavigationRequests = Channel<Long>(Channel.BUFFERED)
     val detailNavigationRequests = _detailNavigationRequests.receiveAsFlow()
+
+    /**
+     * Synchronous navigation hook installed by the UI. Taps go through this so the route is
+     * pushed in the same callback instead of after a state round-trip and a recomposition,
+     * which made the detail page appear late. Off the main thread it falls back to the channel.
+     */
+    @Volatile
+    var detailNavigator: ((Long) -> Unit)? = null
+
+    protected fun requestDetailNavigation(illustId: Long) {
+        val navigator = detailNavigator
+        if (navigator != null && Looper.myLooper() == Looper.getMainLooper()) {
+            navigator(illustId)
+        } else {
+            _detailNavigationRequests.trySend(illustId)
+        }
+    }
+
+    fun currentSelectedIllust(): Illust? = _uiState.value.selectedIllust
 
     @Suppress("VariableNaming")
     protected val _userNavigationRequests = MutableSharedFlow<Long>(extraBufferCapacity = 16)
@@ -955,6 +975,8 @@ abstract class IllustiaViewModelFoundation(
                 sessionReady = false,
                 showReloginRequiredDialog = true,
                 loadState = LoadState.Idle,
+                timelineLoadState = LoadState.Idle,
+                followingUsersLoadState = LoadState.Idle,
                 message = null,
             )
         }

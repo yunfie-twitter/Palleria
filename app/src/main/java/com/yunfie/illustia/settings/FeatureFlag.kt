@@ -23,7 +23,7 @@ enum class FeatureFlag(
         key = "flag_navigation_customization",
         titleRes = R.string.flag_navigation_customization_title,
         descRes = R.string.flag_navigation_customization_desc,
-        defaultEnabled = false,
+        defaultEnabled = true,
     ),
     TopScrollBlur(
         key = "flag_top_scroll_blur",

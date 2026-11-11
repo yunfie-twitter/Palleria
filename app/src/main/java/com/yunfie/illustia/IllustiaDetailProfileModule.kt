@@ -46,7 +46,7 @@ abstract class IllustiaDetailProfileModule(
                 relatedIllusts = cached?.relatedIllusts ?: emptyList(),
             )
         }
-        _detailNavigationRequests.trySend(illust.id)
+        requestDetailNavigation(illust.id)
         launchDetailExtras(illust)
     }
 
@@ -139,7 +139,7 @@ abstract class IllustiaDetailProfileModule(
     override fun openIllust(illustId: Long) {
         if (illustId <= 0L) return
         _uiState.update { it.copy(selectedIllustError = null, selectedIllustErrorId = null) }
-        _detailNavigationRequests.trySend(illustId)
+        requestDetailNavigation(illustId)
         val localIllust = findIllustById(illustId)
         if (localIllust != null && localIllust.artistId > 0L) {
             openIllust(localIllust)

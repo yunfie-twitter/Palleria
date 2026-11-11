@@ -225,6 +225,7 @@ internal fun MainSurface(
                                     items = appState.homeItems,
                                     timelineItems = appState.timelineItems,
                                     loadState = appState.loadState,
+                                    timelineLoadState = appState.timelineLoadState,
                                     nextUrl = appState.homeChrome.homeNextUrl,
                                     timelineNextUrl = appState.homeChrome.timelineNextUrl,
                                     settings = appState.settings,
@@ -262,6 +263,8 @@ internal fun MainSurface(
                                 BookmarkScreen(
                                     settings = appState.settings,
                                     loadState = appState.loadState,
+                                    timelineLoadState = appState.timelineLoadState,
+                                    followingUsersLoadState = appState.followingUsersLoadState,
                                     bookmarkItems = appState.bookmarkItems,
                                     bookmarkTag = appState.state.bookmarkTag,
                                     timelineItems = appState.timelineItems,
