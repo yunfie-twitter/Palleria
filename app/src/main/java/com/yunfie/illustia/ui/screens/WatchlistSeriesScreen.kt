@@ -307,7 +307,8 @@ fun WatchlistSeriesScreen(
                 }
 
                 val columns = adaptiveIllustColumns(settings)
-                val showInitialLoading = state.isLoading && state.mangaSeries.isEmpty()
+                val showInitialLoading = (!state.hasLoaded || state.isLoading) && state.mangaSeries.isEmpty()
+                val watchlistPending = !state.hasLoaded || state.isLoading || state.errorMessage != null
                 val showPaginating = settings.autoLoadMore && state.isPaginating
                 val shimmer = if (showInitialLoading || showPaginating) rememberIllustSkeletonShimmer() else null
                 LazyVerticalGrid(
@@ -347,7 +348,7 @@ fun WatchlistSeriesScreen(
                             )
                         }
                     }
-                    if (processedSeries.isEmpty() && !state.isLoading && state.errorMessage == null) {
+                    if (processedSeries.isEmpty() && !watchlistPending) {
                         item(span = { GridItemSpan(maxLineSpan) }, contentType = "watchlist_empty") {
                             EmptyState(stringResource(R.string.watchlist_series_empty))
                         }

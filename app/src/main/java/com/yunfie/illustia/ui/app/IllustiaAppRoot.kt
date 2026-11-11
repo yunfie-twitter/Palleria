@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -198,6 +199,15 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     fun openWatchlistSeries(seriesId: Long) {
         selectedWatchlistSeriesIds.add(seriesId)
         navigate(AppRoute.IllustSeries)
+    }
+
+    // Taps route through this hook so the detail page is pushed in the same callback as the tap,
+    // rather than waiting for the state flow to round-trip and force a recomposition first.
+    SideEffect {
+        viewModel.detailNavigator = { illustId -> navigate(AppRoute.Detail(illustId)) }
+    }
+    DisposableEffect(viewModel) {
+        onDispose { viewModel.detailNavigator = null }
     }
 
     fun popRoute() {

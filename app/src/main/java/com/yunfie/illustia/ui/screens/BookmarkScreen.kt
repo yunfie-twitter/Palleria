@@ -68,6 +68,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun BookmarkScreen(
     settings: AppSettings,
     loadState: LoadState,
+    timelineLoadState: LoadState = loadState,
+    followingUsersLoadState: LoadState = loadState,
     bookmarkItems: List<Illust>,
     bookmarkTag: String?,
     timelineItems: List<Illust>,
@@ -473,7 +475,7 @@ fun BookmarkScreen(
                     0 -> {
                         BookmarkTimelineTab(
                             timelineItems = timelineItems,
-                            loadState = loadState,
+                            loadState = timelineLoadState,
                             settings = settings,
                             feedHighQuality = feedHighQuality,
                             showAiBadge = showAiBadge,
@@ -513,7 +515,7 @@ fun BookmarkScreen(
                             settings = settings,
                             followingUsers = followingUsers,
                             sort = followingUserSort,
-                            loadState = loadState,
+                            loadState = followingUsersLoadState,
                             viewModel = viewModel,
                             chrome = chrome,
                             scrollBehavior = scrollBehavior,

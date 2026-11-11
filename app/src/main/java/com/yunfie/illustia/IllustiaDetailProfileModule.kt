@@ -6,8 +6,6 @@ import androidx.lifecycle.viewModelScope
 import com.yunfie.illustia.GlitchTipTelemetry
 import com.yunfie.illustia.data.ManagedDataRepository
 import com.yunfie.illustia.data.proxyPixivImageUrl
-import com.yunfie.illustia.settings.FeatureFlag
-import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.UserPreview
@@ -16,6 +14,8 @@ import com.yunfie.illustia.models.pixiv.AccountEditResult
 import com.yunfie.illustia.models.pixiv.Comment
 import com.yunfie.illustia.models.pixiv.UgoiraPlayback
 import com.yunfie.illustia.models.pixiv.UserProfileEdit
+import com.yunfie.illustia.settings.FeatureFlag
+import com.yunfie.illustia.settings.isFeatureEnabled
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
@@ -46,7 +46,7 @@ abstract class IllustiaDetailProfileModule(
                 relatedIllusts = cached?.relatedIllusts ?: emptyList(),
             )
         }
-        _detailNavigationRequests.trySend(illust.id)
+        requestDetailNavigation(illust.id)
         launchDetailExtras(illust)
     }
 
@@ -139,7 +139,7 @@ abstract class IllustiaDetailProfileModule(
     override fun openIllust(illustId: Long) {
         if (illustId <= 0L) return
         _uiState.update { it.copy(selectedIllustError = null, selectedIllustErrorId = null) }
-        _detailNavigationRequests.trySend(illustId)
+        requestDetailNavigation(illustId)
         val localIllust = findIllustById(illustId)
         if (localIllust != null && localIllust.artistId > 0L) {
             openIllust(localIllust)
