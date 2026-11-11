@@ -136,8 +136,8 @@ jobs:
           KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
 
-          NIGHTLY_VERSION_NAME: ${{ steps.version.outputs.version }}
-          NIGHTLY_VERSION_CODE: ${{ steps.version.outputs.version_code }}
+          BUILD_VERSION_NAME: ${{ steps.version.outputs.version }}
+          BUILD_VERSION_CODE: ${{ steps.version.outputs.version_code }}
 
           TURN_URL: ${{ secrets.TURN_URL }}
           TURN_USERNAME: ${{ secrets.TURN_USERNAME }}
