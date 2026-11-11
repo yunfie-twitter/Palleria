@@ -21,8 +21,11 @@ android {
         // Android 7.0 (API 24) and newer.
         minSdk = androidMinSdk
         targetSdk = 37
-        versionCode = 194
-        versionName = "7.1.0"
+        // Nightly CI injects an ISO-week name such as 26w46a. Only versionName is overridden:
+        // versionCode stays a monotonically increasing integer so Android still installs
+        // later builds over earlier ones.
+        versionCode = (System.getenv("NIGHTLY_VERSION_CODE") ?: "194").toInteger()
+        versionName = System.getenv("NIGHTLY_VERSION_NAME") ?: "7.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
