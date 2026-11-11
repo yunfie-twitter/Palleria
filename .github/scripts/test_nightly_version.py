@@ -29,19 +29,37 @@ class IsoWeekVersionTest(unittest.TestCase):
         self.assertEqual(versions.format_version(26, 3, 0), "26w03a")
 
     def test_version_code_increases_with_each_build(self):
-        codes = [versions.version_code(26, 46, i) for i in range(3)]
+        codes = [versions.version_code(194, 26, 46, i) for i in range(3)]
         self.assertEqual(codes, sorted(set(codes)))
 
     def test_version_code_increases_across_weeks_and_years(self):
-        self.assertLess(versions.version_code(26, 46, 25), versions.version_code(26, 47, 0))
-        self.assertLess(versions.version_code(26, 53, 25), versions.version_code(27, 1, 0))
+        self.assertLess(versions.version_code(194, 26, 46, 25), versions.version_code(194, 26, 47, 0))
+        self.assertLess(versions.version_code(194, 26, 53, 25), versions.version_code(194, 27, 1, 0))
 
-    def test_version_code_exceeds_the_current_release_code(self):
-        # Keep later nightly builds installable over the shipped release.
-        self.assertGreater(versions.version_code(26, 46, 0), 192)
+    def test_nightly_installs_over_the_release_it_is_based_on(self):
+        for base in (1, 194, 9999):
+            self.assertGreater(versions.version_code(base, 26, 46, 0), base)
+
+    def test_next_release_installs_over_every_nightly(self):
+        # A release bump must clear the whole reserved nightly range of the previous one.
+        base = 194
+        highest_nightly = versions.version_code(base, 99, 53, 25)
+        self.assertLess(highest_nightly, (base + 1) * versions.NIGHTLY_CODE_RANGE)
 
     def test_version_code_fits_in_a_signed_32_bit_int(self):
-        self.assertLess(versions.version_code(99, 53, 25), 2**31)
+        self.assertLess(versions.version_code(9999, 99, 53, 25), 2**31)
+
+    def test_offset_beyond_the_reserved_range_is_rejected(self):
+        with unittest.mock.patch.object(versions, "NIGHTLY_CODE_RANGE", 10):
+            with self.assertRaises(ValueError):
+                versions.version_code(194, 26, 46, 0)
+
+    def test_reads_release_version_code_from_the_env_override_form(self):
+        text = '        versionCode = (System.getenv("BUILD_VERSION_CODE") ?: "194").toInteger()'
+        self.assertEqual(versions.release_version_code(text), 194)
+
+    def test_reads_release_version_code_from_a_plain_literal(self):
+        self.assertEqual(versions.release_version_code("        versionCode = 207"), 207)
 
     def test_counts_only_versions_of_the_requested_week(self):
         log = "\n".join(

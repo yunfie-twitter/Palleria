@@ -40,8 +40,13 @@ def output(key, value):
 
 
 def version(text):
+    # versionName/versionCode may be wrapped in an env override for nightly builds, e.g.
+    # versionCode = (System.getenv("BUILD_VERSION_CODE") ?: "194").toInteger()
+    # The fallback literal is the release value, so the override wrapper is stripped first.
+    text = re.sub(r"\(?\s*System\.getenv\([^)]*\)\s*\?:\s*", "", text)
+    text = re.sub(r"\)\.toInteger\(\)", "", text)
     name = re.search(r'^\s*versionName\s*=?\s*[\"\x27]([\w.+-]+)[\"\x27]', text, re.M)
-    code = re.search(r'^\s*versionCode\s*=?\s*(\d+)\s*$', text, re.M)
+    code = re.search(r'^\s*versionCode\s*=?\s*"?(\d+)"?', text, re.M)
     if not name or not code:
         raise ValueError("Cannot read versionName/versionCode from app/build.gradle")
     return name[1], int(code[1])
