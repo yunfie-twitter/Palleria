@@ -817,13 +817,18 @@ abstract class IllustiaViewModelFoundation(
         val message = e.message
         return when {
             message.isNullOrBlank() || message.contains("CancellationException") -> fallback
+
             e.isPixivRateLimited() -> str(R.string.error_rate_limited)
+
             e.isTimeoutFailure() -> str(R.string.error_timeout)
+
             // Never surface raw API payloads such as "Pixiv API error 500: {...}". They are
             // meaningless to users, so map the status to a message that explains what happened.
             e.containsPixivApiFailure() -> apiFailureMessage(e, fallback)
+
             // Internal exception messages are JSON/log noise, not something to show a user.
             e.message?.isInternalNoiseMessage() == true -> fallback
+
             else -> message
         }
     }

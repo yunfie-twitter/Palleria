@@ -904,7 +904,13 @@ class AppUpdaterRepository(
             val match = ISO_WEEK_VERSION_REGEX.matchEntire(version)
             val year = match?.groupValues?.getOrNull(1)?.toIntOrNull()
             val week = match?.groupValues?.getOrNull(2)?.toIntOrNull()
-            val revision = match?.groupValues?.getOrNull(3)?.lowercase()?.firstOrNull()?.minus('a')
+            val revision =
+                match
+                    ?.groupValues
+                    ?.getOrNull(3)
+                    ?.lowercase()
+                    ?.firstOrNull()
+                    ?.minus('a')
             return if (year != null && week != null && revision != null) Triple(year, week, revision) else null
         }
 

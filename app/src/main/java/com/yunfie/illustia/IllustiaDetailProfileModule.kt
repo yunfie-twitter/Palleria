@@ -6,8 +6,6 @@ import androidx.lifecycle.viewModelScope
 import com.yunfie.illustia.GlitchTipTelemetry
 import com.yunfie.illustia.data.ManagedDataRepository
 import com.yunfie.illustia.data.proxyPixivImageUrl
-import com.yunfie.illustia.settings.FeatureFlag
-import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.UserPreview
@@ -16,6 +14,8 @@ import com.yunfie.illustia.models.pixiv.AccountEditResult
 import com.yunfie.illustia.models.pixiv.Comment
 import com.yunfie.illustia.models.pixiv.UgoiraPlayback
 import com.yunfie.illustia.models.pixiv.UserProfileEdit
+import com.yunfie.illustia.settings.FeatureFlag
+import com.yunfie.illustia.settings.isFeatureEnabled
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay

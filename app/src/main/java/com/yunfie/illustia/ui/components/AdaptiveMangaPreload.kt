@@ -45,6 +45,7 @@ fun resolveAdaptivePreloadUrls(
 ): List<String> {
     if (imageUrls.isEmpty() || maxPages <= 0) return emptyList()
     val urls = ArrayList<String>(maxPages)
+
     fun addIfPresent(page: Int) {
         if (urls.size < maxPages && page in imageUrls.indices) urls.add(imageUrls[page])
     }
