@@ -53,6 +53,7 @@ fun HomeScreen(
     items: List<Illust>,
     timelineItems: List<Illust>,
     loadState: LoadState,
+    timelineLoadState: LoadState = loadState,
     nextUrl: String?,
     timelineNextUrl: String?,
     settings: AppSettings,
@@ -271,7 +272,7 @@ fun HomeScreen(
                         if (hasVisitedFollowingTab || pagerState.settledPage == HomeTab.Following.ordinal) {
                             FollowingTabContent(
                                 items = timelineItems,
-                                loadState = loadState,
+                                loadState = timelineLoadState,
                                 nextUrl = timelineNextUrl,
                                 settings = settings,
                                 viewModel = viewModel,

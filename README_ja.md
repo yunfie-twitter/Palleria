@@ -1,6 +1,6 @@
 # Palleria
 
-[English](README.md) · [日本語](README_ja.md) · [한국어](README_ko.md)
+[English](README.md) · [日本語](README_ja.md) · [한국어](README_ko.md) · [Русский](README_ru.md)
 
 <p align="center">
   <img

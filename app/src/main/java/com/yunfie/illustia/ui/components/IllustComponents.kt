@@ -525,11 +525,17 @@ private const val COMPACT_COUNT_TENTH_MILLION = 100_000
 
 private fun formatCompactCount(value: Int): String =
     when {
-        value >= COMPACT_COUNT_MILLION ->
+        value >= COMPACT_COUNT_MILLION -> {
             "${value / COMPACT_COUNT_MILLION}.${(value % COMPACT_COUNT_MILLION) / COMPACT_COUNT_TENTH_MILLION}M"
-        value >= COMPACT_COUNT_THOUSAND ->
+        }
+
+        value >= COMPACT_COUNT_THOUSAND -> {
             "${value / COMPACT_COUNT_THOUSAND}.${(value % COMPACT_COUNT_THOUSAND) / COMPACT_COUNT_TENTH_THOUSAND}K"
-        else -> value.toString()
+        }
+
+        else -> {
+            value.toString()
+        }
     }
 
 @OptIn(ExperimentalFoundationApi::class)
