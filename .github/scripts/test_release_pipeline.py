@@ -227,5 +227,28 @@ class PipelineTest(unittest.TestCase):
         self.assertEqual((self.root / "release.keystore").read_bytes(), b"key")
 
 
+    def test_prune_keeps_newest_releases_within_budget(self):
+        repo = self.public / "repo"
+        repo.mkdir()
+        (self.public / "metadata").mkdir()
+        state = {}
+        for rid, code in (("old", 10), ("mid", 20), ("new", 30)):
+            names = [f"v{code}a.apk", f"v{code}b.apk"]
+            for name in names:
+                (repo / name).write_bytes(b"x" * 10)
+            state[rid] = {"files": names, "version_name": str(code), "version_code": code, "prerelease": False}
+        (self.public / "metadata/release-assets.json").write_text(json.dumps(state))
+        (repo / "legacy.apk").write_bytes(b"x" * 10)
+
+        with patch.object(pipeline, "REPO_SIZE_BUDGET", 25):
+            pipeline.prune()
+
+        self.assertEqual(sorted(p.name for p in repo.glob("*.apk")),
+                         ["v20a.apk", "v20b.apk", "v30a.apk", "v30b.apk"])
+        kept = json.loads((self.public / "metadata/release-assets.json").read_text())
+        self.assertEqual(set(kept), {"mid", "new"})
+        self.assertEqual(self.outputs.read_text().strip(), "changed=true")
+
+
 if __name__ == "__main__":
     unittest.main()
