@@ -90,7 +90,7 @@ function card(title, description, background) {
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;font-size:21px;color:#6d88a6;">
         <div style="display:flex;">オープンソース Pixiv クライアント</div>
-        <div style="display:flex;">yunfie.date/Palleria</div>
+        <div style="display:flex;">palleria.yunfie.date</div>
       </div>
     </div>
     <img src="data:image/png;base64,${background}" style="width:440px;height:630px;object-fit:cover;" />

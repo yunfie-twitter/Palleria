@@ -73,7 +73,7 @@ npm run docs:build
 npm run docs:preview
 ```
 
-生成先は `docs/.vitepress/dist`、配信baseは `/Palleria/` です。ページ画像は `docs/assets` に置き、Markdownから相対パスで参照するとビルド時にURLが解決されます。
+生成先は `docs/.vitepress/dist`、配信は `https://palleria.yunfie.date/` をルート（base `/`）にしています。ページ画像は `docs/assets` に置き、Markdownから相対パスで参照するとビルド時にURLが解決されます。
 
 ## 起動プロファイルと計測
 

@@ -22,7 +22,7 @@ Android 7.0（API 24）以降に対応します。x86_64版はIntel / AMD系の�
 1. スマホに F-Droid アプリ（または Droid-ify 等）をインストールします。
 2. F-Droid の「設定」>「リポジトリ」を開き、以下の URL を追加します：
    ```text
-   https://yunfi.f5.si/Palleria/repo/
+   https://palleria.yunfie.date/repo/
    ```
 3. リポジトリを更新後、検索画面で `Palleria` と入力して「インストール」をタップします。
 

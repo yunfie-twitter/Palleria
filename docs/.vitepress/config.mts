@@ -1,7 +1,7 @@
 import { defineConfig } from 'vitepress'
 
 const repository = 'https://github.com/yunfie-twitter/Palleria'
-const siteUrl = 'https://yunfi.f5.si/Palleria/'
+const siteUrl = 'https://palleria.yunfie.date/'
 // One generated image per page lives in docs/public/og/<slug>.png.
 const ogBase = `${siteUrl}og/`
 const defaultOgImage = `${ogBase}index.png`
@@ -61,7 +61,7 @@ function ogSlug(relativePath: string): string {
 }
 
 export default defineConfig({
-  base: '/Palleria/',
+  base: '/',
   lang: 'ja-JP',
   title: 'Palleria',
   titleTemplate: ':title | Palleria',
@@ -113,9 +113,9 @@ export default defineConfig({
   },
 
   head: [
-    ['link', { rel: 'icon', href: '/Palleria/logo.svg', type: 'image/svg+xml' }],
-    ['link', { rel: 'apple-touch-icon', href: '/Palleria/logo.png' }],
-    ['link', { rel: 'preload', href: '/Palleria/logo.svg', as: 'image', type: 'image/svg+xml' }],
+    ['link', { rel: 'icon', href: '/logo.svg', type: 'image/svg+xml' }],
+    ['link', { rel: 'apple-touch-icon', href: '/logo.png' }],
+    ['link', { rel: 'preload', href: '/logo.svg', as: 'image', type: 'image/svg+xml' }],
     ['meta', { name: 'keywords', content: keywords }],
     ['meta', { name: 'author', content: 'ゆんふぃ (yunfie)' }],
     ['meta', { name: 'robots', content: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1' }],
