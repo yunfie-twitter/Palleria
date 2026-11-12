@@ -1,3 +1,12 @@
+---
+title: WebPプロキシのソースホスト修正検証
+description: 画像プロキシのソースホスト修正とHTTP検証結果に関する内部メモです。
+head:
+  - - meta
+    - name: robots
+      content: noindex, nofollow
+---
+
 # WebP proxy source host correction
 
 The Palleria image proxy used `piximg.2wf6bfhvwk.workers.dev` as its nested source host. The deployed source is `pximg.2wf6bfhvwk.workers.dev`. Correcting the shared URL builder fixes requests from image display and prefetch callers that select the Palleria proxy; the outer WebP endpoint and URL encoding remain unchanged.

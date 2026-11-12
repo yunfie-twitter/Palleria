@@ -1,19 +1,20 @@
 ---
 title: ビルドと公開パイプライン
+description: Palleriaのビルド環境、GradleとRustの手順、署名付きリリース、GitHub ActionsとF-Droid連携、ベースラインプロファイルを解説します。
 ---
 
 # ビルドと公開パイプライン
 
-このページは2026年10月3日に `app/build.gradle`、Gradle Wrapper、Rustクレート、GitHub Actionsを確認した内容です。設定を変更した場合はコード側の値を優先してください。
+このページは2026年11月11日に `app/build.gradle`、Gradle Wrapper、Rustクレート、GitHub Actionsを確認した内容です。設定を変更した場合はコード側の値を優先してください。
 
 ## 開発環境
 
 | 項目 | リポジトリの設定 |
 | --- | --- |
-| Gradle | Wrapperで9.7.1を取得 |
+| Gradle | Wrapperで9.8.2を取得 |
 | Gradle daemon JVM | JetBrains JDK 21（`gradle/gradle-daemon-jvm.properties`） |
 | Javaソース・バイトコード | 17 |
-| Android SDK | compileSdk 37、targetSdk 36、minSdk 24 |
+| Android SDK | compileSdk 37、targetSdk 37、minSdk 24 |
 | Android NDK | Android StudioのSDK Managerで導入。`cargo-ndk`から参照できること |
 | Rust | edition 2024対応のstableツールチェーン。依存関係はCargo.lockに従う |
 | ドキュメント | Node.jsとnpm。docsのCIはNode.js 22を使用 |
@@ -78,7 +79,7 @@ npm run docs:preview
 
 `app/src/main/baselineProfiles/` には `baseline-prof.txt` と `startup-prof.txt` を配置しています。現在のファイルはクラス単位の暫定ルールです。`benchmark` モジュールの `BaselineProfileGenerator` は `includeInStartupProfile = true` を指定し、起動経路から両方のプロファイルを生成します。
 
-AGP 9.4.1 では DEX レイアウト最適化が既定で有効です。release は `minifyEnabled = true` で R8 を使用します。`app/build.gradle` に `startupProfile` や `dexLayoutOptimization` の明示指定がないことだけでは、無効とは判断できません。[Android の公式説明](https://developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations)も参照してください。
+AGP 9.5.0 では DEX レイアウト最適化が既定で有効です。release は `minifyEnabled = true` で R8 を使用します。`app/build.gradle` に `startupProfile` や `dexLayoutOptimization` の明示指定がないことだけでは、無効とは判断できません。[Android の公式説明](https://developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations)も参照してください。
 
 Android SDK・NDK と設定済みの管理対象デバイスを利用できる環境で `./gradlew :app:generateBaselineProfile` を実行し、生成したルールを確認・更新します。`StartupBenchmark` はプロファイル適用有無のコールド起動と、適用時のウォーム起動を各10回測定します。ただし同一APKでの ART コンパイル条件の比較だけでは、ビルド時の DEX 配置最適化の効果を単独では測定できません。DEX 最適化の適用は release ビルドの R8 出力でも確認し、短縮時間は実機の測定結果から判断してください。
 
