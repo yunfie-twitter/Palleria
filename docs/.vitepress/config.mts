@@ -1,8 +1,10 @@
 import { defineConfig } from 'vitepress'
 
 const repository = 'https://github.com/yunfie-twitter/Palleria'
-const siteUrl = 'https://yunfi.f5.si/Palleria/'
-const ogImage = `${siteUrl}ogp.png`
+const siteUrl = 'https://palleria.yunfie.date/'
+// One generated image per page lives in docs/public/og/<slug>.png.
+const ogBase = `${siteUrl}og/`
+const defaultOgImage = `${ogBase}index.png`
 const icon = `${siteUrl}logo.png`
 const description =
   'Android向けオープンソースPixivクライアント「Palleria」の公式ドキュメント。イラスト・マンガ・小説・うごイラの閲覧、検索、ブックマーク、画像保存、プライバシー保護機能を解説します。'
@@ -18,8 +20,8 @@ const structuredData = {
   applicationSubCategory: 'Pixiv client',
   operatingSystem: 'Android 7.0 (API 24) 以降',
   url: siteUrl,
-  image: ogImage,
-  screenshot: ogImage,
+  image: defaultOgImage,
+  screenshot: defaultOgImage,
   description,
   inLanguage: 'ja',
   softwareVersion: '7.1.0',
@@ -47,8 +49,19 @@ function pageUrl(relativePath: string): string {
   return siteUrl + clean
 }
 
+// Must match docs/.vitepress/generate-og.mjs.
+function ogSlug(relativePath: string): string {
+  return (
+    relativePath
+      .replace(/\\/g, '/')
+      .replace(/\.md$/, '')
+      .replace(/(^|\/)index$/, '')
+      .replace(/\//g, '-') || 'index'
+  )
+}
+
 export default defineConfig({
-  base: '/Palleria/',
+  base: '/',
   lang: 'ja-JP',
   title: 'Palleria',
   titleTemplate: ':title | Palleria',
@@ -80,20 +93,29 @@ export default defineConfig({
       ? 'Palleria - Android向けPixivクライアント'
       : `${pageData.title ?? 'Palleria'} | Palleria`
     const desc = pageData.description || description
+    const image = `${ogBase}${ogSlug(pageData.relativePath)}.png`
     return [
       ['link', { rel: 'canonical', href: url }],
       ['meta', { property: 'og:url', content: url }],
       ['meta', { property: 'og:title', content: title }],
       ['meta', { property: 'og:description', content: desc }],
+      ['meta', { property: 'og:image', content: image }],
+      ['meta', { property: 'og:image:secure_url', content: image }],
+      ['meta', { property: 'og:image:type', content: 'image/png' }],
+      ['meta', { property: 'og:image:width', content: '1200' }],
+      ['meta', { property: 'og:image:height', content: '630' }],
+      ['meta', { property: 'og:image:alt', content: title }],
       ['meta', { name: 'twitter:title', content: title }],
       ['meta', { name: 'twitter:description', content: desc }],
+      ['meta', { name: 'twitter:image', content: image }],
+      ['meta', { name: 'twitter:image:alt', content: title }],
     ]
   },
 
   head: [
-    ['link', { rel: 'icon', href: '/Palleria/logo.svg', type: 'image/svg+xml' }],
-    ['link', { rel: 'apple-touch-icon', href: '/Palleria/logo.png' }],
-    ['link', { rel: 'preload', href: '/Palleria/logo.svg', as: 'image', type: 'image/svg+xml' }],
+    ['link', { rel: 'icon', href: '/logo.svg', type: 'image/svg+xml' }],
+    ['link', { rel: 'apple-touch-icon', href: '/logo.png' }],
+    ['link', { rel: 'preload', href: '/logo.svg', as: 'image', type: 'image/svg+xml' }],
     ['meta', { name: 'keywords', content: keywords }],
     ['meta', { name: 'author', content: 'ゆんふぃ (yunfie)' }],
     ['meta', { name: 'robots', content: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1' }],
@@ -104,21 +126,8 @@ export default defineConfig({
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:site_name', content: 'Palleria 公式ドキュメント' }],
     ['meta', { property: 'og:locale', content: 'ja_JP' }],
-    ['meta', { property: 'og:title', content: 'Palleria - Android向けPixivクライアント' }],
-    ['meta', { property: 'og:description', content: description }],
-    ['meta', { property: 'og:url', content: siteUrl }],
-    ['meta', { property: 'og:image', content: ogImage }],
-    ['meta', { property: 'og:image:secure_url', content: ogImage }],
-    ['meta', { property: 'og:image:type', content: 'image/png' }],
-    ['meta', { property: 'og:image:width', content: '1980' }],
-    ['meta', { property: 'og:image:height', content: '1080' }],
-    ['meta', { property: 'og:image:alt', content: 'Palleria - Android向けPixivクライアント' }],
 
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
-    ['meta', { name: 'twitter:title', content: 'Palleria - Android向けPixivクライアント' }],
-    ['meta', { name: 'twitter:description', content: description }],
-    ['meta', { name: 'twitter:image', content: ogImage }],
-    ['meta', { name: 'twitter:image:alt', content: 'Palleria - Android向けPixivクライアント' }],
 
     ['script', { type: 'application/ld+json' }, JSON.stringify(structuredData)],
     ['script', { type: 'application/ld+json' }, JSON.stringify(websiteData)],

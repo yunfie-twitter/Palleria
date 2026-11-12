@@ -4,7 +4,7 @@
 
 <p align="center">
   <img
-    src="https://yunfi.f5.si/Palleria/repo/com.yunfie.illustia/en-US/icon.png"
+    src="https://palleria.yunfie.date/repo/com.yunfie.illustia/en-US/icon.png"
     alt="Palleria アイコン"
     width="160"
   />
@@ -26,7 +26,7 @@
 [![Rust](https://img.shields.io/badge/Rust-Native%20Core-DEA584.svg?style=flat-square&logo=rust&logoColor=white)](https://www.rust-lang.org/)
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-UI-4285F4.svg?style=flat-square&logo=jetpackcompose&logoColor=white)](https://developer.android.com/compose)
 [![Miuix KMP](https://img.shields.io/badge/Design-Miuix%20KMP-FF6900.svg?style=flat-square)](https://github.com/miuix-kotlin-multiplatform/miuix)
-[![F-Droid](https://img.shields.io/badge/F--Droid-Repository-1976D2.svg?style=flat-square&logo=fdroid&logoColor=white)](https://yunfi.f5.si/Palleria/repo/)
+[![F-Droid](https://img.shields.io/badge/F--Droid-Repository-1976D2.svg?style=flat-square&logo=fdroid&logoColor=white)](https://palleria.yunfie.date/repo/)
 [![GitHub Release](https://img.shields.io/github/v/release/yunfie-twitter/Palleria?style=flat-square&logo=github&label=Release)](https://github.com/yunfie-twitter/Palleria/releases)
 [![GitHub Downloads](https://img.shields.io/github/downloads/yunfie-twitter/Palleria/total?style=flat-square&logo=github&label=Downloads)](https://github.com/yunfie-twitter/Palleria/releases)
 [![GitHub Stars](https://img.shields.io/github/stars/yunfie-twitter/Palleria?style=flat-square&logo=github)](https://github.com/yunfie-twitter/Palleria/stargazers)
@@ -59,10 +59,10 @@ Jetpack Compose と Miuix のデザイン、UniFFI 経由の Rust ネイティ�
 
 <table align="center">
   <tr>
-    <td align="center"><img src="https://yunfi.f5.si/Palleria/repo/com.yunfie.illustia/en-US/phoneScreenshots/1.png" alt="ホーム画面" width="160" /><br /><strong>ホーム・フィード</strong></td>
-    <td align="center"><img src="https://yunfi.f5.si/Palleria/repo/com.yunfie.illustia/en-US/phoneScreenshots/2.png" alt="検索画面" width="160" /><br /><strong>検索・発見</strong></td>
-    <td align="center"><img src="https://yunfi.f5.si/Palleria/repo/com.yunfie.illustia/en-US/phoneScreenshots/3.png" alt="ランキング画面" width="160" /><br /><strong>ランキング</strong></td>
-    <td align="center"><img src="https://yunfi.f5.si/Palleria/repo/com.yunfie.illustia/en-US/phoneScreenshots/5.png" alt="ユーザープロフィール画面" width="160" /><br /><strong>作家プロフィール</strong></td>
+    <td align="center"><img src="https://palleria.yunfie.date/repo/com.yunfie.illustia/en-US/phoneScreenshots/1.png" alt="ホーム画面" width="160" /><br /><strong>ホーム・フィード</strong></td>
+    <td align="center"><img src="https://palleria.yunfie.date/repo/com.yunfie.illustia/en-US/phoneScreenshots/2.png" alt="検索画面" width="160" /><br /><strong>検索・発見</strong></td>
+    <td align="center"><img src="https://palleria.yunfie.date/repo/com.yunfie.illustia/en-US/phoneScreenshots/3.png" alt="ランキング画面" width="160" /><br /><strong>ランキング</strong></td>
+    <td align="center"><img src="https://palleria.yunfie.date/repo/com.yunfie.illustia/en-US/phoneScreenshots/5.png" alt="ユーザープロフィール画面" width="160" /><br /><strong>作家プロフィール</strong></td>
   </tr>
 </table>
 
@@ -101,10 +101,10 @@ Jetpack Compose と Miuix のデザイン、UniFFI 経由の Rust ネイティ�
 公式 Palleria リポジトリを F-Droid または互換クライアント（Droid-ify、Neo Store など）に追加してください。
 
 ```text
-https://yunfi.f5.si/Palleria/repo/
+https://palleria.yunfie.date/repo/
 ```
 
-[![F-Droid に追加](https://img.shields.io/badge/F--Droid-リポジトリを追加-1976D2.svg?style=for-the-badge&logo=fdroid&logoColor=white)](https://yunfi.f5.si/Palleria/repo?fingerprint=28A7F64F373AC1AD5FBB4822870E2E07B2B204C7EC71E58CE40F9D54EF2727D9)
+[![F-Droid に追加](https://img.shields.io/badge/F--Droid-リポジトリを追加-1976D2.svg?style=for-the-badge&logo=fdroid&logoColor=white)](https://palleria.yunfie.date/repo?fingerprint=28A7F64F373AC1AD5FBB4822870E2E07B2B204C7EC71E58CE40F9D54EF2727D9)
 
 ### GitHub Releases
 

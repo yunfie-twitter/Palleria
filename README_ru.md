@@ -4,7 +4,7 @@
 
 <p align="center">
   <img
-    src="https://yunfi.f5.si/Palleria/repo/com.yunfie.illustia/en-US/icon.png"
+    src="https://palleria.yunfie.date/repo/com.yunfie.illustia/en-US/icon.png"
     alt="Иконка Palleria"
     width="160"
   />
@@ -26,7 +26,7 @@
 [![Rust](https://img.shields.io/badge/Rust-Native%20Core-DEA584.svg?style=flat-square&logo=rust&logoColor=white)](https://www.rust-lang.org/)
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-UI-4285F4.svg?style=flat-square&logo=jetpackcompose&logoColor=white)](https://developer.android.com/compose)
 [![Miuix KMP](https://img.shields.io/badge/Design-Miuix%20KMP-FF6900.svg?style=flat-square)](https://github.com/miuix-kotlin-multiplatform/miuix)
-[![F-Droid](https://img.shields.io/badge/F--Droid-Repository-1976D2.svg?style=flat-square&logo=fdroid&logoColor=white)](https://yunfi.f5.si/Palleria/repo/)
+[![F-Droid](https://img.shields.io/badge/F--Droid-Repository-1976D2.svg?style=flat-square&logo=fdroid&logoColor=white)](https://palleria.yunfie.date/repo/)
 [![Релиз на GitHub](https://img.shields.io/github/v/release/yunfie-twitter/Palleria?style=flat-square&logo=github&label=Release)](https://github.com/yunfie-twitter/Palleria/releases)
 [![Загрузки на GitHub](https://img.shields.io/github/downloads/yunfie-twitter/Palleria/total?style=flat-square&logo=github&label=Downloads)](https://github.com/yunfie-twitter/Palleria/releases)
 [![Звёзды на GitHub](https://img.shields.io/github/stars/yunfie-twitter/Palleria?style=flat-square&logo=github)](https://github.com/yunfie-twitter/Palleria/stargazers)
@@ -73,7 +73,7 @@ Palleria построена с нуля на Jetpack Compose, дизайн-яз�
   <tr>
     <td align="center">
       <img
-        src="https://yunfi.f5.si/Palleria/repo/com.yunfie.illustia/en-US/phoneScreenshots/1.png"
+        src="https://palleria.yunfie.date/repo/com.yunfie.illustia/en-US/phoneScreenshots/1.png"
         alt="Главный экран Palleria"
         width="160"
       />
@@ -82,7 +82,7 @@ Palleria построена с нуля на Jetpack Compose, дизайн-яз�
     </td>
     <td align="center">
       <img
-        src="https://yunfi.f5.si/Palleria/repo/com.yunfie.illustia/en-US/phoneScreenshots/2.png"
+        src="https://palleria.yunfie.date/repo/com.yunfie.illustia/en-US/phoneScreenshots/2.png"
         alt="Экран поиска Palleria"
         width="160"
       />
@@ -91,7 +91,7 @@ Palleria построена с нуля на Jetpack Compose, дизайн-яз�
     </td>
     <td align="center">
       <img
-        src="https://yunfi.f5.si/Palleria/repo/com.yunfie.illustia/en-US/phoneScreenshots/3.png"
+        src="https://palleria.yunfie.date/repo/com.yunfie.illustia/en-US/phoneScreenshots/3.png"
         alt="Экран рейтингов Palleria"
         width="160"
       />
@@ -100,7 +100,7 @@ Palleria построена с нуля на Jetpack Compose, дизайн-яз�
     </td>
     <td align="center">
       <img
-        src="https://yunfi.f5.si/Palleria/repo/com.yunfie.illustia/en-US/phoneScreenshots/5.png"
+        src="https://palleria.yunfie.date/repo/com.yunfie.illustia/en-US/phoneScreenshots/5.png"
         alt="Экран профиля пользователя Palleria"
         width="160"
       />
@@ -150,12 +150,12 @@ Palleria построена с нуля на Jetpack Compose, дизайн-яз�
 Добавьте официальный репозиторий Palleria в F-Droid или любой совместимый клиент (Droid-ify, Neo Store):
 
 ```text
-https://yunfi.f5.si/Palleria/repo/
+https://palleria.yunfie.date/repo/
 ```
 
 <p align="left">
 
-[![Добавить репозиторий в F-Droid](https://img.shields.io/badge/F--Droid-Add%20Repository-1976D2.svg?style=for-the-badge&logo=fdroid&logoColor=white)](https://yunfi.f5.si/Palleria/repo?fingerprint=28A7F64F373AC1AD5FBB4822870E2E07B2B204C7EC71E58CE40F9D54EF2727D9)
+[![Добавить репозиторий в F-Droid](https://img.shields.io/badge/F--Droid-Add%20Repository-1976D2.svg?style=for-the-badge&logo=fdroid&logoColor=white)](https://palleria.yunfie.date/repo?fingerprint=28A7F64F373AC1AD5FBB4822870E2E07B2B204C7EC71E58CE40F9D54EF2727D9)
 
 </p>
 

@@ -304,7 +304,7 @@ def index():
     Path("release.keystore").chmod(0o600)
     # JSON is valid YAML and safely quotes passwords containing punctuation.
     config = {
-        "repo_url": f"https://yunfi.f5.si/{os.environ['GITHUB_REPOSITORY'].split('/')[-1]}/repo",
+        "repo_url": "https://palleria.yunfie.date/repo",
         "repo_name": "Palleria Repository",
         "repo_description": "Stable, beta and pre-release builds for Palleria",
         "archive_older": 0,

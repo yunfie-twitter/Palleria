@@ -17,7 +17,7 @@ const homeIcon = {
 
 const members = [
   {
-    avatar: 'https://yunfi.f5.si/Palleria/icons.jpg',
+    avatar: 'https://palleria.yunfie.date/logo.png',
     name: 'ゆんふぃ',
     title: 'Developer',
     links: [

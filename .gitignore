@@ -47,6 +47,8 @@ rust/**/target/
 node_modules/
 docs/.vitepress/cache/
 docs/.vitepress/dist/
+# Generated per-page Open Graph images (created by docs:og during build)
+docs/public/og/
 
 # Local files
 *.log

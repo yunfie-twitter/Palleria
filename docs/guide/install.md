@@ -12,10 +12,10 @@ PalleriaはF-Droidリポジトリ、またはGitHub Releasesから入手でき�
 次のリポジトリをF-Droidクライアントに追加します。
 
 ```text
-https://yunfi.f5.si/Palleria/repo/
+https://palleria.yunfie.date/repo/
 ```
 
-[F-Droidにリポジトリを追加](https://yunfi.f5.si/Palleria/repo?fingerprint=28A7F64F373AC1AD5FBB4822870E2E07B2B204C7EC71E58CE40F9D54EF2727D9){.vp-button}
+[F-Droidにリポジトリを追加](https://palleria.yunfie.date/repo?fingerprint=28A7F64F373AC1AD5FBB4822870E2E07B2B204C7EC71E58CE40F9D54EF2727D9){.vp-button}
 
 1. リンクをAndroid端末で開きます。
 2. 使用するF-Droidクライアントを選び、リポジトリを追加します。
