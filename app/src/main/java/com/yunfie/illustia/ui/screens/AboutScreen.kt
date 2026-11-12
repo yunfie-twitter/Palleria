@@ -584,7 +584,7 @@ private fun OpenSourceLicensesSheet(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = "No license information available",
+                    text = stringResource(R.string.about_no_license_information),
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     style = MiuixTheme.textStyles.footnote1,
                 )

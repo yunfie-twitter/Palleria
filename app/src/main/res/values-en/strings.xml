@@ -1266,4 +1266,21 @@
         <item quantity="one">Show %1$d hidden item</item>
         <item quantity="other">Show %1$d hidden items</item>
     </plurals>
+
+    <!-- i18n: strings that were previously hardcoded in Kotlin -->
+    <string name="about_no_license_information">No license information available</string>
+    <string name="user_profile_no_image">No image</string>
+    <plurals name="series_chapter_count">
+        <item quantity="one">%1$d chapter</item>
+        <item quantity="other">%1$d chapters</item>
+    </plurals>
+    <string name="page_count_short">%1$dP</string>
+    <string name="update_eta_minutes_seconds">%1$d min %2$02d s</string>
+    <string name="update_eta_seconds">%1$d s</string>
+    <string name="discord_presence_browsing_illust">Browsing illustrations</string>
+    <string name="discord_presence_viewing_artwork">Viewing artwork</string>
+    <string name="image_save_media_store_failed">Failed to register with MediaStore.</string>
+    <string name="image_save_write_failed">Failed to write the file.</string>
+    <string name="error_request_failed">The request could not be completed. Please try again later.</string>
+    <string name="error_load_failed">Could not load data. Please try again later.</string>
 </resources>

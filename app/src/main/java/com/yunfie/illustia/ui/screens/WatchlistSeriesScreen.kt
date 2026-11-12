@@ -69,6 +69,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -141,7 +142,7 @@ fun WatchlistSeriesScreen(
     val context = LocalContext.current
     val activity = context as? Activity
     val repository = remember(viewModel) { viewModel.uiRepository() }
-    val store = remember(repository) { WatchlistStore(repository) }
+    val store = remember(repository) { WatchlistStore(repository, context) }
     val state by store.state.collectAsStateWithLifecycle()
     val settings by viewModel.settingsState.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
@@ -774,7 +775,12 @@ private fun WatchlistSeriesCard(
                                 .padding(horizontal = 8.dp, vertical = 4.dp),
                     ) {
                         Text(
-                            text = "${series.publishedContentCount}話",
+                            text =
+                                pluralStringResource(
+                                    R.plurals.series_chapter_count,
+                                    series.publishedContentCount,
+                                    series.publishedContentCount,
+                                ),
                             color = MiuixTheme.colorScheme.onBackground,
                             style = MiuixTheme.textStyles.footnote2,
                             fontWeight = FontWeight.Black,

@@ -128,7 +128,7 @@ fun IllustSeriesScreen(
     val context = LocalContext.current
     val activity = context as? Activity
     val repository = remember(viewModel) { viewModel.uiRepository() }
-    val store = remember(repository, seriesId) { IllustSeriesStore(repository, seriesId) }
+    val store = remember(repository, seriesId) { IllustSeriesStore(repository, seriesId, context) }
     val state by store.state.collectAsStateWithLifecycle()
     val settings by viewModel.settingsState.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()

@@ -1372,4 +1372,20 @@
     <plurals name="section_hidden_rows">
         <item quantity="other">%1$d 件の項目を表示</item>
     </plurals>
+
+    <!-- i18n: strings that were previously hardcoded in Kotlin -->
+    <string name="about_no_license_information">ライセンス情報がありません</string>
+    <string name="user_profile_no_image">画像なし</string>
+    <plurals name="series_chapter_count">
+        <item quantity="other">%1$d話</item>
+    </plurals>
+    <string name="page_count_short">%1$dP</string>
+    <string name="update_eta_minutes_seconds">%1$d分 %2$02d秒</string>
+    <string name="update_eta_seconds">%1$d秒</string>
+    <string name="discord_presence_browsing_illust">イラストを閲覧中</string>
+    <string name="discord_presence_viewing_artwork">作品を閲覧中</string>
+    <string name="image_save_media_store_failed">MediaStoreへの登録に失敗しました。</string>
+    <string name="image_save_write_failed">ファイルの書き込みに失敗しました。</string>
+    <string name="error_request_failed">リクエストを処理できませんでした。時間をおいて再度お試しください。</string>
+    <string name="error_load_failed">データを読み込めませんでした。時間をおいて再度お試しください。</string>
 </resources>

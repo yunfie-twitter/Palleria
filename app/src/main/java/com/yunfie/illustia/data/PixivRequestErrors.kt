@@ -1,5 +1,8 @@
 package com.yunfie.illustia.data
 
+import android.content.Context
+import com.yunfie.illustia.R
+
 internal fun Throwable.isPixivAuthExpired(): Boolean {
     var current: Throwable? = this
     while (current != null) {
@@ -41,11 +44,11 @@ internal fun Throwable.isTransientConnectionIssue(): Boolean {
 /**
  * A short, user-facing description of a request failure.
  *
- * Data-layer stores have no [android.content.Context] to resolve string resources, so these
- * return plain Japanese text instead of leaking `PixivApiException: Pixiv API error 500: {...}`
- * verbatim into an error card.
+ * Stores pass their [Context] so the message is resolved from resources in the user's
+ * language instead of hardcoding Japanese, and so a raw `PixivApiException: ...` never
+ * leaks into an error card.
  */
-internal fun Throwable.toUserMessage(): String {
+internal fun Throwable.toUserMessage(context: Context): String {
     var current: Throwable? = this
     var statusCode: Int? = null
     while (current != null) {
@@ -56,13 +59,13 @@ internal fun Throwable.toUserMessage(): String {
         current = current.cause
     }
     return when {
-        statusCode == HTTP_UNAUTHORIZED || statusCode == HTTP_FORBIDDEN -> "この操作を行う権限がありません。ログインし直してください。"
-        statusCode == HTTP_NOT_FOUND -> "対象が見つかりませんでした。削除された可能性があります。"
-        statusCode == HTTP_TOO_MANY_REQUESTS -> "リクエストが一時的に制限されています。少し待ってから再度お試しください。"
-        statusCode != null && statusCode in HTTP_SERVER_ERROR_RANGE -> "サーバー側で問題が発生しました。しばらく待ってから再度お試しください。"
-        statusCode != null -> "リクエストを処理できませんでした。時間をおいて再度お試しください。"
-        this is java.io.IOException -> "サーバーに接続できませんでした。通信環境を確認して再度お試しください。"
-        else -> "データを読み込めませんでした。時間をおいて再度お試しください。"
+        statusCode == HTTP_UNAUTHORIZED || statusCode == HTTP_FORBIDDEN -> context.getString(R.string.error_forbidden)
+        statusCode == HTTP_NOT_FOUND -> context.getString(R.string.error_not_found)
+        statusCode == HTTP_TOO_MANY_REQUESTS -> context.getString(R.string.error_rate_limited)
+        statusCode != null && statusCode in HTTP_SERVER_ERROR_RANGE -> context.getString(R.string.error_server_error)
+        statusCode != null -> context.getString(R.string.error_request_failed)
+        this is java.io.IOException -> context.getString(R.string.error_server_unreachable)
+        else -> context.getString(R.string.error_load_failed)
     }
 }
 
