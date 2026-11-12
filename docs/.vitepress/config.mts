@@ -2,9 +2,8 @@ import { defineConfig } from 'vitepress'
 
 const repository = 'https://github.com/yunfie-twitter/Palleria'
 const siteUrl = 'https://palleria.yunfie.date/'
-// One generated image per page lives in docs/public/og/<slug>.png.
-const ogBase = `${siteUrl}og/`
-const defaultOgImage = `${ogBase}index.png`
+// The supplied artwork is used verbatim as the Open Graph image on every page.
+const defaultOgImage = `${siteUrl}ogp.png`
 const icon = `${siteUrl}logo.png`
 const description =
   'Android向けオープンソースPixivクライアント「Palleria」の公式ドキュメント。イラスト・マンガ・小説・うごイラの閲覧、検索、ブックマーク、画像保存、プライバシー保護機能を解説します。'
@@ -49,17 +48,6 @@ function pageUrl(relativePath: string): string {
   return siteUrl + clean
 }
 
-// Must match docs/.vitepress/generate-og.mjs.
-function ogSlug(relativePath: string): string {
-  return (
-    relativePath
-      .replace(/\\/g, '/')
-      .replace(/\.md$/, '')
-      .replace(/(^|\/)index$/, '')
-      .replace(/\//g, '-') || 'index'
-  )
-}
-
 export default defineConfig({
   base: '/',
   lang: 'ja-JP',
@@ -93,21 +81,20 @@ export default defineConfig({
       ? 'Palleria - Android向けPixivクライアント'
       : `${pageData.title ?? 'Palleria'} | Palleria`
     const desc = pageData.description || description
-    const image = `${ogBase}${ogSlug(pageData.relativePath)}.png`
     return [
       ['link', { rel: 'canonical', href: url }],
       ['meta', { property: 'og:url', content: url }],
       ['meta', { property: 'og:title', content: title }],
       ['meta', { property: 'og:description', content: desc }],
-      ['meta', { property: 'og:image', content: image }],
-      ['meta', { property: 'og:image:secure_url', content: image }],
+      ['meta', { property: 'og:image', content: defaultOgImage }],
+      ['meta', { property: 'og:image:secure_url', content: defaultOgImage }],
       ['meta', { property: 'og:image:type', content: 'image/png' }],
-      ['meta', { property: 'og:image:width', content: '1200' }],
-      ['meta', { property: 'og:image:height', content: '630' }],
+      ['meta', { property: 'og:image:width', content: '1980' }],
+      ['meta', { property: 'og:image:height', content: '1080' }],
       ['meta', { property: 'og:image:alt', content: title }],
       ['meta', { name: 'twitter:title', content: title }],
       ['meta', { name: 'twitter:description', content: desc }],
-      ['meta', { name: 'twitter:image', content: image }],
+      ['meta', { name: 'twitter:image', content: defaultOgImage }],
       ['meta', { name: 'twitter:image:alt', content: title }],
     ]
   },
