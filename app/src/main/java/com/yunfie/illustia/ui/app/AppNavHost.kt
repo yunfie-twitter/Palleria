@@ -293,9 +293,14 @@ internal fun AppNavHost(
                 metadata = artworkMetadata,
             ) { route ->
                 ProvideEntrySharedTransitionScope {
-                    val selectedIllust = appState.state.selectedIllust
+                    // A tap now pushes this route synchronously, so the collected state can still
+                    // be one frame behind. Prefer the ViewModel's current value before falling
+                    // back to the snapshot map, otherwise the skeleton flashes first.
+                    val selectedIllust =
+                        appState.state.selectedIllust?.takeIf { it.id == route.illustId }
+                            ?: viewModel.currentSelectedIllust()?.takeIf { it.id == route.illustId }
                     val snapshot =
-                        if (selectedIllust?.id == route.illustId) {
+                        if (selectedIllust != null) {
                             DetailEntrySnapshot(
                                 illust = selectedIllust,
                                 relatedIllusts = appState.state.relatedIllusts,

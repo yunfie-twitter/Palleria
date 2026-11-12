@@ -1071,6 +1071,7 @@ abstract class IllustiaAuthFeedModule(
                 it.copy(
                     isTimelineRefreshing = forceRefresh,
                     loadState = if (it.timelineItems.isEmpty()) LoadState.Loading else it.loadState,
+                    timelineLoadState = if (it.timelineItems.isEmpty()) LoadState.Loading else it.timelineLoadState,
                 )
             }
             try {
@@ -1087,6 +1088,7 @@ abstract class IllustiaAuthFeedModule(
                             timelineNextUrl = page.nextUrl,
                             isTimelineRefreshing = false,
                             loadState = LoadState.Loaded,
+                            timelineLoadState = LoadState.Loaded,
                             isOfflineCached = false,
                         )
                     }
@@ -1116,6 +1118,7 @@ abstract class IllustiaAuthFeedModule(
                         isTimelineRefreshing = false,
                         isOfflineCached = canUseStale,
                         loadState = if (canUseStale) LoadState.Loaded else LoadState.Error(loadFailureMessage(it, error)),
+                        timelineLoadState = if (canUseStale) LoadState.Loaded else LoadState.Error(loadFailureMessage(it, error)),
                     )
                 }
             }
@@ -1294,6 +1297,7 @@ abstract class IllustiaAuthFeedModule(
                 it.copy(
                     isFollowingRefreshing = forceRefresh,
                     loadState = if (it.followingUsers.isEmpty()) LoadState.Loading else it.loadState,
+                    followingUsersLoadState = if (it.followingUsers.isEmpty()) LoadState.Loading else it.followingUsersLoadState,
                 )
             }
             try {
@@ -1307,6 +1311,7 @@ abstract class IllustiaAuthFeedModule(
                             followingUsersNextUrl = page.nextUrl,
                             isFollowingRefreshing = false,
                             loadState = LoadState.Loaded,
+                            followingUsersLoadState = LoadState.Loaded,
                         )
                     }
                 }
@@ -1320,6 +1325,7 @@ abstract class IllustiaAuthFeedModule(
                     it.copy(
                         isFollowingRefreshing = false,
                         loadState = LoadState.Error(loadFailureMessage(it, error)),
+                        followingUsersLoadState = LoadState.Error(loadFailureMessage(it, error)),
                     )
                 }
             }

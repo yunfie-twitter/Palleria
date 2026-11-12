@@ -207,9 +207,21 @@ class AppUpdateDownloadWorker(
             release: AppReleaseInfo,
         ) {
             _progressFlow.value = DownloadProgressEvent.Progress(0f, 0L, release.apkSize)
+            // WorkManager refuses input Data over 10240 bytes. The GitHub release body in
+            // releaseNotes can easily exceed that, and the worker never reads it or the other
+            // display-only fields, so ship only what the download and notification need.
+            val workRelease =
+                release.copy(
+                    releaseNotes = "",
+                    releaseTitle = "",
+                    publishedAt = "",
+                    htmlUrl = "",
+                    versionCode = null,
+                    isPrerelease = false,
+                )
             val workRequest =
                 OneTimeWorkRequestBuilder<AppUpdateDownloadWorker>()
-                    .setInputData(workDataOf(EXTRA_RELEASE_INFO to Json.encodeToString(release)))
+                    .setInputData(workDataOf(EXTRA_RELEASE_INFO to Json.encodeToString(workRelease)))
                     .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
                     .build()
 

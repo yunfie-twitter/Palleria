@@ -21,8 +21,10 @@ android {
         // Android 7.0 (API 24) and newer.
         minSdk = androidMinSdk
         targetSdk = 37
-        versionCode = 194
-        versionName = "7.1.0"
+        // CI overrides these for nightly builds. The literals below stay the source of
+        // truth for releases: .github/scripts/release_pipeline.py parses them.
+        versionCode = (System.getenv("BUILD_VERSION_CODE") ?: "196").toInteger()
+        versionName = System.getenv("BUILD_VERSION_NAME") ?: "7.1.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

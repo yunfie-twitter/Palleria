@@ -845,6 +845,15 @@ class AppUpdaterRepository(
             val cleanV1 = v1.trim().removePrefix("v").removePrefix("V")
             val cleanV2 = v2.trim().removePrefix("v").removePrefix("V")
             if (cleanV1 == cleanV2) return 0
+
+            // Nightly builds use an ISO-week name such as 26w46a. It has no dots, so the
+            // numeric comparison below would treat every nightly as equal.
+            val isoWeek1 = parseIsoWeekVersion(cleanV1)
+            val isoWeek2 = parseIsoWeekVersion(cleanV2)
+            if (isoWeek1 != null && isoWeek2 != null) {
+                return compareIsoWeekVersions(isoWeek1, isoWeek2)
+            }
+
             val core1 = cleanV1.substringBefore("-").trim()
             val core2 = cleanV2.substringBefore("-").trim()
 
@@ -888,5 +897,32 @@ class AppUpdaterRepository(
             }
             return 0
         }
+
+        // 26w46a -> (26, 46, 0). Returns null for anything that is not an ISO-week name, so
+        // ordinary dotted versions keep using the comparison above.
+        fun parseIsoWeekVersion(version: String): Triple<Int, Int, Int>? {
+            val match = ISO_WEEK_VERSION_REGEX.matchEntire(version)
+            val year = match?.groupValues?.getOrNull(1)?.toIntOrNull()
+            val week = match?.groupValues?.getOrNull(2)?.toIntOrNull()
+            val revision =
+                match
+                    ?.groupValues
+                    ?.getOrNull(3)
+                    ?.lowercase()
+                    ?.firstOrNull()
+                    ?.minus('a')
+            return if (year != null && week != null && revision != null) Triple(year, week, revision) else null
+        }
+
+        fun compareIsoWeekVersions(
+            first: Triple<Int, Int, Int>,
+            second: Triple<Int, Int, Int>,
+        ): Int {
+            val yearComparison = first.first.compareTo(second.first)
+            val weekComparison = first.second.compareTo(second.second)
+            return yearComparison.takeIf { it != 0 } ?: weekComparison.takeIf { it != 0 } ?: first.third.compareTo(second.third)
+        }
+
+        private val ISO_WEEK_VERSION_REGEX = Regex("""(\d{2})w(\d{2})([a-zA-Z])""")
     }
 }
