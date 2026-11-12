@@ -1180,7 +1180,7 @@ internal fun UserProfileAvatarPreviewOverlay(
                     )
                 } else {
                     Text(
-                        text = "no image",
+                        text = stringResource(R.string.user_profile_no_image),
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         style = MiuixTheme.textStyles.body1,
                         fontWeight = FontWeight.Bold,

@@ -294,9 +294,9 @@ object AppUpdateNotificationHelper {
             if (remainingSec >= SECONDS_PER_MINUTE) {
                 val mins = remainingSec / SECONDS_PER_MINUTE
                 val secs = remainingSec % SECONDS_PER_MINUTE
-                String.format(Locale.US, "%d分 %02d秒", mins, secs)
+                context.getString(R.string.update_eta_minutes_seconds, mins, secs)
             } else {
-                String.format(Locale.US, "%d秒", remainingSec)
+                context.getString(R.string.update_eta_seconds, remainingSec)
             }
         } else {
             context.getString(R.string.update_in_app_updater)

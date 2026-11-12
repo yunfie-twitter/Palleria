@@ -36,6 +36,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -267,7 +268,12 @@ private fun WatchlistSeriesCard(
                                 .padding(horizontal = 8.dp, vertical = 4.dp),
                     ) {
                         Text(
-                            text = "${series.publishedContentCount}話",
+                            text =
+                                pluralStringResource(
+                                    R.plurals.series_chapter_count,
+                                    series.publishedContentCount,
+                                    series.publishedContentCount,
+                                ),
                             color = MiuixTheme.colorScheme.onBackground,
                             style = MiuixTheme.textStyles.footnote2,
                             fontWeight = FontWeight.Black,

@@ -94,7 +94,8 @@ fun CommentScreen(
 ) {
     if (!show) return
     val repository = remember(viewModel) { viewModel.uiRepository() }
-    val store = remember(repository, id, type) { CommentStore(repository, id, type = type) }
+    val context = LocalContext.current
+    val store = remember(repository, id, type) { CommentStore(repository, id, type = type, context = context) }
     val state by store.state.collectAsStateWithLifecycle()
     val settings by viewModel.settingsState.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()

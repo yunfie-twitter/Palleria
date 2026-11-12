@@ -12,6 +12,7 @@ import com.discord.oauth2rpc.structures.Metadata
 import com.discord.oauth2rpc.structures.RichPresence
 import com.discord.oauth2rpc.structures.Timestamps
 import com.discord.oauth2rpc.utils.ActivityFlags
+import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.settings.AppSettings
@@ -158,7 +159,7 @@ class DiscordRpcManager(
     ): Triple<String, String, Long> {
         if (selectedIllust == null) {
             currentArtworkId = null
-            return Triple("イラストを閲覧中", "Palleria", sessionStart)
+            return Triple(localize(R.string.discord_presence_browsing_illust, "イラストを閲覧中"), "Palleria", sessionStart)
         }
         if (currentArtworkId != selectedIllust.id) {
             currentArtworkId = selectedIllust.id
@@ -166,9 +167,11 @@ class DiscordRpcManager(
         }
         val details =
             if (showDetails) {
-                selectedIllust.title.take(MAX_ACTIVITY_TEXT_LENGTH).ifBlank { "作品を閲覧中" }
+                selectedIllust.title
+                    .take(MAX_ACTIVITY_TEXT_LENGTH)
+                    .ifBlank { localize(R.string.discord_presence_viewing_artwork, "作品を閲覧中") }
             } else {
-                "作品を閲覧中"
+                localize(R.string.discord_presence_viewing_artwork, "作品を閲覧中")
             }
         val state =
             if (showDetails) {
@@ -186,11 +189,19 @@ class DiscordRpcManager(
     ): List<String>? {
         if (!showButtons) return null
         return if (selectedIllust != null && showDetails) {
-            listOf(BUTTON_PIXIV_LABEL, BUTTON_DOWNLOAD_LABEL)
+            listOf(
+                localize(R.string.discord_button_view_artwork, "Pixivで見る"),
+                localize(R.string.discord_button_download, "Palleriaをダウンロード"),
+            )
         } else {
-            listOf(BUTTON_DOWNLOAD_LABEL)
+            listOf(localize(R.string.discord_button_download, "Palleriaをダウンロード"))
         }
     }
+
+    private fun localize(
+        id: Int,
+        fallback: String,
+    ): String = appContext?.getString(id) ?: fallback
 
     private fun buildMetadata(
         showButtons: Boolean,
@@ -295,8 +306,6 @@ class DiscordRpcManager(
         const val DEFAULT_ASSET_PALLERIA = "1546050034351611904"
         const val DEFAULT_ASSET_LOGO_LARGE = "1546941143722364939"
         const val DOWNLOAD_URL = "https://yunfi.f5.si/Palleria/user/installation"
-        const val BUTTON_PIXIV_LABEL = "Pixivで見る"
-        const val BUTTON_DOWNLOAD_LABEL = "Palleriaをダウンロード"
         private const val DEBOUNCE_DELAY_MS = 600L
         private const val CONNECTION_TIMEOUT_MS = 15_000L
         private const val ASSET_FETCH_TIMEOUT_MS = 3_000
