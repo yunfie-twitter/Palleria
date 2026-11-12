@@ -23,8 +23,8 @@ android {
         targetSdk = 37
         // CI overrides these for nightly builds. The literals below stay the source of
         // truth for releases: .github/scripts/release_pipeline.py parses them.
-        versionCode = (System.getenv("BUILD_VERSION_CODE") ?: "194").toInteger()
-        versionName = System.getenv("BUILD_VERSION_NAME") ?: "7.1.0"
+        versionCode = (System.getenv("BUILD_VERSION_CODE") ?: "196").toInteger()
+        versionName = System.getenv("BUILD_VERSION_NAME") ?: "7.1.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

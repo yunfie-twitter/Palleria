@@ -16,6 +16,8 @@ internal data class IllustiaAppStateBundle(
     val homeItems = state.homeItems
     val novelItems = state.novelItems
     val timelineItems = state.timelineItems
+    val timelineLoadState = state.timelineLoadState
+    val followingUsersLoadState = state.followingUsersLoadState
     val rankingItems = state.rankingItems
     val bookmarkItems = state.bookmarkItems
     val watchlistItems = state.watchlistItems
