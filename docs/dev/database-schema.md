@@ -1,5 +1,6 @@
 ---
 title: データベースと設定の保存
+description: PalleriaのRoomデータベース（illustia.db・スキーマ版7）とDataStoreに保存される設定・履歴の構造を一覧します。
 ---
 
 # データベースと設定の保存

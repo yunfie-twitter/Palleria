@@ -1,5 +1,6 @@
 ---
 title: Palleria ユーザーガイド
+description: Palleriaの対応環境、タブ構成、インストールから基本操作までの入口をまとめたユーザーガイドです。
 ---
 
 # Palleria ユーザーガイド

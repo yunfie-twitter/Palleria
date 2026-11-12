@@ -23,9 +23,9 @@ PalleriaはKotlinとJetpack Composeを中心に構成されたAndroidアプリ�
 
 ## 読む順番
 
-1. [ビルド](./build)で必要なツールを準備する
-2. [アーキテクチャ](./architecture)で主要ディレクトリを把握する
-3. [コントリビューション](./contributing)の方針を確認する
+1. [ビルド](./build.md)で必要なツールを準備する
+2. [アーキテクチャ](./architecture.md)で主要ディレクトリを把握する
+3. [コントリビューション](./contributing.md)の方針を確認する
 
 ## リポジトリ
 
