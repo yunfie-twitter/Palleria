@@ -1,5 +1,6 @@
 package com.yunfie.illustia.data.pixiv
 
+import android.content.Context
 import com.yunfie.illustia.data.IllustiaRepository
 import com.yunfie.illustia.data.toUserMessage
 import com.yunfie.illustia.models.pixiv.Comment
@@ -45,6 +46,7 @@ class CommentStore(
     private val parentCommentId: Long? = null,
     private val isReplay: Boolean = false,
     private val type: CommentArtworkType = CommentArtworkType.ILLUST,
+    private val context: Context,
 ) {
     private val _state = MutableStateFlow(CommentState())
     val state: StateFlow<CommentState> = _state.asStateFlow()
@@ -102,7 +104,7 @@ class CommentStore(
                 it.copy(
                     isLoading = false,
                     isRefreshing = false,
-                    errorMessage = expectedFailure.toUserMessage(),
+                    errorMessage = expectedFailure.toUserMessage(context),
                 )
             }
         }
@@ -121,7 +123,7 @@ class CommentStore(
             _state.update {
                 it.copy(
                     isPaginating = false,
-                    errorMessage = expectedFailure.toUserMessage(),
+                    errorMessage = expectedFailure.toUserMessage(context),
                 )
             }
         }

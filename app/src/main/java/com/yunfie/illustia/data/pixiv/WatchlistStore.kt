@@ -1,5 +1,6 @@
 package com.yunfie.illustia.data.pixiv
 
+import android.content.Context
 import com.yunfie.illustia.data.IllustiaRepository
 import com.yunfie.illustia.data.toUserMessage
 import com.yunfie.illustia.models.pixiv.MangaSeriesModel
@@ -27,6 +28,7 @@ data class WatchlistState(
 
 class WatchlistStore(
     private val repository: IllustiaRepository,
+    private val context: Context,
 ) {
     private val _state = MutableStateFlow(WatchlistState())
     val state: StateFlow<WatchlistState> = _state.asStateFlow()
@@ -58,7 +60,7 @@ class WatchlistStore(
                 it.copy(
                     isLoading = false,
                     isRefreshing = false,
-                    errorMessage = expectedFailure.toUserMessage(),
+                    errorMessage = expectedFailure.toUserMessage(context),
                     hasLoaded = true,
                 )
             }
@@ -85,7 +87,7 @@ class WatchlistStore(
             _state.update {
                 it.copy(
                     isPaginating = false,
-                    errorMessage = expectedFailure.toUserMessage(),
+                    errorMessage = expectedFailure.toUserMessage(context),
                 )
             }
         }
