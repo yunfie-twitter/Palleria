@@ -450,6 +450,19 @@ abstract class IllustiaBookmarkModule(
                             }.awaitAll()
                     }
                 }.onSuccess { tags ->
+                    // A stale offline fallback also lands here as "success". Recording it as a
+                    // fresh fetch would stamp the current time onto old data, so the offline
+                    // result would be cached as valid and survive until the TTL expired.
+                    if (repository.trendingTagsServedStale()) {
+                        _uiState.update { current ->
+                            current.copy(
+                                recommendedTagsLoading = false,
+                                recommendedTagsError =
+                                    current.recommendedTagsError ?: str(R.string.offline_no_cache),
+                            )
+                        }
+                        return@onSuccess
+                    }
                     val fetchedAt = System.currentTimeMillis()
                     _uiState.update { current ->
                         current.copy(

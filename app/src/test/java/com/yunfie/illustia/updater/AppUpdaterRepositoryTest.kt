@@ -27,6 +27,25 @@ class AppUpdaterRepositoryTest :
             AppUpdaterRepository.compareVersions("v6.5.0-beta.5", "6.5.0-beta.6") shouldBe -1
         }
 
+        "compares ISO-week nightly versions correctly" {
+            // Nightlies have no dots, so they must not fall through to the numeric comparison.
+            AppUpdaterRepository.compareVersions("26w46b", "26w46a") shouldBe 1
+            AppUpdaterRepository.compareVersions("26w46a", "26w46b") shouldBe -1
+            AppUpdaterRepository.compareVersions("26w46a", "26w46a") shouldBe 0
+            AppUpdaterRepository.compareVersions("26w47a", "26w46z") shouldBe 1
+            AppUpdaterRepository.compareVersions("27w01a", "26w53z") shouldBe 1
+            AppUpdaterRepository.compareVersions("26w03a", "26w02z") shouldBe 1
+            // Version prefix 'v' and uppercase letters are accepted too.
+            AppUpdaterRepository.compareVersions("v26w46b", "26w46a") shouldBe 1
+            AppUpdaterRepository.compareVersions("26W46A", "26w46A") shouldBe 0
+        }
+
+        "treats an ISO-week name and a semantic version as unrelated schemes" {
+            // A nightly must never rank above a real release.
+            AppUpdaterRepository.compareVersions("26w46a", "7.1.0") shouldBe -1
+            AppUpdaterRepository.compareVersions("7.1.0", "26w46a") shouldBe 1
+        }
+
         "parses UpdateInstallMethod values correctly" {
             UpdateInstallMethod.fromValue("standard_apk") shouldBe UpdateInstallMethod.STANDARD_APK
             UpdateInstallMethod.fromValue("shizuku") shouldBe UpdateInstallMethod.SHIZUKU

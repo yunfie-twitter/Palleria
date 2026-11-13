@@ -294,7 +294,7 @@ class DiscordRpcManager(
         const val DEFAULT_ASSET_APP_ICON = "1544653988580827199"
         const val DEFAULT_ASSET_PALLERIA = "1546050034351611904"
         const val DEFAULT_ASSET_LOGO_LARGE = "1546941143722364939"
-        const val DOWNLOAD_URL = "https://yunfi.f5.si/Palleria/user/installation"
+        const val DOWNLOAD_URL = "https://palleria.yunfie.date/user/installation"
         const val BUTTON_PIXIV_LABEL = "Pixivで見る"
         const val BUTTON_DOWNLOAD_LABEL = "Palleriaをダウンロード"
         private const val DEBOUNCE_DELAY_MS = 600L

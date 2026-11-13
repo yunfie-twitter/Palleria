@@ -19,6 +19,10 @@ data class WatchlistState(
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
     val isPaginating: Boolean = false,
+    // The store starts empty and not loading, so without this the "no series" placeholder
+    // paints on the first frame and is replaced by skeletons a frame later. The empty
+    // state must only appear after a fetch has actually completed.
+    val hasLoaded: Boolean = false,
 )
 
 class WatchlistStore(
@@ -44,6 +48,7 @@ class WatchlistStore(
                     isLoading = false,
                     isRefreshing = false,
                     errorMessage = null,
+                    hasLoaded = true,
                 )
             }
         } catch (cancellation: CancellationException) {
@@ -54,6 +59,7 @@ class WatchlistStore(
                     isLoading = false,
                     isRefreshing = false,
                     errorMessage = expectedFailure.toUserMessage(),
+                    hasLoaded = true,
                 )
             }
         }

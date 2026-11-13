@@ -141,6 +141,11 @@ data class IllustiaUiState(
     val appLocked: Boolean = false,
     val showLockRecoveryDialog: Boolean = false,
     val loadState: LoadState = LoadState.Idle,
+    // Per-feed loading state. The shared `loadState` is written by every feed, so an empty
+    // following list could be rendered as "no users" while another feed had already reported
+    // Loaded. These start Idle and are gated on Loaded, so the placeholder cannot flash.
+    val timelineLoadState: LoadState = LoadState.Idle,
+    val followingUsersLoadState: LoadState = LoadState.Idle,
     val message: String? = null,
     val centeredError: String? = null,
     val pendingPermissionRationale: PermissionRationaleType? = null,

@@ -40,8 +40,13 @@ def output(key, value):
 
 
 def version(text):
+    # versionName/versionCode may be wrapped in an env override for nightly builds, e.g.
+    # versionCode = (System.getenv("BUILD_VERSION_CODE") ?: "194").toInteger()
+    # The fallback literal is the release value, so the override wrapper is stripped first.
+    text = re.sub(r"\(?\s*System\.getenv\([^)]*\)\s*\?:\s*", "", text)
+    text = re.sub(r"\)\.toInteger\(\)", "", text)
     name = re.search(r'^\s*versionName\s*=?\s*[\"\x27]([\w.+-]+)[\"\x27]', text, re.M)
-    code = re.search(r'^\s*versionCode\s*=?\s*(\d+)\s*$', text, re.M)
+    code = re.search(r'^\s*versionCode\s*=?\s*"?(\d+)"?', text, re.M)
     if not name or not code:
         raise ValueError("Cannot read versionName/versionCode from app/build.gradle")
     return name[1], int(code[1])
@@ -201,6 +206,60 @@ def sync():
     output("changed", "true")
 
 
+# GitHub Pages rejects a deployment whose artifact exceeds 1 GB, and the published
+# site also contains the docs and the F-Droid index. Keep the newest releases that
+# fit in this budget and drop the rest.
+REPO_SIZE_BUDGET = 900 * 1024 * 1024
+MIN_KEPT_RELEASES = 2
+
+
+def prune():
+    repo = PUBLIC / "repo"
+    state_file = PUBLIC / "metadata" / "release-assets.json"
+    if not repo.is_dir():
+        output("changed", "false")
+        return
+    state = json.loads(state_file.read_text(encoding="utf-8")) if state_file.exists() else {}
+    releases = []
+    for release_id, item in state.items():
+        version_code = item.get("version_code")
+        if not isinstance(version_code, int):
+            continue
+        files = [name for name in item.get("files", []) if (repo / name).is_file()]
+        if files:
+            releases.append((version_code, release_id, files))
+    # Without a usable ledger, deleting APKs would be guesswork. Leave the repo alone.
+    if not releases:
+        output("changed", "false")
+        return
+    releases.sort(key=lambda entry: entry[0], reverse=True)
+
+    kept = []
+    used = 0
+    for version_code, release_id, files in releases:
+        size = sum((repo / name).stat().st_size for name in files)
+        if len(kept) >= MIN_KEPT_RELEASES and used + size > REPO_SIZE_BUDGET:
+            break
+        kept.append((release_id, files))
+        used += size
+
+    keep_ids = {release_id for release_id, _ in kept}
+    keep_files = {name for _, files in kept for name in files}
+    changed = False
+    for apk in repo.glob("*.apk"):
+        if apk.name not in keep_files:
+            apk.unlink()
+            changed = True
+    if changed or set(state) != keep_ids:
+        state_file.parent.mkdir(parents=True, exist_ok=True)
+        state_file.write_text(
+            json.dumps({rid: item for rid, item in state.items() if rid in keep_ids}, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        changed = True
+    output("changed", "true" if changed else "false")
+
+
 def apk_version(aapt, apk):
     data = run(str(aapt), "dump", "badging", str(apk))
     match = re.search(r"^package: name='([^']+)' versionCode='(\d+)' versionName='([^']*)'", data, re.M)
@@ -245,7 +304,7 @@ def index():
     Path("release.keystore").chmod(0o600)
     # JSON is valid YAML and safely quotes passwords containing punctuation.
     config = {
-        "repo_url": f"https://yunfi.f5.si/{os.environ['GITHUB_REPOSITORY'].split('/')[-1]}/repo",
+        "repo_url": "https://palleria.yunfie.date/repo",
         "repo_name": "Palleria Repository",
         "repo_description": "Stable, beta and pre-release builds for Palleria",
         "archive_older": 0,
@@ -259,5 +318,5 @@ def index():
 
 
 if __name__ == "__main__":
-    commands = {"prepare": prepare, "guard": lambda: guard(os.environ["RELEASE_TAG"]), "sync": sync, "index": index}
+    commands = {"prepare": prepare, "guard": lambda: guard(os.environ["RELEASE_TAG"]), "sync": sync, "index": index, "prune": prune}
     commands[sys.argv[1]]()

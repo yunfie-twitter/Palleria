@@ -147,7 +147,11 @@ fun PixivImage(
         }
     val hasSuccessListener = onSuccess != null
     val hasLoadingListener = onLoadingStateChanged != null || showLoadingSpinner || hasPlaceholder
-    var isLoading by remember(effectiveUrl, hasLoadingListener) { mutableStateOf(hasLoadingListener) }
+    // Keyed on the request identity too: when the pager settles it swaps from the thumbnail
+    // tier to the detail tier, which starts a brand new request. Without resetting this the
+    // underlay stayed hidden for the first frame of that request, so the image blanked out and
+    // then popped back in.
+    var isLoading by remember(effectiveUrl, hasLoadingListener, thumbnail, maxDecodeDimensionPx) { mutableStateOf(hasLoadingListener) }
     val currentOnSuccess by rememberUpdatedState(onSuccess)
     val currentOnLoadingStateChanged by rememberUpdatedState(onLoadingStateChanged)
 

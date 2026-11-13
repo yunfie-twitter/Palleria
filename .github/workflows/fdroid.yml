@@ -3,6 +3,7 @@ name: Update F-Droid Repository
 on:
   release:
     types: [published, deleted]
+  workflow_dispatch:
 
 permissions:
   # Release assets need contents: read; gh-pages pushes need contents: write.
@@ -36,19 +37,26 @@ jobs:
 
       - name: Download or remove release APKs
         id: sync
+        if: github.event_name == 'release'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python .github/scripts/release_pipeline.py sync
 
+      # GitHub Pages rejects artifacts over 1 GB, so the repo keeps only the newest
+      # releases that fit. Runs on every event so the branch can never grow past it.
+      - name: Prune old APKs
+        id: prune
+        run: python .github/scripts/release_pipeline.py prune
+
       - name: Set up Java
-        if: steps.sync.outputs.changed == 'true'
+        if: steps.sync.outputs.changed == 'true' || steps.prune.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
         uses: actions/setup-java@v6
         with:
           java-version: "21"
           distribution: temurin
 
       - name: Install fdroidserver
-        if: steps.sync.outputs.changed == 'true'
+        if: steps.sync.outputs.changed == 'true' || steps.prune.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           set -euo pipefail
@@ -59,7 +67,7 @@ jobs:
           "$fdroid_bin/fdroid" --version
 
       - name: Update and sign F-Droid indexes
-        if: steps.sync.outputs.changed == 'true'
+        if: steps.sync.outputs.changed == 'true' || steps.prune.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
         env:
           KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
@@ -75,7 +83,7 @@ jobs:
         run: rm -f release.keystore public/config.yml
 
       - name: Deploy to GitHub Pages
-        if: steps.sync.outputs.changed == 'true'
+        if: steps.sync.outputs.changed == 'true' || steps.prune.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}

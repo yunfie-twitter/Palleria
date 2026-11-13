@@ -119,7 +119,9 @@ internal fun BookmarkWatchlistTab(
             isLoading = watchlistState.isPaginating || watchlistState.isLoading,
             onLoadMore = { scope.launch { watchlistStore.loadMore() } },
         )
-        val shimmer = if (watchlistState.isLoading && watchlistState.mangaSeries.isEmpty()) rememberIllustSkeletonShimmer() else null
+        val showWatchlistSkeleton = (!watchlistState.hasLoaded || watchlistState.isLoading) && watchlistState.mangaSeries.isEmpty()
+        val watchlistPending = !watchlistState.hasLoaded || watchlistState.isLoading || watchlistState.errorMessage != null
+        val shimmer = if (showWatchlistSkeleton) rememberIllustSkeletonShimmer() else null
         val columns = adaptiveIllustColumns(settings)
         LazyVerticalGrid(
             state = gridState,
@@ -140,7 +142,7 @@ internal fun BookmarkWatchlistTab(
             horizontalArrangement = Arrangement.spacedBy(ProfileGridHorizontalSpacing),
             verticalArrangement = Arrangement.spacedBy(ProfileGridVerticalSpacing),
         ) {
-            if (watchlistState.isLoading && watchlistState.mangaSeries.isEmpty()) {
+            if (showWatchlistSkeleton) {
                 gridItems(List(6) { it }, key = { "watchlist_skeleton_$it" }, contentType = { "watchlist_series_skeleton" }) {
                     WatchlistSeriesCardSkeleton(shimmerValue = shimmer)
                 }
@@ -154,7 +156,7 @@ internal fun BookmarkWatchlistTab(
                     )
                 }
             }
-            if (watchlistState.mangaSeries.isEmpty() && !watchlistState.isLoading && watchlistState.errorMessage == null) {
+            if (watchlistState.mangaSeries.isEmpty() && !watchlistPending) {
                 item(span = { GridItemSpan(maxLineSpan) }) { EmptyState(stringResource(R.string.watchlist_series_empty)) }
             }
             gridItems(watchlistState.mangaSeries, key = { it.id }, contentType = { "watchlist_series_card" }) { series ->
