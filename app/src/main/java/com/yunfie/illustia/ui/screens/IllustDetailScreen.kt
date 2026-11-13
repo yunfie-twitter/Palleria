@@ -36,7 +36,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -72,7 +71,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.view.WindowCompat
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.yunfie.illustia.R
@@ -96,6 +94,8 @@ import com.yunfie.illustia.ui.components.MiuixConfirmDialog
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.ScrollablePullToRefresh
+import com.yunfie.illustia.ui.components.SystemBarAppearanceEffect
+import com.yunfie.illustia.ui.components.TransparentStatusBarColor
 import com.yunfie.illustia.ui.components.adaptiveRelatedIllustColumns
 import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.performAppHapticFeedback
@@ -124,6 +124,7 @@ fun IllustDetailScreen(
     isActive: Boolean = true,
     relatedIllusts: List<Illust>,
     firstComment: Comment?,
+    settings: IllustDetailSettings,
     onBack: () -> Unit,
     onBookmark: () -> Unit,
     onBookmarkLongClick: (() -> Unit)? = null,
@@ -150,25 +151,26 @@ fun IllustDetailScreen(
     onSaveAllImages: (List<String>, String) -> Unit,
     onMessage: (String) -> Unit,
     loadUgoiraPlayback: suspend (Long) -> UgoiraPlayback,
-    highQualityImages: Boolean,
-    detailQuality: String,
-    prefetchImages: Boolean,
-    confirmOnLongPressSave: Boolean,
-    skipConfirmOnDetailSave: Boolean,
-    smartDownloadNaming: Boolean = true,
-    ugoiraPowerSave: Boolean = true,
-    mangaAdaptivePreload: Boolean = true,
-    detailSectionOrder: List<String>,
-    relatedIllustColumnCount: Int = 3,
-    liquidGlassButtons: Boolean = false,
-    liquidGlassFollowButton: Boolean = false,
-    progressiveQuality: Boolean = false,
-    relatedSectionInitiallyReady: Boolean = false,
     onRelatedSectionReady: () -> Unit = {},
-    initialPage: Int = 0,
     onPageChanged: (Int) -> Unit = {},
     listState: LazyListState = rememberLazyListState(),
 ) {
+    val highQualityImages = settings.highQualityImages
+    val detailQuality = settings.detailQuality
+    val prefetchImages = settings.prefetchImages
+    val confirmOnLongPressSave = settings.confirmOnLongPressSave
+    val skipConfirmOnDetailSave = settings.skipConfirmOnDetailSave
+    val smartDownloadNaming = settings.smartDownloadNaming
+    val ugoiraPowerSave = settings.ugoiraPowerSave
+    val mangaAdaptivePreload = settings.mangaAdaptivePreload
+    val detailSectionOrder = settings.detailSectionOrder
+    val relatedIllustColumnCount = settings.relatedIllustColumnCount
+    val liquidGlassButtons = settings.liquidGlassButtons
+    val liquidGlassFollowButton = settings.liquidGlassFollowButton
+    val progressiveQuality = settings.progressiveQuality
+    val relatedSectionInitiallyReady = settings.relatedSectionInitiallyReady
+    val initialPage = settings.initialPage
+
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
     val hapticMode = LocalAppHapticMode.current
@@ -212,25 +214,18 @@ fun IllustDetailScreen(
         derivedStateOf { pullToRefreshState.pullProgress > 0.05f || isRefreshing }
     }
 
-    DisposableEffect(isArtworkOffScreen, isDarkTheme, useDarkHeaderIcons, isPulling) {
-        val window = activity?.window
-        if (window != null) {
-            val insetsController = WindowCompat.getInsetsController(window, window.decorView)
-            window.statusBarColor = android.graphics.Color.TRANSPARENT
-            insetsController.isAppearanceLightStatusBars =
-                if (isArtworkOffScreen || isPulling) {
-                    !isDarkTheme
-                } else {
-                    useDarkHeaderIcons
-                }
-        }
-        onDispose {
-            val window = activity?.window
-            if (window != null) {
-                WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = !isDarkTheme
-            }
-        }
-    }
+    SystemBarAppearanceEffect(
+        lightStatusBars =
+            if (isArtworkOffScreen || isPulling) {
+                !isDarkTheme
+            } else {
+                useDarkHeaderIcons
+            },
+        lightNavigationBars = !isDarkTheme,
+        restoreLightStatusBars = !isDarkTheme,
+        restoreLightNavigationBars = !isDarkTheme,
+        statusBarColor = TransparentStatusBarColor,
+    )
 
     LaunchedEffect(isRefreshing) {
         if (isRefreshing) {

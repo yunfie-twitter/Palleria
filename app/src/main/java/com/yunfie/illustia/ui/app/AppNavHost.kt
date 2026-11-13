@@ -57,6 +57,7 @@ import com.yunfie.illustia.ui.screens.FavoriteTagsScreen
 import com.yunfie.illustia.ui.screens.FeatureFlagsScreen
 import com.yunfie.illustia.ui.screens.GeneralSettingsScreen
 import com.yunfie.illustia.ui.screens.IllustDetailScreen
+import com.yunfie.illustia.ui.screens.IllustDetailSettings
 import com.yunfie.illustia.ui.screens.IllustDetailSkeletonScreen
 import com.yunfie.illustia.ui.screens.IllustSeriesScreen
 import com.yunfie.illustia.ui.screens.ImageSettingsScreen
@@ -367,27 +368,30 @@ internal fun AppNavHost(
                             onSaveAllImages = viewModel::saveImages,
                             onMessage = viewModel::showMessage,
                             loadUgoiraPlayback = viewModel::loadUgoiraPlayback,
-                            highQualityImages = appState.state.settings.highQualityImages,
-                            detailQuality =
-                                if (illust.type == "manga") {
-                                    appState.state.settings.mangaDetailQuality
-                                } else {
-                                    appState.state.settings.illustDetailQuality
-                                },
-                            prefetchImages = appState.state.settings.prefetchImages,
-                            confirmOnLongPressSave = appState.state.settings.confirmOnLongPressSave,
-                            skipConfirmOnDetailSave = appState.state.settings.skipConfirmOnDetailSave,
-                            smartDownloadNaming = appState.state.settings.isFeatureEnabled(FeatureFlag.SmartDownloadNaming),
-                            ugoiraPowerSave = appState.state.settings.isFeatureEnabled(FeatureFlag.UgoiraPowerSave),
-                            mangaAdaptivePreload = appState.state.settings.isFeatureEnabled(FeatureFlag.MangaAdaptivePreload),
-                            detailSectionOrder = appState.state.settings.detailSectionOrder,
-                            relatedIllustColumnCount = appState.state.settings.relatedIllustColumnCount,
-                            liquidGlassButtons = appState.state.settings.isFeatureEnabled(FeatureFlag.LiquidGlassButtons),
-                            liquidGlassFollowButton = appState.state.settings.isFeatureEnabled(FeatureFlag.LiquidGlassFollowButton),
-                            progressiveQuality = appState.state.settings.isFeatureEnabled(FeatureFlag.ProgressiveImageQuality),
-                            relatedSectionInitiallyReady = viewModel.isIllustDetailRelatedSectionReady(illust.id),
+                            settings =
+                                IllustDetailSettings(
+                                    highQualityImages = appState.state.settings.highQualityImages,
+                                    detailQuality =
+                                        if (illust.type == "manga") {
+                                            appState.state.settings.mangaDetailQuality
+                                        } else {
+                                            appState.state.settings.illustDetailQuality
+                                        },
+                                    prefetchImages = appState.state.settings.prefetchImages,
+                                    confirmOnLongPressSave = appState.state.settings.confirmOnLongPressSave,
+                                    skipConfirmOnDetailSave = appState.state.settings.skipConfirmOnDetailSave,
+                                    smartDownloadNaming = appState.state.settings.isFeatureEnabled(FeatureFlag.SmartDownloadNaming),
+                                    ugoiraPowerSave = appState.state.settings.isFeatureEnabled(FeatureFlag.UgoiraPowerSave),
+                                    mangaAdaptivePreload = appState.state.settings.isFeatureEnabled(FeatureFlag.MangaAdaptivePreload),
+                                    detailSectionOrder = appState.state.settings.detailSectionOrder,
+                                    relatedIllustColumnCount = appState.state.settings.relatedIllustColumnCount,
+                                    liquidGlassButtons = appState.state.settings.isFeatureEnabled(FeatureFlag.LiquidGlassButtons),
+                                    liquidGlassFollowButton = appState.state.settings.isFeatureEnabled(FeatureFlag.LiquidGlassFollowButton),
+                                    progressiveQuality = appState.state.settings.isFeatureEnabled(FeatureFlag.ProgressiveImageQuality),
+                                    relatedSectionInitiallyReady = viewModel.isIllustDetailRelatedSectionReady(illust.id),
+                                    initialPage = viewModel.illustDetailPage(illust.id),
+                                ),
                             onRelatedSectionReady = { viewModel.markIllustDetailRelatedSectionReady(illust.id) },
-                            initialPage = viewModel.illustDetailPage(illust.id),
                             onPageChanged = { viewModel.updateIllustDetailPage(illust.id, it) },
                             listState = viewModel.illustDetailListState(illust.id),
                         )
