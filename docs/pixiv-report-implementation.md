@@ -1,3 +1,12 @@
+---
+title: Pixiv通報機能の実装メモ
+description: Pixiv通報機能の調査とPalleriaでの実装方針に関する内部メモです。
+head:
+  - - meta
+    - name: robots
+      content: noindex, nofollow
+---
+
 # Pixiv 通報機能の実装メモ
 
 ## pixez-flutter の解析結果

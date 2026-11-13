@@ -1,21 +1,21 @@
 ---
 title: アプリケーション仕様
-description: Palleria 6.6.0-beta.3 の実装に基づく機能・状態・連携の仕様。
+description: Palleria 7.1.0 の実装に基づく機能・状態・連携の仕様。
 ---
 
 # アプリケーション仕様
 
 このページは `app` と `rust/pixiv-api` の現行ソースを基準にした実装仕様です。将来の構想ではなく、リポジトリに実装されている振る舞いを記録します。
 
-確認日: 2026年10月3日。バージョン値は `app/build.gradle` を基準にしています。
+確認日: 2026年11月11日。バージョン値は `app/build.gradle` を基準にしています。
 
 ## 対象と動作環境
 
 | 項目 | 仕様 |
 | --- | --- |
 | アプリケーション ID | `com.yunfie.illustia` |
-| 現行バージョン | `6.6.0-beta.3`（`versionCode` 141） |
-| 最低 / target SDK | API 24（Android 7.0） / API 36 |
+| 現行バージョン | `7.1.0`（`versionCode` 194） |
+| 最低 / target SDK | API 24（Android 7.0） / API 37 |
 | UI | Kotlin、Jetpack Compose、Navigation 3、Miuix KMP |
 | ネイティブ層 | Rust 2024 edition、UniFFI 経由で利用 |
 | Rust ABI | `arm64-v8a`、`armeabi-v7a`、`x86_64` |

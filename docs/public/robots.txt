@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://yunfi.f5.si/Palleria/sitemap.xml
+Sitemap: https://palleria.yunfie.date/sitemap.xml

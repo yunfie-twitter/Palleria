@@ -10,7 +10,6 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -32,7 +31,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.core.view.WindowCompat
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
@@ -45,6 +43,7 @@ import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.settings.resolvePageBackgroundColor
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
+import com.yunfie.illustia.ui.components.SystemBarAppearanceEffect
 import com.yunfie.illustia.ui.components.rememberLiquidGlassBackdrop
 import com.yunfie.illustia.ui.screens.profile.UserProfileAvatarPreviewOverlay
 import com.yunfie.illustia.ui.screens.profile.UserProfilePagerContent
@@ -179,26 +178,12 @@ fun UserProfileScreen(
         }
     }
 
-    DisposableEffect(isContentScrolled, isDarkTheme, showAvatarPreview) {
-        val window = activity?.window
-        if (window != null) {
-            val insetsController = WindowCompat.getInsetsController(window, window.decorView)
-            insetsController.isAppearanceLightStatusBars =
-                if (showAvatarPreview) {
-                    false
-                } else if (isContentScrolled) {
-                    !isDarkTheme
-                } else {
-                    false
-                }
-        }
-        onDispose {
-            val window = activity?.window
-            if (window != null) {
-                WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = !isDarkTheme
-            }
-        }
-    }
+    SystemBarAppearanceEffect(
+        lightStatusBars = !showAvatarPreview && isContentScrolled && !isDarkTheme,
+        lightNavigationBars = !isDarkTheme,
+        restoreLightStatusBars = !isDarkTheme,
+        restoreLightNavigationBars = !isDarkTheme,
+    )
 
     LaunchedEffect(pagerState, user.id, isMuted) {
         androidx.compose.runtime.snapshotFlow { pagerState.settledPage }.collect { settled ->

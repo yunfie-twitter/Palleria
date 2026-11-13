@@ -309,6 +309,44 @@ internal fun NovelCard(
     }
 }
 
+/**
+ * 単一選択のフィルタ用 pill 行。選択中は primary、非選択は surfaceContainerHighest で塗る。
+ * 以前は各画面で [NovelMetaPill] を forEach で並べる同型コードが散在していたため、ここに集約する。
+ */
+@Composable
+internal fun <T> FilterPillRow(
+    entries: List<T>,
+    selected: T,
+    label: @Composable (T) -> String,
+    onSelect: (T) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        entries.forEach { entry ->
+            val isSelected = selected == entry
+            NovelMetaPill(
+                text = label(entry),
+                backgroundColor =
+                    if (isSelected) {
+                        MiuixTheme.colorScheme.primary
+                    } else {
+                        MiuixTheme.colorScheme.surfaceContainerHighest
+                    },
+                textColor =
+                    if (isSelected) {
+                        MiuixTheme.colorScheme.onPrimary
+                    } else {
+                        MiuixTheme.colorScheme.onSurface
+                    },
+                onClick = { onSelect(entry) },
+            )
+        }
+    }
+}
+
 @Composable
 internal fun NovelMetaPill(
     text: String,
