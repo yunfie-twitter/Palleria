@@ -45,7 +45,6 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
@@ -74,7 +73,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
@@ -92,6 +90,7 @@ import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.ProfileGridHorizontalSpacing
 import com.yunfie.illustia.ui.components.ProfileGridVerticalSpacing
 import com.yunfie.illustia.ui.components.RequestErrorState
+import com.yunfie.illustia.ui.components.SystemBarAppearanceEffect
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
 import com.yunfie.illustia.ui.components.adaptiveProfileGridColumns
@@ -211,19 +210,12 @@ fun WatchlistSeriesScreen(
         )
     val isDarkTheme = backgroundColor.luminance() < 0.5f
 
-    DisposableEffect(isContentScrolled, isDarkTheme) {
-        val window = activity?.window
-        if (window != null) {
-            val insetsController = WindowCompat.getInsetsController(window, window.decorView)
-            insetsController.isAppearanceLightStatusBars = if (isContentScrolled) !isDarkTheme else false
-        }
-        onDispose {
-            val window = activity?.window
-            if (window != null) {
-                WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = !isDarkTheme
-            }
-        }
-    }
+    SystemBarAppearanceEffect(
+        lightStatusBars = isContentScrolled && !isDarkTheme,
+        lightNavigationBars = !isDarkTheme,
+        restoreLightStatusBars = !isDarkTheme,
+        restoreLightNavigationBars = !isDarkTheme,
+    )
 
     val bannerCoverUrl = processedSeries.firstOrNull { !it.thumbnailUrl.isNullOrBlank() }?.thumbnailUrl
 

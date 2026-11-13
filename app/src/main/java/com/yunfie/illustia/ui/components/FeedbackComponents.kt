@@ -244,8 +244,7 @@ fun CenteredErrorOverlay(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
                             onClick = {},
-                        )
-                        .padding(horizontal = 24.dp, vertical = 26.dp),
+                        ).padding(horizontal = 24.dp, vertical = 26.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
