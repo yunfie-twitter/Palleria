@@ -22,6 +22,10 @@ enum class AppLanguage(
     Thai("th", "th-TH"),
     Vietnamese("vi", "vi-VN"),
     Italian("it", "it-IT"),
+    Polish("pl", "pl-PL"),
+    Turkish("tr", "tr-TR"),
+    Polish("pl", "pl-PL"),
+    Turkish("tr", "tr-TR"),
     ;
 
     companion object {
@@ -55,6 +59,10 @@ fun appLanguageLabelRes(value: String): Int =
         AppLanguage.Thai -> R.string.language_thai
         AppLanguage.Vietnamese -> R.string.language_vietnamese
         AppLanguage.Italian -> R.string.language_italian
+        AppLanguage.Polish -> R.string.language_polish
+        AppLanguage.Turkish -> R.string.language_turkish
+        AppLanguage.Polish -> R.string.language_polish
+        AppLanguage.Turkish -> R.string.language_turkish
     }
 
 fun currentAcceptLanguage(): String {
@@ -72,6 +80,10 @@ fun currentAcceptLanguage(): String {
         "th" -> AppLanguage.Thai.languageTag ?: "th-TH"
         "vi" -> AppLanguage.Vietnamese.languageTag ?: "vi-VN"
         "it" -> AppLanguage.Italian.languageTag ?: "it-IT"
+        "pl" -> AppLanguage.Polish.languageTag ?: "pl-PL"
+        "tr" -> AppLanguage.Turkish.languageTag ?: "tr-TR"
+        "pl" -> AppLanguage.Polish.languageTag ?: "pl-PL"
+        "tr" -> AppLanguage.Turkish.languageTag ?: "tr-TR"
         "zh" -> resolveChineseLanguageTag(locale?.script, locale?.country)
         else -> AppLanguage.English.languageTag ?: "en-US"
     }
