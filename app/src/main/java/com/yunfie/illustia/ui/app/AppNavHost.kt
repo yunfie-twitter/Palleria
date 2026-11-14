@@ -825,6 +825,7 @@ internal fun AppNavHost(
         selectedCommentTarget = selectedCommentTarget,
         onDismissComments = { onSelectedCommentTargetChange(null) },
         onSearchTag = onSearchTag,
+        currentRoute = backStack.lastOrNull() ?: AppRoute.Main,
     )
 }
 
