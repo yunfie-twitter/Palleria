@@ -102,7 +102,10 @@ internal fun SearchResultGrid(
     }
 
     val isAnyLoading = state.loadState == LoadState.Loading || isPaginating
-    val shimmer = if (isAnyLoading) rememberIllustSkeletonShimmer() else null
+    // 条件付きで remember を呼ぶと composition のスロット構成がずれるため、
+    // 常に取得して表示に使うときだけ渡す。
+    val shimmerState = rememberIllustSkeletonShimmer()
+    val shimmer = if (isAnyLoading) shimmerState else null
 
     val nextUrl =
         when {

@@ -153,7 +153,10 @@ fun RelatedUsersScreen(
             relatedUsersUiState.loadedUserId != userId ||
                 (relatedUsers.isEmpty() && relatedUsersUiState.loading)
         val showPaginationSkeletons = settings.autoLoadMore && relatedUsersUiState.paginating
-        val shimmer = if (showInitialSkeletons || showPaginationSkeletons) rememberIllustSkeletonShimmer() else null
+        // 条件付きで remember を呼ぶと composition のスロット構成がずれるため、
+        // 常に取得して表示に使うときだけ渡す。
+        val shimmerState = rememberIllustSkeletonShimmer()
+        val shimmer = if (showInitialSkeletons || showPaginationSkeletons) shimmerState else null
         PullToRefresh(
             isRefreshing = relatedUsersUiState.refreshing,
             onRefresh = { viewModel.loadSelectedRelatedUsers(targetUserId = userId, force = true) },

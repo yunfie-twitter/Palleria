@@ -337,7 +337,10 @@ fun IllustSeriesScreen(
                 val columns = adaptiveProfileGridColumns()
                 val showInitialSkeletons = state.isLoading && state.illusts.isEmpty()
                 val showPaginationSkeletons = settings.autoLoadMore && state.isPaginating
-                val shimmer = if (showInitialSkeletons || showPaginationSkeletons) rememberIllustSkeletonShimmer() else null
+                // 条件付きで remember を呼ぶと composition のスロット構成がずれるため、
+                // 常に取得して表示に使うときだけ渡す。
+                val shimmerState = rememberIllustSkeletonShimmer()
+                val shimmer = if (showInitialSkeletons || showPaginationSkeletons) shimmerState else null
                 LazyVerticalGrid(
                     state = gridState,
                     columns = GridCells.Fixed(columns),

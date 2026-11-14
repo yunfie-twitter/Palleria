@@ -199,7 +199,10 @@ fun FavoriteTagsScreen(
             )
             val showInitialLoading = state.watchlistItems.isEmpty() && state.loadState == LoadState.Loading
             val showPaginating = state.settings.autoLoadMore && state.isWatchlistPaginating
-            val shimmer = if (showInitialLoading || showPaginating) rememberIllustSkeletonShimmer() else null
+            // 条件付きで remember を呼ぶと composition のスロット構成がずれるため、
+            // 常に取得して表示に使うときだけ渡す。
+            val shimmerState = rememberIllustSkeletonShimmer()
+            val shimmer = if (showInitialLoading || showPaginating) shimmerState else null
             LazyVerticalGrid(
                 state = gridState,
                 columns = GridCells.Fixed(columns),

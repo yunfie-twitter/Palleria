@@ -123,7 +123,10 @@ internal fun FeedTabContent(
         limit = 6,
     )
     val showInitialSkeletons = items.isEmpty() && loadState == LoadState.Loading
-    val shimmer = if (showInitialSkeletons) rememberIllustSkeletonShimmer() else null
+    // 条件付きで remember を呼ぶと composition のスロット構成がずれるため、
+    // 常に取得して表示に使うときだけ渡す。
+    val shimmerState = rememberIllustSkeletonShimmer()
+    val shimmer = if (showInitialSkeletons) shimmerState else null
     AutoLoadMoreEffect(
         gridState = gridState,
         enabled = settings.autoLoadMore,
@@ -293,7 +296,10 @@ internal fun FollowingTabContent(
         limit = 6,
     )
     val showInitialSkeletons = items.isEmpty() && loadState == LoadState.Loading
-    val shimmer = if (showInitialSkeletons) rememberIllustSkeletonShimmer() else null
+    // 条件付きで remember を呼ぶと composition のスロット構成がずれるため、
+    // 常に取得して表示に使うときだけ渡す。
+    val shimmerState = rememberIllustSkeletonShimmer()
+    val shimmer = if (showInitialSkeletons) shimmerState else null
     AutoLoadMoreEffect(
         gridState = gridState,
         enabled = settings.autoLoadMore,

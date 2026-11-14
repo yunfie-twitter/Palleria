@@ -195,7 +195,10 @@ fun CommentScreen(
             val showInitialSkeletons =
                 state.isLoading && state.comments.isEmpty() && !hasShownContent
             val showPaginationSkeletons = settings.autoLoadMore && state.isPaginating
-            val shimmer = if (showInitialSkeletons || showPaginationSkeletons) rememberIllustSkeletonShimmer() else null
+            // 条件付きで remember を呼ぶと composition のスロット構成がずれるため、
+            // 常に取得して表示に使うときだけ渡す。
+            val shimmerState = rememberIllustSkeletonShimmer()
+            val shimmer = if (showInitialSkeletons || showPaginationSkeletons) shimmerState else null
             ScrollablePullToRefresh(
                 isRefreshing = state.isRefreshing,
                 onRefresh = { scope.launch { store.fetch(forceRefresh = true) } },

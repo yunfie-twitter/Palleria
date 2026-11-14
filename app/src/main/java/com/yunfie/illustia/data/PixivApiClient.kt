@@ -140,12 +140,15 @@ class PixivApiClient(
                 "r18" to if (includeR18) "true" else null,
                 "type" to type,
             )
-        // 人気順 (popular_desc) は Pixiv Premium 限定のため、未加入や API 失敗時は
-        // popular-preview エンドポイントに切り替えて人気作品を返す。
+        // 人気順 (popular_desc) は Pixiv Premium 限定のため、未加入アカウントでは
+        // v1/search/illust が「エラーではなく新着順の結果」を返し、人気順にならない。
+        // そのため人気順では popular-preview を優先して使う。
         if (sort == SearchSort.PopularDesc && effectiveWord.isNotBlank()) {
-            return runCatching { getIllustPage(session, url) }.getOrElse { error ->
-                if (error.isCancellationFailure() || error.isPixivAuthExpired()) throw error
+            return runCatching {
                 popularPreview(session, effectiveWord, target, includeR18)
+            }.getOrElse { error ->
+                if (error.isCancellationFailure() || error.isPixivAuthExpired()) throw error
+                getIllustPage(session, url)
             }
         }
         return getIllustPage(session, url)

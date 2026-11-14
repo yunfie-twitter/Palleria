@@ -302,7 +302,10 @@ fun WatchlistSeriesScreen(
                 val showInitialLoading = (!state.hasLoaded || state.isLoading) && state.mangaSeries.isEmpty()
                 val watchlistPending = !state.hasLoaded || state.isLoading || state.errorMessage != null
                 val showPaginating = settings.autoLoadMore && state.isPaginating
-                val shimmer = if (showInitialLoading || showPaginating) rememberIllustSkeletonShimmer() else null
+                // 条件付きで remember を呼ぶと composition のスロット構成がずれるため、
+                // 常に取得して表示に使うときだけ渡す。
+                val shimmerState = rememberIllustSkeletonShimmer()
+                val shimmer = if (showInitialLoading || showPaginating) shimmerState else null
                 LazyVerticalGrid(
                     state = gridState,
                     columns = GridCells.Fixed(columns),

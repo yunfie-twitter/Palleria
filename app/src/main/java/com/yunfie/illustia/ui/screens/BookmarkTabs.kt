@@ -121,7 +121,10 @@ internal fun BookmarkWatchlistTab(
         )
         val showWatchlistSkeleton = (!watchlistState.hasLoaded || watchlistState.isLoading) && watchlistState.mangaSeries.isEmpty()
         val watchlistPending = !watchlistState.hasLoaded || watchlistState.isLoading || watchlistState.errorMessage != null
-        val shimmer = if (showWatchlistSkeleton) rememberIllustSkeletonShimmer() else null
+        // 条件付きで remember を呼ぶと composition のスロット構成がずれるため、
+        // 常に取得して表示に使うときだけ渡す。
+        val shimmerState = rememberIllustSkeletonShimmer()
+        val shimmer = if (showWatchlistSkeleton) shimmerState else null
         val columns = adaptiveIllustColumns(settings)
         LazyVerticalGrid(
             state = gridState,

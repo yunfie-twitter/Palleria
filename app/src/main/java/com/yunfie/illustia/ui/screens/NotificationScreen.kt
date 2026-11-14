@@ -108,7 +108,10 @@ fun NotificationScreen(
         },
     ) { padding ->
         val showSkeletons = state.notifications.isEmpty() && state.notificationsLoading
-        val shimmer = if (showSkeletons) rememberIllustSkeletonShimmer() else null
+        // 条件付きで remember を呼ぶと composition のスロット構成がずれるため、
+        // 常に取得して表示に使うときだけ渡す。
+        val shimmerState = rememberIllustSkeletonShimmer()
+        val shimmer = if (showSkeletons) shimmerState else null
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),

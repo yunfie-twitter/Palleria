@@ -921,7 +921,10 @@ private fun UserIllustGridPage(
         onLoadMore = onLoadMore,
     )
 
-    val shimmer = if (isPaginating) rememberIllustSkeletonShimmer() else null
+    // 条件付きで remember を呼ぶと composition のスロット構成がずれ、
+    // 読み込み中に戻るアニメーションが途中で止まるため常に取得して値だけ切り替える。
+    val shimmerState = rememberIllustSkeletonShimmer()
+    val shimmer = if (isPaginating) shimmerState else null
     LazyVerticalGrid(
         state = gridState,
         columns = GridCells.Fixed(columns),
