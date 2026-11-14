@@ -244,7 +244,9 @@ internal fun NovelReaderPage(
     page: NovelPage,
     pageIndex: Int,
     paragraphStep: Int = 0,
-    keyboardActive: Boolean = true,
+    // 現在ページかどうかは provider 経由で読み、スワイプ中に親（Pager）が
+    // settledPage を読んで全ページを再コンポーズしないようにする。
+    keyboardActive: () -> Boolean = { true },
     pageCount: Int,
     fontSize: Float,
     lineHeightMultiplier: Float,
