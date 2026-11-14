@@ -515,7 +515,11 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         onDispose { activity?.desktopShortcutHandler = null }
     }
 
-    SnackbarMessageEffect(viewModel = viewModel, snackbarHostState = snackbarHostState)
+    SnackbarMessageEffect(
+        viewModel = viewModel,
+        snackbarHostState = snackbarHostState,
+        currentRoute = backStack.lastOrNull() ?: AppRoute.Main,
+    )
 
     LaunchedEffect(Unit) {
         val prefs = context.getSharedPreferences("freedroidwarn_prefs", Context.MODE_PRIVATE)
@@ -913,11 +917,21 @@ private fun CenteredErrorMessageEffect(viewModel: IllustiaViewModel) {
 private fun SnackbarMessageEffect(
     viewModel: IllustiaViewModel,
     snackbarHostState: SnackbarHostState,
+    currentRoute: NavKey,
 ) {
     // Collect only the transient message. Reading state.message in IllustiaAppRoot used to
     // invalidate the whole root composition every time a toast/snackbar was queued.
     val message by viewModel.messageState.collectAsStateWithLifecycle()
     val centeredError by viewModel.centeredErrorState.collectAsStateWithLifecycle()
+    // 画面遷移で前の画面の通知を持ち越さない。SnackbarHostState は明示的に閉じるまで
+    // エントリを保持するため、ルートが変わったら表示中の Snackbar を dismiss する。
+    var shownRoute by remember { mutableStateOf(currentRoute) }
+    LaunchedEffect(currentRoute) {
+        if (shownRoute == currentRoute) return@LaunchedEffect
+        shownRoute = currentRoute
+        val active = snackbarHostState.newestSnackbarData() ?: return@LaunchedEffect
+        active.dismiss()
+    }
     LaunchedEffect(message, centeredError) {
         // The centred error already explains the failure. Showing a toast on top of it just
         // duplicates the message in a second place, so drop the queued message.
