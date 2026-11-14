@@ -10,6 +10,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.ViewCompat
@@ -56,14 +57,17 @@ internal fun paragraphTarget(
 internal fun ParagraphNavigation(
     state: LazyListState,
     request: Int,
-    active: Boolean,
+    active: () -> Boolean,
     paragraphIndices: List<Int>,
 ) {
     var previousRequest by remember { mutableIntStateOf(request) }
-    LaunchedEffect(request, active) {
+    // active を値ではなく provider で受け取り、LaunchedEffect のキーに含めない。
+    // スワイプ中に settledPage が変わるたびに effect が張り直されるのを防ぐ。
+    val isActive by rememberUpdatedState(active)
+    LaunchedEffect(request) {
         val direction = request.compareTo(previousRequest)
         previousRequest = request
-        if (!active || direction == 0) return@LaunchedEffect
+        if (!isActive() || direction == 0) return@LaunchedEffect
         val target = paragraphTarget(paragraphIndices, state.firstVisibleItemIndex, direction) ?: return@LaunchedEffect
         state.animateScrollToItem(target)
     }
