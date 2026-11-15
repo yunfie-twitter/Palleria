@@ -270,6 +270,42 @@ fun EmptyState(message: String) {
     }
 }
 
+/**
+ * 画面全体を占有するエラー表示。
+ *
+ * [RequestErrorState] は `fillMaxWidth()` だけで高さを持たないため、Lazy リストの
+ * 先頭アイテムに置くと画面の上端に張り付き、コンテンツが空のときは「左上のほうに
+ * 小さく出ている」だけになる。一覧を描かずこのラッパーに切り替えることで、
+ * 左右上下すべて中央に揃える。
+ */
+@Composable
+fun CenteredErrorState(
+    message: String,
+    onRetry: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
+    ) {
+        RequestErrorState(message = message, onRetry = onRetry)
+    }
+}
+
+/** [CenteredErrorState] の空状態版。 */
+@Composable
+fun CenteredEmptyState(
+    message: String,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
+    ) {
+        EmptyState(message)
+    }
+}
+
 @Composable
 fun HeaderIcon(
     icon: ImageVector,

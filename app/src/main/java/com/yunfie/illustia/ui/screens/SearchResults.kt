@@ -38,6 +38,7 @@ import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.AvatarImage
+import com.yunfie.illustia.ui.components.CenteredErrorState
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.FollowPill
 import com.yunfie.illustia.ui.components.IllustCard
@@ -121,6 +122,20 @@ internal fun SearchResultGrid(
 
     val pinchEnabled =
         state.settings.gridPinchToZoom && page == 0 && !isNovelResult
+    val allItemsEmpty =
+        when {
+            page != 0 -> state.userSearchItems.isEmpty()
+            isNovelResult -> state.searchNovelItems.isEmpty()
+            else -> state.searchItems.isEmpty()
+        }
+    val emptyError = (state.loadState as? LoadState.Error)?.takeIf { allItemsEmpty }
+    if (emptyError != null) {
+        CenteredErrorState(
+            message = emptyError.message,
+            onRetry = { viewModel.submitSearch(forceRefresh = true) },
+        )
+        return
+    }
     LazyVerticalGrid(
         state = gridState,
         columns = GridCells.Fixed(if (page == 0 && !isNovelResult) illustColumns else 1),

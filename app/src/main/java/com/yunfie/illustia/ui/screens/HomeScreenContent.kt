@@ -38,6 +38,7 @@ import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
+import com.yunfie.illustia.ui.components.CenteredErrorState
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.IllustCard
 import com.yunfie.illustia.ui.components.IllustCardSkeleton
@@ -140,6 +141,16 @@ internal fun FeedTabContent(
         modifier = Modifier.fillMaxSize(),
     ) {
         val pinchEnabled = settings.gridPinchToZoom
+        // 一覧が空でなおかつ失敗しているときは、グリッドの先頭アイテムとして
+        // 上端に出すのではなく画面全体の中央に出す。
+        val emptyError = (loadState as? LoadState.Error)?.takeIf { items.isEmpty() }
+        if (emptyError != null) {
+            CenteredErrorState(
+                message = emptyError.message,
+                onRetry = { viewModel.refreshHome(forceRefresh = true) },
+            )
+            return@ScrollablePullToRefresh
+        }
         Box(Modifier.fillMaxSize()) {
             LazyVerticalGrid(
                 state = gridState,
@@ -309,6 +320,14 @@ internal fun FollowingTabContent(
         modifier = Modifier.fillMaxSize(),
     ) {
         val pinchEnabled = settings.gridPinchToZoom
+        val emptyError = (loadState as? LoadState.Error)?.takeIf { items.isEmpty() }
+        if (emptyError != null) {
+            CenteredErrorState(
+                message = emptyError.message,
+                onRetry = { viewModel.refreshTimeline(forceRefresh = true) },
+            )
+            return@ScrollablePullToRefresh
+        }
         LazyVerticalGrid(
             state = gridState,
             columns = GridCells.Fixed(columns),

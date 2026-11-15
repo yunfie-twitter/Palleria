@@ -65,6 +65,7 @@ import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
+import com.yunfie.illustia.ui.components.CenteredErrorState
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PrefetchNovelGridImages
@@ -216,6 +217,14 @@ fun NovelScreen(
             onRefresh = { viewModel.refreshNovels(forceRefresh = true) },
             modifier = Modifier.fillMaxSize(),
         ) {
+            val emptyError = (loadState as? LoadState.Error)?.takeIf { filteredItems.isEmpty() }
+            if (emptyError != null) {
+                CenteredErrorState(
+                    message = emptyError.message,
+                    onRetry = { viewModel.refreshNovels(forceRefresh = true) },
+                )
+                return@ScrollablePullToRefresh
+            }
             LazyVerticalGrid(
                 state = gridState,
                 columns = GridCells.Fixed(columns),

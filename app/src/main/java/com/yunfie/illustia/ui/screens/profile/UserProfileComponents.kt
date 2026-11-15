@@ -77,6 +77,7 @@ import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.AvatarImage
+import com.yunfie.illustia.ui.components.CenteredErrorState
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.EmptyState
@@ -922,6 +923,17 @@ private fun UserIllustGridPage(
     )
 
     val shimmer = if (isPaginating) rememberIllustSkeletonShimmer() else null
+    // グリッドが丸ごと空で取得に失敗しているときは、先頭アイテムとして上端に出すのではなく
+    // 画面全体の中央に出す。
+    val emptyError = errorMessage?.takeIf { illusts.isEmpty() && !isPaginating }
+    if (emptyError != null) {
+        CenteredErrorState(
+            message = emptyError,
+            onRetry = onLoadMore,
+            modifier = Modifier.fillMaxSize().background(backgroundColor),
+        )
+        return
+    }
     LazyVerticalGrid(
         state = gridState,
         columns = GridCells.Fixed(columns),
