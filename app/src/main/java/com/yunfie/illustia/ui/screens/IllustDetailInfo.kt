@@ -81,6 +81,7 @@ internal fun formatIllustDimensions(
 internal fun IllustDetailInfo(
     illust: Illust,
     isArtistFollowed: Boolean,
+    isArtistFollowKnown: Boolean = true,
     isArtistMuted: Boolean,
     onOpenUser: () -> Unit,
     onOpenUserById: (Long) -> Unit,
@@ -287,6 +288,7 @@ internal fun IllustDetailInfo(
                                         Modifier
                                             .clip(RoundedCornerShape(20.dp))
                                             .miuixClickable(
+                                                enabled = isArtistMuted || isArtistFollowKnown,
                                                 pressedScale = 0.94f,
                                                 haptic = true,
                                                 onClick =
@@ -304,7 +306,7 @@ internal fun IllustDetailInfo(
                                 ) {
                                     if (isArtistMuted) {
                                         DetailMutedUserPill()
-                                    } else {
+                                    } else if (isArtistFollowKnown) {
                                         FollowPill(
                                             isFollowed = isArtistFollowed,
                                             followAnimationTrigger = followAnimationTrigger,
