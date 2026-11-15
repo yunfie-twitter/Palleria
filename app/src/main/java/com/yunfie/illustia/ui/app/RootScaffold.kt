@@ -75,7 +75,8 @@ internal fun RootScaffold(
     ) { rootPadding ->
         val rootRailState = rememberNavigationRailState()
         val currentRoute = backStack.lastOrNull()
-        val isFullscreenRoute = currentRoute == AppRoute.ImageViewer
+        // 小説リーダーは本文に集中する画面なので、レールも表示しない。
+        val isFullscreenRoute = currentRoute == AppRoute.ImageViewer || currentRoute == AppRoute.NovelReader
         val isPreLogin =
             appState.state.settings.refreshToken
                 .isBlank() || currentRoute == AppRoute.Onboarding
