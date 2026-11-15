@@ -185,6 +185,8 @@
     <string name="detail_comments_empty">Noch keine Kommentare</string>
     <string name="detail_series">Serie</string>
     <string name="detail_related">Verwandte Werke</string>
+    <string name="detail_tags_show_more">Alle anzeigen (noch %1$d)</string>
+    <string name="detail_tags_show_less">Weniger anzeigen</string>
     <string name="detail_illust_id">Illust-ID</string>
     <string name="detail_resolution">Auflösung</string>
 

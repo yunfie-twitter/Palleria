@@ -185,6 +185,8 @@
     <string name="detail_comments_empty">Nessun commento ancora</string>
     <string name="detail_series">Serie</string>
     <string name="detail_related">Lavori correlati</string>
+    <string name="detail_tags_show_more">Mostra tutti (altri %1$d)</string>
+    <string name="detail_tags_show_less">Mostra meno</string>
     <string name="detail_illust_id">ID illustrazione</string>
     <string name="detail_resolution">Risoluzione</string>
 
