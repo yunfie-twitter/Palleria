@@ -70,9 +70,12 @@ internal suspend fun PointerInputScope.detectZoomAndPanGestures(
                     val hasMovement = zoomChange != 1f || panChange != Offset.Zero
                     if (validZoom && hasMovement) {
                         onGesture(centroid, panChange, zoomChange)
-                    }
-                    event.changes.forEach { change ->
-                        change.consume()
+                        // 実際にズーム／パンした時だけ消費する。2本指で触れただけ（指の
+                        // ぶれで panChange が乗った程度）でも消費していたため、横スワイプが
+                        // ページ送りに届かず「スワイプが効かない」状態になっていた。
+                        event.changes.forEach { change ->
+                            change.consume()
+                        }
                     }
                 }
             }
