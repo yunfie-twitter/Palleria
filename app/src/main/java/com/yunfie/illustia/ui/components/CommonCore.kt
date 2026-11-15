@@ -9,8 +9,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.shape.CircleShape
@@ -55,6 +61,20 @@ const val MotionSlow = 340
 
 val MainNavigationContentPadding = 152.dp
 val BottomSheetInsideMargin = DpSize(width = 24.dp, height = 12.dp)
+
+/**
+ * ダイアログ内容の下端に確保する余白。
+ *
+ * アプリのルートは `appNavigationSafeArea()` で navigationBars を消費済みだが、miuix の
+ * `OverlayDialog` は既定で imePadding と navigationBarsPadding を両方適用する。そのため
+ * キーボード表示時に両者が積まれ、キーボードとの間に隙間ができる。`OverlayDialog` 側で
+ * `defaultWindowInsetsPadding = false` にしたうえで、内側で大きい方だけを確保する。
+ */
+@Composable
+fun dialogBottomInsets(): WindowInsets =
+    WindowInsets.navigationBars
+        .union(WindowInsets.ime)
+        .only(WindowInsetsSides.Bottom)
 
 @Composable
 fun adaptiveMainNavigationContentPadding(): Dp =
