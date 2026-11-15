@@ -163,24 +163,22 @@ internal fun MainSurface(
             contentWindowInsets = WindowInsets(0),
             bottomBar = {
                 if (!useNavigationRail && appState.settings.navigationStyle == "standard" && !isBlurEnabled) {
-                    Box(
-                        modifier = Modifier.background(MiuixTheme.colorScheme.surfaceContainer),
-                    ) {
-                        AppNavigationBar(settings = appState.settings) {
-                            navigationTabs.forEach { tab ->
-                                val pageIndex = tabs.indexOf(tab)
-                                NavigationBarItem(
-                                    modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
-                                    selected = selectedTab == tab,
-                                    onClick = {
-                                        performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Click)
-                                        viewModel.closeAccountSwitcher()
-                                        onTabSelected(pageIndex, tab)
-                                    },
-                                    icon = tab.icon,
-                                    label = stringResource(tab.labelResId),
-                                )
-                            }
+                    // NavigationBar 自身が surfaceContainer を塗るため、外側に背景 Box を重ねると
+                    // 画面遷移中にバーの背後へ不透明な色が残る。追加の背景は持たせない。
+                    AppNavigationBar(settings = appState.settings) {
+                        navigationTabs.forEach { tab ->
+                            val pageIndex = tabs.indexOf(tab)
+                            NavigationBarItem(
+                                modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
+                                selected = selectedTab == tab,
+                                onClick = {
+                                    performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Click)
+                                    viewModel.closeAccountSwitcher()
+                                    onTabSelected(pageIndex, tab)
+                                },
+                                icon = tab.icon,
+                                label = stringResource(tab.labelResId),
+                            )
                         }
                     }
                 }
