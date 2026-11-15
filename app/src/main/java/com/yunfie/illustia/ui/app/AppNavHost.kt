@@ -305,6 +305,7 @@ internal fun AppNavHost(
                             DetailEntrySnapshot(
                                 illust = selectedIllust,
                                 relatedIllusts = appState.state.relatedIllusts,
+                                relatedIllustsLoaded = appState.state.relatedIllustsLoaded,
                                 firstComment = appState.state.selectedIllustFirstComment,
                                 user = appState.state.selectedIllustUser,
                             )
@@ -317,6 +318,7 @@ internal fun AppNavHost(
                             illust = illust,
                             isActive = backStack.lastOrNull() == route,
                             relatedIllusts = snapshot.relatedIllusts,
+                            relatedIllustsLoaded = snapshot.relatedIllustsLoaded,
                             firstComment = snapshot.firstComment,
                             onBack = onPopRoute,
                             onBookmark = { viewModel.toggleBookmark(illust) },

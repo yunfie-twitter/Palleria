@@ -94,6 +94,7 @@ internal fun IllustDetailInfo(
     sectionOrder: List<String>,
     relatedContent: @Composable (isNearViewport: Boolean) -> Unit,
     relatedSectionInitiallyReady: Boolean = false,
+    relatedSectionVisible: Boolean = true,
     onRelatedSectionReady: () -> Unit = {},
     sectionsOverride: List<String>? = null,
     showHeader: Boolean = true,
@@ -139,8 +140,9 @@ internal fun IllustDetailInfo(
             }
         }
     val orderedSections =
-        remember(sectionOrder, sectionsOverride) {
-            sectionsOverride ?: orderedDetailSections(sectionOrder)
+        remember(sectionOrder, sectionsOverride, relatedSectionVisible) {
+            (sectionsOverride ?: orderedDetailSections(sectionOrder))
+                .let { sections -> if (relatedSectionVisible) sections else sections - "related" }
         }
     val displayTags =
         remember(illust.tags) {

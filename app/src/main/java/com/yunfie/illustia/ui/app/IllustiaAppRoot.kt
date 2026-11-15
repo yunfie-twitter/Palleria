@@ -268,6 +268,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                         user = snapshot.user,
                         firstComment = snapshot.firstComment,
                         relatedIllusts = snapshot.relatedIllusts,
+                        relatedIllustsLoaded = snapshot.relatedIllustsLoaded,
                     )
                 } else {
                     viewModel.openIllust(revealed.illustId)
@@ -629,6 +630,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     LaunchedEffect(
         state.selectedIllust,
         state.relatedIllusts,
+        state.relatedIllustsLoaded,
         state.selectedIllustFirstComment,
         state.selectedIllustUser,
     ) {
@@ -637,6 +639,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                 DetailEntrySnapshot(
                     illust = illust,
                     relatedIllusts = state.relatedIllusts,
+                    relatedIllustsLoaded = state.relatedIllustsLoaded,
                     firstComment = state.selectedIllustFirstComment,
                     user = state.selectedIllustUser,
                 )
