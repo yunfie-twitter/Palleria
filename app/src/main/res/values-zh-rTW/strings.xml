@@ -172,6 +172,8 @@
     <string name="detail_comments_empty">尚無評論</string>
     <string name="detail_series">系列</string>
     <string name="detail_related">相關作品</string>
+    <string name="detail_tags_show_more">顯示全部（另有 %1$d 個）</string>
+    <string name="detail_tags_show_less">收合</string>
     <string name="detail_illust_id">插圖 ID</string>
     <string name="detail_resolution">分辨率</string>
     <string name="viewer_share_failed">無法開始共享。</string>

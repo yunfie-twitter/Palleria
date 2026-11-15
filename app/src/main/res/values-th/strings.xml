@@ -185,6 +185,8 @@
     <string name="detail_comments_empty">ยังไม่มีความคิดเห็น</string>
     <string name="detail_series">ซีรีส์</string>
     <string name="detail_related">ผลงานที่เกี่ยวข้อง</string>
+    <string name="detail_tags_show_more">แสดงทั้งหมด (อีก %1$d)</string>
+    <string name="detail_tags_show_less">แสดงน้อยลง</string>
     <string name="detail_illust_id">รหัสภาพประกอบ</string>
     <string name="detail_resolution">ความละเอียด</string>
 

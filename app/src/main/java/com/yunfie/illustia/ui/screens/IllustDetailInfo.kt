@@ -31,6 +31,7 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,6 +40,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
@@ -55,6 +57,7 @@ import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
+import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.ArtworkCardPreferences
 import com.yunfie.illustia.ui.components.AvatarImage
 import com.yunfie.illustia.ui.components.ElevatedPanel
@@ -64,12 +67,14 @@ import com.yunfie.illustia.ui.components.LocalArtworkCardPreferences
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.adaptiveRelatedIllustColumns
 import com.yunfie.illustia.ui.components.miuixClickable
+import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.Messages
@@ -149,9 +154,18 @@ internal fun IllustDetailInfo(
             (sectionsOverride ?: orderedDetailSections(sectionOrder))
                 .let { sections -> if (relatedSectionVisible) sections else sections - "related" }
         }
+    // タグは 12 個で打ち切っていたので、残りを捨てずに展開できるようにする。
+    // タグのミュートやお気に入りはこの画面からしか触れないため、隠れると実害があった。
+    val collapsedTagLimit = 12
+    val hasMoreTags = illust.tags.size > collapsedTagLimit
+    var tagsExpanded by rememberSaveable(illust.id) { mutableStateOf(false) }
     val displayTags =
-        remember(illust.tags) {
-            if (illust.tags.size <= 12) illust.tags else illust.tags.take(12)
+        remember(illust.tags, tagsExpanded) {
+            if (tagsExpanded || illust.tags.size <= collapsedTagLimit) {
+                illust.tags
+            } else {
+                illust.tags.take(collapsedTagLimit)
+            }
         }
     // HTML キャプションの解析は1回だけ行い、他の設定変更による再コンポーズでは再解析しない。
     val captionKey = illust.caption
@@ -324,12 +338,28 @@ internal fun IllustDetailInfo(
 
                         "tags" -> {
                             Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                                FlowButtons(
-                                    values = displayTags,
-                                    label = { "#$it" },
-                                    onClick = onSearchTag,
-                                    onLongClick = onLongPressTag,
-                                )
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    FlowButtons(
+                                        values = displayTags,
+                                        label = { "#$it" },
+                                        onClick = onSearchTag,
+                                        onLongClick = onLongPressTag,
+                                    )
+                                    if (hasMoreTags) {
+                                        TextButton(
+                                            text =
+                                                if (tagsExpanded) {
+                                                    stringResource(R.string.detail_tags_show_less)
+                                                } else {
+                                                    stringResource(
+                                                        R.string.detail_tags_show_more,
+                                                        illust.tags.size - collapsedTagLimit,
+                                                    )
+                                                },
+                                            onClick = { tagsExpanded = !tagsExpanded },
+                                        )
+                                    }
+                                }
                             }
                         }
 
@@ -500,7 +530,7 @@ internal fun RelatedIllustRow(
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(RELATED_GRID_SPACING),
     ) {
         rowItems.forEach { related ->
             Box(modifier = Modifier.weight(1f)) {
@@ -579,17 +609,23 @@ private fun DeferredRelatedIllustRow(
         )
         return
     }
-    // A row of `columns` square cards spans the full width, so its height is width / columns.
-    // The placeholder matches that so promoting the row does not shift the content below it.
+    // A row of `columns` cards spans the available width minus the gaps between them, so its
+    // height is that width divided by the column count. Measuring the actual width (instead of
+    // screenWidthDp) accounts for the section's horizontal padding, and keeps the placeholder the
+    // same height as the row it replaces so promoting it does not shift the content below.
     val density = LocalDensity.current
     val configuration = LocalConfiguration.current
-    val rowHeight = configuration.screenWidthDp.dp / columns
+    var rowHeight by remember { mutableStateOf(0.dp) }
     val triggerPx = with(density) { configuration.screenHeightDp.dp.toPx() } * 1.05f
     Box(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .height(rowHeight),
+                .height(rowHeight)
+                .onSizeChanged { size ->
+                    val widthDp = with(density) { size.width.toDp() }
+                    rowHeight = (widthDp - RELATED_GRID_SPACING * (columns - 1)) / columns
+                },
     ) {
         // onGloballyPositioned fires for the placeholder once it is measured; comparing its window
         // position against a screen-height threshold promotes it exactly like the section gate does.
@@ -608,6 +644,9 @@ private fun DeferredRelatedIllustRow(
 
 /** Rows of the related grid that are composed as soon as the section appears. */
 private const val RELATED_ROWS_COMPOSED_IMMEDIATELY = 2
+
+/** Horizontal gap between related cards; also subtracted from the row width when sizing a placeholder. */
+private val RELATED_GRID_SPACING = 4.dp
 
 /** Resolves the configured detail section order, keeping newly added sections at the end. */
 internal fun orderedDetailSections(sectionOrder: List<String>): List<String> {
@@ -639,7 +678,15 @@ internal fun RelatedIllustCard(
             }
         }
     val onClick = remember(related.id) { { onOpenIllust(related) } }
-    val onLongClick = remember(related.id) { { onLongPressIllust(related) } }
+    // アプリ内の他のカードは長押しで触覚が返る。ここだけ無反応だったので揃える。
+    val performHaptic = rememberHapticFeedbackAction()
+    val onLongClick =
+        remember(related.id) {
+            {
+                performHaptic(AppHapticEffect.Click)
+                onLongPressIllust(related)
+            }
+        }
     Box(
         modifier =
             Modifier
