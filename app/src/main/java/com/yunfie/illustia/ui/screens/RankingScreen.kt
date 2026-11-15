@@ -241,9 +241,11 @@ fun RankingScreen(
             modifier = Modifier.weight(1f).fillMaxWidth(),
             color = scheme.surface,
         ) {
-            val visitedPages = remember { mutableSetOf(pagerState.currentPage) }
+            var visitedPages by remember { mutableStateOf(setOf(pagerState.currentPage)) }
             LaunchedEffect(pagerState.currentPage) {
-                visitedPages.add(pagerState.currentPage)
+                if (pagerState.currentPage !in visitedPages) {
+                    visitedPages = visitedPages + pagerState.currentPage
+                }
             }
 
             HorizontalPager(

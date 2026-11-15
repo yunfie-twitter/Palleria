@@ -208,9 +208,11 @@ internal fun MainSurface(
                     backdropModifier = { Modifier.layerBackdrop(it) },
                     modifier = Modifier.fillMaxSize(),
                 ) {
-                    val visitedPages = remember { mutableSetOf(pagerState.currentPage) }
+                    var visitedPages by remember { mutableStateOf(setOf(pagerState.currentPage)) }
                     LaunchedEffect(pagerState.currentPage) {
-                        visitedPages.add(pagerState.currentPage)
+                        if (pagerState.currentPage !in visitedPages) {
+                            visitedPages = visitedPages + pagerState.currentPage
+                        }
                     }
                     HorizontalPager(
                         state = pagerState,
