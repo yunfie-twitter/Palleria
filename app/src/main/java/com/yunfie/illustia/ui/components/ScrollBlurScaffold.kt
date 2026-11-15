@@ -96,7 +96,10 @@ fun ScrollBlurOverlay(
     val supportsBlur = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
     // クイック設定に覆われている間は、覆われたヘッダーのバックドロップ再録画と
     // 追加のぼかし合成を止める（スクロール位置は保持したまま）。
+    // スワイプで表に出ていないタブページも同様に止め、2 ページ分のブラー合成を避ける。
     val systemCovered = LocalSystemUiCovered.current
+    val tabPageActive = LocalTabPageActive.current
+    val blurSuspended = systemCovered || !tabPageActive()
     var measuredHeaderHeight by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
 
@@ -127,7 +130,7 @@ fun ScrollBlurOverlay(
             Modifier
                 .fillMaxSize()
                 .then(
-                    if (supportsBlur && !systemCovered) {
+                    if (supportsBlur && !blurSuspended) {
                         Modifier.layerBackdrop(backdrop)
                     } else {
                         Modifier
@@ -144,7 +147,7 @@ fun ScrollBlurOverlay(
                         .fillMaxWidth()
                         .height(totalBackdropHeightDp)
                         .then(
-                            if (supportsBlur && !systemCovered) {
+                            if (supportsBlur && !blurSuspended) {
                                 Modifier.progressiveTextureBlur(
                                     backdrop = backdrop,
                                     shape = RectangleShape,

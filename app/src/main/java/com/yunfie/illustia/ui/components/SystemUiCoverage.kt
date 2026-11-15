@@ -31,6 +31,18 @@ private const val SYSTEM_UI_UNCOVER_SETTLE_MS = 300L
 internal val LocalSystemUiCovered = compositionLocalOf<Boolean> { false }
 
 /**
+ * 表示中のタブページが「スワイプの落ち着いた先」かどうか。
+ *
+ * ルートのタブ Pager はスワイプ中に隣接ページを必ずコンポーズする。既定の true のまま
+ * だと、まだ表に出ていない隣のページもブラーの再録画/合成を行い、スワイプが重くなる。
+ * Pager 側が各ページにこの値を配り、非アクティブなページはブラー処理を止める。
+ *
+ * provider 経由で受け取るのは、`settledPage` を Pager のコンテンツラムダで直接読むと
+ * ページャの再コンポーズで全ページが無効化されるため。各ページの内部でだけ評価する。
+ */
+internal val LocalTabPageActive = compositionLocalOf<() -> Boolean> { { true } }
+
+/**
  * coverage state を画面全体で 1 つだけ作り、[LocalSystemUiCovered] として配る。
  *
  * クイック設定・通知シェード・電源メニューはアクティビティを pause させないため、
