@@ -199,7 +199,7 @@
     <string name="detail_save_image_title">画像を保存</string>
     <string name="detail_save_image_confirm">この画像をPalleriaフォルダへ保存します。</string>
     <string name="detail_save_ugoira_title">うごイラを保存</string>
-    <string name="detail_save_ugoira_confirm">このうごイラをGIFとしてPalleriaフォルダへ保存します。</string>
+    <string name="detail_save_ugoira_confirm">このうごイラの静止画（カバー画像）をPalleriaフォルダへ保存します。</string>
     <string name="detail_unfollow_title">フォローを解除</string>
     <string name="detail_unfollow_confirm">%1$s さんのフォローを解除しますか？</string>
     <string name="detail_open_in_browser">ブラウザで開く</string>

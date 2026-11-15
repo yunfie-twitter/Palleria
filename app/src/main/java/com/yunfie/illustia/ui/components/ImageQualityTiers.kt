@@ -77,4 +77,27 @@ internal fun resolveProgressivePlaceholderUrls(
         .filter { it.isNotBlank() && it != illust.previewUrl }
 }
 
+/**
+ * 保存用の URL 一覧を解決する。表示画質ではなく **常に原寸を優先** する。
+ *
+ * 以前は長押し保存と「全ページ保存」が表示 tier の URL を渡していたため、
+ * 高画質オフ時はサムネイル相当が原寸と同じファイル名で保存されていた。
+ * 保存は後から見分けがつかないので、経路によらず同じ解像度に揃える。
+ */
+internal fun resolveSaveImageUrls(illust: Illust): List<String> =
+    illust.originalImagePages.ifEmpty {
+        illust.imagePages.ifEmpty {
+            listOfNotNull(firstNonBlank(illust.imageUrl, illust.originalImageUrl, illust.mediumImageUrl))
+        }
+    }
+
+/** 保存用の単一 URL。ページ指定が範囲外なら先頭ページにフォールバックする。 */
+internal fun resolveSaveImageUrl(
+    illust: Illust,
+    page: Int,
+): String {
+    val urls = resolveSaveImageUrls(illust)
+    return urls.getOrNull(page) ?: urls.firstOrNull().orEmpty()
+}
+
 private fun firstNonBlank(vararg candidates: String?): String? = candidates.firstOrNull { !it.isNullOrBlank() }

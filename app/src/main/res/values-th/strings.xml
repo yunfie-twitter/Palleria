@@ -158,7 +158,7 @@
     <string name="detail_save_image_title">บันทึกภาพ</string>
     <string name="detail_save_image_confirm">บันทึกภาพนี้ลงในโฟลเดอร์ Palleria</string>
     <string name="detail_save_ugoira_title">บันทึกอูโกอิรา</string>
-    <string name="detail_save_ugoira_confirm">บันทึก ugoira นี้เป็น GIF ลงในโฟลเดอร์ Palleria</string>
+    <string name="detail_save_ugoira_confirm">บันทึกภาพนิ่ง (ภาพปก) ของ ugoira นี้ลงในโฟลเดอร์ Palleria</string>
     <string name="detail_unfollow_title">เลิกติดตาม</string>
     <string name="detail_unfollow_confirm">เลิกติดตาม %1$s?</string>
     <string name="detail_open_in_browser">เปิดในเบราว์เซอร์</string>
