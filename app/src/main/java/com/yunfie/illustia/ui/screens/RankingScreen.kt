@@ -57,6 +57,7 @@ import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.app.AppTab
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
+import com.yunfie.illustia.ui.components.CenteredErrorState
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.IllustCard
 import com.yunfie.illustia.ui.components.IllustCardSkeleton
@@ -341,6 +342,14 @@ private fun RankingGridContent(
         onRefresh = { viewModel.refreshRanking(mode, forceRefresh = true) },
         modifier = modifier.fillMaxSize(),
     ) {
+        val emptyError = (loadState as? LoadState.Error)?.takeIf { items.isEmpty() }
+        if (emptyError != null) {
+            CenteredErrorState(
+                message = emptyError.message,
+                onRetry = { viewModel.refreshRanking(mode, forceRefresh = true) },
+            )
+            return@ScrollablePullToRefresh
+        }
         LazyVerticalGrid(
             state = gridState,
             columns = GridCells.Fixed(columns),

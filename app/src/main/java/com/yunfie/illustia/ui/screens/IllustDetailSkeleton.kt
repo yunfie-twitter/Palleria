@@ -10,16 +10,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -32,11 +31,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.ui.components.HeaderIcon
+import com.yunfie.illustia.ui.components.HeaderOverlayIcon
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.screens.profile.UserProfileErrorScreen
-import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -46,6 +43,14 @@ private const val SKELETON_SHIMMER_GRADIENT_WIDTH = 0.52f
 private const val SKELETON_SHIMMER_START_X_INITIAL = -1f
 private const val SKELETON_SHIMMER_START_X_TARGET = 2f
 
+/**
+ * 詳細画面のローディング用スケルトン。
+ *
+ * 実際の詳細画面と同じ骨格にしている。以前は TopAppBar + 16dp パディング + 角丸カードだったが、
+ * 実画面はエッジ・ツー・エッジのヒーロー画像にステータスバー上へ浮く円形アイコンで、解決時に
+ * パディングが消えて戻るボタンがアプリバーから円形ボタンへ飛ぶレイアウトジャンプがあった。
+ * ヒーローの比率、アイコンの位置とサイズ、情報ブロックの余白を実画面に合わせる。
+ */
 @Composable
 fun IllustDetailSkeletonScreen(
     onBack: () -> Unit,
@@ -91,52 +96,62 @@ fun IllustDetailSkeletonScreen(
             }
         }
 
-    Scaffold(
-        containerColor = backgroundColor,
-        topBar = {
-            TopAppBar(
-                title = "",
-                navigationIcon = {
-                    HeaderIcon(
-                        icon = MiuixIcons.Back,
-                        onClick = onBack,
-                    )
-                },
+    Box(
+        modifier =
+            modifier
+                .fillMaxSize()
+                .background(backgroundColor),
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            // ヒーロー画像の箱。実画面は画像の比率で伸びるが、スケルトンではカードの 0.75 比率を
+            // 最低限の高さとして使う。全幅・角丸なしで、実画面と同じくエッジ・ツー・エッジ。
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 320.dp)
+                        .background(base)
+                        .then(shimmerModifier),
             )
-        },
-        modifier = modifier.fillMaxSize(),
-    ) { scaffoldPadding ->
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding =
-                PaddingValues(
-                    start = 16.dp,
-                    end = 16.dp,
-                    top = scaffoldPadding.calculateTopPadding() + 8.dp,
-                    bottom = 96.dp,
-                ),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            item(contentType = "skeleton_preview") {
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(0.75f)
-                            .clip(RoundedCornerShape(16.dp))
-                            .then(shimmerModifier),
-                )
-            }
-            item(contentType = "skeleton_author") {
+
+            // 情報ブロック。実画面と同じく上 16dp / 下 16dp、各要素は 16dp の横余白。
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .background(MiuixTheme.colorScheme.surface)
+                        .padding(top = 16.dp, bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Column(modifier = Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // タイトル
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth(0.7f)
+                                .height(22.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .then(shimmerModifier),
+                    )
+                    // ID / 種別の行
+                    Box(
+                        modifier =
+                            Modifier
+                                .size(width = 96.dp, height = 13.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                                .then(shimmerModifier),
+                    )
+                }
+                // 作者行（アバター + 名前 + フォローピル）
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 ) {
                     Box(
                         modifier =
                             Modifier
-                                .size(48.dp)
+                                .size(44.dp)
                                 .clip(CircleShape)
                                 .then(shimmerModifier),
                     )
@@ -147,19 +162,18 @@ fun IllustDetailSkeletonScreen(
                         Box(
                             modifier =
                                 Modifier
-                                    .size(width = 180.dp, height = 20.dp)
+                                    .size(width = 132.dp, height = 16.dp)
                                     .clip(RoundedCornerShape(4.dp))
                                     .then(shimmerModifier),
                         )
                         Box(
                             modifier =
                                 Modifier
-                                    .size(width = 100.dp, height = 14.dp)
+                                    .size(width = 72.dp, height = 12.dp)
                                     .clip(RoundedCornerShape(4.dp))
                                     .then(shimmerModifier),
                         )
                     }
-                    Spacer(Modifier.weight(1f))
                     Box(
                         modifier =
                             Modifier
@@ -168,11 +182,10 @@ fun IllustDetailSkeletonScreen(
                                 .then(shimmerModifier),
                     )
                 }
-            }
-            item(contentType = "skeleton_tags") {
+                // タグ行
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 ) {
                     repeat(3) {
                         Box(
@@ -184,7 +197,33 @@ fun IllustDetailSkeletonScreen(
                         )
                     }
                 }
+                Spacer(Modifier.height(4.dp))
             }
+        }
+
+        // ステータスバー上に浮く戻るボタン。実画面と同じ 38dp の円形、同じ位置。
+        // ロード中でも戻れるよう、ここは実際に押せるボタンにする。
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = 14.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            HeaderOverlayIcon(
+                icon = MiuixIcons.Back,
+                onClick = onBack,
+                contentDescription = null,
+            )
+            Box(
+                modifier =
+                    Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .background(Color.Black.copy(alpha = 0.35f)),
+            )
         }
     }
 }

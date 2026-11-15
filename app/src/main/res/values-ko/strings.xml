@@ -163,7 +163,7 @@
     <string name="detail_save_image_title">이미지 저장</string>
     <string name="detail_save_image_confirm">이 이미지를 Palleria 폴더에 저장합니다.</string>
     <string name="detail_save_ugoira_title">우고이라 저장</string>
-    <string name="detail_save_ugoira_confirm">이 우고이라를 GIF로 Palleria 폴더에 저장합니다.</string>
+    <string name="detail_save_ugoira_confirm">이 우고이라의 정지 이미지(커버)를 Palleria 폴더에 저장합니다.</string>
     <string name="detail_unfollow_title">팔로우 해제</string>
     <string name="detail_unfollow_confirm">%1$s 님을 팔로우 해제할까요?</string>
     <string name="detail_open_in_browser">브라우저에서 열기</string>
@@ -183,6 +183,7 @@
     <string name="detail_muted_work">뮤트한 작품</string>
     <string name="detail_muted_work_blur">뮤트한 태그가 포함된 작품은 흐리게 표시됩니다.</string>
     <string name="detail_unmute">뮤트 해제</string>
+    <string name="detail_image_load_failed">이미지를 불러오지 못했습니다</string>
     <string name="detail_no_caption">캡션 없음</string>
     <string name="detail_comments">댓글</string>
     <string name="detail_show_comments">댓글 보기</string>

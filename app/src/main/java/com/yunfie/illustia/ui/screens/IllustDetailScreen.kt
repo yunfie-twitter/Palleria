@@ -120,12 +120,25 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 /** Bottom padding for the two-pane info column so its last row clears the floating bookmark button. */
 private val TwoPaneFabBottomPadding = 152.dp
 
+/**
+ * 関連作品セクションを描画するか。
+ *
+ * 空リストは「取得中」と「0件」のどちらでもあり得るので、以前は空を取得中と見なして
+ * スピナーを出していた。そのため関連が0件の作品ではスピナーが永久に回り続けた。
+ * 取得完了フラグが立っていれば0件として扱い、見出しごと隠す。
+ */
+internal fun shouldShowRelatedSection(
+    relatedIllusts: List<Illust>,
+    relatedIllustsLoaded: Boolean,
+): Boolean = relatedIllusts.isNotEmpty() || !relatedIllustsLoaded
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun IllustDetailScreen(
     illust: Illust,
     isActive: Boolean = true,
     relatedIllusts: List<Illust>,
+    relatedIllustsLoaded: Boolean = false,
     firstComment: Comment?,
     settings: IllustDetailSettings,
     onBack: () -> Unit,
@@ -140,6 +153,7 @@ fun IllustDetailScreen(
     onSearchTag: (String) -> Unit,
     onLongPressTag: (String) -> Unit,
     isArtistFollowed: Boolean,
+    isArtistFollowKnown: Boolean = true,
     isArtistMuted: Boolean,
     isTagMuted: Boolean,
     onToggleFollow: () -> Unit,
@@ -294,10 +308,14 @@ fun IllustDetailScreen(
     }
 
     fun likeFromDoubleTap() {
+        // バーストは「いいねが成立した」ことを示す演出なので、既にいいね済みなら何もしない。
+        // 未いいねからの追加は楽観更新で即座に isBookmarked が立つため、
+        // 失敗時はストア側がスナックバー表示と巻き戻しを受け持つ。
+        if (illust.isBookmarked) return
         showLikeAnimation = false
         showLikeAnimation = true
-        performAppHapticFeedback(context, haptic, hapticMode)
-        if (!illust.isBookmarked) onBookmark()
+        performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Success)
+        onBookmark()
     }
 
     LaunchedEffect(showLikeAnimation) {
@@ -377,8 +395,10 @@ fun IllustDetailScreen(
         DetailInfoSlot(
             illust = illust,
             isArtistFollowed = isArtistFollowed,
+            isArtistFollowKnown = isArtistFollowKnown,
             isArtistMuted = isArtistMuted,
             relatedIllusts = relatedIllusts,
+            relatedIllustsLoaded = relatedIllustsLoaded,
             onOpenUser = onOpenUser,
             onOpenIllustById = onOpenIllustById,
             onOpenComments = onOpenComments,
@@ -393,6 +413,7 @@ fun IllustDetailScreen(
             onLongPressIllust = onLongPressIllust,
             onRequestUnfollowConfirm = { showUnfollowConfirm = true },
             relatedSectionInitiallyReady = relatedSectionInitiallyReady,
+            relatedSectionVisible = shouldShowRelatedSection(relatedIllusts, relatedIllustsLoaded),
             onRelatedSectionReady = onRelatedSectionReady,
             sectionsOverride = sections,
             showHeader = showHeader,
@@ -533,7 +554,9 @@ fun IllustDetailScreen(
                                 contentPadding = PaddingValues(bottom = 96.dp),
                             ) {
                                 item(key = "detail_header", contentType = "detail_header") { detailHeaderContent(false, Modifier) }
-                                if (relatedSectionIndex >= 0) {
+                                // 関連が 0 件で確定しているなら、見出しごと出さない。
+                                val showRelatedSection = shouldShowRelatedSection(relatedIllusts, relatedIllustsLoaded)
+                                if (relatedSectionIndex >= 0 && showRelatedSection) {
                                     val beforeSections = orderedSections.take(relatedSectionIndex)
                                     val afterSections = orderedSections.drop(relatedSectionIndex + 1)
                                     item(key = "detail_info_before", contentType = "detail_info") {
@@ -703,8 +726,10 @@ private fun DetailHeaderSlot(
 private fun DetailInfoSlot(
     illust: Illust,
     isArtistFollowed: Boolean,
+    isArtistFollowKnown: Boolean = true,
     isArtistMuted: Boolean,
     relatedIllusts: List<Illust>,
+    relatedIllustsLoaded: Boolean = false,
     onOpenUser: (Long) -> Unit,
     onOpenIllustById: (Long) -> Unit,
     onOpenComments: () -> Unit,
@@ -722,6 +747,7 @@ private fun DetailInfoSlot(
     onRelatedSectionReady: () -> Unit,
     sectionsOverride: List<String>? = null,
     showHeader: Boolean = true,
+    relatedSectionVisible: Boolean = true,
     liquidGlassFollowButton: Boolean,
     followBackdrop: Backdrop?,
 ) {
@@ -739,6 +765,7 @@ private fun DetailInfoSlot(
     IllustDetailInfo(
         illust = illust,
         isArtistFollowed = isArtistFollowed,
+        isArtistFollowKnown = isArtistFollowKnown,
         isArtistMuted = isArtistMuted,
         onOpenUser = { currentOnOpenUser(illust.artistId) },
         onOpenUserById = { currentOnOpenUser(it) },
@@ -762,7 +789,7 @@ private fun DetailInfoSlot(
                     onLongPressIllust = { currentOnLongPressIllust(it) },
                     configuredColumns = relatedIllustColumnCount,
                 )
-            } else {
+            } else if (!relatedIllustsLoaded) {
                 Box(
                     modifier =
                         Modifier
@@ -775,6 +802,7 @@ private fun DetailInfoSlot(
             }
         },
         relatedSectionInitiallyReady = relatedSectionInitiallyReady,
+        relatedSectionVisible = relatedSectionVisible,
         onRelatedSectionReady = onRelatedSectionReady,
         sectionsOverride = sectionsOverride,
         showHeader = showHeader,

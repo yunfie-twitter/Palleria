@@ -158,7 +158,7 @@
     <string name="detail_save_image_title">Salva immagine</string>
     <string name="detail_save_image_confirm">Salva questa immagine nella cartella Palleria.</string>
     <string name="detail_save_ugoira_title">Salva Ugoira</string>
-    <string name="detail_save_ugoira_confirm">Salva questa ugoira come GIF nella cartella Palleria.</string>
+    <string name="detail_save_ugoira_confirm">Salva l\'immagine fissa (copertina) di questa ugoira nella cartella Palleria.</string>
     <string name="detail_unfollow_title">Smetti di seguire</string>
     <string name="detail_unfollow_confirm">Smetti di seguire %1$s?</string>
     <string name="detail_open_in_browser">Apri nel browser</string>
@@ -178,6 +178,7 @@
     <string name="detail_muted_work">Lavoro disattivato</string>
     <string name="detail_muted_work_blur">Le opere contenenti tag disattivati vengono sfocate.</string>
     <string name="detail_unmute">Riattiva</string>
+    <string name="detail_image_load_failed">Impossibile caricare l\'immagine</string>
     <string name="detail_no_caption">Nessuna didascalia</string>
     <string name="detail_comments">Commenti</string>
     <string name="detail_show_comments">Mostra commenti</string>

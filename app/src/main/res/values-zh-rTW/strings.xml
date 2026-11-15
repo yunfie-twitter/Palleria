@@ -145,7 +145,7 @@
     <string name="detail_save_image_title">儲存圖像</string>
     <string name="detail_save_image_confirm">將此圖像儲存到 Palleria 資料夾。</string>
     <string name="detail_save_ugoira_title">儲存動圖</string>
-    <string name="detail_save_ugoira_confirm">將此動圖作為GIF儲存到 Palleria 資料夾。</string>
+    <string name="detail_save_ugoira_confirm">將此動圖的靜止圖（封面）儲存到 Palleria 資料夾。</string>
     <string name="detail_unfollow_title">取消關注</string>
     <string name="detail_unfollow_confirm">取消追蹤 %1$s？</string>
     <string name="detail_open_in_browser">在瀏覽器中開啟</string>
@@ -165,6 +165,7 @@
     <string name="detail_muted_work">靜音工作</string>
     <string name="detail_muted_work_blur">包含靜音標籤的作品模糊。</string>
     <string name="detail_unmute">取消靜音</string>
+    <string name="detail_image_load_failed">無法載入圖片</string>
     <string name="detail_no_caption">無標題</string>
     <string name="detail_comments">評論</string>
     <string name="detail_show_comments">顯示評論</string>

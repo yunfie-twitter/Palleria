@@ -94,6 +94,8 @@ data class IllustiaUiState(
     val selectedIllustFirstComment: Comment? = null,
     val isSelectedIllustRefreshing: Boolean = false,
     val relatedIllusts: List<Illust> = emptyList(),
+    /** 関連作品の取得が一度でも完了したか。空リストが「取得中」か「0件」かの区別に使う。 */
+    val relatedIllustsLoaded: Boolean = false,
     val savedIllusts: List<SavedIllustEntity> = emptyList(),
     val selectedSavedIllustId: Long? = null,
     val selectedUserId: Long? = null,

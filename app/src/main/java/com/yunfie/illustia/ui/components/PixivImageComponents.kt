@@ -131,6 +131,8 @@ fun PixivImage(
     placeholderUrl: String? = null,
     onSuccess: ((Bitmap) -> Unit)? = null,
     onLoadingStateChanged: ((Boolean) -> Unit)? = null,
+    onError: (() -> Unit)? = null,
+    retryToken: Int = 0,
 ) {
     val refreshRequest = LocalImageRefreshRequest.current
     val context = LocalPlatformContext.current
@@ -146,14 +148,18 @@ fun PixivImage(
             if (hasPlaceholder) proxyPixivImageUrl(placeholderUrl.orEmpty(), proxyBaseUrl) else null
         }
     val hasSuccessListener = onSuccess != null
-    val hasLoadingListener = onLoadingStateChanged != null || showLoadingSpinner || hasPlaceholder
+    val hasErrorListener = onError != null
+    val hasLoadingListener = onLoadingStateChanged != null || showLoadingSpinner || hasPlaceholder || hasErrorListener
     // Keyed on the request identity too: when the pager settles it swaps from the thumbnail
     // tier to the detail tier, which starts a brand new request. Without resetting this the
     // underlay stayed hidden for the first frame of that request, so the image blanked out and
     // then popped back in.
-    var isLoading by remember(effectiveUrl, hasLoadingListener, thumbnail, maxDecodeDimensionPx) { mutableStateOf(hasLoadingListener) }
+    var isLoading by remember(effectiveUrl, hasLoadingListener, thumbnail, maxDecodeDimensionPx, retryToken) {
+        mutableStateOf(hasLoadingListener)
+    }
     val currentOnSuccess by rememberUpdatedState(onSuccess)
     val currentOnLoadingStateChanged by rememberUpdatedState(onLoadingStateChanged)
+    val currentOnError by rememberUpdatedState(onError)
 
     val defaultMaxDimension =
         remember(context) {
@@ -186,10 +192,13 @@ fun PixivImage(
             wideColorGamutEnabled,
             hasSuccessListener,
             hasLoadingListener,
+            hasErrorListener,
+            retryToken,
         ) {
             val memoryCacheKey =
                 pixivImageMemoryCacheKey(effectiveUrl, thumbnail, decodeDimensionPx) +
-                    (if (refreshRequest == 0) "" else "#reload-$refreshRequest")
+                    (if (refreshRequest == 0) "" else "#reload-$refreshRequest") +
+                    (if (retryToken == 0) "" else "#retry-$retryToken")
             val builder =
                 ImageRequest
                     .Builder(context)
@@ -225,6 +234,9 @@ fun PixivImage(
                         if (hasLoadingListener) {
                             isLoading = false
                             currentOnLoadingStateChanged?.invoke(false)
+                        }
+                        if (hasErrorListener) {
+                            currentOnError?.invoke()
                         }
                     },
                 )

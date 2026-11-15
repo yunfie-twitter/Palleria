@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
@@ -174,10 +175,12 @@ internal fun BrowseArea(
             if (recommendedTags.isEmpty()) {
                 when {
                     state.recommendedTagsError != null -> {
-                        RequestErrorState(
-                            message = state.recommendedTagsError,
-                            onRetry = { viewModel.refreshRecommendedTags(force = true) },
-                        )
+                        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            RequestErrorState(
+                                message = state.recommendedTagsError,
+                                onRetry = { viewModel.refreshRecommendedTags(force = true) },
+                            )
+                        }
                     }
 
                     state.recommendedTagsLoading || state.recommendedTagsFetchedAtMillis == 0L -> {

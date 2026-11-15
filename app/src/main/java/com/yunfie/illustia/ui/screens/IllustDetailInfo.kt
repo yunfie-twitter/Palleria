@@ -1,5 +1,9 @@
 package com.yunfie.illustia.ui.screens
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -86,6 +90,7 @@ internal fun formatIllustDimensions(
 internal fun IllustDetailInfo(
     illust: Illust,
     isArtistFollowed: Boolean,
+    isArtistFollowKnown: Boolean = true,
     isArtistMuted: Boolean,
     onOpenUser: () -> Unit,
     onOpenUserById: (Long) -> Unit,
@@ -99,6 +104,7 @@ internal fun IllustDetailInfo(
     sectionOrder: List<String>,
     relatedContent: @Composable (isNearViewport: Boolean) -> Unit,
     relatedSectionInitiallyReady: Boolean = false,
+    relatedSectionVisible: Boolean = true,
     onRelatedSectionReady: () -> Unit = {},
     sectionsOverride: List<String>? = null,
     showHeader: Boolean = true,
@@ -144,8 +150,9 @@ internal fun IllustDetailInfo(
             }
         }
     val orderedSections =
-        remember(sectionOrder, sectionsOverride) {
-            sectionsOverride ?: orderedDetailSections(sectionOrder)
+        remember(sectionOrder, sectionsOverride, relatedSectionVisible) {
+            (sectionsOverride ?: orderedDetailSections(sectionOrder))
+                .let { sections -> if (relatedSectionVisible) sections else sections - "related" }
         }
     // タグは 12 個で打ち切っていたので、残りを捨てずに展開できるようにする。
     // タグのミュートやお気に入りはこの画面からしか触れないため、隠れると実害があった。
@@ -299,6 +306,7 @@ internal fun IllustDetailInfo(
                                         Modifier
                                             .clip(RoundedCornerShape(20.dp))
                                             .miuixClickable(
+                                                enabled = isArtistMuted || isArtistFollowKnown,
                                                 pressedScale = 0.94f,
                                                 haptic = true,
                                                 onClick =
@@ -316,7 +324,7 @@ internal fun IllustDetailInfo(
                                 ) {
                                     if (isArtistMuted) {
                                         DetailMutedUserPill()
-                                    } else {
+                                    } else if (isArtistFollowKnown) {
                                         FollowPill(
                                             isFollowed = isArtistFollowed,
                                             followAnimationTrigger = followAnimationTrigger,
@@ -414,7 +422,15 @@ internal fun IllustDetailInfo(
                                     fontWeight = FontWeight.Bold,
                                     modifier = Modifier.padding(horizontal = 16.dp),
                                 )
-                                relatedContent(relatedSectionReady)
+                                // 24dp の Spacer からフルグリッドへ一瞬で入れ替わるため、スクロール中に
+                                // レイアウトが飛んで見えていた。フェードで差し替えて出現をならす。
+                                AnimatedContent(
+                                    targetState = relatedSectionReady,
+                                    transitionSpec = { fadeIn() togetherWith fadeOut() },
+                                    label = "relatedSectionAppear",
+                                ) { ready ->
+                                    relatedContent(ready)
+                                }
                             }
                         }
                     }

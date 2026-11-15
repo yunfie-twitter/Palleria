@@ -199,7 +199,7 @@
     <string name="detail_save_image_title">Сохранить изображение</string>
     <string name="detail_save_image_confirm">Сохранить это изображение в папку Palleria?</string>
     <string name="detail_save_ugoira_title">Сохранить угоиру</string>
-    <string name="detail_save_ugoira_confirm">Сохранить эту угоиру как GIF в папку Palleria?</string>
+    <string name="detail_save_ugoira_confirm">Сохранить кадр (обложку) этой угоиры в папку Palleria.</string>
     <string name="detail_unfollow_title">Отписаться</string>
     <string name="detail_unfollow_confirm">Отписаться от %1$s?</string>
     <string name="detail_open_in_browser">Открыть в браузере</string>
@@ -219,6 +219,7 @@
     <string name="detail_muted_work">Скрытая работа</string>
     <string name="detail_muted_work_blur">Работы со скрытыми тегами размыты.</string>
     <string name="detail_unmute">Вернуть</string>
+    <string name="detail_image_load_failed">Не удалось загрузить изображение</string>
     <string name="detail_no_caption">Описание отсутствует</string>
     <string name="detail_comments">Комментарии</string>
     <string name="detail_show_comments">Показать комментарии</string>

@@ -305,6 +305,7 @@ internal fun AppNavHost(
                             DetailEntrySnapshot(
                                 illust = selectedIllust,
                                 relatedIllusts = appState.state.relatedIllusts,
+                                relatedIllustsLoaded = appState.state.relatedIllustsLoaded,
                                 firstComment = appState.state.selectedIllustFirstComment,
                                 user = appState.state.selectedIllustUser,
                                 isRefreshing = appState.state.isSelectedIllustRefreshing,
@@ -318,6 +319,7 @@ internal fun AppNavHost(
                             illust = illust,
                             isActive = backStack.lastOrNull() == route,
                             relatedIllusts = snapshot.relatedIllusts,
+                            relatedIllustsLoaded = snapshot.relatedIllustsLoaded,
                             firstComment = snapshot.firstComment,
                             onBack = onPopRoute,
                             onBookmark = { viewModel.toggleBookmark(illust) },
@@ -348,6 +350,10 @@ internal fun AppNavHost(
                                 )
                             },
                             isArtistFollowed = snapshot.user?.isFollowed == true,
+                            // userDetail が解決するまではフォロー状態が未確定。未確定のあいだ
+                            // 「未フォロー」を出すと、解決後に Follow → Following と目に見えて
+                            // 反転するため、確定するまでピルを出さない。
+                            isArtistFollowKnown = snapshot.user != null,
                             isArtistMuted =
                                 appState.state.settings.mutedUsers
                                     .contains(illust.artistId),
@@ -827,6 +833,7 @@ internal fun AppNavHost(
         selectedCommentTarget = selectedCommentTarget,
         onDismissComments = { onSelectedCommentTargetChange(null) },
         onSearchTag = onSearchTag,
+        currentRoute = backStack.lastOrNull() ?: AppRoute.Main,
     )
 }
 
