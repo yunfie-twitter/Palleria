@@ -152,6 +152,9 @@ abstract class IllustiaViewModelFoundation(
 
     /** コメントシート等が作品詳細の上に重なっている間は詳細の追加取得を行わない。 */
     protected var detailExtrasPaused: Boolean = false
+
+    /** pause 中に開かれた作品。再開時にこの作品から取得をやり直す。 */
+    protected var pendingDetailExtrasIllust: Illust? = null
     protected var loadingJob: Job? = null
     internal val userProfileRequests = UserProfileRequests(viewModelScope)
     internal val userProfileCache = UserProfileCache()

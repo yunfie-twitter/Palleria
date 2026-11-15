@@ -307,6 +307,7 @@ internal fun AppNavHost(
                                 relatedIllusts = appState.state.relatedIllusts,
                                 firstComment = appState.state.selectedIllustFirstComment,
                                 user = appState.state.selectedIllustUser,
+                                isRefreshing = appState.state.isSelectedIllustRefreshing,
                             )
                         } else {
                             detailSnapshots[route.illustId]
@@ -322,6 +323,7 @@ internal fun AppNavHost(
                             onBookmark = { viewModel.toggleBookmark(illust) },
                             onBookmarkLongClick = { viewModel.openBookmarkTagPicker(illust) },
                             onRefresh = { viewModel.refreshIllustDetail(illust.id) },
+                            isRefreshingExternal = snapshot.isRefreshing,
                             onOpenUser = viewModel::openUser,
                             onOpenComments = {
                                 viewModel.openComments(illust.id to CommentArtworkType.ILLUST)

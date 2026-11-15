@@ -92,6 +92,7 @@ data class IllustiaUiState(
     val selectedIllustErrorId: Long? = null,
     val selectedIllustUser: UserProfile? = null,
     val selectedIllustFirstComment: Comment? = null,
+    val isSelectedIllustRefreshing: Boolean = false,
     val relatedIllusts: List<Illust> = emptyList(),
     val savedIllusts: List<SavedIllustEntity> = emptyList(),
     val selectedSavedIllustId: Long? = null,

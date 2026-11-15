@@ -437,10 +437,11 @@ internal fun IllustDetailHeader(
                 } else {
                     Color.Black.copy(alpha = 0.18f)
                 }
+            val backLabel = stringResource(R.string.action_back)
             if (liquidGlassBackdrop != null) {
                 LiquidGlassIconButton(
                     icon = MiuixIcons.Back,
-                    contentDescription = null,
+                    contentDescription = backLabel,
                     onClick = onBack,
                     backdrop = liquidGlassBackdrop,
                     iconTint = headerIconTint,
@@ -452,6 +453,7 @@ internal fun IllustDetailHeader(
                     onClick = onBack,
                     backgroundColor = headerIconBackground,
                     contentColor = headerIconTint,
+                    contentDescription = backLabel,
                 )
             }
             val menuEntries =
@@ -717,7 +719,9 @@ private fun HeaderPageIndicator(
     ) {
         Text(
             "${pagerState.currentPage + 1} / $pageCount",
-            color = MiuixTheme.colorScheme.onSurface,
+            // 自前の黒 40% スクリムの上に乗るので、テーマの onSurface ではなく
+            // 常に白系にする。ライトテーマの onSurface（ほぼ黒）では読めなかった。
+            color = Color.White.copy(alpha = 0.92f),
             style = MiuixTheme.textStyles.footnote1,
             fontWeight = FontWeight.Bold,
         )
