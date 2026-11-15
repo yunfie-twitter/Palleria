@@ -184,6 +184,8 @@
     <string name="detail_comments_empty">Chưa có bình luận nào</string>
     <string name="detail_series">loạt</string>
     <string name="detail_related">Tác phẩm liên quan</string>
+    <string name="detail_tags_show_more">Hiện tất cả (thêm %1$d)</string>
+    <string name="detail_tags_show_less">Thu gọn</string>
     <string name="detail_illust_id">ID minh họa</string>
     <string name="detail_resolution">Độ phân giải</string>
 

@@ -184,6 +184,8 @@
     <string name="detail_comments_empty">Pas encore de commentaires</string>
     <string name="detail_series">Série</string>
     <string name="detail_related">Travaux connexes</string>
+    <string name="detail_tags_show_more">Tout afficher (%1$d de plus)</string>
+    <string name="detail_tags_show_less">Afficher moins</string>
     <string name="detail_illust_id">ID d\'illusion</string>
     <string name="detail_resolution">Résolution</string>
 

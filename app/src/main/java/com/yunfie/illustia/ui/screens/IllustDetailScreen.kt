@@ -117,6 +117,9 @@ import top.yukonga.miuix.kmp.icon.extended.Theme
 import top.yukonga.miuix.kmp.menu.WindowIconDropdownMenu
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
+/** Bottom padding for the two-pane info column so its last row clears the floating bookmark button. */
+private val TwoPaneFabBottomPadding = 152.dp
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun IllustDetailScreen(
@@ -202,9 +205,12 @@ fun IllustDetailScreen(
     val pullToRefreshState = rememberPullToRefreshState()
     val detailListState = listState
     var useDarkHeaderIcons by remember(illust.id) { mutableStateOf(false) }
+    // firstVisibleItemIndex は 1px スクロールした時点で 1 になるため、そのまま使うと
+    // 作品がまだ画面上に残っているのにシステムバーのアイコン色が切り替わってちらつく。
+    // 作品アイテムが完全に画面外へ出た（スクロール量 > 0）ときだけ切り替える。
     val isArtworkOffScreen by remember {
         derivedStateOf {
-            detailListState.firstVisibleItemIndex > 0
+            detailListState.firstVisibleItemIndex > 0 || detailListState.firstVisibleItemScrollOffset > 0
         }
     }
     val activity = context as? Activity
@@ -510,7 +516,9 @@ fun IllustDetailScreen(
                                             .weight(0.9f)
                                             .fillMaxHeight()
                                             .background(MiuixTheme.colorScheme.surface),
-                                    contentPadding = PaddingValues(top = 12.dp, bottom = 96.dp),
+                                    // 2ペインでは FAB が右ペイン（情報側）の下端に重なるので、
+                                    // スクロール末尾の行が隠れないよう余白を多めに取る。
+                                    contentPadding = PaddingValues(top = 12.dp, bottom = TwoPaneFabBottomPadding),
                                 ) {
                                     item(key = "detail_info", contentType = "detail_info") { detailInfoContent(null, true) }
                                 }

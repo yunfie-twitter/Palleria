@@ -225,6 +225,8 @@
     <string name="detail_comments_empty">Комментариев пока нет</string>
     <string name="detail_series">Серия</string>
     <string name="detail_related">Похожие иллюстрации</string>
+    <string name="detail_tags_show_more">Показать все (ещё %1$d)</string>
+    <string name="detail_tags_show_less">Свернуть</string>
     <string name="detail_illust_id">ID иллюстрации</string>
     <string name="detail_resolution">Разрешение</string>
     <string name="detail_resolution_dimensions">%1$d × %2$d px</string>

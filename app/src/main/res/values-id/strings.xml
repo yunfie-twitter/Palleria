@@ -184,6 +184,8 @@
     <string name="detail_comments_empty">Belum ada komentar</string>
     <string name="detail_series">Seri</string>
     <string name="detail_related">Pekerjaan Terkait</string>
+    <string name="detail_tags_show_more">Tampilkan semua (%1$d lagi)</string>
+    <string name="detail_tags_show_less">Tampilkan lebih sedikit</string>
     <string name="detail_illust_id">ID ilustrasi</string>
     <string name="detail_resolution">Resolusi</string>
 
