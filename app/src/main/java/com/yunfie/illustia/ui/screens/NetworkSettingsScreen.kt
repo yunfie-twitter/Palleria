@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -31,6 +32,7 @@ import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.Section
 import com.yunfie.illustia.ui.components.SettingDropdownRow
 import com.yunfie.illustia.ui.components.SettingLinkRow
+import com.yunfie.illustia.ui.components.dialogBottomInsets
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -140,8 +142,18 @@ fun NetworkSettingsScreen(
                 title = stringResource(R.string.image_proxy_custom_dialog_title),
                 summary = stringResource(R.string.image_proxy_custom_dialog_summary),
                 onDismissRequest = { showCustomDialog = false },
+                // 既定では imePadding と navigationBarsPadding の両方が適用される。ルートが
+                // navigationBars 分を消費済みのため、キーボード表示時に両方が積まれて
+                // キーボードとの間に隙間ができる。内側で大きい方だけを確保する。
+                defaultWindowInsetsPadding = false,
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .windowInsetsPadding(dialogBottomInsets()),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
                     TextField(
                         value = customUrlInput,
                         onValueChange = { customUrlInput = it },

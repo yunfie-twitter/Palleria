@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
@@ -31,6 +32,7 @@ import com.yunfie.illustia.ui.components.Section
 import com.yunfie.illustia.ui.components.SettingDropdownRow
 import com.yunfie.illustia.ui.components.SettingLinkRow
 import com.yunfie.illustia.ui.components.SettingSwitchRow
+import com.yunfie.illustia.ui.components.dialogBottomInsets
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -188,8 +190,15 @@ fun InternalProxySettingsScreen(
                 show = showCustomDohDialog,
                 title = stringResource(R.string.internal_proxy_doh_custom_url),
                 onDismissRequest = { showCustomDohDialog = false },
+                defaultWindowInsetsPadding = false,
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .windowInsetsPadding(dialogBottomInsets()),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
                     TextField(
                         value = customDohInput,
                         onValueChange = { customDohInput = it },
@@ -228,8 +237,15 @@ fun InternalProxySettingsScreen(
                 show = showProxyHostDialog,
                 title = stringResource(R.string.internal_proxy_host),
                 onDismissRequest = { showProxyHostDialog = false },
+                defaultWindowInsetsPadding = false,
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .windowInsetsPadding(dialogBottomInsets()),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
                     TextField(
                         value = proxyHostInput,
                         onValueChange = { proxyHostInput = it },
@@ -268,8 +284,15 @@ fun InternalProxySettingsScreen(
                 show = showProxyPortDialog,
                 title = stringResource(R.string.internal_proxy_port),
                 onDismissRequest = { showProxyPortDialog = false },
+                defaultWindowInsetsPadding = false,
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .windowInsetsPadding(dialogBottomInsets()),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
                     TextField(
                         value = proxyPortInput,
                         onValueChange = { proxyPortInput = it.filter { char -> char.isDigit() } },
@@ -311,8 +334,15 @@ fun InternalProxySettingsScreen(
                 title = stringResource(R.string.internal_proxy_bypass_hosts),
                 summary = stringResource(R.string.internal_proxy_bypass_hosts_desc),
                 onDismissRequest = { showBypassHostsDialog = false },
+                defaultWindowInsetsPadding = false,
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .windowInsetsPadding(dialogBottomInsets()),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
                     TextField(
                         value = bypassHostsInput,
                         onValueChange = { bypassHostsInput = it },
