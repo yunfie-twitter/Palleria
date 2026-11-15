@@ -136,6 +136,7 @@ fun IllustDetailScreen(
     onSearchTag: (String) -> Unit,
     onLongPressTag: (String) -> Unit,
     isArtistFollowed: Boolean,
+    isArtistFollowKnown: Boolean = true,
     isArtistMuted: Boolean,
     isTagMuted: Boolean,
     onToggleFollow: () -> Unit,
@@ -365,6 +366,7 @@ fun IllustDetailScreen(
         DetailInfoSlot(
             illust = illust,
             isArtistFollowed = isArtistFollowed,
+            isArtistFollowKnown = isArtistFollowKnown,
             isArtistMuted = isArtistMuted,
             relatedIllusts = relatedIllusts,
             onOpenUser = onOpenUser,
@@ -684,6 +686,7 @@ private fun DetailHeaderSlot(
 private fun DetailInfoSlot(
     illust: Illust,
     isArtistFollowed: Boolean,
+    isArtistFollowKnown: Boolean = true,
     isArtistMuted: Boolean,
     relatedIllusts: List<Illust>,
     onOpenUser: (Long) -> Unit,
@@ -720,6 +723,7 @@ private fun DetailInfoSlot(
     IllustDetailInfo(
         illust = illust,
         isArtistFollowed = isArtistFollowed,
+        isArtistFollowKnown = isArtistFollowKnown,
         isArtistMuted = isArtistMuted,
         onOpenUser = { currentOnOpenUser(illust.artistId) },
         onOpenUserById = { currentOnOpenUser(it) },
