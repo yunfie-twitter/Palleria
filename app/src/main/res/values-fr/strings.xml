@@ -158,7 +158,7 @@
     <string name="detail_save_image_title">Enregistrer l\'image</string>
     <string name="detail_save_image_confirm">Enregistrez cette image dans le dossier Palleria.</string>
     <string name="detail_save_ugoira_title">Enregistrer Ugoira</string>
-    <string name="detail_save_ugoira_confirm">Enregistrez cette ugoira au format GIF dans le dossier Palleria.</string>
+    <string name="detail_save_ugoira_confirm">Enregistrez l\'image fixe (couverture) de cette ugoira dans le dossier Palleria.</string>
     <string name="detail_unfollow_title">Ne plus suivre</string>
     <string name="detail_unfollow_confirm">Ne plus suivre %1$s ?</string>
     <string name="detail_open_in_browser">Ouvrir dans le navigateur</string>

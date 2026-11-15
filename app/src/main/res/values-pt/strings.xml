@@ -158,7 +158,7 @@
     <string name="detail_save_image_title">Salvar imagem</string>
     <string name="detail_save_image_confirm">Salve esta imagem na pasta Palleria.</string>
     <string name="detail_save_ugoira_title">Salve Ugoira</string>
-    <string name="detail_save_ugoira_confirm">Salve esta ugoira como GIF na pasta Palleria.</string>
+    <string name="detail_save_ugoira_confirm">Salve a imagem estática (capa) desta ugoira na pasta Palleria.</string>
     <string name="detail_unfollow_title">Deixar de seguir</string>
     <string name="detail_unfollow_confirm">Deixar de seguir %1$s?</string>
     <string name="detail_open_in_browser">Abrir no navegador</string>

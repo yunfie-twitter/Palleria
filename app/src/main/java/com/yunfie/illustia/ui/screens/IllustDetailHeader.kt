@@ -73,6 +73,8 @@ import com.yunfie.illustia.ui.components.rememberLiquidGlassBackdrop
 import com.yunfie.illustia.ui.components.resolveDarkHeaderIcons
 import com.yunfie.illustia.ui.components.resolveProgressivePlaceholderUrls
 import com.yunfie.illustia.ui.components.resolveQualityImageUrls
+import com.yunfie.illustia.ui.components.resolveSaveImageUrl
+import com.yunfie.illustia.ui.components.resolveSaveImageUrls
 import com.yunfie.illustia.ui.components.sharedArtworkElement
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -344,7 +346,9 @@ internal fun IllustDetailHeader(
                                                     } else {
                                                         "illustia_${illust.id}_p$page"
                                                     }
-                                                onSaveImage(imageUrls[page], saveName, confirmOnLongPressSave)
+                                                // 保存はメニュー経路と同じく常に原寸。表示 tier を
+                                                // 渡すと高画質オフ時に低解像度が同じ名前で落ちていた。
+                                                onSaveImage(resolveSaveImageUrl(illust, page), saveName, confirmOnLongPressSave)
                                             },
                                         ),
                             )
@@ -570,7 +574,7 @@ internal fun IllustDetailHeader(
                                                                 } else {
                                                                     "illustia_${illust.id}"
                                                                 }
-                                                            onSaveAllImages(imageUrls, allPrefix)
+                                                            onSaveAllImages(resolveSaveImageUrls(illust), allPrefix)
                                                         },
                                                     ),
                                                 ),

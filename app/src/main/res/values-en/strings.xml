@@ -161,7 +161,7 @@
     <string name="detail_save_image_title">Save Image</string>
     <string name="detail_save_image_confirm">Save this image to the Palleria folder.</string>
     <string name="detail_save_ugoira_title">Save Ugoira</string>
-    <string name="detail_save_ugoira_confirm">Save this ugoira as a GIF to the Palleria folder.</string>
+    <string name="detail_save_ugoira_confirm">Save this ugoira\'s cover image (still frame) to the Palleria folder.</string>
     <string name="detail_unfollow_title">Unfollow</string>
     <string name="detail_unfollow_confirm">Unfollow %1$s?</string>
     <string name="detail_open_in_browser">Open in Browser</string>

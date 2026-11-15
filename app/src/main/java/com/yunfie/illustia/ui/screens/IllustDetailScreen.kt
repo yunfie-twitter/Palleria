@@ -282,10 +282,14 @@ fun IllustDetailScreen(
     }
 
     fun likeFromDoubleTap() {
+        // バーストは「いいねが成立した」ことを示す演出なので、既にいいね済みなら何もしない。
+        // 未いいねからの追加は楽観更新で即座に isBookmarked が立つため、
+        // 失敗時はストア側がスナックバー表示と巻き戻しを受け持つ。
+        if (illust.isBookmarked) return
         showLikeAnimation = false
         showLikeAnimation = true
-        performAppHapticFeedback(context, haptic, hapticMode)
-        if (!illust.isBookmarked) onBookmark()
+        performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Success)
+        onBookmark()
     }
 
     LaunchedEffect(showLikeAnimation) {

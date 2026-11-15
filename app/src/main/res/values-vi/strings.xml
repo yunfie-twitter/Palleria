@@ -158,7 +158,7 @@
     <string name="detail_save_image_title">Lưu hình ảnh</string>
     <string name="detail_save_image_confirm">Lưu hình ảnh này vào thư mục Palleria.</string>
     <string name="detail_save_ugoira_title">Lưu Ugoira</string>
-    <string name="detail_save_ugoira_confirm">Lưu ugoira này dưới dạng GIF vào thư mục Palleria.</string>
+    <string name="detail_save_ugoira_confirm">Lưu ảnh tĩnh (ảnh bìa) của ugoira này vào thư mục Palleria.</string>
     <string name="detail_unfollow_title">Hủy theo dõi</string>
     <string name="detail_unfollow_confirm">Hủy theo dõi %1$s?</string>
     <string name="detail_open_in_browser">Mở trong trình duyệt</string>
