@@ -1,6 +1,8 @@
 package com.yunfie.illustia.data.pixiv
 
+import android.content.Context
 import com.yunfie.illustia.data.IllustiaRepository
+import com.yunfie.illustia.data.toUserMessage
 import com.yunfie.illustia.models.pixiv.IllustSeriesWithIdModel
 import com.yunfie.illustia.models.pixiv.Illusts
 import kotlinx.coroutines.CancellationException
@@ -22,6 +24,7 @@ data class IllustSeriesState(
 class IllustSeriesStore(
     private val repository: IllustiaRepository,
     private val illustSeriesId: Long,
+    private val context: Context,
 ) {
     private val _state = MutableStateFlow(IllustSeriesState())
     val state: StateFlow<IllustSeriesState> = _state.asStateFlow()
@@ -53,7 +56,7 @@ class IllustSeriesStore(
                 it.copy(
                     isLoading = false,
                     isRefreshing = false,
-                    errorMessage = expectedFailure.toString(),
+                    errorMessage = expectedFailure.toUserMessage(context),
                     watchlistAdded = false,
                 )
             }
@@ -80,7 +83,7 @@ class IllustSeriesStore(
             _state.update {
                 it.copy(
                     isPaginating = false,
-                    errorMessage = expectedFailure.toString(),
+                    errorMessage = expectedFailure.toUserMessage(context),
                 )
             }
         }

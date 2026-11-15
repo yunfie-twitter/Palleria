@@ -20,6 +20,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -68,6 +69,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun BookmarkScreen(
     settings: AppSettings,
     loadState: LoadState,
+    timelineLoadState: LoadState = loadState,
+    followingUsersLoadState: LoadState = loadState,
     bookmarkItems: List<Illust>,
     bookmarkTag: String?,
     timelineItems: List<Illust>,
@@ -80,7 +83,8 @@ fun BookmarkScreen(
     val bookmarkSort = chrome.bookmarkSort
     var followingUserSort by rememberSaveable { mutableStateOf(FollowingUserSort.Newest) }
     val repository = remember(viewModel) { viewModel.uiRepository() }
-    val watchlistStore = remember(repository) { WatchlistStore(repository) }
+    val context = LocalContext.current
+    val watchlistStore = remember(repository, context) { WatchlistStore(repository, context) }
     val watchlistState by watchlistStore.state.collectAsStateWithLifecycle()
     LaunchedEffect(viewModel, watchlistStore) {
         viewModel.watchlistRefreshRequests.collect { watchlistStore.fetch() }
@@ -473,7 +477,7 @@ fun BookmarkScreen(
                     0 -> {
                         BookmarkTimelineTab(
                             timelineItems = timelineItems,
-                            loadState = loadState,
+                            loadState = timelineLoadState,
                             settings = settings,
                             feedHighQuality = feedHighQuality,
                             showAiBadge = showAiBadge,
@@ -513,7 +517,7 @@ fun BookmarkScreen(
                             settings = settings,
                             followingUsers = followingUsers,
                             sort = followingUserSort,
-                            loadState = loadState,
+                            loadState = followingUsersLoadState,
                             viewModel = viewModel,
                             chrome = chrome,
                             scrollBehavior = scrollBehavior,

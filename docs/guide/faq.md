@@ -15,7 +15,7 @@ description: Palleriaのインストール、ログイン、画像表示に関�
 
 ## Google Playからインストールできますか？
 
-このドキュメントで案内している配布元は、PalleriaのF-DroidリポジトリとGitHub Releasesです。詳しくは[インストール](./install)を参照してください。
+このドキュメントで案内している配布元は、PalleriaのF-DroidリポジトリとGitHub Releasesです。詳しくは[インストール](./install.md)を参照してください。
 
 ## 画像が表示されません
 

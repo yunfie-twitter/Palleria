@@ -1,3 +1,12 @@
+---
+title: 検索入力の空白処理リグレッション検証
+description: 検索欄の入力正規化とテスト結果に関する内部検証メモです。
+head:
+  - - meta
+    - name: robots
+      content: noindex, nofollow
+---
+
 # Search input whitespace regression
 
 On 2026-10-24, `:app:testDebugUnitTest --tests com.yunfie.illustia.platform.StealthMicroUxPhase1Test` passed **5 tests**, with zero failures, errors or skipped tests. This corrects the 13-test count mistakenly written in commit `05eb4eaa`; the current suite XML reports five tests.

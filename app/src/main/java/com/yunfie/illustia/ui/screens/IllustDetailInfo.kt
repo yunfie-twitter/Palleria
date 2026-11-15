@@ -657,7 +657,7 @@ internal fun RelatedIllustCard(
         }
         if (related.pageCount > 1) {
             Text(
-                text = "${related.pageCount}P",
+                text = stringResource(R.string.page_count_short, related.pageCount),
                 color = Color.White,
                 style = MiuixTheme.textStyles.footnote2,
                 fontWeight = FontWeight.Black,

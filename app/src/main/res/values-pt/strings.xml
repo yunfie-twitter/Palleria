@@ -572,7 +572,6 @@
     <!-- About screen -->
     <string name="about_title">Sobre Pallaria</string>
     <string name="about_version">Versão %1$s</string>
-    <string name="about_tagline">Visualizador de ilustração Pixiv dedicado</string>
     <string name="about_section_info">Informações</string>
     <string name="about_section_links">Ligações</string>
     <string name="about_section_libraries">Bibliotecas</string>

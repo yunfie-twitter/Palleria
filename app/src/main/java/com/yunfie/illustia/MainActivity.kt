@@ -223,30 +223,7 @@ class MainActivity : FragmentActivity() {
             }
         }
         val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
-        appliedDarkTheme = isDark
-        enableEdgeToEdge(
-            statusBarStyle =
-                if (isDark) {
-                    SystemBarStyle.dark(
-                        Color.TRANSPARENT,
-                    )
-                } else {
-                    SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
-                },
-            navigationBarStyle =
-                if (isDark) {
-                    SystemBarStyle.dark(
-                        Color.TRANSPARENT,
-                    )
-                } else {
-                    SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
-                },
-        )
-        disableNavigationBarContrastEnforcement(window)
-        WindowCompat.getInsetsController(window, window.decorView).apply {
-            isAppearanceLightStatusBars = !isDark
-            isAppearanceLightNavigationBars = !isDark
-        }
+        applySystemBarAppearance(isDark)
         super.onCreate(savedInstanceState)
         // Warm up ViewModel immediately so settings/cache loading starts in parallel with window setup.
         viewModel
@@ -338,32 +315,7 @@ class MainActivity : FragmentActivity() {
 
             LaunchedEffect(settingsLoaded, settings.themeMode, systemDark) {
                 if (!settingsLoaded) return@LaunchedEffect
-                val isDarkTheme = isAppDarkTheme(settings.themeMode, systemDark)
-                if (appliedDarkTheme == isDarkTheme) return@LaunchedEffect
-                appliedDarkTheme = isDarkTheme
-                enableEdgeToEdge(
-                    statusBarStyle =
-                        if (isDarkTheme) {
-                            SystemBarStyle.dark(
-                                Color.TRANSPARENT,
-                            )
-                        } else {
-                            SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
-                        },
-                    navigationBarStyle =
-                        if (isDarkTheme) {
-                            SystemBarStyle.dark(
-                                Color.TRANSPARENT,
-                            )
-                        } else {
-                            SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
-                        },
-                )
-                disableNavigationBarContrastEnforcement(window)
-                WindowCompat.getInsetsController(window, window.decorView).apply {
-                    isAppearanceLightStatusBars = !isDarkTheme
-                    isAppearanceLightNavigationBars = !isDarkTheme
-                }
+                applySystemBarAppearance(isAppDarkTheme(settings.themeMode, systemDark))
             }
 
             LaunchedEffect(
@@ -867,11 +819,38 @@ class MainActivity : FragmentActivity() {
         setTaskDescription(taskDesc)
     }
 
+    private fun applySystemBarAppearance(isDarkTheme: Boolean) {
+        appliedDarkTheme = isDarkTheme
+        enableEdgeToEdge(
+            statusBarStyle =
+                if (isDarkTheme) {
+                    SystemBarStyle.dark(
+                        Color.TRANSPARENT,
+                    )
+                } else {
+                    SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
+                },
+            navigationBarStyle =
+                if (isDarkTheme) {
+                    SystemBarStyle.dark(
+                        Color.TRANSPARENT,
+                    )
+                } else {
+                    SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
+                },
+        )
+        disableNavigationBarContrastEnforcement(window)
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            isAppearanceLightStatusBars = !isDarkTheme
+            isAppearanceLightNavigationBars = !isDarkTheme
+        }
+    }
+
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         val isDark = (newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
         if (appliedDarkTheme != isDark) {
-            appliedDarkTheme = isDark
+            applySystemBarAppearance(isDark)
         }
     }
 

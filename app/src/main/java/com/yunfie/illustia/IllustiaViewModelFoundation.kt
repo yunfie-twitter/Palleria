@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.os.Looper
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.core.content.pm.PackageInfoCompat
@@ -72,6 +73,7 @@ import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import java.io.File
 import java.io.IOException
+import java.net.SocketTimeoutException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -79,6 +81,10 @@ private const val MIN_SMART_CACHE_PREFETCH = 4
 private const val MAX_SMART_CACHE_PREFETCH = 16
 private const val FEED_SEEN_STATE_UPDATE_DELAY_MS = 1500L
 private const val SMART_CACHE_WARM_DELAY_MS = 2000L
+private const val HTTP_BAD_REQUEST = 400
+private const val HTTP_FORBIDDEN = 403
+private const val HTTP_NOT_FOUND = 404
+private val HTTP_SERVER_ERROR_RANGE = 500..599
 
 private data class SettingsPersistenceRequest(
     val settings: AppSettings,
@@ -284,6 +290,25 @@ abstract class IllustiaViewModelFoundation(
     protected val _detailNavigationRequests = Channel<Long>(Channel.BUFFERED)
     val detailNavigationRequests = _detailNavigationRequests.receiveAsFlow()
 
+    /**
+     * Synchronous navigation hook installed by the UI. Taps go through this so the route is
+     * pushed in the same callback instead of after a state round-trip and a recomposition,
+     * which made the detail page appear late. Off the main thread it falls back to the channel.
+     */
+    @Volatile
+    var detailNavigator: ((Long) -> Unit)? = null
+
+    protected fun requestDetailNavigation(illustId: Long) {
+        val navigator = detailNavigator
+        if (navigator != null && Looper.myLooper() == Looper.getMainLooper()) {
+            navigator(illustId)
+        } else {
+            _detailNavigationRequests.trySend(illustId)
+        }
+    }
+
+    fun currentSelectedIllust(): Illust? = _uiState.value.selectedIllust
+
     @Suppress("VariableNaming")
     protected val _userNavigationRequests = MutableSharedFlow<Long>(extraBufferCapacity = 16)
     val userNavigationRequests: SharedFlow<Long> = _userNavigationRequests
@@ -317,6 +342,11 @@ abstract class IllustiaViewModelFoundation(
             .map { it.message }
             .distinctUntilChanged()
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), _uiState.value.message)
+    val centeredErrorState: StateFlow<String?> =
+        _uiState
+            .map { it.centeredError }
+            .distinctUntilChanged()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), _uiState.value.centeredError)
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
@@ -787,9 +817,66 @@ abstract class IllustiaViewModelFoundation(
         val message = e.message
         return when {
             message.isNullOrBlank() || message.contains("CancellationException") -> fallback
+
             e.isPixivRateLimited() -> str(R.string.error_rate_limited)
+
+            e.isTimeoutFailure() -> str(R.string.error_timeout)
+
+            // Never surface raw API payloads such as "Pixiv API error 500: {...}". They are
+            // meaningless to users, so map the status to a message that explains what happened.
+            e.containsPixivApiFailure() -> apiFailureMessage(e, fallback)
+
+            // Internal exception messages are JSON/log noise, not something to show a user.
+            e.message?.isInternalNoiseMessage() == true -> fallback
+
             else -> message
         }
+    }
+
+    // Maps an HTTP status to something a user can act on, while still hiding the raw payload.
+    private fun apiFailureMessage(
+        e: Throwable,
+        fallback: String,
+    ): String =
+        when (e.findPixivApiException()?.statusCode) {
+            HTTP_BAD_REQUEST -> str(R.string.error_bad_request)
+            HTTP_FORBIDDEN -> str(R.string.error_forbidden)
+            HTTP_NOT_FOUND -> str(R.string.error_not_found)
+            in HTTP_SERVER_ERROR_RANGE -> str(R.string.error_server_error)
+            else -> fallback
+        }
+
+    private fun Throwable.isTimeoutFailure(): Boolean {
+        var current: Throwable? = this
+        while (current != null) {
+            if (current is SocketTimeoutException) return true
+            current = current.cause
+        }
+        return false
+    }
+
+    // Catches raw exception strings and developer-facing text that must never reach the UI.
+    private fun String.isInternalNoiseMessage(): Boolean =
+        startsWith("com.yunfie.") ||
+            startsWith("java.") ||
+            startsWith("android.") ||
+            contains("Exception") ||
+            startsWith("{") ||
+            startsWith("[")
+
+    protected fun Throwable.containsPixivApiFailure(): Boolean {
+        var current: Throwable? = this
+        while (current != null) {
+            if (current is PixivApiException) return true
+            current = current.cause
+        }
+        return false
+    }
+
+    protected fun isOffline(): Boolean {
+        val context = getApplication<Application>().applicationContext
+        val connectivity = context.getSystemService(ConnectivityManager::class.java) ?: return false
+        return connectivity.activeNetwork == null
     }
 
     protected fun loadFailureMessage(
@@ -893,6 +980,8 @@ abstract class IllustiaViewModelFoundation(
                 sessionReady = false,
                 showReloginRequiredDialog = true,
                 loadState = LoadState.Idle,
+                timelineLoadState = LoadState.Idle,
+                followingUsersLoadState = LoadState.Idle,
                 message = null,
             )
         }

@@ -552,7 +552,6 @@
     <!-- About screen -->
     <string name="about_title">À propos de Paleria</string>
     <string name="about_version">Version %1$s</string>
-    <string name="about_tagline">Visionneuse d’illustrations Pixiv dédiée</string>
     <string name="about_section_info">Informations</string>
     <string name="about_section_links">Liens</string>
     <string name="about_section_libraries">Bibliothèques</string>

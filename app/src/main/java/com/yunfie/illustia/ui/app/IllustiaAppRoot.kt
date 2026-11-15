@@ -1,24 +1,18 @@
 package com.yunfie.illustia.ui.app
 
-import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.widget.Toast
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -32,11 +26,8 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.input.pointer.PointerIcon
-import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavKey
@@ -46,8 +37,6 @@ import com.yunfie.illustia.IllustiaNavigationRequest
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.data.pixiv.CommentArtworkType
-import com.yunfie.illustia.nativebridge.NativeIntentEvent
-import com.yunfie.illustia.nativebridge.NativeIntentRouter
 import com.yunfie.illustia.platform.DesktopCommand
 import com.yunfie.illustia.platform.DesktopEnvironment
 import com.yunfie.illustia.platform.PlatformCapabilities
@@ -57,6 +46,7 @@ import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.effectiveAppHapticMode
 import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.ArtworkCardPreferences
+import com.yunfie.illustia.ui.components.CenteredErrorOverlay
 import com.yunfie.illustia.ui.components.LocalAppHapticMode
 import com.yunfie.illustia.ui.components.LocalArtworkCardPreferences
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
@@ -75,15 +65,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.NavigationRail
-import top.yukonga.miuix.kmp.basic.NavigationRailItem
-import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SnackbarDuration
-import top.yukonga.miuix.kmp.basic.SnackbarHost
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.SnackbarResult
-import top.yukonga.miuix.kmp.basic.Surface
-import top.yukonga.miuix.kmp.basic.rememberNavigationRailState
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
@@ -97,9 +81,16 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     val settings = state.settings
     val startupScreen = state.settings.startupScreen
     val tabs = remember(settings.shortsFeedEnabled, settings.navigationOrder) { mainTabs(settings) }
+    val rootVisibleTabs =
+        remember(settings.shortsFeedEnabled, settings.navigationOrder, settings.hiddenNavigationTabs) {
+            visibleTabs(settings)
+        }
     val initialTab =
-        remember(startupScreen, tabs) {
-            viewModel.activeTab?.takeIf { it in tabs } ?: startupTabFor(startupScreen, tabs)
+        remember(startupScreen, tabs, rootVisibleTabs) {
+            viewModel.activeTab?.takeIf { it in rootVisibleTabs }
+                ?: startupTabFor(startupScreen, tabs).takeIf { it in rootVisibleTabs }
+                ?: rootVisibleTabs.firstOrNull()
+                ?: tabs.first()
         }
     val initialPage = remember(initialTab, tabs) { tabs.indexOf(initialTab).coerceAtLeast(0) }
     var selectedTab by remember(initialTab) { mutableStateOf(initialTab) }
@@ -134,6 +125,8 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     var viewerRefreshRequest by remember { mutableStateOf(0) }
     var artworkPopSettling by remember { mutableStateOf(false) }
     var artworkPopGeneration by remember { mutableIntStateOf(0) }
+    var artworkEnterSettling by remember { mutableStateOf(false) }
+    var artworkEnterGeneration by remember { mutableIntStateOf(0) }
     val discordRpcManager =
         remember(state.settings.discordRpcEnabled) {
             if (state.settings.discordRpcEnabled) {
@@ -163,12 +156,40 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     fun navigate(route: AppRoute) {
         if (backStack.lastOrNull() != route) {
             backStack.add(route)
+            if (route is AppRoute.Detail) {
+                // The detail header joins the card as a shared element, so its first frames are the
+                // flight itself. Keep the progressive placeholder out of those frames; the card
+                // bitmap is already on screen and would otherwise be replaced mid-flight.
+                val transitionDelay =
+                    if (settings.smoothTransitions && PlatformCapabilities.supportsRichAnimations(context)) {
+                        ARTWORK_PREDICTIVE_POP_SETTLE_MS
+                    } else {
+                        0L
+                    }
+                if (transitionDelay > 0L) {
+                    val generation = ++artworkEnterGeneration
+                    artworkEnterSettling = true
+                    coroutineScope.launch {
+                        delay(transitionDelay)
+                        if (artworkEnterGeneration == generation) artworkEnterSettling = false
+                    }
+                }
+            }
         }
     }
 
     fun openWatchlistSeries(seriesId: Long) {
         selectedWatchlistSeriesIds.add(seriesId)
         navigate(AppRoute.IllustSeries)
+    }
+
+    // Taps route through this hook so the detail page is pushed in the same callback as the tap,
+    // rather than waiting for the state flow to round-trip and force a recomposition first.
+    SideEffect {
+        viewModel.detailNavigator = { illustId -> navigate(AppRoute.Detail(illustId)) }
+    }
+    DisposableEffect(viewModel) {
+        onDispose { viewModel.detailNavigator = null }
     }
 
     fun popRoute() {
@@ -341,8 +362,16 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         viewModel.activeTab = tab
     }
 
-    LaunchedEffect(tabs) {
-        val targetTab = selectedTab.takeIf { it in tabs } ?: initialTab
+    LaunchedEffect(tabs, rootVisibleTabs) {
+        // Hiding the selected tab (or a start-tab change) must not leave the selection on a tab
+        // whose NavigationBarItem no longer exists: the bar would show nothing selected.
+        val targetTab =
+            selectedTab
+                .takeIf { it in rootVisibleTabs }
+                ?: initialTab.takeIf { it in rootVisibleTabs }
+                ?: rootVisibleTabs.firstOrNull()
+                ?: tabs.firstOrNull()
+                ?: return@LaunchedEffect
         val targetIndex = tabs.indexOf(targetTab).coerceAtLeast(0)
         selectedTab = targetTab
         viewModel.activeTab = targetTab
@@ -486,7 +515,11 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         onDispose { activity?.desktopShortcutHandler = null }
     }
 
-    SnackbarMessageEffect(viewModel = viewModel, snackbarHostState = snackbarHostState)
+    SnackbarMessageEffect(
+        viewModel = viewModel,
+        snackbarHostState = snackbarHostState,
+        currentRoute = backStack.lastOrNull() ?: AppRoute.Main,
+    )
 
     LaunchedEffect(Unit) {
         val prefs = context.getSharedPreferences("freedroidwarn_prefs", Context.MODE_PRIVATE)
@@ -709,6 +742,48 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     val platformHapticFeedback = LocalHapticFeedback.current
     val hapticsSupported = remember(context) { isAppHapticsSupported(context) }
     val effectiveHapticMode = effectiveAppHapticMode(state.settings.hapticMode, hapticsSupported)
+    val artworkCardPreferences =
+        remember(
+            settings.showCardTitle,
+            settings.showCardArtist,
+            settings.showCardTags,
+            settings.showCardBookmarkCount,
+            settings.showAiBadge,
+            settings.showR18Badge,
+            settings.showRelatedR18,
+            settings.showCardBookmarkButton,
+            settings.doubleTapToBookmark,
+        ) {
+            ArtworkCardPreferences(
+                showTitle = settings.showCardTitle,
+                showArtist = settings.showCardArtist,
+                showTags = settings.showCardTags,
+                showBookmarkCount = settings.showCardBookmarkCount,
+                showAiBadge = settings.showAiBadge,
+                showR18Badge = settings.showR18Badge,
+                showRelatedR18 = settings.showRelatedR18,
+                showBookmarkButton = settings.showCardBookmarkButton,
+                doubleTapToBookmark = settings.doubleTapToBookmark,
+            )
+        }
+    val selectTab: (AppTab) -> Unit = { tab ->
+        val index = tabs.indexOf(tab)
+        if (index >= 0) {
+            selectedTab = tab
+            coroutineScope.launch { pagerState.scrollToPage(index) }
+        }
+    }
+    // パレットのアクション実行は画面ツリーから切り離したハンドラに委譲する。
+    val handlePaletteAction =
+        rememberCommandPaletteActionHandler(
+            viewModel = viewModel,
+            backStack = backStack,
+            settings = settings,
+            onNavigate = ::navigate,
+            onDismissPalette = { showCommandPalette = false },
+            onSelectTab = selectTab,
+        )
+
     val isDesktopDevice = remember(context) { DesktopEnvironment.isDesktop(context) }
     val desktopActions =
         if (isDesktopDevice) {
@@ -726,18 +801,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         com.yunfie.illustia.ui.components.LocalVelocityLandingPrefetchEnabled provides
             settings.isFeatureEnabled(FeatureFlag.VelocityLandingPrefetch),
         LocalBottomSheetBackgroundColor provides MiuixTheme.colorScheme.surfaceContainerHigh,
-        LocalArtworkCardPreferences provides
-            ArtworkCardPreferences(
-                showTitle = settings.showCardTitle,
-                showArtist = settings.showCardArtist,
-                showTags = settings.showCardTags,
-                showBookmarkCount = settings.showCardBookmarkCount,
-                showAiBadge = settings.showAiBadge,
-                showR18Badge = settings.showR18Badge,
-                showRelatedR18 = settings.showRelatedR18,
-                showBookmarkButton = settings.showCardBookmarkButton,
-                doubleTapToBookmark = settings.doubleTapToBookmark,
-            ),
+        LocalArtworkCardPreferences provides artworkCardPreferences,
         LocalAppHapticMode provides effectiveHapticMode,
         LocalHapticFeedback provides
             if (effectiveHapticMode == AppHapticMode.Off) {
@@ -759,347 +823,71 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
             if (showCommandPalette && paletteAvailable) {
                 CommandPalette(
                     onDismiss = { showCommandPalette = false },
-                    onAction = { action, query ->
-                        showCommandPalette = false
-                        when (action) {
-                            PaletteAction.Home, PaletteAction.Ranking, PaletteAction.Bookmarks -> {
-                                val tab =
-                                    when (action) {
-                                        PaletteAction.Ranking -> AppTab.Ranking
-                                        PaletteAction.Bookmarks -> AppTab.Bookmarks
-                                        else -> AppTab.Home
-                                    }
-                                backStack.clear()
-                                backStack.add(AppRoute.Main)
-                                selectedTab = tab
-                                coroutineScope.launch { pagerState.scrollToPage(tabs.indexOf(tab).coerceAtLeast(0)) }
-                            }
-
-                            PaletteAction.Search -> {
-                                viewModel.submitSearch(query)
-                                navigate(AppRoute.SearchResults(query))
-                            }
-
-                            PaletteAction.Novel -> {
-                                navigate(AppRoute.NovelList)
-                            }
-
-                            PaletteAction.ShortsFeed -> {
-                                backStack.clear()
-                                backStack.add(AppRoute.Main)
-                                selectedTab = AppTab.ShortsFeed
-                                coroutineScope.launch {
-                                    pagerState.scrollToPage(tabs.indexOf(AppTab.ShortsFeed).coerceAtLeast(0))
-                                }
-                            }
-
-                            PaletteAction.ViewHistory -> {
-                                navigate(AppRoute.ViewHistory)
-                            }
-
-                            PaletteAction.FavoriteTags -> {
-                                navigate(AppRoute.FavoriteTags)
-                            }
-
-                            PaletteAction.DownloadQueue -> {
-                                navigate(AppRoute.DownloadQueue)
-                            }
-
-                            PaletteAction.OfflineLibrary -> {
-                                navigate(AppRoute.OfflineLibrary)
-                            }
-
-                            PaletteAction.Notifications -> {
-                                navigate(AppRoute.Notifications)
-                            }
-
-                            PaletteAction.SwitchAccount -> {
-                                viewModel.openAccountSwitcher()
-                            }
-
-                            PaletteAction.ClearCache -> {
-                                viewModel.clearAppCache()
-                                Toast
-                                    .makeText(
-                                        context,
-                                        context.getString(R.string.command_palette_cache_cleared),
-                                        Toast.LENGTH_SHORT,
-                                    ).show()
-                            }
-
-                            PaletteAction.RefreshFeed -> {
-                                viewModel.refreshHome(forceRefresh = true)
-                                viewModel.refreshBookmarks(forceRefresh = true)
-                                viewModel.refreshTimeline(forceRefresh = true)
-                                Toast
-                                    .makeText(
-                                        context,
-                                        context.getString(R.string.command_palette_feeds_refreshed),
-                                        Toast.LENGTH_SHORT,
-                                    ).show()
-                            }
-
-                            PaletteAction.OpenFromClipboard -> {
-                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
-                                val clipText =
-                                    clipboard
-                                        ?.primaryClip
-                                        ?.getItemAt(0)
-                                        ?.text
-                                        ?.toString()
-                                        ?.trim()
-                                val target = if (query.isNotBlank()) query.trim() else clipText
-                                if (!target.isNullOrBlank()) {
-                                    val numericId = target.toLongOrNull()
-                                    if (numericId != null) {
-                                        viewModel.openIllust(numericId)
-                                        navigate(AppRoute.Detail(numericId))
-                                    } else {
-                                        when (val event = NativeIntentRouter.parseText(target)) {
-                                            is NativeIntentEvent.Artwork -> {
-                                                viewModel.openIllust(event.id)
-                                                navigate(AppRoute.Detail(event.id))
-                                            }
-
-                                            is NativeIntentEvent.User -> {
-                                                viewModel.openUserPage(event.id)
-                                                navigate(AppRoute.UserProfile(event.id))
-                                            }
-
-                                            is NativeIntentEvent.Tag -> {
-                                                viewModel.submitSearch(event.tag)
-                                                navigate(AppRoute.SearchResults(event.tag))
-                                            }
-
-                                            else -> {
-                                                Toast
-                                                    .makeText(
-                                                        context,
-                                                        context.getString(R.string.command_palette_invalid_link),
-                                                        Toast.LENGTH_SHORT,
-                                                    ).show()
-                                            }
-                                        }
-                                    }
-                                } else {
-                                    Toast
-                                        .makeText(
-                                            context,
-                                            context.getString(R.string.command_palette_no_clipboard_content),
-                                            Toast.LENGTH_SHORT,
-                                        ).show()
-                                }
-                            }
-
-                            PaletteAction.ToggleAi -> {
-                                val newHideAi = !state.settings.hideAiWorks
-                                viewModel.updateHideAiWorks(newHideAi)
-                                val msgRes =
-                                    if (newHideAi) {
-                                        R.string.command_palette_ai_hidden
-                                    } else {
-                                        R.string.command_palette_ai_shown
-                                    }
-                                Toast.makeText(context, context.getString(msgRes), Toast.LENGTH_SHORT).show()
-                            }
-
-                            PaletteAction.ToggleR18 -> {
-                                val newAllowR18 = !state.settings.allowR18
-                                viewModel.updateAllowR18(newAllowR18)
-                                val msgRes =
-                                    if (newAllowR18) {
-                                        R.string.command_palette_r18_enabled
-                                    } else {
-                                        R.string.command_palette_r18_disabled
-                                    }
-                                Toast.makeText(context, context.getString(msgRes), Toast.LENGTH_SHORT).show()
-                            }
-
-                            PaletteAction.ToggleGridColumns -> {
-                                val currentCols = state.settings.verticalColumnCount
-                                val nextCols =
-                                    when (currentCols) {
-                                        1 -> 2
-                                        2 -> 3
-                                        3 -> 4
-                                        else -> 2
-                                    }
-                                viewModel.updateVerticalColumnCount(nextCols)
-                                Toast
-                                    .makeText(
-                                        context,
-                                        context.getString(R.string.command_palette_grid_columns_changed, nextCols),
-                                        Toast.LENGTH_SHORT,
-                                    ).show()
-                            }
-
-                            PaletteAction.ToggleImageQuality -> {
-                                val newHighQuality = !state.settings.highQualityImages
-                                viewModel.updateHighQuality(newHighQuality)
-                                val msgRes =
-                                    if (newHighQuality) {
-                                        R.string.command_palette_high_quality_enabled
-                                    } else {
-                                        R.string.command_palette_high_quality_disabled
-                                    }
-                                Toast.makeText(context, context.getString(msgRes), Toast.LENGTH_SHORT).show()
-                            }
-
-                            PaletteAction.ToggleUgoiraAutoPlay -> {
-                                val current = state.settings.ugoiraAutoPlay
-                                val next = !current
-                                viewModel.updateUgoiraAutoPlay(next)
-                                val msgRes =
-                                    if (next) {
-                                        R.string.command_palette_ugoira_autoplay_enabled
-                                    } else {
-                                        R.string.command_palette_ugoira_autoplay_disabled
-                                    }
-                                Toast.makeText(context, context.getString(msgRes), Toast.LENGTH_SHORT).show()
-                            }
-
-                            PaletteAction.MuteSettings -> {
-                                navigate(AppRoute.MuteSettings)
-                            }
-
-                            PaletteAction.AppData -> {
-                                navigate(AppRoute.AppData)
-                            }
-
-                            PaletteAction.Settings -> {
-                                navigate(AppRoute.Settings)
-                            }
-
-                            PaletteAction.Flags -> {
-                                navigate(AppRoute.FeatureFlags)
-                            }
-
-                            PaletteAction.Light -> {
-                                viewModel.updateThemeMode("light")
-                            }
-
-                            PaletteAction.Dark -> {
-                                viewModel.updateThemeMode("dark")
-                            }
-
-                            PaletteAction.System -> {
-                                viewModel.updateThemeMode("system")
-                            }
-                        }
-                    },
+                    onAction = handlePaletteAction,
                 )
             }
             if (!state.privacyLocked || state.isTransitioningToIllustia) {
-                Scaffold(
-                    containerColor = MiuixTheme.colorScheme.surface,
-                    contentWindowInsets = WindowInsets(0),
-                    snackbarHost = {
-                        SnackbarHost(state = snackbarHostState)
-                    },
-                ) { rootPadding ->
-                    val isDesktop = isDesktopDevice
-                    val rootRailState = rememberNavigationRailState()
-                    val isFullscreenRoute = backStack.lastOrNull() == AppRoute.ImageViewer
-                    val isPreLogin = state.settings.refreshToken.isBlank() || backStack.lastOrNull() == AppRoute.Onboarding
-                    BoxWithConstraints(
-                        modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .padding(rootPadding),
-                    ) {
-                        val isLandscape = (maxWidth > maxHeight && maxWidth >= 480.dp) || maxWidth >= 600.dp
-                        val showRootNavigationRail =
-                            ((isDesktop && maxWidth >= 480.dp) || isLandscape) &&
-                                !isFullscreenRoute &&
-                                !isPreLogin
-                        val navigationTabs = visibleTabs(appState.settings)
-
-                        CompositionLocalProvider(LocalUseNavigationRail provides showRootNavigationRail) {
-                            Row(modifier = Modifier.fillMaxSize()) {
-                                if (showRootNavigationRail) {
-                                    NavigationRail(
-                                        state = rootRailState,
-                                        color = MiuixTheme.colorScheme.surfaceContainer,
-                                        showDivider = true,
-                                    ) {
-                                        navigationTabs.forEach { tab ->
-                                            val pageIndex = tabs.indexOf(tab)
-                                            val isSelected = (backStack.lastOrNull() == AppRoute.Main) && (selectedTab == tab)
-                                            NavigationRailItem(
-                                                modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
-                                                selected = isSelected,
-                                                onClick = {
-                                                    viewModel.closeAccountSwitcher()
-                                                    val wasOnMain = backStack.lastOrNull() == AppRoute.Main
-                                                    if (!wasOnMain) {
-                                                        backStack.clear()
-                                                        backStack.add(AppRoute.Main)
-                                                        selectedWatchlistSeriesIds.clear()
-                                                    }
-                                                    if (wasOnMain && selectedTab == tab && pagerState.currentPage == pageIndex) {
-                                                        viewModel.tabScrollToTopRequests.tryEmit(tab)
-                                                    } else {
-                                                        selectedTab = tab
-                                                        coroutineScope.launch { pagerState.animateScrollToPage(pageIndex) }
-                                                        if (tab == AppTab.Bookmarks) viewModel.refreshBookmarks()
-                                                    }
-                                                },
-                                                icon = tab.icon,
-                                                label = stringResource(tab.labelResId),
-                                            )
-                                        }
-                                    }
-                                }
-
-                                Surface(
-                                    modifier = Modifier.weight(1f).fillMaxHeight(),
-                                    color = MiuixTheme.colorScheme.surface,
-                                ) {
-                                    AppNavHost(
-                                        searchFocusRequest = searchFocusRequest,
-                                        onSearchFocusHandled = { searchFocusRequest = 0 },
-                                        viewerRefreshRequest = viewerRefreshRequest,
-                                        appState = appState,
-                                        viewModel = viewModel,
-                                        backStack = backStack,
-                                        detailSnapshots = detailSnapshots,
-                                        searchSnapshots = searchSnapshots,
-                                        selectedTab = selectedTab,
-                                        pagerState = pagerState,
-                                        homeScrollBehavior = homeScrollBehavior,
-                                        artworkPopSettling = artworkPopSettling,
-                                        showTokenLogin = showTokenLogin,
-                                        onShowTokenLoginChange = { showTokenLogin = it },
-                                        selectedWatchlistSeriesId = selectedWatchlistSeriesIds.lastOrNull(),
-                                        onSelectedWatchlistSeriesIdChange = { seriesId ->
-                                            if (seriesId == null) {
-                                                if (selectedWatchlistSeriesIds.isNotEmpty()) {
-                                                    selectedWatchlistSeriesIds.removeAt(selectedWatchlistSeriesIds.lastIndex)
-                                                }
-                                            } else {
-                                                selectedWatchlistSeriesIds.add(seriesId)
-                                            }
-                                        },
-                                        selectedCommentTarget = selectedCommentTarget,
-                                        onSelectedCommentTargetChange = { selectedCommentTarget = it },
-                                        onNavigate = ::navigate,
-                                        onPopRoute = ::popRoute,
-                                        onSearchTag = ::searchFromDetail,
-                                        onTabSelected = { index, tab ->
-                                            if (selectedTab == tab && pagerState.currentPage == index) {
-                                                viewModel.tabScrollToTopRequests.tryEmit(tab)
-                                            } else {
-                                                selectedTab = tab
-                                                coroutineScope.launch { pagerState.animateScrollToPage(index) }
-                                                if (tab == AppTab.Bookmarks) viewModel.refreshBookmarks()
-                                            }
-                                        },
-                                    )
-                                }
+                RootScaffold(
+                    appState = appState,
+                    viewModel = viewModel,
+                    backStack = backStack,
+                    detailSnapshots = detailSnapshots,
+                    searchSnapshots = searchSnapshots,
+                    tabs = tabs,
+                    visibleTabs = rootVisibleTabs,
+                    selectedTab = selectedTab,
+                    pagerState = pagerState,
+                    homeScrollBehavior = homeScrollBehavior,
+                    artworkPopSettling = artworkPopSettling,
+                    artworkEnterSettling = artworkEnterSettling,
+                    showTokenLogin = showTokenLogin,
+                    onShowTokenLoginChange = { showTokenLogin = it },
+                    selectedWatchlistSeriesId = selectedWatchlistSeriesIds.lastOrNull(),
+                    onSelectedWatchlistSeriesIdChange = { seriesId ->
+                        if (seriesId == null) {
+                            if (selectedWatchlistSeriesIds.isNotEmpty()) {
+                                selectedWatchlistSeriesIds.removeAt(selectedWatchlistSeriesIds.lastIndex)
                             }
+                        } else {
+                            selectedWatchlistSeriesIds.add(seriesId)
                         }
-                    }
-                }
+                    },
+                    selectedCommentTarget = selectedCommentTarget,
+                    onSelectedCommentTargetChange = { selectedCommentTarget = it },
+                    searchFocusRequest = searchFocusRequest,
+                    onSearchFocusHandled = { searchFocusRequest = 0 },
+                    viewerRefreshRequest = viewerRefreshRequest,
+                    snackbarHostState = snackbarHostState,
+                    isDesktopDevice = isDesktopDevice,
+                    onNavigate = ::navigate,
+                    onPopRoute = ::popRoute,
+                    onSearchTag = ::searchFromDetail,
+                    onTabSelected = { index, tab ->
+                        if (selectedTab == tab && pagerState.currentPage == index) {
+                            viewModel.tabScrollToTopRequests.tryEmit(tab)
+                        } else {
+                            selectedTab = tab
+                            coroutineScope.launch { pagerState.animateScrollToPage(index) }
+                            if (tab == AppTab.Bookmarks) viewModel.refreshBookmarks()
+                        }
+                    },
+                    onNavigateRailTab = { tab, pageIndex ->
+                        viewModel.closeAccountSwitcher()
+                        val wasOnMain = backStack.lastOrNull() == AppRoute.Main
+                        if (!wasOnMain) {
+                            backStack.clear()
+                            backStack.add(AppRoute.Main)
+                            selectedWatchlistSeriesIds.clear()
+                        }
+                        if (wasOnMain && selectedTab == tab && pagerState.currentPage == pageIndex) {
+                            viewModel.tabScrollToTopRequests.tryEmit(tab)
+                        } else {
+                            selectedTab = tab
+                            coroutineScope.launch { pagerState.animateScrollToPage(pageIndex) }
+                            if (tab == AppTab.Bookmarks) viewModel.refreshBookmarks()
+                        }
+                    },
+                )
             } else {
                 CalculatorScreen(
                     viewModel = viewModel,
@@ -1111,19 +899,46 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                 viewModel = viewModel,
                 modifier = Modifier.align(Alignment.TopCenter),
             )
+            CenteredErrorMessageEffect(viewModel = viewModel)
         }
     }
+}
+
+@Composable
+private fun CenteredErrorMessageEffect(viewModel: IllustiaViewModel) {
+    val centeredError by viewModel.centeredErrorState.collectAsStateWithLifecycle()
+    CenteredErrorOverlay(
+        message = centeredError,
+        onDismiss = viewModel::clearCenteredError,
+    )
 }
 
 @Composable
 private fun SnackbarMessageEffect(
     viewModel: IllustiaViewModel,
     snackbarHostState: SnackbarHostState,
+    currentRoute: NavKey,
 ) {
     // Collect only the transient message. Reading state.message in IllustiaAppRoot used to
     // invalidate the whole root composition every time a toast/snackbar was queued.
     val message by viewModel.messageState.collectAsStateWithLifecycle()
-    LaunchedEffect(message) {
+    val centeredError by viewModel.centeredErrorState.collectAsStateWithLifecycle()
+    // 画面遷移で前の画面の通知を持ち越さない。SnackbarHostState は明示的に閉じるまで
+    // エントリを保持するため、ルートが変わったら表示中の Snackbar を dismiss する。
+    var shownRoute by remember { mutableStateOf(currentRoute) }
+    LaunchedEffect(currentRoute) {
+        if (shownRoute == currentRoute) return@LaunchedEffect
+        shownRoute = currentRoute
+        val active = snackbarHostState.newestSnackbarData() ?: return@LaunchedEffect
+        active.dismiss()
+    }
+    LaunchedEffect(message, centeredError) {
+        // The centred error already explains the failure. Showing a toast on top of it just
+        // duplicates the message in a second place, so drop the queued message.
+        if (centeredError != null) {
+            if (message != null) viewModel.clearMessage()
+            return@LaunchedEffect
+        }
         message?.let {
             snackbarHostState.showSnackbar(
                 message = it,

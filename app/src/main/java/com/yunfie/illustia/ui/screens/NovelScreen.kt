@@ -1,6 +1,5 @@
 package com.yunfie.illustia.ui.screens
 
-import android.app.Activity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -55,12 +54,12 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.core.view.WindowCompat
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.NovelPreview
 import com.yunfie.illustia.models.NovelTextContent
+import com.yunfie.illustia.models.isEmptyAfterLoad
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
@@ -89,13 +88,10 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
-import top.yukonga.miuix.kmp.icon.extended.Favorites
-import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import android.view.KeyEvent as AndroidKeyEvent
@@ -242,30 +238,13 @@ fun NovelScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    androidx.compose.foundation.layout.Row(
+                    FilterPillRow(
+                        entries = NovelFilterTab.entries,
+                        selected = selectedFilter,
+                        label = { stringResource(it.labelRes) },
+                        onSelect = { selectedFilter = it },
                         modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        NovelFilterTab.entries.forEach { tab ->
-                            val isSelected = selectedFilter == tab
-                            NovelMetaPill(
-                                text = stringResource(tab.labelRes),
-                                backgroundColor =
-                                    if (isSelected) {
-                                        MiuixTheme.colorScheme.primary
-                                    } else {
-                                        MiuixTheme.colorScheme.surfaceContainerHighest
-                                    },
-                                textColor =
-                                    if (isSelected) {
-                                        MiuixTheme.colorScheme.onPrimary
-                                    } else {
-                                        MiuixTheme.colorScheme.onSurface
-                                    },
-                                onClick = { selectedFilter = tab },
-                            )
-                        }
-                    }
+                    )
                 }
                 if (showInitialSkeletons) {
                     items(columns * 3, key = { "novel_initial_skeleton_$it" }, contentType = { "novel_skeleton" }) {
@@ -277,7 +256,7 @@ fun NovelScreen(
                         StateBanner(loadState, onRetry = { viewModel.refreshNovels(forceRefresh = true) })
                     }
                 }
-                if (filteredItems.isEmpty() && loadState != LoadState.Loading && loadState !is LoadState.Error) {
+                if (isEmptyAfterLoad(filteredItems.isEmpty(), loadState)) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         EmptyState(stringResource(R.string.novel_empty))
                     }
@@ -394,11 +373,7 @@ fun NovelReaderScreen(
     LaunchedEffect(currentNovel.id, pages.size) {
         val saved = settings.novelProgress[currentNovel.id]?.lastReadPage ?: 0
         if (saved > 0 && saved < pages.size) {
-            var targetIndex = 0
-            for (i in 0 until saved) {
-                targetIndex += 1 + pages[i].blocks.size + (if (i < pages.size - 1) 1 else 0)
-            }
-            continuousListState.scrollToItem(targetIndex)
+            continuousListState.scrollToItem(NovelPageIndexMapping.pageToItemIndex(pages, saved))
         }
     }
 
@@ -416,7 +391,7 @@ fun NovelReaderScreen(
     com.yunfie.illustia.ui.components.ParagraphNavigation(
         continuousListState,
         paragraphStep,
-        layoutMode == NovelLayoutMode.Scroll,
+        { layoutMode == NovelLayoutMode.Scroll },
         remember(pages) {
             buildList {
                 var offset = 0
@@ -433,77 +408,27 @@ fun NovelReaderScreen(
     var showSettingsSheet by rememberSaveable { mutableStateOf(false) }
 
     val isDarkTheme = MiuixTheme.colorScheme.surface.luminance() < DARK_LUMINANCE_THRESHOLD
-    DisposableEffect(theme, isDarkTheme) {
-        val window = (context as? Activity)?.window
-        if (window != null) {
-            val insetsController = WindowCompat.getInsetsController(window, window.decorView)
-            val isLightBars =
-                when (theme) {
-                    NovelTheme.System -> !isDarkTheme
-                    NovelTheme.Sepia -> true
-                    NovelTheme.Dark, NovelTheme.Black -> false
-                }
-            insetsController.isAppearanceLightStatusBars = isLightBars
-            insetsController.isAppearanceLightNavigationBars = isLightBars
-        }
-        onDispose {
-            val window = (context as? Activity)?.window
-            if (window != null) {
-                val insetsController = WindowCompat.getInsetsController(window, window.decorView)
-                insetsController.isAppearanceLightStatusBars = !isDarkTheme
-                insetsController.isAppearanceLightNavigationBars = !isDarkTheme
-            }
-        }
-    }
+    NovelReaderSystemBarsEffect(theme = theme, isDarkTheme = isDarkTheme)
 
     val backgroundColor = theme.backgroundColor()
     val textColor = theme.textColor()
 
-    fun currentNovelPage(): Int =
+    fun currentPageForState(): Int =
         when (layoutMode) {
             NovelLayoutMode.Paged, NovelLayoutMode.Vertical -> {
                 pagerState.currentPage
             }
 
             NovelLayoutMode.Scroll -> {
-                val firstVisible = continuousListState.firstVisibleItemIndex
-                var count = 0
-                var pageIdx = 0
-                for (i in pages.indices) {
-                    val pageItems = 1 + pages[i].blocks.size + (if (i < pages.size - 1) 1 else 0)
-                    if (firstVisible < count + pageItems) {
-                        pageIdx = i
-                        break
-                    }
-                    count += pageItems
-                }
-                pageIdx.coerceIn(0, (pages.size - 1).coerceAtLeast(0))
+                NovelPageIndexMapping.itemToPage(pages, continuousListState.firstVisibleItemIndex)
             }
         }
 
-    LaunchedEffect(pagerState, continuousListState, layoutMode, pages.size, currentNovel.id) {
-        snapshotFlow {
-            when (layoutMode) {
-                NovelLayoutMode.Paged, NovelLayoutMode.Vertical -> {
-                    pagerState.currentPage
-                }
+    fun currentNovelPage(): Int = currentPageForState()
 
-                NovelLayoutMode.Scroll -> {
-                    val firstVisible = continuousListState.firstVisibleItemIndex
-                    var count = 0
-                    var pageIdx = 0
-                    for (i in pages.indices) {
-                        val pageItems = 1 + pages[i].blocks.size + (if (i < pages.size - 1) 1 else 0)
-                        if (firstVisible < count + pageItems) {
-                            pageIdx = i
-                            break
-                        }
-                        count += pageItems
-                    }
-                    pageIdx.coerceIn(0, (pages.size - 1).coerceAtLeast(0))
-                }
-            }
-        }.distinctUntilChanged()
+    LaunchedEffect(pagerState, continuousListState, layoutMode, pages.size, currentNovel.id) {
+        snapshotFlow { currentPageForState() }
+            .distinctUntilChanged()
             .collect { page ->
                 if (pages.isNotEmpty() && page in pages.indices) {
                     viewModel.updateNovelProgress(
@@ -524,11 +449,7 @@ fun NovelReaderScreen(
                     }
 
                     NovelLayoutMode.Scroll -> {
-                        var targetIndex = 0
-                        for (i in 0 until targetPage) {
-                            targetIndex += 1 + pages[i].blocks.size + (if (i < pages.size - 1) 1 else 0)
-                        }
-                        continuousListState.animateScrollToItem(targetIndex)
+                        continuousListState.animateScrollToItem(NovelPageIndexMapping.pageToItemIndex(pages, targetPage))
                     }
                 }
             }
@@ -545,7 +466,11 @@ fun NovelReaderScreen(
         }
     }
 
-    val ttsLocations = remember(pages) { NovelTtsTextSanitizer.extractTtsParagraphLocations(pages) }
+    // TTS が無効なときに全文書を走査しても無駄なので、有効なときだけ抽出する。
+    val ttsLocations =
+        remember(pages, isTtsEnabled) {
+            if (isTtsEnabled) NovelTtsTextSanitizer.extractTtsParagraphLocations(pages) else emptyList()
+        }
     val currentTtsLocation =
         remember(isTtsEnabled, ttsPlayer?.isPlaying, ttsPlayer?.currentParagraphIndex, ttsLocations) {
             if (isTtsEnabled && ttsPlayer?.isPlaying == true) {
@@ -567,11 +492,7 @@ fun NovelReaderScreen(
             }
 
             NovelLayoutMode.Scroll -> {
-                var targetItemIndex = 0
-                for (p in 0 until loc.pageIndex) {
-                    targetItemIndex += 1 + pages[p].blocks.size + (if (p < pages.size - 1) 1 else 0)
-                }
-                targetItemIndex += 1 + loc.blockIndexInPage
+                val targetItemIndex = NovelPageIndexMapping.blockToItemIndex(pages, loc.pageIndex, loc.blockIndexInPage)
                 continuousListState.animateScrollToItem((targetItemIndex - 1).coerceAtLeast(0))
             }
         }
@@ -621,53 +542,17 @@ fun NovelReaderScreen(
                 }.focusable(),
         containerColor = backgroundColor,
         topBar = {
-            AnimatedVisibility(
+            NovelReaderTopBar(
                 visible = controlsVisible,
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically(),
-            ) {
-                SmallTopAppBar(
-                    title = currentNovel.title,
-                    color = backgroundColor,
-                    titleColor = textColor,
-                    scrollBehavior = scrollBehavior,
-                    navigationIcon = {
-                        IconButton(modifier = Modifier.pointerHoverIcon(PointerIcon.Hand), onClick = onBack) {
-                            Icon(
-                                imageVector = MiuixIcons.Back,
-                                contentDescription = stringResource(R.string.action_back),
-                                tint = textColor,
-                            )
-                        }
-                    },
-                    actions = {
-                        IconButton(
-                            modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
-                            onClick = { viewModel.toggleNovelBookmark(currentNovel) },
-                        ) {
-                            Icon(
-                                imageVector = if (currentNovel.isBookmarked) MiuixIcons.FavoritesFill else MiuixIcons.Favorites,
-                                contentDescription =
-                                    stringResource(
-                                        if (currentNovel.isBookmarked) {
-                                            R.string.action_remove_bookmark
-                                        } else {
-                                            R.string.action_bookmark
-                                        },
-                                    ),
-                                tint = if (currentNovel.isBookmarked) Color(0xFFFF4D67) else textColor,
-                            )
-                        }
-                        IconButton(modifier = Modifier.pointerHoverIcon(PointerIcon.Hand), onClick = onRetry) {
-                            Icon(
-                                imageVector = MiuixIcons.Refresh,
-                                contentDescription = stringResource(R.string.dialog_reload),
-                                tint = textColor,
-                            )
-                        }
-                    },
-                )
-            }
+                title = currentNovel.title,
+                isBookmarked = currentNovel.isBookmarked,
+                backgroundColor = backgroundColor,
+                textColor = textColor,
+                scrollBehavior = scrollBehavior,
+                onBack = onBack,
+                onToggleBookmark = { viewModel.toggleNovelBookmark(currentNovel) },
+                onRetry = onRetry,
+            )
         },
         bottomBar = {
             AnimatedVisibility(
@@ -717,13 +602,17 @@ fun NovelReaderScreen(
         },
     ) { scaffoldPadding ->
         val layoutDirection = LocalLayoutDirection.current
+        // スクロール中に毎回作り直されると子のスキップが効かなくなるため、パディングは
+        // scaffoldPadding 由来の値が変わったときだけ再生成する。
         val readerPadding =
-            PaddingValues(
-                start = scaffoldPadding.calculateStartPadding(layoutDirection) + 18.dp,
-                top = scaffoldPadding.calculateTopPadding(),
-                end = scaffoldPadding.calculateEndPadding(layoutDirection) + 18.dp,
-                bottom = scaffoldPadding.calculateBottomPadding(),
-            )
+            remember(scaffoldPadding, layoutDirection) {
+                PaddingValues(
+                    start = scaffoldPadding.calculateStartPadding(layoutDirection) + 18.dp,
+                    top = scaffoldPadding.calculateTopPadding(),
+                    end = scaffoldPadding.calculateEndPadding(layoutDirection) + 18.dp,
+                    bottom = scaffoldPadding.calculateBottomPadding(),
+                )
+            }
         when {
             loadState == LoadState.Loading && text == null -> {
                 Box(
@@ -748,7 +637,7 @@ fun NovelReaderScreen(
                                 page = pages[pageIndex],
                                 pageIndex = pageIndex,
                                 paragraphStep = paragraphStep,
-                                keyboardActive = pageIndex == pagerState.settledPage,
+                                keyboardActive = { pageIndex == pagerState.settledPage },
                                 pageCount = pages.size,
                                 fontSize = fontSize,
                                 lineHeightMultiplier = lineSpacing.multiplier,
@@ -805,7 +694,7 @@ fun NovelReaderScreen(
                                 page = pages[pageIndex],
                                 pageIndex = pageIndex,
                                 paragraphStep = paragraphStep,
-                                keyboardActive = pageIndex == pagerState.settledPage,
+                                keyboardActive = { pageIndex == pagerState.settledPage },
                                 pageCount = pages.size,
                                 fontSize = fontSize,
                                 lineHeightMultiplier = lineSpacing.multiplier,

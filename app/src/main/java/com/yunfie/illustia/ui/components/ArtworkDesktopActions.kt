@@ -86,8 +86,15 @@ internal fun rememberArtworkDesktopActions(viewModel: IllustiaViewModel): Artwor
 
 @Composable
 internal fun Modifier.artworkDesktopMenu(illust: Illust): Modifier {
-    val actions = LocalArtworkDesktopActions.current
-    if (actions == null) return this
+    // Every grid cell calls this. Return before taking any hooks when the desktop menu isn't
+    // mounted so phones don't pay for a coroutine scope, state holders and an animation per card.
+    if (LocalArtworkDesktopActions.current == null) return this
+    return artworkDesktopMenuEnabled(illust)
+}
+
+@Composable
+private fun Modifier.artworkDesktopMenuEnabled(illust: Illust): Modifier {
+    val actions = LocalArtworkDesktopActions.current ?: return this
     val context = LocalContext.current
     val proxyBaseUrl = LocalPixivImageProxyBaseUrl.current
     val scope = rememberCoroutineScope()
@@ -96,11 +103,11 @@ internal fun Modifier.artworkDesktopMenu(illust: Illust): Modifier {
     val interactions = remember { MutableInteractionSource() }
     val hovered by interactions.collectIsHoveredAsState()
     val scale by animateFloatAsState(if (hovered) 1.015f else 1f, label = "artwork-hover")
-    val copied = stringResource(R.string.copied_image_to_clipboard)
-    val copyFailed = stringResource(R.string.copy_image_failed)
-    val browserFailed = stringResource(R.string.error_browser_failed)
     val position = menuPosition
     if (position != null) {
+        val copied = stringResource(R.string.copied_image_to_clipboard)
+        val copyFailed = stringResource(R.string.copy_image_failed)
+        val browserFailed = stringResource(R.string.error_browser_failed)
         Popup(
             popupPositionProvider = remember(position) { ArtworkMenuPosition(position) },
             onDismissRequest = { menuPosition = null },

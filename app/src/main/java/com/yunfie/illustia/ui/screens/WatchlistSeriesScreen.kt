@@ -45,7 +45,6 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
@@ -69,12 +68,12 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
@@ -92,6 +91,7 @@ import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.ProfileGridHorizontalSpacing
 import com.yunfie.illustia.ui.components.ProfileGridVerticalSpacing
 import com.yunfie.illustia.ui.components.RequestErrorState
+import com.yunfie.illustia.ui.components.SystemBarAppearanceEffect
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
 import com.yunfie.illustia.ui.components.adaptiveProfileGridColumns
@@ -141,7 +141,7 @@ fun WatchlistSeriesScreen(
     val context = LocalContext.current
     val activity = context as? Activity
     val repository = remember(viewModel) { viewModel.uiRepository() }
-    val store = remember(repository) { WatchlistStore(repository) }
+    val store = remember(repository) { WatchlistStore(repository, context) }
     val state by store.state.collectAsStateWithLifecycle()
     val settings by viewModel.settingsState.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
@@ -211,19 +211,12 @@ fun WatchlistSeriesScreen(
         )
     val isDarkTheme = backgroundColor.luminance() < 0.5f
 
-    DisposableEffect(isContentScrolled, isDarkTheme) {
-        val window = activity?.window
-        if (window != null) {
-            val insetsController = WindowCompat.getInsetsController(window, window.decorView)
-            insetsController.isAppearanceLightStatusBars = if (isContentScrolled) !isDarkTheme else false
-        }
-        onDispose {
-            val window = activity?.window
-            if (window != null) {
-                WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightStatusBars = !isDarkTheme
-            }
-        }
-    }
+    SystemBarAppearanceEffect(
+        lightStatusBars = isContentScrolled && !isDarkTheme,
+        lightNavigationBars = !isDarkTheme,
+        restoreLightStatusBars = !isDarkTheme,
+        restoreLightNavigationBars = !isDarkTheme,
+    )
 
     val bannerCoverUrl = processedSeries.firstOrNull { !it.thumbnailUrl.isNullOrBlank() }?.thumbnailUrl
 
@@ -307,7 +300,8 @@ fun WatchlistSeriesScreen(
                 }
 
                 val columns = adaptiveIllustColumns(settings)
-                val showInitialLoading = state.isLoading && state.mangaSeries.isEmpty()
+                val showInitialLoading = (!state.hasLoaded || state.isLoading) && state.mangaSeries.isEmpty()
+                val watchlistPending = !state.hasLoaded || state.isLoading || state.errorMessage != null
                 val showPaginating = settings.autoLoadMore && state.isPaginating
                 val shimmer = if (showInitialLoading || showPaginating) rememberIllustSkeletonShimmer() else null
                 LazyVerticalGrid(
@@ -347,7 +341,7 @@ fun WatchlistSeriesScreen(
                             )
                         }
                     }
-                    if (processedSeries.isEmpty() && !state.isLoading && state.errorMessage == null) {
+                    if (processedSeries.isEmpty() && !watchlistPending) {
                         item(span = { GridItemSpan(maxLineSpan) }, contentType = "watchlist_empty") {
                             EmptyState(stringResource(R.string.watchlist_series_empty))
                         }
@@ -773,7 +767,12 @@ private fun WatchlistSeriesCard(
                                 .padding(horizontal = 8.dp, vertical = 4.dp),
                     ) {
                         Text(
-                            text = "${series.publishedContentCount}話",
+                            text =
+                                pluralStringResource(
+                                    R.plurals.series_chapter_count,
+                                    series.publishedContentCount,
+                                    series.publishedContentCount,
+                                ),
                             color = MiuixTheme.colorScheme.onBackground,
                             style = MiuixTheme.textStyles.footnote2,
                             fontWeight = FontWeight.Black,

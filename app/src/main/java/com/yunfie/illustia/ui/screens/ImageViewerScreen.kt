@@ -92,6 +92,8 @@ import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
+import com.yunfie.illustia.ui.components.resolveProgressivePlaceholderUrls
+import com.yunfie.illustia.ui.components.resolveQualityImageUrls
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -138,6 +140,7 @@ fun ImageViewerScreen(
     swipeToDismissEnabled: Boolean = true,
     ugoiraPowerSave: Boolean = true,
     mangaAdaptivePreload: Boolean = true,
+    progressiveQuality: Boolean = false,
 ) {
     val context = LocalContext.current
     val shareFailedMessage = stringResource(R.string.viewer_share_failed)
@@ -145,27 +148,11 @@ fun ImageViewerScreen(
     val copyFailedMessage = stringResource(R.string.copy_image_failed)
     val imageUrls =
         remember(illust, fullscreenQuality) {
-            when (fullscreenQuality) {
-                "low" -> {
-                    illust.mediumImagePages.ifEmpty {
-                        listOf(
-                            illust.mediumImageUrl.ifBlank {
-                                illust.squareImageUrl.ifBlank { illust.imageUrl }
-                            },
-                        )
-                    }
-                }
-
-                "medium" -> {
-                    illust.imagePages.ifEmpty { listOf(illust.imageUrl) }
-                }
-
-                else -> {
-                    illust.originalImagePages.ifEmpty {
-                        illust.imagePages.ifEmpty { listOfNotNull(illust.originalImageUrl ?: illust.imageUrl) }
-                    }
-                }
-            }
+            resolveQualityImageUrls(illust, fullscreenQuality)
+        }
+    val placeholderUrls =
+        remember(illust, fullscreenQuality, progressiveQuality) {
+            resolveProgressivePlaceholderUrls(illust, fullscreenQuality, progressiveQuality)
         }
     val ambientUrls =
         remember(illust) {
@@ -700,6 +687,7 @@ fun ImageViewerScreen(
                                 contentDescription = "${illust.title} ${page + 1}",
                                 contentScale = ContentScale.FillWidth,
                                 showLoadingSpinner = true,
+                                placeholderUrl = placeholderUrls.getOrNull(page),
                                 maxDecodeDimensionPx = 1920,
                                 modifier =
                                     Modifier
@@ -727,6 +715,7 @@ fun ImageViewerScreen(
                             ZoomablePixivImage(
                                 url = imageUrls[page],
                                 contentDescription = illust.title,
+                                placeholderUrl = placeholderUrls.getOrNull(page),
                                 isActive = pagerState.currentPage == page,
                                 onZoomChanged = { zoomed ->
                                     if (pagerState.currentPage == page) isZoomed = zoomed

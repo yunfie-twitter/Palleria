@@ -66,7 +66,7 @@ class OAuth2RpcTest {
                 .setTimestamps(1000L, 2000L)
                 .setAssets("palleria_logo", "Palleria Logo", "small_icon", "Small Text")
                 .setButtons(listOf("Pixivで見る", "Palleriaをダウンロード"))
-                .setMetadata(Metadata(listOf("https://pixiv.net/artworks/123", "https://yunfi.f5.si/Palleria/user/installation")))
+                .setMetadata(Metadata(listOf("https://pixiv.net/artworks/123", "https://palleria.yunfie.date/user/installation")))
                 .setStatus(Constants.Status.ONLINE)
                 .setAfk(false)
                 .build()
@@ -105,7 +105,7 @@ class OAuth2RpcTest {
         val buttonUrls = metadata.getJSONArray("button_urls")
         buttonUrls.length() shouldBe 2
         buttonUrls.getString(0) shouldBe "https://pixiv.net/artworks/123"
-        buttonUrls.getString(1) shouldBe "https://yunfi.f5.si/Palleria/user/installation"
+        buttonUrls.getString(1) shouldBe "https://palleria.yunfie.date/user/installation"
     }
 
     @Test

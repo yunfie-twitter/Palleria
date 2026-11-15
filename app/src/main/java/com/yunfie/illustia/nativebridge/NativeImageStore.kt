@@ -10,6 +10,7 @@ import android.provider.DocumentsContract
 import android.provider.MediaStore
 import android.webkit.MimeTypeMap
 import androidx.documentfile.provider.DocumentFile
+import com.yunfie.illustia.R
 import com.yunfie.illustia.data.ImageMetadataWriter
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.platform.PlatformCapabilities
@@ -368,11 +369,11 @@ class NativeImageStore(
             }
         val uri =
             resolver.insert(contentUriFor(displayName), contentValues)
-                ?: throw IllegalStateException("MediaStoreへの登録に失敗しました。")
+                ?: throw IllegalStateException(context.getString(R.string.image_save_media_store_failed))
         runCatching {
             resolver.openOutputStream(uri, "w")?.use { output ->
                 input.use { it.copyTo(output) }
-            } ?: throw IllegalStateException("ファイルの書き込みに失敗しました。")
+            } ?: throw IllegalStateException(context.getString(R.string.image_save_write_failed))
             // Patch EXIF after the single byte copy instead of staging a rewritten temp file.
             ImageMetadataWriter.embedMetadata(
                 resolver,

@@ -552,7 +552,6 @@
     <!-- About screen -->
     <string name="about_title">Über Palleria</string>
     <string name="about_version">Version %1$s</string>
-    <string name="about_tagline">Spezieller Pixiv Illustration Viewer</string>
     <string name="about_section_info">Infos</string>
     <string name="about_section_links">Links</string>
     <string name="about_section_libraries">Bibliotheken</string>

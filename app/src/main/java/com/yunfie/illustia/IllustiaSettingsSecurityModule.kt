@@ -22,7 +22,6 @@ import com.yunfie.illustia.settings.store.STARTUP_LOGGED_IN_TOKEN
 import com.yunfie.illustia.ui.screens.CalculatorEngine
 import com.yunfie.illustia.widget.IllustWidgetProvider
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.update
@@ -35,7 +34,6 @@ private const val MIN_TTS_SPEECH_RATE = 0.5f
 private const val MAX_TTS_SPEECH_RATE = 2.5f
 private const val MIN_TTS_PITCH = 0.5f
 private const val MAX_TTS_PITCH = 2.0f
-private const val SEARCH_DRAFT_DEBOUNCE_MILLIS = 300L
 
 private fun canRefreshProfileOnStartup(
     settings: com.yunfie.illustia.settings.AppSettings,
@@ -51,8 +49,6 @@ abstract class IllustiaSettingsSecurityModule(
     app: Application,
     managedDataRepository: ManagedDataRepository,
 ) : IllustiaViewModelFoundation(app, managedDataRepository) {
-    private var searchDraftJob: Job? = null
-
     abstract fun refreshHome(forceRefresh: Boolean = false)
 
     abstract fun submitSearch(
@@ -1096,20 +1092,15 @@ abstract class IllustiaSettingsSecurityModule(
     }
 
     /**
-     * Keystroke-level calls are debounced before touching the global UI state; [updateSearchDraftNow]
-     * remains synchronous for one-shot resets (cancel, back, expand).
+     * Keystroke-level calls must reach the global state immediately: the search text field renders
+     * [searchDraft] as its value, so deferring the write made typed characters disappear and the
+     * field appear read-only.
      */
     fun updateSearchDraft(value: String) {
-        searchDraftJob?.cancel()
-        searchDraftJob =
-            viewModelScope.launch {
-                delay(SEARCH_DRAFT_DEBOUNCE_MILLIS)
-                applySearchDraft(value)
-            }
+        updateSearchDraftNow(value)
     }
 
     fun updateSearchDraftNow(value: String) {
-        searchDraftJob?.cancel()
         applySearchDraft(value)
     }
 

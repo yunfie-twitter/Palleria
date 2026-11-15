@@ -26,6 +26,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.IOException
 
 private const val TARGET_INITIAL_SEARCH_COUNT = 30
 private const val MAX_SEARCH_PAGES_ACCUMULATION = 20
@@ -239,6 +240,17 @@ abstract class IllustiaAuthFeedModule(
                     else -> it.copy(isHomeRefreshing = forceRefresh)
                 }
             }
+            // Skip the loading frame when the request cannot succeed: otherwise the user sees the
+            // skeleton animate in and then vanish before the error appears.
+            if (isOffline()) {
+                _uiState.update {
+                    it.copy(
+                        isHomeRefreshing = false,
+                        loadState = LoadState.Error(loadFailureMessage(it, IOException("offline"))),
+                    )
+                }
+                return@launch
+            }
             try {
                 GlitchTipTelemetry.traceAsync("feed.home.refresh", "feed.home") {
                     loadHomeInternal(kind, forceRefresh = forceRefresh)
@@ -320,7 +332,7 @@ abstract class IllustiaAuthFeedModule(
                 _uiState.update {
                     it.copy(
                         isNovelPaginating = false,
-                        message = cleanErrorMessage(error),
+                        centeredError = cleanErrorMessage(error),
                     )
                 }
             }
@@ -397,7 +409,7 @@ abstract class IllustiaAuthFeedModule(
                 _uiState.update {
                     if (it.selectedNovel?.id == novel.id) {
                         it.copy(
-                            message = cleanErrorMessage(error, getApplication<Application>().getString(R.string.error_novel_load_failed)),
+                            centeredError = cleanErrorMessage(error, str(R.string.error_novel_load_failed)),
                         )
                     } else {
                         it
@@ -580,7 +592,7 @@ abstract class IllustiaAuthFeedModule(
                 _uiState.update { current ->
                     current.copy(
                         isRankingPaginating = current.isRankingPaginating + (mode to false),
-                        message = cleanErrorMessage(error),
+                        centeredError = cleanErrorMessage(error),
                     )
                 }
             }
@@ -623,7 +635,7 @@ abstract class IllustiaAuthFeedModule(
                 _uiState.update {
                     it.copy(
                         isHomePaginating = false,
-                        message = cleanErrorMessage(error),
+                        centeredError = cleanErrorMessage(error),
                     )
                 }
             }
@@ -905,6 +917,14 @@ abstract class IllustiaAuthFeedModule(
         _uiState.update { it.copy(message = message) }
     }
 
+    fun showCenteredError(message: String) {
+        _uiState.update { it.copy(centeredError = message) }
+    }
+
+    fun clearCenteredError() {
+        _uiState.update { it.copy(centeredError = null) }
+    }
+
     fun handleIncomingIntent(intent: Intent?) {
         if (intent == null) return
         if (intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY != 0) return
@@ -1051,6 +1071,7 @@ abstract class IllustiaAuthFeedModule(
                 it.copy(
                     isTimelineRefreshing = forceRefresh,
                     loadState = if (it.timelineItems.isEmpty()) LoadState.Loading else it.loadState,
+                    timelineLoadState = if (it.timelineItems.isEmpty()) LoadState.Loading else it.timelineLoadState,
                 )
             }
             try {
@@ -1067,6 +1088,7 @@ abstract class IllustiaAuthFeedModule(
                             timelineNextUrl = page.nextUrl,
                             isTimelineRefreshing = false,
                             loadState = LoadState.Loaded,
+                            timelineLoadState = LoadState.Loaded,
                             isOfflineCached = false,
                         )
                     }
@@ -1096,6 +1118,7 @@ abstract class IllustiaAuthFeedModule(
                         isTimelineRefreshing = false,
                         isOfflineCached = canUseStale,
                         loadState = if (canUseStale) LoadState.Loaded else LoadState.Error(loadFailureMessage(it, error)),
+                        timelineLoadState = if (canUseStale) LoadState.Loaded else LoadState.Error(loadFailureMessage(it, error)),
                     )
                 }
             }
@@ -1134,7 +1157,7 @@ abstract class IllustiaAuthFeedModule(
                     if (it.settings.followRestrict != requestedRestrict) return@update it.copy(isTimelinePaginating = false)
                     it.copy(
                         isTimelinePaginating = false,
-                        message = cleanErrorMessage(error),
+                        centeredError = cleanErrorMessage(error),
                     )
                 }
             }
@@ -1260,7 +1283,7 @@ abstract class IllustiaAuthFeedModule(
                 _uiState.update {
                     it.copy(
                         isWatchlistPaginating = false,
-                        message = cleanErrorMessage(error),
+                        centeredError = cleanErrorMessage(error),
                     )
                 }
             }
@@ -1274,6 +1297,7 @@ abstract class IllustiaAuthFeedModule(
                 it.copy(
                     isFollowingRefreshing = forceRefresh,
                     loadState = if (it.followingUsers.isEmpty()) LoadState.Loading else it.loadState,
+                    followingUsersLoadState = if (it.followingUsers.isEmpty()) LoadState.Loading else it.followingUsersLoadState,
                 )
             }
             try {
@@ -1287,6 +1311,7 @@ abstract class IllustiaAuthFeedModule(
                             followingUsersNextUrl = page.nextUrl,
                             isFollowingRefreshing = false,
                             loadState = LoadState.Loaded,
+                            followingUsersLoadState = LoadState.Loaded,
                         )
                     }
                 }
@@ -1300,6 +1325,7 @@ abstract class IllustiaAuthFeedModule(
                     it.copy(
                         isFollowingRefreshing = false,
                         loadState = LoadState.Error(loadFailureMessage(it, error)),
+                        followingUsersLoadState = LoadState.Error(loadFailureMessage(it, error)),
                     )
                 }
             }
@@ -1335,7 +1361,7 @@ abstract class IllustiaAuthFeedModule(
                     if (it.settings.followRestrict != requestedRestrict) return@update it.copy(isFollowingPaginating = false)
                     it.copy(
                         isFollowingPaginating = false,
-                        message = cleanErrorMessage(error),
+                        centeredError = cleanErrorMessage(error),
                     )
                 }
             }
@@ -1365,7 +1391,7 @@ abstract class IllustiaAuthFeedModule(
                 _uiState.update { it.copy(message = str(R.string.msg_data_exported)) }
             }.onFailure { expectedFailure ->
                 if (isCancellation(expectedFailure)) throw expectedFailure
-                _uiState.update { it.copy(message = str(R.string.error_data_export_failed)) }
+                _uiState.update { it.copy(centeredError = str(R.string.error_data_export_failed)) }
             }
         }
     }
@@ -1381,7 +1407,7 @@ abstract class IllustiaAuthFeedModule(
                 _uiState.update { it.withSettings(imported).copy(message = str(R.string.msg_data_imported)) }
             }.onFailure { expectedFailure ->
                 if (isCancellation(expectedFailure)) throw expectedFailure
-                _uiState.update { it.copy(message = str(R.string.error_data_import_failed)) }
+                _uiState.update { it.copy(centeredError = str(R.string.error_data_import_failed)) }
             }
         }
     }

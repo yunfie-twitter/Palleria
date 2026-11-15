@@ -3,6 +3,7 @@ package com.yunfie.illustia.ui.components
 import android.graphics.Bitmap
 import android.os.Build
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -127,6 +128,7 @@ fun PixivImage(
     maxDecodeDimensionPx: Int? = null,
     allowRgb565: Boolean = false,
     showLoadingSpinner: Boolean = false,
+    placeholderUrl: String? = null,
     onSuccess: ((Bitmap) -> Unit)? = null,
     onLoadingStateChanged: ((Boolean) -> Unit)? = null,
 ) {
@@ -138,10 +140,18 @@ fun PixivImage(
         remember(url, proxyBaseUrl) {
             proxyPixivImageUrl(url, proxyBaseUrl)
         }
-
+    val hasPlaceholder = !thumbnail && !placeholderUrl.isNullOrBlank() && placeholderUrl != url
+    val effectivePlaceholderUrl =
+        remember(placeholderUrl, proxyBaseUrl, hasPlaceholder) {
+            if (hasPlaceholder) proxyPixivImageUrl(placeholderUrl.orEmpty(), proxyBaseUrl) else null
+        }
     val hasSuccessListener = onSuccess != null
-    val hasLoadingListener = onLoadingStateChanged != null || showLoadingSpinner
-    var isLoading by remember(effectiveUrl, hasLoadingListener) { mutableStateOf(hasLoadingListener) }
+    val hasLoadingListener = onLoadingStateChanged != null || showLoadingSpinner || hasPlaceholder
+    // Keyed on the request identity too: when the pager settles it swaps from the thumbnail
+    // tier to the detail tier, which starts a brand new request. Without resetting this the
+    // underlay stayed hidden for the first frame of that request, so the image blanked out and
+    // then popped back in.
+    var isLoading by remember(effectiveUrl, hasLoadingListener, thumbnail, maxDecodeDimensionPx) { mutableStateOf(hasLoadingListener) }
     val currentOnSuccess by rememberUpdatedState(onSuccess)
     val currentOnLoadingStateChanged by rememberUpdatedState(onLoadingStateChanged)
 
@@ -188,7 +198,9 @@ fun PixivImage(
                     .diskCachePolicy(if (refreshRequest == 0) CachePolicy.ENABLED else CachePolicy.WRITE_ONLY)
                     .memoryCacheKey(memoryCacheKey)
                     .memoryCachePolicy(CachePolicy.ENABLED)
-                    .crossfade(!thumbnail && crossfade && PlatformCapabilities.supportsImageCrossfade(context))
+                    // The lower tier is already painted underneath. Fading the real image in over it
+                    // makes it look translucent for the length of the crossfade, so swap hard.
+                    .crossfade(!thumbnail && crossfade && !hasPlaceholder && PlatformCapabilities.supportsImageCrossfade(context))
 
             if (hasLoadingListener || hasSuccessListener) {
                 builder.listener(
@@ -247,7 +259,46 @@ fun PixivImage(
                 }.build()
         }
 
-    if (showLoadingSpinner) {
+    val placeholderRequest =
+        effectivePlaceholderUrl?.let { placeholder ->
+            remember(placeholder, refreshRequest) {
+                ImageRequest
+                    .Builder(context)
+                    .data(placeholder)
+                    .httpHeaders(PixivImageHeaders)
+                    .diskCachePolicy(if (refreshRequest == 0) CachePolicy.ENABLED else CachePolicy.WRITE_ONLY)
+                    .memoryCacheKey(pixivImageMemoryCacheKey(placeholder, thumbnail = true, decodeDimensionPx = null))
+                    .memoryCachePolicy(CachePolicy.ENABLED)
+                    .size(PlatformCapabilities.recommendedThumbnailDecodeDimension(context))
+                    .scale(Scale.FILL)
+                    .precision(Precision.INEXACT)
+                    .allowRgb565(true)
+                    .build()
+            }
+        }
+
+    if (placeholderRequest != null) {
+        Box(modifier = modifier) {
+            // The placeholder is painted first so it sits *under* the real image, never over it.
+            // The main image keeps the caller's size instead of matchParentSize(): a box whose
+            // children all match the parent measures to zero height under wrapContentHeight(),
+            // which left the paged/vertical readers showing nothing at all.
+            if (isLoading) {
+                AsyncImage(
+                    model = placeholderRequest,
+                    contentDescription = null,
+                    contentScale = contentScale,
+                    modifier = Modifier.matchParentSize(),
+                )
+            }
+            AsyncImage(
+                model = imageRequest,
+                contentDescription = contentDescription,
+                contentScale = contentScale,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+    } else if (showLoadingSpinner) {
         Box(
             modifier = modifier,
             contentAlignment = Alignment.Center,

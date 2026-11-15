@@ -1,10 +1,10 @@
 # Palleria
 
-[English](README.md) · [日本語](README_ja.md) · [한국어](README_ko.md)
+[English](README.md) · [日本語](README_ja.md) · [한국어](README_ko.md) · [Русский](README_ru.md)
 
 <p align="center">
   <img
-    src="https://yunfi.f5.si/Palleria/repo/com.yunfie.illustia/en-US/icon.png"
+    src="https://palleria.yunfie.date/repo/com.yunfie.illustia/en-US/icon.png"
     alt="Palleria 아이콘"
     width="160"
   />
@@ -26,7 +26,7 @@
 [![Rust](https://img.shields.io/badge/Rust-Native%20Core-DEA584.svg?style=flat-square&logo=rust&logoColor=white)](https://www.rust-lang.org/)
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-UI-4285F4.svg?style=flat-square&logo=jetpackcompose&logoColor=white)](https://developer.android.com/compose)
 [![Miuix KMP](https://img.shields.io/badge/Design-Miuix%20KMP-FF6900.svg?style=flat-square)](https://github.com/miuix-kotlin-multiplatform/miuix)
-[![F-Droid](https://img.shields.io/badge/F--Droid-Repository-1976D2.svg?style=flat-square&logo=fdroid&logoColor=white)](https://yunfi.f5.si/Palleria/repo/)
+[![F-Droid](https://img.shields.io/badge/F--Droid-Repository-1976D2.svg?style=flat-square&logo=fdroid&logoColor=white)](https://palleria.yunfie.date/repo/)
 [![GitHub Release](https://img.shields.io/github/v/release/yunfie-twitter/Palleria?style=flat-square&logo=github&label=Release)](https://github.com/yunfie-twitter/Palleria/releases)
 [![GitHub Downloads](https://img.shields.io/github/downloads/yunfie-twitter/Palleria/total?style=flat-square&logo=github&label=Downloads)](https://github.com/yunfie-twitter/Palleria/releases)
 [![GitHub Stars](https://img.shields.io/github/stars/yunfie-twitter/Palleria?style=flat-square&logo=github)](https://github.com/yunfie-twitter/Palleria/stargazers)
@@ -59,10 +59,10 @@ Jetpack Compose와 Miuix 디자인, UniFFI를 통한 Rust 네이티브 백엔드
 
 <table align="center">
   <tr>
-    <td align="center"><img src="https://yunfi.f5.si/Palleria/repo/com.yunfie.illustia/en-US/phoneScreenshots/1.png" alt="홈 화면" width="160" /><br /><strong>홈 및 피드</strong></td>
-    <td align="center"><img src="https://yunfi.f5.si/Palleria/repo/com.yunfie.illustia/en-US/phoneScreenshots/2.png" alt="검색 화면" width="160" /><br /><strong>탐색 및 검색</strong></td>
-    <td align="center"><img src="https://yunfi.f5.si/Palleria/repo/com.yunfie.illustia/en-US/phoneScreenshots/3.png" alt="랭킹 화면" width="160" /><br /><strong>랭킹</strong></td>
-    <td align="center"><img src="https://yunfi.f5.si/Palleria/repo/com.yunfie.illustia/en-US/phoneScreenshots/5.png" alt="사용자 프로필 화면" width="160" /><br /><strong>작가 프로필</strong></td>
+    <td align="center"><img src="https://palleria.yunfie.date/repo/com.yunfie.illustia/en-US/phoneScreenshots/1.png" alt="홈 화면" width="160" /><br /><strong>홈 및 피드</strong></td>
+    <td align="center"><img src="https://palleria.yunfie.date/repo/com.yunfie.illustia/en-US/phoneScreenshots/2.png" alt="검색 화면" width="160" /><br /><strong>탐색 및 검색</strong></td>
+    <td align="center"><img src="https://palleria.yunfie.date/repo/com.yunfie.illustia/en-US/phoneScreenshots/3.png" alt="랭킹 화면" width="160" /><br /><strong>랭킹</strong></td>
+    <td align="center"><img src="https://palleria.yunfie.date/repo/com.yunfie.illustia/en-US/phoneScreenshots/5.png" alt="사용자 프로필 화면" width="160" /><br /><strong>작가 프로필</strong></td>
   </tr>
 </table>
 
@@ -101,10 +101,10 @@ Jetpack Compose와 Miuix 디자인, UniFFI를 통한 Rust 네이티브 백엔드
 공식 Palleria 저장소를 F-Droid 또는 호환 클라이언트(Droid-ify, Neo Store 등)에 추가하세요.
 
 ```text
-https://yunfi.f5.si/Palleria/repo/
+https://palleria.yunfie.date/repo/
 ```
 
-[![F-Droid에 추가](https://img.shields.io/badge/F--Droid-저장소%20추가-1976D2.svg?style=for-the-badge&logo=fdroid&logoColor=white)](https://yunfi.f5.si/Palleria/repo?fingerprint=28A7F64F373AC1AD5FBB4822870E2E07B2B204C7EC71E58CE40F9D54EF2727D9)
+[![F-Droid에 추가](https://img.shields.io/badge/F--Droid-저장소%20추가-1976D2.svg?style=for-the-badge&logo=fdroid&logoColor=white)](https://palleria.yunfie.date/repo?fingerprint=28A7F64F373AC1AD5FBB4822870E2E07B2B204C7EC71E58CE40F9D54EF2727D9)
 
 ### GitHub Releases
 

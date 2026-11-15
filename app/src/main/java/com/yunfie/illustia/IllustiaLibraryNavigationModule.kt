@@ -908,6 +908,8 @@ abstract class IllustiaLibraryNavigationModule(
                 sessionReady = false,
                 showAccountSwitcher = false,
                 loadState = LoadState.Idle,
+                timelineLoadState = LoadState.Idle,
+                followingUsersLoadState = LoadState.Idle,
             )
         }
         viewModelScope.launch(Dispatchers.IO) {

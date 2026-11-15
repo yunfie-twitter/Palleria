@@ -489,7 +489,6 @@
     <string name="data_storage_android_15_badge">Android 15</string>
     <string name="about_title">關於Palleria</string>
     <string name="about_version">版本 %1$s</string>
-    <string name="about_tagline">專用 Pixiv 插圖檢視器</string>
     <string name="about_section_info">訊息</string>
     <string name="about_section_links">連結</string>
     <string name="about_section_libraries">庫</string>

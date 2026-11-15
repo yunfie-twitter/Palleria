@@ -1,3 +1,8 @@
+---
+title: ChromeOS・デスクトップ入力
+description: PalleriaをChromeOSやキーボード・マウスで操作する際の対応内容とショートカットをまとめます。
+---
+
 # ChromeOS / デスクトップ入力
 
 ## 対応内容

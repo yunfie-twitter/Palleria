@@ -24,7 +24,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -49,7 +48,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
@@ -105,19 +103,10 @@ internal fun MainSurface(
     val performHaptic = rememberHapticFeedbackAction()
     val tabs = remember(appState.settings.shortsFeedEnabled, appState.settings.navigationOrder) { mainTabs(appState.settings) }
     val navigationTabs =
-        remember(appState.settings.shortsFeedEnabled, appState.settings.navigationOrder) { visibleTabs(appState.settings) }
-    val context = LocalContext.current
-    val surfaceColor = MiuixTheme.colorScheme.surface
-    val isDarkTheme = surfaceColor.luminance() < 0.5f
-    DisposableEffect(isDarkTheme) {
-        val window = (context as? Activity)?.window
-        if (window != null) {
-            val insetsController = WindowCompat.getInsetsController(window, window.decorView)
-            insetsController.isAppearanceLightStatusBars = !isDarkTheme
-            insetsController.isAppearanceLightNavigationBars = !isDarkTheme
+        remember(appState.settings.shortsFeedEnabled, appState.settings.navigationOrder, appState.settings.hiddenNavigationTabs) {
+            visibleTabs(appState.settings)
         }
-        onDispose {}
-    }
+    val context = LocalContext.current
     var lastBackAt by remember { mutableStateOf(0L) }
     var navigationVisible by remember(appState.settings.navigationStyle) { mutableStateOf(true) }
     val navigationScrollConnection =
@@ -174,24 +163,22 @@ internal fun MainSurface(
             contentWindowInsets = WindowInsets(0),
             bottomBar = {
                 if (!useNavigationRail && appState.settings.navigationStyle == "standard" && !isBlurEnabled) {
-                    Box(
-                        modifier = Modifier.background(MiuixTheme.colorScheme.surfaceContainer),
-                    ) {
-                        AppNavigationBar(settings = appState.settings) {
-                            navigationTabs.forEach { tab ->
-                                val pageIndex = tabs.indexOf(tab)
-                                NavigationBarItem(
-                                    modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
-                                    selected = selectedTab == tab,
-                                    onClick = {
-                                        performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Click)
-                                        viewModel.closeAccountSwitcher()
-                                        onTabSelected(pageIndex, tab)
-                                    },
-                                    icon = tab.icon,
-                                    label = stringResource(tab.labelResId),
-                                )
-                            }
+                    // NavigationBar 自身が surfaceContainer を塗るため、外側に背景 Box を重ねると
+                    // 画面遷移中にバーの背後へ不透明な色が残る。追加の背景は持たせない。
+                    AppNavigationBar(settings = appState.settings) {
+                        navigationTabs.forEach { tab ->
+                            val pageIndex = tabs.indexOf(tab)
+                            NavigationBarItem(
+                                modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
+                                selected = selectedTab == tab,
+                                onClick = {
+                                    performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Click)
+                                    viewModel.closeAccountSwitcher()
+                                    onTabSelected(pageIndex, tab)
+                                },
+                                icon = tab.icon,
+                                label = stringResource(tab.labelResId),
+                            )
                         }
                     }
                 }
@@ -236,6 +223,7 @@ internal fun MainSurface(
                                     items = appState.homeItems,
                                     timelineItems = appState.timelineItems,
                                     loadState = appState.loadState,
+                                    timelineLoadState = appState.timelineLoadState,
                                     nextUrl = appState.homeChrome.homeNextUrl,
                                     timelineNextUrl = appState.homeChrome.timelineNextUrl,
                                     settings = appState.settings,
@@ -273,6 +261,8 @@ internal fun MainSurface(
                                 BookmarkScreen(
                                     settings = appState.settings,
                                     loadState = appState.loadState,
+                                    timelineLoadState = appState.timelineLoadState,
+                                    followingUsersLoadState = appState.followingUsersLoadState,
                                     bookmarkItems = appState.bookmarkItems,
                                     bookmarkTag = appState.state.bookmarkTag,
                                     timelineItems = appState.timelineItems,
@@ -326,6 +316,9 @@ internal fun MainSurface(
                 if (!useNavigationRail && appState.settings.navigationStyle == "standard" && isBlurEnabled) {
                     val surfaceContainer = MiuixTheme.colorScheme.surfaceContainer
                     val outline = MiuixTheme.colorScheme.outline
+                    // `enabled` must not depend on SystemUiCovered here: at launch the window has no
+                    // focus yet, so toggling the wrapper's modifier remounts the whole bar inside the
+                    // splash exit window and shows up as a flash of the navigation bar.
                     SystemUiAwareBackdropBox(
                         enabled = supportsBlur,
                         backdrop = navBackdrop,

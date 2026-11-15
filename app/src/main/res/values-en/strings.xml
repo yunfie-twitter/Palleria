@@ -576,7 +576,6 @@
     <!-- About screen -->
     <string name="about_title">About Palleria</string>
     <string name="about_version">Version %1$s</string>
-    <string name="about_tagline">Dedicated Pixiv Illustration Viewer</string>
     <string name="about_section_info">Info</string>
     <string name="about_section_links">Links</string>
     <string name="about_section_libraries">Libraries</string>
@@ -672,6 +671,13 @@
     <string name="offline_no_cache">Offline. No cache available.</string>
     <string name="error_data_export_failed">Could not export data.</string>
     <string name="error_data_import_failed">Could not read this file. Select an Illustia backup file.</string>
+    <string name="error_server_unreachable">Could not reach the server. Check your connection and try again.</string>
+    <string name="error_forbidden">You do not have permission to do this. Sign in again.</string>
+    <string name="error_not_found">Not found. It may have been deleted.</string>
+    <string name="error_server_error">The server ran into a problem. Wait a moment and try again.</string>
+    <string name="error_bad_request">The request was rejected. Check your settings or search terms.</string>
+    <string name="error_unexpected">Something unexpected happened. Restart the app if it keeps occurring.</string>
+    <string name="error_timeout">The connection timed out. Check your network and try again.</string>
     <string name="follow_visibility">Follow visibility</string>
 
     <!-- Ranking modes -->
@@ -1208,6 +1214,15 @@
     <string name="flag_delta_etag_sync_desc">Uses ETags and delta caching during following sync to fetch only new artworks without duplicate downloads, enabling instant offline-ready access</string>
     <string name="flag_shared_element_transitions_title">Shared element transitions</string>
     <string name="flag_shared_element_transitions_desc">Animates an artwork card thumbnail into the detail image, in both directions. Moving between related artworks keeps the existing transition</string>
+    <string name="flag_progressive_image_quality_title">Dynamic image quality (progressive)</string>
+    <string name="flag_progressive_image_quality_desc">Shows the next-lower quality tier while the selected quality loads on detail and full-screen images.</string>
+    <string name="flag_miuix_quick_peek_title">Miuix-style QuickPeek</string>
+    <string name="flag_miuix_quick_peek_desc">Rebuilds the long-press preview as a bottom sheet that follows the Miuix guidelines. Long-pressing a user in Following or search results also shows a user version of the preview.</string>
+    <string name="quick_peek_show_profile">Open profile</string>
+    <string name="quick_peek_follow">Follow</string>
+    <string name="quick_peek_unfollow">Following</string>
+    <string name="quick_peek_illust_count">%1$d works</string>
+    <string name="quick_peek_view_profile">View profile</string>
     <string name="offline_cached_banner_label">Viewing offline cache</string>
     <string name="offline_retry_button">Retry</string>
 
@@ -1251,4 +1266,21 @@
         <item quantity="one">Show %1$d hidden item</item>
         <item quantity="other">Show %1$d hidden items</item>
     </plurals>
+
+    <!-- i18n: strings that were previously hardcoded in Kotlin -->
+    <string name="about_no_license_information">No license information available</string>
+    <string name="user_profile_no_image">No image</string>
+    <plurals name="series_chapter_count">
+        <item quantity="one">%1$d chapter</item>
+        <item quantity="other">%1$d chapters</item>
+    </plurals>
+    <string name="page_count_short">%1$dP</string>
+    <string name="update_eta_minutes_seconds">%1$d min %2$02d s</string>
+    <string name="update_eta_seconds">%1$d s</string>
+    <string name="discord_presence_browsing_illust">Browsing illustrations</string>
+    <string name="discord_presence_viewing_artwork">Viewing artwork</string>
+    <string name="image_save_media_store_failed">Failed to register with MediaStore.</string>
+    <string name="image_save_write_failed">Failed to write the file.</string>
+    <string name="error_request_failed">The request could not be completed. Please try again later.</string>
+    <string name="error_load_failed">Could not load data. Please try again later.</string>
 </resources>

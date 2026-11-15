@@ -35,6 +35,7 @@ import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.LoadingIndicator
+import com.yunfie.illustia.ui.components.LocalArtworkTransitionInFlight
 import com.yunfie.illustia.ui.components.LocalNavSharedTransitionScope
 import com.yunfie.illustia.ui.components.LocalNavigationPrefetchEnabled
 import com.yunfie.illustia.ui.components.ProvideEntrySharedTransitionScope
@@ -56,6 +57,7 @@ import com.yunfie.illustia.ui.screens.FavoriteTagsScreen
 import com.yunfie.illustia.ui.screens.FeatureFlagsScreen
 import com.yunfie.illustia.ui.screens.GeneralSettingsScreen
 import com.yunfie.illustia.ui.screens.IllustDetailScreen
+import com.yunfie.illustia.ui.screens.IllustDetailSettings
 import com.yunfie.illustia.ui.screens.IllustDetailSkeletonScreen
 import com.yunfie.illustia.ui.screens.IllustSeriesScreen
 import com.yunfie.illustia.ui.screens.ImageSettingsScreen
@@ -100,6 +102,7 @@ internal fun AppNavHost(
     pagerState: androidx.compose.foundation.pager.PagerState,
     homeScrollBehavior: ScrollBehavior,
     artworkPopSettling: Boolean = false,
+    artworkEnterSettling: Boolean = false,
     showTokenLogin: Boolean,
     onShowTokenLoginChange: (Boolean) -> Unit,
     selectedWatchlistSeriesId: Long?,
@@ -291,9 +294,14 @@ internal fun AppNavHost(
                 metadata = artworkMetadata,
             ) { route ->
                 ProvideEntrySharedTransitionScope {
-                    val selectedIllust = appState.state.selectedIllust
+                    // A tap now pushes this route synchronously, so the collected state can still
+                    // be one frame behind. Prefer the ViewModel's current value before falling
+                    // back to the snapshot map, otherwise the skeleton flashes first.
+                    val selectedIllust =
+                        appState.state.selectedIllust?.takeIf { it.id == route.illustId }
+                            ?: viewModel.currentSelectedIllust()?.takeIf { it.id == route.illustId }
                     val snapshot =
-                        if (selectedIllust?.id == route.illustId) {
+                        if (selectedIllust != null) {
                             DetailEntrySnapshot(
                                 illust = selectedIllust,
                                 relatedIllusts = appState.state.relatedIllusts,
@@ -360,26 +368,30 @@ internal fun AppNavHost(
                             onSaveAllImages = viewModel::saveImages,
                             onMessage = viewModel::showMessage,
                             loadUgoiraPlayback = viewModel::loadUgoiraPlayback,
-                            highQualityImages = appState.state.settings.highQualityImages,
-                            detailQuality =
-                                if (illust.type == "manga") {
-                                    appState.state.settings.mangaDetailQuality
-                                } else {
-                                    appState.state.settings.illustDetailQuality
-                                },
-                            prefetchImages = appState.state.settings.prefetchImages,
-                            confirmOnLongPressSave = appState.state.settings.confirmOnLongPressSave,
-                            skipConfirmOnDetailSave = appState.state.settings.skipConfirmOnDetailSave,
-                            smartDownloadNaming = appState.state.settings.isFeatureEnabled(FeatureFlag.SmartDownloadNaming),
-                            ugoiraPowerSave = appState.state.settings.isFeatureEnabled(FeatureFlag.UgoiraPowerSave),
-                            mangaAdaptivePreload = appState.state.settings.isFeatureEnabled(FeatureFlag.MangaAdaptivePreload),
-                            detailSectionOrder = appState.state.settings.detailSectionOrder,
-                            relatedIllustColumnCount = appState.state.settings.relatedIllustColumnCount,
-                            liquidGlassButtons = appState.state.settings.isFeatureEnabled(FeatureFlag.LiquidGlassButtons),
-                            liquidGlassFollowButton = appState.state.settings.isFeatureEnabled(FeatureFlag.LiquidGlassFollowButton),
-                            relatedSectionInitiallyReady = viewModel.isIllustDetailRelatedSectionReady(illust.id),
+                            settings =
+                                IllustDetailSettings(
+                                    highQualityImages = appState.state.settings.highQualityImages,
+                                    detailQuality =
+                                        if (illust.type == "manga") {
+                                            appState.state.settings.mangaDetailQuality
+                                        } else {
+                                            appState.state.settings.illustDetailQuality
+                                        },
+                                    prefetchImages = appState.state.settings.prefetchImages,
+                                    confirmOnLongPressSave = appState.state.settings.confirmOnLongPressSave,
+                                    skipConfirmOnDetailSave = appState.state.settings.skipConfirmOnDetailSave,
+                                    smartDownloadNaming = appState.state.settings.isFeatureEnabled(FeatureFlag.SmartDownloadNaming),
+                                    ugoiraPowerSave = appState.state.settings.isFeatureEnabled(FeatureFlag.UgoiraPowerSave),
+                                    mangaAdaptivePreload = appState.state.settings.isFeatureEnabled(FeatureFlag.MangaAdaptivePreload),
+                                    detailSectionOrder = appState.state.settings.detailSectionOrder,
+                                    relatedIllustColumnCount = appState.state.settings.relatedIllustColumnCount,
+                                    liquidGlassButtons = appState.state.settings.isFeatureEnabled(FeatureFlag.LiquidGlassButtons),
+                                    liquidGlassFollowButton = appState.state.settings.isFeatureEnabled(FeatureFlag.LiquidGlassFollowButton),
+                                    progressiveQuality = appState.state.settings.isFeatureEnabled(FeatureFlag.ProgressiveImageQuality),
+                                    relatedSectionInitiallyReady = viewModel.isIllustDetailRelatedSectionReady(illust.id),
+                                    initialPage = viewModel.illustDetailPage(illust.id),
+                                ),
                             onRelatedSectionReady = { viewModel.markIllustDetailRelatedSectionReady(illust.id) },
-                            initialPage = viewModel.illustDetailPage(illust.id),
                             onPageChanged = { viewModel.updateIllustDetailPage(illust.id, it) },
                             listState = viewModel.illustDetailListState(illust.id),
                         )
@@ -427,6 +439,7 @@ internal fun AppNavHost(
                             swipeToDismissEnabled = appState.state.settings.imageViewerSwipeToDismissEnabled,
                             ugoiraPowerSave = appState.state.settings.isFeatureEnabled(FeatureFlag.UgoiraPowerSave),
                             mangaAdaptivePreload = appState.state.settings.isFeatureEnabled(FeatureFlag.MangaAdaptivePreload),
+                            progressiveQuality = appState.state.settings.isFeatureEnabled(FeatureFlag.ProgressiveImageQuality),
                         )
                     }
                 }
@@ -776,7 +789,10 @@ internal fun AppNavHost(
     CompositionLocalProvider(LocalNavigationPrefetchEnabled provides !artworkPopSettling) {
         if (sharedArtworkTransitionsEnabled) {
             SharedTransitionLayout(modifier = Modifier.fillMaxSize()) {
-                CompositionLocalProvider(LocalNavSharedTransitionScope provides this) {
+                CompositionLocalProvider(
+                    LocalNavSharedTransitionScope provides this,
+                    LocalArtworkTransitionInFlight provides artworkEnterSettling,
+                ) {
                     NavDisplay(
                         entries = entries,
                         onBack = onPopRoute,
@@ -809,6 +825,7 @@ internal fun AppNavHost(
         selectedCommentTarget = selectedCommentTarget,
         onDismissComments = { onSelectedCommentTargetChange(null) },
         onSearchTag = onSearchTag,
+        currentRoute = backStack.lastOrNull() ?: AppRoute.Main,
     )
 }
 

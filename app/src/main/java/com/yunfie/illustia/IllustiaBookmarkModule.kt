@@ -410,14 +410,25 @@ abstract class IllustiaBookmarkModule(
 
     fun refreshRecommendedTags(force: Boolean = false) {
         val state = _uiState.value
-        if (state.settings.refreshToken.isBlank()) return
         val now = System.currentTimeMillis()
         val cacheAge = now - state.recommendedTagsFetchedAtMillis
-        if (!force && state.recommendedTagsFetchedAtMillis > 0L && cacheAge in 0 until RECOMMENDED_TAG_CACHE_TTL_MILLIS) {
-            return
-        }
+        val cacheIsFresh =
+            !force &&
+                state.recommendedTagsFetchedAtMillis > 0L &&
+                cacheAge in 0 until RECOMMENDED_TAG_CACHE_TTL_MILLIS
+        if (state.settings.refreshToken.isBlank() || cacheIsFresh) return
         recommendedTagsJob?.cancel()
         recommendedTagsExpiryJob?.cancel()
+        // Check connectivity before flipping the loading flag. Setting recommendedTagsLoading
+        // first painted the skeleton for a frame before the offline error replaced it.
+        if (isOffline()) {
+            failRecommendedTagsOffline()
+        } else {
+            loadRecommendedTags()
+        }
+    }
+
+    private fun loadRecommendedTags() {
         _uiState.update { it.copy(recommendedTagsLoading = true, recommendedTagsError = null) }
         recommendedTagsJob =
             viewModelScope.launch(Dispatchers.IO) {
@@ -439,6 +450,19 @@ abstract class IllustiaBookmarkModule(
                             }.awaitAll()
                     }
                 }.onSuccess { tags ->
+                    // A stale offline fallback also lands here as "success". Recording it as a
+                    // fresh fetch would stamp the current time onto old data, so the offline
+                    // result would be cached as valid and survive until the TTL expired.
+                    if (repository.trendingTagsServedStale()) {
+                        _uiState.update { current ->
+                            current.copy(
+                                recommendedTagsLoading = false,
+                                recommendedTagsError =
+                                    current.recommendedTagsError ?: str(R.string.offline_no_cache),
+                            )
+                        }
+                        return@onSuccess
+                    }
                     val fetchedAt = System.currentTimeMillis()
                     _uiState.update { current ->
                         current.copy(
@@ -460,6 +484,16 @@ abstract class IllustiaBookmarkModule(
                     }
                 }
             }
+    }
+
+    // Recommended tags are never cached locally, so there is nothing to fall back to offline.
+    private fun failRecommendedTagsOffline() {
+        _uiState.update {
+            it.copy(
+                recommendedTagsLoading = false,
+                recommendedTagsError = str(R.string.offline_no_cache),
+            )
+        }
     }
 
     private fun scheduleRecommendedTagsExpiry(fetchedAt: Long) {

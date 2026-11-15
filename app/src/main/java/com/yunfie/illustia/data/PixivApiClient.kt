@@ -1,5 +1,6 @@
 package com.yunfie.illustia.data
 
+import com.yunfie.illustia.isCancellationFailure
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.NetworkMode
 import com.yunfie.illustia.models.NovelPreview
@@ -121,8 +122,7 @@ class PixivApiClient(
         type: String? = null,
     ): PageResult<Illust> {
         val effectiveWord = listOfNotNull(word, bookmarkFilter.keyword).joinToString(" ")
-        return getIllustPage(
-            session,
+        val url =
             pixivApiUrl(
                 "v1/search/illust",
                 "word" to effectiveWord,
@@ -139,8 +139,16 @@ class PixivApiClient(
                 "end_date" to endDate?.let { pixivDate(it) },
                 "r18" to if (includeR18) "true" else null,
                 "type" to type,
-            ),
-        )
+            )
+        // 人気順 (popular_desc) は Pixiv Premium 限定のため、未加入や API 失敗時は
+        // popular-preview エンドポイントに切り替えて人気作品を返す。
+        if (sort == SearchSort.PopularDesc && effectiveWord.isNotBlank()) {
+            return runCatching { getIllustPage(session, url) }.getOrElse { error ->
+                if (error.isCancellationFailure() || error.isPixivAuthExpired()) throw error
+                popularPreview(session, effectiveWord, target, includeR18)
+            }
+        }
+        return getIllustPage(session, url)
     }
 
     suspend fun searchNovels(
@@ -879,16 +887,18 @@ class PixivApiClient(
     suspend fun popularPreview(
         session: PixivSession,
         word: String,
+        target: SearchTarget = SearchTarget.PartialTags,
+        includeR18: Boolean = true,
     ): PageResult<Illust> =
         getIllustPage(
             session,
             pixivApiUrl(
                 "v1/search/popular-preview/illust",
-                "filter" to "for_android",
+                "filter" to if (includeR18) "for_android" else "for_ios",
                 "include_translated_tag_results" to "true",
                 "merge_plain_keyword_results" to "true",
                 "word" to word,
-                "search_target" to "partial_match_for_tags",
+                "search_target" to target.apiValue,
             ),
         )
 

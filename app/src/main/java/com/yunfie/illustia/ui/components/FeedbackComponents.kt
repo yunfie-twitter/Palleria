@@ -3,6 +3,7 @@ package com.yunfie.illustia.ui.components
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,10 +30,15 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.DialogWindowProvider
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.LoadState
 import top.yukonga.miuix.kmp.basic.Button
@@ -171,6 +177,81 @@ fun RequestErrorState(
         if (onRetry != null) {
             Button(onClick = onRetry) {
                 Text(stringResource(R.string.action_retry))
+            }
+        }
+    }
+}
+
+/**
+ * Error card shown dead centre of the screen.
+ *
+ * Rendered in a full-screen [Dialog] rather than as a Box inside the app tree: the app root
+ * applies [appNavigationSafeArea] and the Scaffold's content padding, so a Box there centres
+ * inside the *inset* area and lands visibly off-centre.
+ *
+ * The dialog surface is forced to the whole display and consumes no window insets, so the card
+ * centres on the true horizontal and vertical middle of the screen instead of on the area left
+ * between the status and navigation bars.
+ */
+@Composable
+fun CenteredErrorOverlay(
+    message: String?,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+    onRetry: (() -> Unit)? = null,
+) {
+    if (message == null) return
+    val view = LocalView.current
+    val containerSize = LocalWindowInfo.current.containerSize
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties =
+            DialogProperties(
+                usePlatformDefaultWidth = false,
+                dismissOnBackPress = true,
+                dismissOnClickOutside = true,
+                decorFitsSystemWindows = false,
+            ),
+    ) {
+        // Match the dialog surface to the full display so "centre" means the real screen centre,
+        // not the space between the status and navigation bars.
+        (view.parent as? DialogWindowProvider)?.window?.setLayout(
+            containerSize.width,
+            containerSize.height,
+        )
+        val dismissState = remember { MutableInteractionSource() }
+        Box(
+            modifier =
+                modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.45f))
+                    .clickable(
+                        interactionSource = dismissState,
+                        indication = null,
+                        onClick = onDismiss,
+                    ),
+            contentAlignment = Alignment.Center,
+        ) {
+            val shape = RoundedCornerShape(18.dp)
+            Column(
+                modifier =
+                    Modifier
+                        .padding(horizontal = 32.dp)
+                        .clip(shape)
+                        .background(MiuixTheme.colorScheme.surfaceContainerHighest)
+                        // Swallow taps on the card itself so they don't reach the dismissing scrim.
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = {},
+                        ).padding(horizontal = 24.dp, vertical = 26.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                RequestErrorState(message = message, onRetry = onRetry)
+                Button(onClick = onDismiss, colors = overlayActionButtonColors()) {
+                    Text(stringResource(R.string.action_close))
+                }
             }
         }
     }

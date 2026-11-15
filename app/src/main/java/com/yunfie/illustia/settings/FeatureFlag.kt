@@ -23,7 +23,7 @@ enum class FeatureFlag(
         key = "flag_navigation_customization",
         titleRes = R.string.flag_navigation_customization_title,
         descRes = R.string.flag_navigation_customization_desc,
-        defaultEnabled = false,
+        defaultEnabled = true,
     ),
     TopScrollBlur(
         key = "flag_top_scroll_blur",
@@ -183,6 +183,18 @@ enum class FeatureFlag(
         key = "flag_liquid_glass_follow_button",
         titleRes = R.string.flag_liquid_glass_follow_button_title,
         descRes = R.string.flag_liquid_glass_follow_button_desc,
+        defaultEnabled = false,
+    ),
+    ProgressiveImageQuality(
+        key = "flag_progressive_image_quality",
+        titleRes = R.string.flag_progressive_image_quality_title,
+        descRes = R.string.flag_progressive_image_quality_desc,
+        defaultEnabled = false,
+    ),
+    MiuixQuickPeek(
+        key = "flag_miuix_quick_peek",
+        titleRes = R.string.flag_miuix_quick_peek_title,
+        descRes = R.string.flag_miuix_quick_peek_desc,
         defaultEnabled = false,
     ),
     ;

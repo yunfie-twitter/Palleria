@@ -36,6 +36,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -50,6 +51,7 @@ import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.UserPreview
+import com.yunfie.illustia.models.isEmptyAfterLoad
 import com.yunfie.illustia.models.pixiv.MangaSeriesModel
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.FeatureFlag
@@ -118,7 +120,9 @@ internal fun BookmarkWatchlistTab(
             isLoading = watchlistState.isPaginating || watchlistState.isLoading,
             onLoadMore = { scope.launch { watchlistStore.loadMore() } },
         )
-        val shimmer = if (watchlistState.isLoading && watchlistState.mangaSeries.isEmpty()) rememberIllustSkeletonShimmer() else null
+        val showWatchlistSkeleton = (!watchlistState.hasLoaded || watchlistState.isLoading) && watchlistState.mangaSeries.isEmpty()
+        val watchlistPending = !watchlistState.hasLoaded || watchlistState.isLoading || watchlistState.errorMessage != null
+        val shimmer = if (showWatchlistSkeleton) rememberIllustSkeletonShimmer() else null
         val columns = adaptiveIllustColumns(settings)
         LazyVerticalGrid(
             state = gridState,
@@ -139,7 +143,7 @@ internal fun BookmarkWatchlistTab(
             horizontalArrangement = Arrangement.spacedBy(ProfileGridHorizontalSpacing),
             verticalArrangement = Arrangement.spacedBy(ProfileGridVerticalSpacing),
         ) {
-            if (watchlistState.isLoading && watchlistState.mangaSeries.isEmpty()) {
+            if (showWatchlistSkeleton) {
                 gridItems(List(6) { it }, key = { "watchlist_skeleton_$it" }, contentType = { "watchlist_series_skeleton" }) {
                     WatchlistSeriesCardSkeleton(shimmerValue = shimmer)
                 }
@@ -153,7 +157,7 @@ internal fun BookmarkWatchlistTab(
                     )
                 }
             }
-            if (watchlistState.mangaSeries.isEmpty() && !watchlistState.isLoading && watchlistState.errorMessage == null) {
+            if (watchlistState.mangaSeries.isEmpty() && !watchlistPending) {
                 item(span = { GridItemSpan(maxLineSpan) }) { EmptyState(stringResource(R.string.watchlist_series_empty)) }
             }
             gridItems(watchlistState.mangaSeries, key = { it.id }, contentType = { "watchlist_series_card" }) { series ->
@@ -264,7 +268,12 @@ private fun WatchlistSeriesCard(
                                 .padding(horizontal = 8.dp, vertical = 4.dp),
                     ) {
                         Text(
-                            text = "${series.publishedContentCount}話",
+                            text =
+                                pluralStringResource(
+                                    R.plurals.series_chapter_count,
+                                    series.publishedContentCount,
+                                    series.publishedContentCount,
+                                ),
                             color = MiuixTheme.colorScheme.onBackground,
                             style = MiuixTheme.textStyles.footnote2,
                             fontWeight = FontWeight.Black,
@@ -425,7 +434,7 @@ internal fun BookmarkMainTab(
                     StateBanner(loadState, onRetry = { viewModel.refreshBookmarks(forceRefresh = true) })
                 }
             }
-            if (bookmarkItems.isEmpty() && loadState != LoadState.Loading && loadState !is LoadState.Error) {
+            if (isEmptyAfterLoad(bookmarkItems.isEmpty(), loadState)) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     EmptyState(stringResource(R.string.bookmark_empty))
                 }
@@ -553,7 +562,7 @@ internal fun BookmarkTimelineTab(
                     StateBanner(loadState, onRetry = { viewModel.refreshTimeline(forceRefresh = true) })
                 }
             }
-            if (timelineItems.isEmpty() && loadState != LoadState.Loading && loadState !is LoadState.Error) {
+            if (isEmptyAfterLoad(timelineItems.isEmpty(), loadState)) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     EmptyState(stringResource(R.string.bookmark_following_empty))
                 }
@@ -623,6 +632,7 @@ internal fun BookmarkFollowingTab(
     scrollBehavior: ScrollBehavior? = null,
 ) {
     val gridState = viewModel.bookmarkFollowingGridState
+    val miuixPeekEnabled = settings.isFeatureEnabled(FeatureFlag.MiuixQuickPeek)
     val sortedUsers =
         remember(followingUsers, sort) {
             when (sort) {
@@ -692,13 +702,25 @@ internal fun BookmarkFollowingTab(
                     StateBanner(loadState, onRetry = { viewModel.refreshFollowingUsers(forceRefresh = true) })
                 }
             }
-            if (followingUsers.isEmpty() && loadState != LoadState.Loading && loadState !is LoadState.Error) {
+            if (isEmptyAfterLoad(followingUsers.isEmpty(), loadState)) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     EmptyState(stringResource(R.string.following_users_empty))
                 }
             }
             gridItems(sortedUsers, key = { "follow_user_${it.id}" }, contentType = { "user_card" }) { user ->
-                UserResultCard(user = user, onClick = { viewModel.openUserPage(user) })
+                val onLongClick =
+                    remember(user, miuixPeekEnabled) {
+                        if (miuixPeekEnabled) {
+                            { viewModel.onUserLongPress(user) }
+                        } else {
+                            null
+                        }
+                    }
+                UserResultCard(
+                    user = user,
+                    onClick = { viewModel.openUserPage(user) },
+                    onLongClick = onLongClick,
+                )
             }
             if (showPaginationSkeletons) {
                 items(

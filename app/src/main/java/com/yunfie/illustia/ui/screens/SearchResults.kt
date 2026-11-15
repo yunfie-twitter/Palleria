@@ -74,6 +74,7 @@ internal fun SearchResultGrid(
     val isNovelResult = page == 0 && state.settings.searchWorkType.isNovel
     val gridState = if (page == 0) viewModel.searchResultGridState else viewModel.userSearchResultGridState
     val isPaginating = if (page == 0) state.isSearchPaginating else state.isUserSearchPaginating
+    val miuixPeekEnabled = state.settings.isFeatureEnabled(FeatureFlag.MiuixQuickPeek)
 
     val isIllustResult = page == 0 && !isNovelResult
     if (isIllustResult) {
@@ -273,7 +274,15 @@ internal fun SearchResultGrid(
             gridItems(state.userSearchItems, key = { it.id }, contentType = { "user_card" }) { user ->
                 val userId = user.id
                 val onClick = remember(userId) { { viewModel.openUserPage(user) } }
-                UserResultCard(user = user, onClick = onClick)
+                val onLongClick =
+                    remember(user, miuixPeekEnabled) {
+                        if (miuixPeekEnabled) {
+                            { viewModel.onUserLongPress(user) }
+                        } else {
+                            null
+                        }
+                    }
+                UserResultCard(user = user, onClick = onClick, onLongClick = onLongClick)
             }
             if (state.settings.autoLoadMore && isPaginating) {
                 item(key = "search_user_paginating_skeleton", span = { GridItemSpan(maxLineSpan) }, contentType = "user_skeleton") {
@@ -340,6 +349,7 @@ private fun SearchErrorState(
 internal fun UserResultCard(
     user: UserPreview,
     onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -352,6 +362,7 @@ internal fun UserResultCard(
             ),
         pressFeedbackType = PressFeedbackType.Sink,
         onClick = onClick,
+        onLongPress = onLongClick,
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             if (user.previewIllusts.isNotEmpty()) {

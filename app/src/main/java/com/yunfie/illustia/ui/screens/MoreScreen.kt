@@ -323,7 +323,7 @@ private fun MoreHeader(
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    imageVector = MiuixIcons.ChevronForward,
+                    imageVector = MiuixIcons.More,
                     contentDescription = stringResource(R.string.account_switch_title),
                     tint = MiuixTheme.colorScheme.onSurface,
                     modifier = Modifier.size(20.dp),

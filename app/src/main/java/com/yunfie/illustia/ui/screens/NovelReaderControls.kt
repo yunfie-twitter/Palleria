@@ -1,5 +1,10 @@
 package com.yunfie.illustia.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,6 +28,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.PathParser
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -32,13 +39,16 @@ import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
+import com.yunfie.illustia.ui.components.SystemBarAppearanceEffect
 import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Slider
+import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
@@ -46,7 +56,10 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.Close
+import top.yukonga.miuix.kmp.icon.extended.Favorites
+import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
 import top.yukonga.miuix.kmp.icon.extended.Filter
+import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.icon.extended.Remove
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
@@ -94,6 +107,146 @@ private val TtsPauseIcon: ImageVector by lazy {
                 fill = SolidColor(Color.White),
             )
         }.build()
+}
+
+/**
+ * 設定シート内の「等幅 pill を横並びで単一選択」するパネル。
+ *
+ * フォント / 行間 / レイアウト / テーマが同じ構造（squircleSurface + 選択色 + miuixClickable +
+ * 太字テキスト）を丸ごと繰り返していたため、共通化した。色は引数で上書きできる。
+ */
+@Composable
+private fun <T> NovelSettingChoicePanel(
+    title: String,
+    entries: List<T>,
+    selected: T,
+    label: @Composable (T) -> String,
+    onSelect: (T) -> Unit,
+    selectedBackgroundColor: Color = MiuixTheme.colorScheme.primary,
+    unselectedBackgroundColor: Color = MiuixTheme.colorScheme.surfaceContainerHighest,
+    selectedContentColor: Color = MiuixTheme.colorScheme.onPrimary,
+    unselectedContentColor: Color = MiuixTheme.colorScheme.onSurface,
+) {
+    ElevatedPanel {
+        Text(
+            text = title,
+            style = MiuixTheme.textStyles.body1,
+            fontWeight = FontWeight.Bold,
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            entries.forEach { entry ->
+                val isSelected = entry == selected
+                Box(
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .squircleSurface(
+                                color = if (isSelected) selectedBackgroundColor else unselectedBackgroundColor,
+                                cornerRadius = 14.dp,
+                            ).miuixClickable(
+                                pressedScale = 0.95f,
+                                haptic = true,
+                                onClick = { onSelect(entry) },
+                            ).padding(vertical = 10.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = label(entry),
+                        color = if (isSelected) selectedContentColor else unselectedContentColor,
+                        fontWeight = FontWeight.Bold,
+                        style = MiuixTheme.textStyles.body2,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * リーダーのステータス/ナビゲーションバー配色を小説テーマに合わせて切り替える。
+ * 画面離脱時はアプリのダーク判定に戻す。
+ */
+@Composable
+internal fun NovelReaderSystemBarsEffect(
+    theme: NovelTheme,
+    isDarkTheme: Boolean,
+) {
+    val isLightBars =
+        when (theme) {
+            NovelTheme.System -> !isDarkTheme
+            NovelTheme.Sepia -> true
+            NovelTheme.Dark, NovelTheme.Black -> false
+        }
+    SystemBarAppearanceEffect(
+        lightStatusBars = isLightBars,
+        lightNavigationBars = isLightBars,
+        restoreLightStatusBars = !isDarkTheme,
+        restoreLightNavigationBars = !isDarkTheme,
+    )
+}
+
+@Composable
+internal fun NovelReaderTopBar(
+    visible: Boolean,
+    title: String,
+    isBookmarked: Boolean,
+    backgroundColor: Color,
+    textColor: Color,
+    scrollBehavior: ScrollBehavior,
+    onBack: () -> Unit,
+    onToggleBookmark: () -> Unit,
+    onRetry: () -> Unit,
+) {
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn() + expandVertically(),
+        exit = fadeOut() + shrinkVertically(),
+    ) {
+        SmallTopAppBar(
+            title = title,
+            color = backgroundColor,
+            titleColor = textColor,
+            scrollBehavior = scrollBehavior,
+            navigationIcon = {
+                IconButton(modifier = Modifier.pointerHoverIcon(PointerIcon.Hand), onClick = onBack) {
+                    Icon(
+                        imageVector = MiuixIcons.Back,
+                        contentDescription = stringResource(R.string.action_back),
+                        tint = textColor,
+                    )
+                }
+            },
+            actions = {
+                IconButton(
+                    modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
+                    onClick = onToggleBookmark,
+                ) {
+                    Icon(
+                        imageVector = if (isBookmarked) MiuixIcons.FavoritesFill else MiuixIcons.Favorites,
+                        contentDescription =
+                            stringResource(
+                                if (isBookmarked) {
+                                    R.string.action_remove_bookmark
+                                } else {
+                                    R.string.action_bookmark
+                                },
+                            ),
+                        tint = if (isBookmarked) Color(0xFFFF4D67) else textColor,
+                    )
+                }
+                IconButton(modifier = Modifier.pointerHoverIcon(PointerIcon.Hand), onClick = onRetry) {
+                    Icon(
+                        imageVector = MiuixIcons.Refresh,
+                        contentDescription = stringResource(R.string.dialog_reload),
+                        tint = textColor,
+                    )
+                }
+            },
+        )
+    }
 }
 
 @Composable
@@ -505,241 +658,154 @@ internal fun NovelSettingsBottomSheet(
         backgroundColor = LocalBottomSheetBackgroundColor.current,
         insideMargin = BottomSheetInsideMargin,
     ) {
-        Column(
+        // 画面の低い端末でも最後の項目まで到達できるよう、固定 Column ではなく
+        // スクロール可能な LazyColumn にし、下端にナビゲーションバー分の余白を確保する。
+        LazyColumn(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .navigationBarsPadding(),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            ElevatedPanel {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
+            item {
+                ElevatedPanel {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.novel_font_size),
+                            style = MiuixTheme.textStyles.body1,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(
+                            text = "${fontSize.toInt()} sp",
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        )
+                    }
+                    Slider(
+                        value = fontSize,
+                        onValueChange = {
+                            if (it.toInt() != fontSize.toInt()) {
+                                performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Toggle)
+                            }
+                            onFontSizeChange(it)
+                        },
+                        valueRange = MIN_FONT_SIZE..MAX_FONT_SIZE,
+                        steps = FONT_SIZE_STEPS,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+
+            item {
+                NovelSettingChoicePanel(
+                    title = stringResource(R.string.novel_font_family),
+                    entries = NovelFontFamily.entries,
+                    selected = fontFamily,
+                    label = { stringResource(it.labelRes) },
+                    onSelect = onFontFamilyChange,
+                )
+            }
+
+            item {
+                NovelSettingChoicePanel(
+                    title = stringResource(R.string.novel_line_height),
+                    entries = NovelLineSpacing.entries,
+                    selected = lineSpacing,
+                    label = { stringResource(it.labelRes) },
+                    onSelect = onLineSpacingChange,
+                )
+            }
+
+            item {
+                ElevatedPanel {
                     Text(
-                        text = stringResource(R.string.novel_font_size),
+                        text = stringResource(R.string.novel_theme),
                         style = MiuixTheme.textStyles.body1,
                         fontWeight = FontWeight.Bold,
                     )
-                    Text(
-                        text = "${fontSize.toInt()} sp",
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    )
-                }
-                Slider(
-                    value = fontSize,
-                    onValueChange = {
-                        if (it.toInt() != fontSize.toInt()) {
-                            performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Toggle)
-                        }
-                        onFontSizeChange(it)
-                    },
-                    valueRange = MIN_FONT_SIZE..MAX_FONT_SIZE,
-                    steps = FONT_SIZE_STEPS,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-
-            ElevatedPanel {
-                Text(
-                    text = stringResource(R.string.novel_font_family),
-                    style = MiuixTheme.textStyles.body1,
-                    fontWeight = FontWeight.Bold,
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    NovelFontFamily.entries.forEach { font ->
-                        val isSelected = font == fontFamily
-                        Box(
-                            modifier =
-                                Modifier
-                                    .weight(1f)
-                                    .squircleSurface(
-                                        color =
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        NovelTheme.entries.forEach { t ->
+                            val isSelected = t == theme
+                            val panelColor =
+                                when (t) {
+                                    NovelTheme.System -> MiuixTheme.colorScheme.surfaceContainerHighest
+                                    NovelTheme.Sepia -> Color(SEPIA_PANEL_COLOR)
+                                    NovelTheme.Dark -> Color(DARK_PANEL_COLOR)
+                                    NovelTheme.Black -> Color(BLACK_PANEL_COLOR)
+                                }
+                            val labelColor =
+                                when (t) {
+                                    NovelTheme.System -> MiuixTheme.colorScheme.onSurface
+                                    NovelTheme.Sepia -> Color(SEPIA_TEXT_COLOR)
+                                    NovelTheme.Dark, NovelTheme.Black -> Color.White
+                                }
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .weight(1f)
+                                        .squircleSurface(
+                                            color = panelColor,
+                                            cornerRadius = 14.dp,
+                                        ).then(
                                             if (isSelected) {
-                                                MiuixTheme.colorScheme.primary
+                                                Modifier.squircleBorder(
+                                                    width = 2.dp,
+                                                    color = MiuixTheme.colorScheme.primary,
+                                                    cornerRadius = 14.dp,
+                                                )
                                             } else {
-                                                MiuixTheme.colorScheme.surfaceContainerHighest
+                                                Modifier
                                             },
-                                        cornerRadius = 14.dp,
-                                    ).miuixClickable(
-                                        pressedScale = 0.95f,
-                                        haptic = true,
-                                        onClick = { onFontFamilyChange(font) },
-                                    ).padding(vertical = 10.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                text = stringResource(font.labelRes),
-                                color = if (isSelected) MiuixTheme.colorScheme.onPrimary else MiuixTheme.colorScheme.onSurface,
-                                fontWeight = FontWeight.Bold,
-                                style = MiuixTheme.textStyles.body2,
-                            )
-                        }
-                    }
-                }
-            }
-
-            ElevatedPanel {
-                Text(
-                    text = stringResource(R.string.novel_line_height),
-                    style = MiuixTheme.textStyles.body1,
-                    fontWeight = FontWeight.Bold,
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    NovelLineSpacing.entries.forEach { spacing ->
-                        val isSelected = spacing == lineSpacing
-                        Box(
-                            modifier =
-                                Modifier
-                                    .weight(1f)
-                                    .squircleSurface(
-                                        color =
-                                            if (isSelected) {
-                                                MiuixTheme.colorScheme.primary
-                                            } else {
-                                                MiuixTheme.colorScheme.surfaceContainerHighest
-                                            },
-                                        cornerRadius = 14.dp,
-                                    ).miuixClickable(
-                                        pressedScale = 0.95f,
-                                        haptic = true,
-                                        onClick = { onLineSpacingChange(spacing) },
-                                    ).padding(vertical = 10.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                text = stringResource(spacing.labelRes),
-                                color = if (isSelected) MiuixTheme.colorScheme.onPrimary else MiuixTheme.colorScheme.onSurface,
-                                fontWeight = FontWeight.Bold,
-                                style = MiuixTheme.textStyles.body2,
-                            )
-                        }
-                    }
-                }
-            }
-
-            ElevatedPanel {
-                Text(
-                    text = stringResource(R.string.novel_theme),
-                    style = MiuixTheme.textStyles.body1,
-                    fontWeight = FontWeight.Bold,
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    NovelTheme.entries.forEach { t ->
-                        val isSelected = t == theme
-                        val panelColor =
-                            when (t) {
-                                NovelTheme.System -> MiuixTheme.colorScheme.surfaceContainerHighest
-                                NovelTheme.Sepia -> Color(SEPIA_PANEL_COLOR)
-                                NovelTheme.Dark -> Color(DARK_PANEL_COLOR)
-                                NovelTheme.Black -> Color(BLACK_PANEL_COLOR)
+                                        ).miuixClickable(pressedScale = 0.95f, haptic = true, onClick = { onThemeChange(t) })
+                                        .padding(vertical = 10.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = stringResource(t.displayNameRes),
+                                    color = labelColor,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    style = MiuixTheme.textStyles.footnote1,
+                                )
                             }
-                        val labelColor =
-                            when (t) {
-                                NovelTheme.System -> MiuixTheme.colorScheme.onSurface
-                                NovelTheme.Sepia -> Color(SEPIA_TEXT_COLOR)
-                                NovelTheme.Dark, NovelTheme.Black -> Color.White
-                            }
-                        Box(
-                            modifier =
-                                Modifier
-                                    .weight(1f)
-                                    .squircleSurface(
-                                        color = panelColor,
-                                        cornerRadius = 14.dp,
-                                    ).then(
-                                        if (isSelected) {
-                                            Modifier.squircleBorder(
-                                                width = 2.dp,
-                                                color = MiuixTheme.colorScheme.primary,
-                                                cornerRadius = 14.dp,
-                                            )
-                                        } else {
-                                            Modifier
-                                        },
-                                    ).miuixClickable(pressedScale = 0.95f, haptic = true, onClick = { onThemeChange(t) })
-                                    .padding(vertical = 10.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                text = stringResource(t.displayNameRes),
-                                color = labelColor,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                style = MiuixTheme.textStyles.footnote1,
-                            )
                         }
                     }
                 }
             }
 
-            ElevatedPanel {
-                Text(
-                    text = stringResource(R.string.novel_layout_mode),
-                    style = MiuixTheme.textStyles.body1,
-                    fontWeight = FontWeight.Bold,
+            item {
+                NovelSettingChoicePanel(
+                    title = stringResource(R.string.novel_layout_mode),
+                    entries = NovelLayoutMode.entries,
+                    selected = layoutMode,
+                    label = { stringResource(it.labelRes) },
+                    onSelect = onLayoutModeChange,
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    NovelLayoutMode.entries.forEach { mode ->
-                        val isSelected = mode == layoutMode
-                        Box(
-                            modifier =
-                                Modifier
-                                    .weight(1f)
-                                    .squircleSurface(
-                                        color =
-                                            if (isSelected) {
-                                                MiuixTheme.colorScheme.primary
-                                            } else {
-                                                MiuixTheme.colorScheme.surfaceContainerHighest
-                                            },
-                                        cornerRadius = 14.dp,
-                                    ).miuixClickable(
-                                        pressedScale = 0.95f,
-                                        haptic = true,
-                                        onClick = { onLayoutModeChange(mode) },
-                                    ).padding(vertical = 10.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                text = stringResource(mode.labelRes),
-                                color = if (isSelected) MiuixTheme.colorScheme.onPrimary else MiuixTheme.colorScheme.onSurface,
-                                fontWeight = FontWeight.Bold,
-                                style = MiuixTheme.textStyles.body2,
-                            )
-                        }
-                    }
-                }
             }
 
             if (isTtsEnabled) {
-                NovelTtsSettingsSection(
-                    ttsSpeechRate = ttsSpeechRate,
-                    onTtsSpeechRateChange = onTtsSpeechRateChange,
-                    ttsPitch = ttsPitch,
-                    onTtsPitchChange = onTtsPitchChange,
-                    ttsVoiceName = ttsVoiceName,
-                    availableVoices = availableVoices,
-                    onTtsVoiceChange = onTtsVoiceChange,
-                    ttsSkipSymbols = ttsSkipSymbols,
-                    onTtsSkipSymbolsChange = onTtsSkipSymbolsChange,
-                    onOpenDictionary = { showDictionarySheet = true },
-                    performHaptic = performHaptic,
-                )
+                item {
+                    NovelTtsSettingsSection(
+                        ttsSpeechRate = ttsSpeechRate,
+                        onTtsSpeechRateChange = onTtsSpeechRateChange,
+                        ttsPitch = ttsPitch,
+                        onTtsPitchChange = onTtsPitchChange,
+                        ttsVoiceName = ttsVoiceName,
+                        availableVoices = availableVoices,
+                        onTtsVoiceChange = onTtsVoiceChange,
+                        ttsSkipSymbols = ttsSkipSymbols,
+                        onTtsSkipSymbolsChange = onTtsSkipSymbolsChange,
+                        onOpenDictionary = { showDictionarySheet = true },
+                        performHaptic = performHaptic,
+                    )
+                }
             }
         }
     }

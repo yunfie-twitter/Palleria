@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -59,15 +60,19 @@ import com.yunfie.illustia.ui.components.LiquidGlassIconButton
 import com.yunfie.illustia.ui.components.LiquidGlassOverflowMenu
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.LocalAppHapticMode
+import com.yunfie.illustia.ui.components.LocalArtworkTransitionInFlight
 import com.yunfie.illustia.ui.components.LocalNavSharedTransitionScope
 import com.yunfie.illustia.ui.components.LocalPixivImageProxyBaseUrl
 import com.yunfie.illustia.ui.components.LocalSystemUiCovered
 import com.yunfie.illustia.ui.components.OverlayIconCascadingDropdownMenu
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PixivReportDialog
+import com.yunfie.illustia.ui.components.QUALITY_LOW
 import com.yunfie.illustia.ui.components.performAppHapticFeedback
 import com.yunfie.illustia.ui.components.rememberLiquidGlassBackdrop
 import com.yunfie.illustia.ui.components.resolveDarkHeaderIcons
+import com.yunfie.illustia.ui.components.resolveProgressivePlaceholderUrls
+import com.yunfie.illustia.ui.components.resolveQualityImageUrls
 import com.yunfie.illustia.ui.components.sharedArtworkElement
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -116,6 +121,7 @@ internal fun IllustDetailHeader(
     liquidGlassButtons: Boolean = false,
     initialPage: Int = 0,
     onPageChanged: (Int) -> Unit = {},
+    progressiveQuality: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -158,64 +164,28 @@ internal fun IllustDetailHeader(
     val urlCopiedMessage = stringResource(R.string.msg_url_copied)
     val coroutineScope = rememberCoroutineScope()
     var useDarkHeaderIcons by remember(illust.id) { mutableStateOf(false) }
-    val previewUrl: String =
-        remember(illust.id, highQualityImages, detailQuality) {
-            when {
-                !highQualityImages || detailQuality == "low" -> {
-                    illust.mediumImagePages.firstOrNull()
-                        ?: detailFallbackImageUrl(illust.mediumImageUrl, illust.squareImageUrl, illust.imageUrl)
-                }
-
-                detailQuality == "medium" -> {
-                    illust.imagePages.firstOrNull()
-                        ?: detailFallbackImageUrl(illust.imageUrl, illust.mediumImageUrl, illust.squareImageUrl)
-                }
-
-                else -> {
-                    illust.originalImagePages.firstOrNull()
-                        ?: illust.imagePages.firstOrNull()
-                        ?: detailFallbackImageUrl(
-                            illust.imageUrl,
-                            illust.mediumImageUrl,
-                            illust.squareImageUrl,
-                            illust.originalImageUrl,
-                        )
-                }
-            }
-        } ?: ""
+    val effectiveDetailQuality = if (!highQualityImages) QUALITY_LOW else detailQuality
     val imageUrls =
-        remember(illust.id, highQualityImages, detailQuality) {
-            when {
-                !highQualityImages || detailQuality == "low" -> {
-                    illust.mediumImagePages.ifEmpty {
-                        listOfNotNull(
-                            detailFallbackImageUrl(illust.mediumImageUrl, illust.squareImageUrl, illust.imageUrl),
-                        )
-                    }
-                }
-
-                detailQuality == "medium" -> {
-                    illust.imagePages.ifEmpty {
-                        listOfNotNull(detailFallbackImageUrl(illust.imageUrl, illust.mediumImageUrl, illust.squareImageUrl))
-                    }
-                }
-
-                else -> {
-                    illust.originalImagePages.ifEmpty {
-                        illust.imagePages.ifEmpty {
-                            listOfNotNull(
-                                detailFallbackImageUrl(
-                                    illust.imageUrl,
-                                    illust.mediumImageUrl,
-                                    illust.squareImageUrl,
-                                    illust.originalImageUrl,
-                                ),
-                            )
-                        }
-                    }
-                }
+        remember(illust.id, effectiveDetailQuality) {
+            resolveQualityImageUrls(illust, effectiveDetailQuality)
+        }
+    val cardThumbnailUrl =
+        remember(illust.id, highQualityImages) {
+            if (highQualityImages) illust.previewUrl else illust.thumbnailUrl
+        }
+    val transitionInFlight = LocalArtworkTransitionInFlight.current
+    val placeholderUrls =
+        remember(illust.id, effectiveDetailQuality, progressiveQuality, transitionInFlight) {
+            // During the card-to-detail flight the card bitmap is already on screen and is a better
+            // underlay than a fresh lower-tier request. Suppressing it here avoids replacing the
+            // image mid-flight, which reads as the quality dropping while it grows.
+            if (transitionInFlight) {
+                emptyList()
+            } else {
+                resolveProgressivePlaceholderUrls(illust, effectiveDetailQuality, progressiveQuality)
             }
         }
+    val previewUrl: String = imageUrls.firstOrNull() ?: ""
 
     val pagerState =
         rememberPagerState(
@@ -259,6 +229,7 @@ internal fun IllustDetailHeader(
         Box(
             modifier =
                 (if (expanded) Modifier.fillMaxSize() else Modifier.fillMaxWidth().heightIn(min = 320.dp))
+                    .animateContentSize()
                     .then(if (liquidGlassBackdrop != null) Modifier.layerBackdrop(liquidGlassBackdrop) else Modifier),
         ) {
             if (showImage) {
@@ -318,6 +289,10 @@ internal fun IllustDetailHeader(
                         // 共有要素が無効なとき（LocalNavSharedTransitionScope が null）は従来の描画のまま。
                         val matchesCardThumbnail =
                             page == 0 && !expanded && LocalNavSharedTransitionScope.current != null
+                        // Framing follows the collapsed-card look for as long as the header sits in
+                        // that slot, but the bitmap tier may only follow the flight itself: keeping
+                        // the card's small decode past the animation would leave the hero blurry.
+                        val followsCardBitmap = matchesCardThumbnail && transitionInFlight
                         Box(
                             modifier =
                                 Modifier
@@ -325,7 +300,12 @@ internal fun IllustDetailHeader(
                                     .then(if (matchesCardThumbnail) Modifier.clipToBounds() else Modifier),
                         ) {
                             PixivImage(
-                                url = imageUrls[page],
+                                // While the shared element flies, page 0 shows the exact bitmap the
+                                // card was already painting. The shared element carries bounds only,
+                                // so loading a different tier here would pop the resolution in the
+                                // middle of the grow animation. Once the flight ends this falls back
+                                // to the selected detail tier.
+                                url = if (followsCardBitmap) cardThumbnailUrl.ifBlank { imageUrls[page] } else imageUrls[page],
                                 contentDescription = illust.title,
                                 contentScale =
                                     when {
@@ -335,7 +315,14 @@ internal fun IllustDetailHeader(
                                     },
                                 // Off-screen neighbors need only preview resolution; the selected page
                                 // loads at the configured detail quality once the swipe settles.
-                                thumbnail = page != pagerState.settledPage,
+                                // While matching the card, use the card's own decode too so the
+                                // first frame of the flight is byte-for-byte the same bitmap.
+                                thumbnail = followsCardBitmap || page != pagerState.settledPage,
+                                // A hard swap beats a crossfade here: the underlay is the card image
+                                // the flight started from, so fading the detail tier over it would
+                                // double up on the transition instead of continuing it.
+                                crossfade = !followsCardBitmap,
+                                placeholderUrl = placeholderUrls.getOrNull(page),
                                 modifier =
                                     Modifier
                                         .fillMaxSize()
@@ -360,7 +347,6 @@ internal fun IllustDetailHeader(
                                                 onSaveImage(imageUrls[page], saveName, confirmOnLongPressSave)
                                             },
                                         ),
-                                crossfade = true,
                             )
                             if (maskMutedArtwork) {
                                 Box(
@@ -668,8 +654,6 @@ internal fun IllustDetailHeader(
         }
     }
 }
-
-private fun detailFallbackImageUrl(vararg candidates: String?): String? = candidates.firstOrNull { !it.isNullOrBlank() }
 
 @Composable
 internal fun MutedArtworkOverlay(

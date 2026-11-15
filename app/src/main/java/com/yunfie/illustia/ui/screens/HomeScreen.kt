@@ -1,6 +1,5 @@
 package com.yunfie.illustia.ui.screens
 
-import android.app.Activity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Column
@@ -10,7 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -19,12 +17,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.core.view.WindowCompat
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
@@ -57,6 +53,7 @@ fun HomeScreen(
     items: List<Illust>,
     timelineItems: List<Illust>,
     loadState: LoadState,
+    timelineLoadState: LoadState = loadState,
     nextUrl: String?,
     timelineNextUrl: String?,
     settings: AppSettings,
@@ -81,8 +78,10 @@ fun HomeScreen(
             pageCount = { HomeTab.entries.size },
         )
     val coroutineScope = rememberCoroutineScope()
-    // Use the settled page so swiping does not recompose the whole screen on every
-    // intermediate page change; the tab only commits once the pager settles.
+    // Drive the tab indicator from targetPage so it reacts immediately on tap.
+    // Commit selectedTab only when the pager settles, so swiping does not
+    // recompose the whole screen on every intermediate page change.
+    val indicatorTab = pagerState.targetPage.coerceIn(0, HomeTab.entries.lastIndex)
     val selectedTab = HomeTab.entries[pagerState.settledPage.coerceIn(0, HomeTab.entries.lastIndex)]
 
     LaunchedEffect(pagerState.settledPage) {
@@ -121,16 +120,6 @@ fun HomeScreen(
 
     val scheme = MiuixTheme.colorScheme
     val context = LocalContext.current
-    val isDarkTheme = scheme.surface.luminance() < 0.5f
-    DisposableEffect(isDarkTheme) {
-        val window = (context as? Activity)?.window
-        if (window != null) {
-            val insetsController = WindowCompat.getInsetsController(window, window.decorView)
-            insetsController.isAppearanceLightStatusBars = !isDarkTheme
-            insetsController.isAppearanceLightNavigationBars = !isDarkTheme
-        }
-        onDispose {}
-    }
     val performHaptic = rememberHapticFeedbackAction()
 
     ScrollBlurScaffold(
@@ -218,9 +207,9 @@ fun HomeScreen(
                 },
                 bottomContent = {
                     HomeTabRow(
-                        selectedTabIndex = selectedTab.ordinal,
+                        selectedTabIndex = indicatorTab,
                         onTabSelected = { index ->
-                            if (index != selectedTab.ordinal) {
+                            if (index != pagerState.currentPage) {
                                 performHaptic(AppHapticEffect.Toggle)
                                 coroutineScope.launch { pagerState.animateScrollToPage(index) }
                             } else {
@@ -283,7 +272,7 @@ fun HomeScreen(
                         if (hasVisitedFollowingTab || pagerState.settledPage == HomeTab.Following.ordinal) {
                             FollowingTabContent(
                                 items = timelineItems,
-                                loadState = loadState,
+                                loadState = timelineLoadState,
                                 nextUrl = timelineNextUrl,
                                 settings = settings,
                                 viewModel = viewModel,

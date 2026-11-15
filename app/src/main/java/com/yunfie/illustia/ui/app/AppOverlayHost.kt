@@ -25,6 +25,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.navigation3.runtime.NavKey
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.PermissionRationaleType
 import com.yunfie.illustia.R
@@ -37,7 +38,9 @@ import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
+import com.yunfie.illustia.ui.components.MiuixArtworkQuickPeek
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
+import com.yunfie.illustia.ui.components.MiuixUserQuickPeek
 import com.yunfie.illustia.ui.components.PermissionRationaleDialog
 import com.yunfie.illustia.ui.components.QuickPeekOverlay
 import com.yunfie.illustia.ui.components.TagPreviewBottomSheet
@@ -69,11 +72,24 @@ internal fun AppOverlayHost(
     selectedCommentTarget: Pair<Long, com.yunfie.illustia.data.pixiv.CommentArtworkType>?,
     onDismissComments: () -> Unit,
     onSearchTag: (String) -> Unit,
+    currentRoute: NavKey,
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val copiedMessage = stringResource(R.string.copied_image_to_clipboard)
     val copyFailedMessage = stringResource(R.string.copy_image_failed)
+
+    // 画面遷移したら前の画面で開いていたシートは閉じる。閉じないまま残ると、
+    // 遷移後の画面の上に背景付きのシートが居座って見える。
+    var overlayRoute by remember { mutableStateOf(currentRoute) }
+    LaunchedEffect(currentRoute) {
+        if (overlayRoute == currentRoute) return@LaunchedEffect
+        overlayRoute = currentRoute
+        viewModel.closeIllustOptions()
+        viewModel.closeUserOptions()
+        viewModel.closeTagOptions()
+        viewModel.closeAccountSwitcher()
+    }
 
     selectedCommentTarget?.let { target ->
         // シートが開いている間は、背面の作品詳細が関連作品・ユーザー詳細を読み続けて
@@ -98,12 +114,34 @@ internal fun AppOverlayHost(
 
     appState.state.longPressedIllust?.let { illust ->
         val isQuickPeekActive = appState.state.settings.quickPeekEnabled
-        val useSharedTransition = appState.state.settings.quickPeekSharedElementTransition
+        val useMiuixPeek = appState.state.settings.isFeatureEnabled(FeatureFlag.MiuixQuickPeek)
 
-        if (isQuickPeekActive) {
+        if (isQuickPeekActive && useMiuixPeek) {
+            MiuixArtworkQuickPeek(
+                illust = illust,
+                onDismiss = viewModel::closeIllustOptions,
+                onOpenDetail = {
+                    viewModel.closeIllustOptions()
+                    viewModel.openIllust(illust)
+                },
+                onBookmark = { viewModel.toggleBookmark(illust) },
+                onCopyImage = {
+                    viewModel.closeIllustOptions()
+                    val url = illust.originalImageUrl ?: illust.imageUrl
+                    coroutineScope.launch {
+                        val success = ImageClipboardHelper.copyImageToClipboard(context, url)
+                        if (success) {
+                            viewModel.showMessage(copiedMessage)
+                        } else {
+                            viewModel.showMessage(copyFailedMessage)
+                        }
+                    }
+                },
+            )
+        } else if (isQuickPeekActive) {
             QuickPeekOverlay(
                 illust = illust,
-                useSharedElementTransition = useSharedTransition,
+                useSharedElementTransition = appState.state.settings.quickPeekSharedElementTransition,
                 onDismiss = viewModel::closeIllustOptions,
                 onOpenDetail = {
                     viewModel.closeIllustOptions()
@@ -228,6 +266,18 @@ internal fun AppOverlayHost(
                 }
             }
         }
+    }
+
+    appState.state.longPressedUser?.let { user ->
+        MiuixUserQuickPeek(
+            user = user,
+            onDismiss = viewModel::closeUserOptions,
+            onOpenProfile = {
+                viewModel.closeUserOptions()
+                viewModel.openUserPage(user)
+            },
+            onToggleFollow = { viewModel.toggleFollowPreview(user) },
+        )
     }
 
     appState.state.longPressedTag?.let { preview ->

@@ -33,6 +33,7 @@ import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.UserProfile
+import com.yunfie.illustia.models.isEmptyAfterLoad
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
@@ -184,7 +185,7 @@ internal fun FeedTabContent(
                     }
                 }
 
-                if (items.isEmpty() && loadState != LoadState.Loading && loadState !is LoadState.Error) {
+                if (isEmptyAfterLoad(items.isEmpty(), loadState)) {
                     item(key = "home_feed_empty", span = { GridItemSpan(maxLineSpan) }) {
                         EmptyState(stringResource(R.string.home_feed_empty))
                     }
@@ -352,7 +353,7 @@ internal fun FollowingTabContent(
                 }
             }
 
-            if (items.isEmpty() && loadState != LoadState.Loading && loadState !is LoadState.Error) {
+            if (isEmptyAfterLoad(items.isEmpty(), loadState)) {
                 item(key = "home_following_empty", span = { GridItemSpan(maxLineSpan) }) {
                     EmptyState(stringResource(R.string.home_following_empty))
                 }

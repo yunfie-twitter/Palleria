@@ -190,12 +190,6 @@ fun AboutScreen(
                         style = MiuixTheme.textStyles.footnote1,
                         textAlign = TextAlign.Center,
                     )
-                    Text(
-                        text = stringResource(R.string.about_tagline),
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.75f),
-                        style = MiuixTheme.textStyles.footnote1,
-                        textAlign = TextAlign.Center,
-                    )
                 }
             }
             LazyColumn(
@@ -590,7 +584,7 @@ private fun OpenSourceLicensesSheet(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = "No license information available",
+                    text = stringResource(R.string.about_no_license_information),
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     style = MiuixTheme.textStyles.footnote1,
                 )

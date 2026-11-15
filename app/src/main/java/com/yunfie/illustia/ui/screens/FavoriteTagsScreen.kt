@@ -43,6 +43,7 @@ import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.LoadState
+import com.yunfie.illustia.models.isEmptyAfterLoad
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.EmptyState
@@ -253,7 +254,7 @@ fun FavoriteTagsScreen(
                     }
 
                     val currentSelectedTag = selectedTag
-                    if (state.watchlistItems.isEmpty() && state.loadState != LoadState.Loading && state.loadState !is LoadState.Error &&
+                    if (isEmptyAfterLoad(state.watchlistItems.isEmpty(), state.loadState) &&
                         currentSelectedTag != null
                     ) {
                         item(span = { GridItemSpan(maxLineSpan) }, contentType = "empty_state") {
