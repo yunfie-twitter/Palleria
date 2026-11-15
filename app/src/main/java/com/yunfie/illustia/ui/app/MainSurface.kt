@@ -93,6 +93,8 @@ internal fun MainSurface(
     viewModel: IllustiaViewModel,
     selectedTab: AppTab,
     pagerState: PagerState,
+    visitedPages: Set<Int>,
+    onPageVisited: (Int) -> Unit,
     homeScrollBehavior: ScrollBehavior,
     onTabSelected: (Int, AppTab) -> Unit,
     onSearch: () -> Unit,
@@ -208,12 +210,14 @@ internal fun MainSurface(
                     backdropModifier = { Modifier.layerBackdrop(it) },
                     modifier = Modifier.fillMaxSize(),
                 ) {
-                    var visitedPages by remember { mutableStateOf(setOf(pagerState.currentPage)) }
                     LaunchedEffect(pagerState.currentPage) {
-                        if (pagerState.currentPage !in visitedPages) {
-                            visitedPages = visitedPages + pagerState.currentPage
-                        }
+                        onPageVisited(pagerState.currentPage)
                     }
+                    // 表示中のページは常にコンポーズ対象にする。visitedPages は Main エントリの
+                    // 外で保持しているが、エントリ再生成と pagerState の scrollToPage が競合すると
+                    // 「今いるページが未訪問」という状態を経由するため、ここで必ず含めておかないと
+                    // 空白の Box が残る。
+                    val currentPage = pagerState.currentPage
                     HorizontalPager(
                         state = pagerState,
                         beyondViewportPageCount = 0,
@@ -228,7 +232,7 @@ internal fun MainSurface(
                         // 一度も表示していないタブはコンポーズしない。ルート Pager はスワイプ中
                         // 隣接ページを必ずコンポーズするため、重量級の画面（ネスト Pager や
                         // Grid、ブラー用 backdrop）が同時に 2 つ生きるとスワイプが重くなる。
-                        if (page !in visitedPages) {
+                        if (page !in visitedPages && page != currentPage) {
                             Box(modifier = Modifier.fillMaxSize())
                             return@HorizontalPager
                         }
@@ -262,7 +266,15 @@ internal fun MainSurface(
                                 }
 
                                 AppTab.Novel -> {
-                                    Unit
+                                    // Novel はタブとして表示されない（小説は NovelList ルート）。
+                                    // Unit のままだと、万一ページに入ったとき何も描かれず空白に
+                                    // なるため、背景だけは必ず塗る。
+                                    Box(
+                                        modifier =
+                                            Modifier
+                                                .fillMaxSize()
+                                                .background(MiuixTheme.colorScheme.surface),
+                                    )
                                 }
 
                                 AppTab.Ranking -> {
