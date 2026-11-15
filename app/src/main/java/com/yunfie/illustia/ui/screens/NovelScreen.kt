@@ -391,7 +391,7 @@ fun NovelReaderScreen(
     com.yunfie.illustia.ui.components.ParagraphNavigation(
         continuousListState,
         paragraphStep,
-        layoutMode == NovelLayoutMode.Scroll,
+        { layoutMode == NovelLayoutMode.Scroll },
         remember(pages) {
             buildList {
                 var offset = 0
@@ -466,7 +466,11 @@ fun NovelReaderScreen(
         }
     }
 
-    val ttsLocations = remember(pages) { NovelTtsTextSanitizer.extractTtsParagraphLocations(pages) }
+    // TTS が無効なときに全文書を走査しても無駄なので、有効なときだけ抽出する。
+    val ttsLocations =
+        remember(pages, isTtsEnabled) {
+            if (isTtsEnabled) NovelTtsTextSanitizer.extractTtsParagraphLocations(pages) else emptyList()
+        }
     val currentTtsLocation =
         remember(isTtsEnabled, ttsPlayer?.isPlaying, ttsPlayer?.currentParagraphIndex, ttsLocations) {
             if (isTtsEnabled && ttsPlayer?.isPlaying == true) {
@@ -598,13 +602,17 @@ fun NovelReaderScreen(
         },
     ) { scaffoldPadding ->
         val layoutDirection = LocalLayoutDirection.current
+        // スクロール中に毎回作り直されると子のスキップが効かなくなるため、パディングは
+        // scaffoldPadding 由来の値が変わったときだけ再生成する。
         val readerPadding =
-            PaddingValues(
-                start = scaffoldPadding.calculateStartPadding(layoutDirection) + 18.dp,
-                top = scaffoldPadding.calculateTopPadding(),
-                end = scaffoldPadding.calculateEndPadding(layoutDirection) + 18.dp,
-                bottom = scaffoldPadding.calculateBottomPadding(),
-            )
+            remember(scaffoldPadding, layoutDirection) {
+                PaddingValues(
+                    start = scaffoldPadding.calculateStartPadding(layoutDirection) + 18.dp,
+                    top = scaffoldPadding.calculateTopPadding(),
+                    end = scaffoldPadding.calculateEndPadding(layoutDirection) + 18.dp,
+                    bottom = scaffoldPadding.calculateBottomPadding(),
+                )
+            }
         when {
             loadState == LoadState.Loading && text == null -> {
                 Box(
@@ -629,7 +637,7 @@ fun NovelReaderScreen(
                                 page = pages[pageIndex],
                                 pageIndex = pageIndex,
                                 paragraphStep = paragraphStep,
-                                keyboardActive = pageIndex == pagerState.settledPage,
+                                keyboardActive = { pageIndex == pagerState.settledPage },
                                 pageCount = pages.size,
                                 fontSize = fontSize,
                                 lineHeightMultiplier = lineSpacing.multiplier,
@@ -686,7 +694,7 @@ fun NovelReaderScreen(
                                 page = pages[pageIndex],
                                 pageIndex = pageIndex,
                                 paragraphStep = paragraphStep,
-                                keyboardActive = pageIndex == pagerState.settledPage,
+                                keyboardActive = { pageIndex == pagerState.settledPage },
                                 pageCount = pages.size,
                                 fontSize = fontSize,
                                 lineHeightMultiplier = lineSpacing.multiplier,

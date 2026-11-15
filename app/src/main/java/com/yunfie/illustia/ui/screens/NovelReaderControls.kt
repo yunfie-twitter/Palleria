@@ -658,139 +658,154 @@ internal fun NovelSettingsBottomSheet(
         backgroundColor = LocalBottomSheetBackgroundColor.current,
         insideMargin = BottomSheetInsideMargin,
     ) {
-        Column(
+        // 画面の低い端末でも最後の項目まで到達できるよう、固定 Column ではなく
+        // スクロール可能な LazyColumn にし、下端にナビゲーションバー分の余白を確保する。
+        LazyColumn(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .navigationBarsPadding(),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            ElevatedPanel {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = stringResource(R.string.novel_font_size),
-                        style = MiuixTheme.textStyles.body1,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Text(
-                        text = "${fontSize.toInt()} sp",
-                        style = MiuixTheme.textStyles.footnote1,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            item {
+                ElevatedPanel {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.novel_font_size),
+                            style = MiuixTheme.textStyles.body1,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(
+                            text = "${fontSize.toInt()} sp",
+                            style = MiuixTheme.textStyles.footnote1,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        )
+                    }
+                    Slider(
+                        value = fontSize,
+                        onValueChange = {
+                            if (it.toInt() != fontSize.toInt()) {
+                                performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Toggle)
+                            }
+                            onFontSizeChange(it)
+                        },
+                        valueRange = MIN_FONT_SIZE..MAX_FONT_SIZE,
+                        steps = FONT_SIZE_STEPS,
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
-                Slider(
-                    value = fontSize,
-                    onValueChange = {
-                        if (it.toInt() != fontSize.toInt()) {
-                            performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Toggle)
-                        }
-                        onFontSizeChange(it)
-                    },
-                    valueRange = MIN_FONT_SIZE..MAX_FONT_SIZE,
-                    steps = FONT_SIZE_STEPS,
-                    modifier = Modifier.fillMaxWidth(),
+            }
+
+            item {
+                NovelSettingChoicePanel(
+                    title = stringResource(R.string.novel_font_family),
+                    entries = NovelFontFamily.entries,
+                    selected = fontFamily,
+                    label = { stringResource(it.labelRes) },
+                    onSelect = onFontFamilyChange,
                 )
             }
 
-            NovelSettingChoicePanel(
-                title = stringResource(R.string.novel_font_family),
-                entries = NovelFontFamily.entries,
-                selected = fontFamily,
-                label = { stringResource(it.labelRes) },
-                onSelect = onFontFamilyChange,
-            )
-
-            NovelSettingChoicePanel(
-                title = stringResource(R.string.novel_line_height),
-                entries = NovelLineSpacing.entries,
-                selected = lineSpacing,
-                label = { stringResource(it.labelRes) },
-                onSelect = onLineSpacingChange,
-            )
-
-            ElevatedPanel {
-                Text(
-                    text = stringResource(R.string.novel_theme),
-                    style = MiuixTheme.textStyles.body1,
-                    fontWeight = FontWeight.Bold,
+            item {
+                NovelSettingChoicePanel(
+                    title = stringResource(R.string.novel_line_height),
+                    entries = NovelLineSpacing.entries,
+                    selected = lineSpacing,
+                    label = { stringResource(it.labelRes) },
+                    onSelect = onLineSpacingChange,
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    NovelTheme.entries.forEach { t ->
-                        val isSelected = t == theme
-                        val panelColor =
-                            when (t) {
-                                NovelTheme.System -> MiuixTheme.colorScheme.surfaceContainerHighest
-                                NovelTheme.Sepia -> Color(SEPIA_PANEL_COLOR)
-                                NovelTheme.Dark -> Color(DARK_PANEL_COLOR)
-                                NovelTheme.Black -> Color(BLACK_PANEL_COLOR)
+            }
+
+            item {
+                ElevatedPanel {
+                    Text(
+                        text = stringResource(R.string.novel_theme),
+                        style = MiuixTheme.textStyles.body1,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        NovelTheme.entries.forEach { t ->
+                            val isSelected = t == theme
+                            val panelColor =
+                                when (t) {
+                                    NovelTheme.System -> MiuixTheme.colorScheme.surfaceContainerHighest
+                                    NovelTheme.Sepia -> Color(SEPIA_PANEL_COLOR)
+                                    NovelTheme.Dark -> Color(DARK_PANEL_COLOR)
+                                    NovelTheme.Black -> Color(BLACK_PANEL_COLOR)
+                                }
+                            val labelColor =
+                                when (t) {
+                                    NovelTheme.System -> MiuixTheme.colorScheme.onSurface
+                                    NovelTheme.Sepia -> Color(SEPIA_TEXT_COLOR)
+                                    NovelTheme.Dark, NovelTheme.Black -> Color.White
+                                }
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .weight(1f)
+                                        .squircleSurface(
+                                            color = panelColor,
+                                            cornerRadius = 14.dp,
+                                        ).then(
+                                            if (isSelected) {
+                                                Modifier.squircleBorder(
+                                                    width = 2.dp,
+                                                    color = MiuixTheme.colorScheme.primary,
+                                                    cornerRadius = 14.dp,
+                                                )
+                                            } else {
+                                                Modifier
+                                            },
+                                        ).miuixClickable(pressedScale = 0.95f, haptic = true, onClick = { onThemeChange(t) })
+                                        .padding(vertical = 10.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = stringResource(t.displayNameRes),
+                                    color = labelColor,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    style = MiuixTheme.textStyles.footnote1,
+                                )
                             }
-                        val labelColor =
-                            when (t) {
-                                NovelTheme.System -> MiuixTheme.colorScheme.onSurface
-                                NovelTheme.Sepia -> Color(SEPIA_TEXT_COLOR)
-                                NovelTheme.Dark, NovelTheme.Black -> Color.White
-                            }
-                        Box(
-                            modifier =
-                                Modifier
-                                    .weight(1f)
-                                    .squircleSurface(
-                                        color = panelColor,
-                                        cornerRadius = 14.dp,
-                                    ).then(
-                                        if (isSelected) {
-                                            Modifier.squircleBorder(
-                                                width = 2.dp,
-                                                color = MiuixTheme.colorScheme.primary,
-                                                cornerRadius = 14.dp,
-                                            )
-                                        } else {
-                                            Modifier
-                                        },
-                                    ).miuixClickable(pressedScale = 0.95f, haptic = true, onClick = { onThemeChange(t) })
-                                    .padding(vertical = 10.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                text = stringResource(t.displayNameRes),
-                                color = labelColor,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                style = MiuixTheme.textStyles.footnote1,
-                            )
                         }
                     }
                 }
             }
 
-            NovelSettingChoicePanel(
-                title = stringResource(R.string.novel_layout_mode),
-                entries = NovelLayoutMode.entries,
-                selected = layoutMode,
-                label = { stringResource(it.labelRes) },
-                onSelect = onLayoutModeChange,
-            )
+            item {
+                NovelSettingChoicePanel(
+                    title = stringResource(R.string.novel_layout_mode),
+                    entries = NovelLayoutMode.entries,
+                    selected = layoutMode,
+                    label = { stringResource(it.labelRes) },
+                    onSelect = onLayoutModeChange,
+                )
+            }
 
             if (isTtsEnabled) {
-                NovelTtsSettingsSection(
-                    ttsSpeechRate = ttsSpeechRate,
-                    onTtsSpeechRateChange = onTtsSpeechRateChange,
-                    ttsPitch = ttsPitch,
-                    onTtsPitchChange = onTtsPitchChange,
-                    ttsVoiceName = ttsVoiceName,
-                    availableVoices = availableVoices,
-                    onTtsVoiceChange = onTtsVoiceChange,
-                    ttsSkipSymbols = ttsSkipSymbols,
-                    onTtsSkipSymbolsChange = onTtsSkipSymbolsChange,
-                    onOpenDictionary = { showDictionarySheet = true },
-                    performHaptic = performHaptic,
-                )
+                item {
+                    NovelTtsSettingsSection(
+                        ttsSpeechRate = ttsSpeechRate,
+                        onTtsSpeechRateChange = onTtsSpeechRateChange,
+                        ttsPitch = ttsPitch,
+                        onTtsPitchChange = onTtsPitchChange,
+                        ttsVoiceName = ttsVoiceName,
+                        availableVoices = availableVoices,
+                        onTtsVoiceChange = onTtsVoiceChange,
+                        ttsSkipSymbols = ttsSkipSymbols,
+                        onTtsSkipSymbolsChange = onTtsSkipSymbolsChange,
+                        onOpenDictionary = { showDictionarySheet = true },
+                        performHaptic = performHaptic,
+                    )
+                }
             }
         }
     }
