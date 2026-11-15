@@ -190,6 +190,8 @@
     <string name="detail_comments_empty">아직 댓글이 없습니다</string>
     <string name="detail_series">시리즈</string>
     <string name="detail_related">관련 작품</string>
+    <string name="detail_tags_show_more">전체 보기 (%1$d개 더)</string>
+    <string name="detail_tags_show_less">접기</string>
     <string name="detail_illust_id">일러스트 ID</string>
     <string name="detail_resolution">해상도</string>
 
