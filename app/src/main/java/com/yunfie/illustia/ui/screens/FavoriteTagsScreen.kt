@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -46,6 +47,7 @@ import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.isEmptyAfterLoad
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
+import com.yunfie.illustia.ui.components.CenteredErrorState
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.IllustCard
@@ -243,6 +245,14 @@ fun FavoriteTagsScreen(
                             contentType = { "illust_skeleton" },
                         ) {
                             IllustCardSkeleton(shimmerValue = shimmer)
+                        }
+                    } else if (state.loadState is LoadState.Error && state.watchlistItems.isEmpty()) {
+                        item(span = { GridItemSpan(maxLineSpan) }, contentType = "state_banner") {
+                            CenteredErrorState(
+                                message = (state.loadState as LoadState.Error).message,
+                                onRetry = { selectedTag?.let { viewModel.loadWatchlistTag(it, forceRefresh = true) } },
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 280.dp),
+                            )
                         }
                     } else {
                         item(span = { GridItemSpan(maxLineSpan) }, contentType = "state_banner") {

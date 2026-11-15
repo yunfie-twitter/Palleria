@@ -45,6 +45,7 @@ import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.AvatarImage
 import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
+import com.yunfie.illustia.ui.components.CenteredErrorState
 import com.yunfie.illustia.ui.components.CommentItemSkeleton
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.EmptyState
@@ -202,6 +203,14 @@ fun CommentScreen(
                 onRefresh = { scope.launch { store.fetch(forceRefresh = true) } },
                 modifier = Modifier.weight(1f),
             ) {
+                val emptyError = state.errorMessage?.takeIf { state.comments.isEmpty() && !showInitialSkeletons }
+                if (emptyError != null) {
+                    CenteredErrorState(
+                        message = emptyError,
+                        onRetry = { scope.launch { store.fetch(forceRefresh = true) } },
+                    )
+                    return@ScrollablePullToRefresh
+                }
                 androidx.compose.foundation.lazy.LazyColumn(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),

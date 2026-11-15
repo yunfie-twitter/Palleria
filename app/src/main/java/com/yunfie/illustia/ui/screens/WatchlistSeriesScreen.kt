@@ -83,6 +83,7 @@ import com.yunfie.illustia.settings.isDynamicColorAvailable
 import com.yunfie.illustia.settings.resolvePageBackgroundColor
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.AvatarImage
+import com.yunfie.illustia.ui.components.CenteredErrorState
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.HeaderOverlayIcon
 import com.yunfie.illustia.ui.components.LoadingIndicator
@@ -304,6 +305,15 @@ fun WatchlistSeriesScreen(
                 val watchlistPending = !state.hasLoaded || state.isLoading || state.errorMessage != null
                 val showPaginating = settings.autoLoadMore && state.isPaginating
                 val shimmer = if (showInitialLoading || showPaginating) rememberIllustSkeletonShimmer() else null
+                val emptyError = state.errorMessage?.takeIf { state.mangaSeries.isEmpty() && !showInitialLoading }
+                if (emptyError != null) {
+                    CenteredErrorState(
+                        message = emptyError,
+                        onRetry = { scope.launch { store.fetch(forceRefresh = true) } },
+                        modifier = Modifier.fillMaxWidth().weight(1f),
+                    )
+                    return@Column
+                }
                 LazyVerticalGrid(
                     state = gridState,
                     columns = GridCells.Fixed(columns),

@@ -58,6 +58,7 @@ import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.AvatarImage
+import com.yunfie.illustia.ui.components.CenteredErrorState
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.IllustCard
 import com.yunfie.illustia.ui.components.IllustCardSkeleton
@@ -107,12 +108,24 @@ internal fun BookmarkWatchlistTab(
     onColumnsChange: (Int) -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
+    val showWatchlistSkeleton =
+        (!watchlistState.hasLoaded || watchlistState.isLoading) && watchlistState.mangaSeries.isEmpty()
+    val watchlistPending = !watchlistState.hasLoaded || watchlistState.isLoading || watchlistState.errorMessage != null
 
     ScrollablePullToRefresh(
         isRefreshing = watchlistState.isRefreshing,
         onRefresh = { scope.launch { watchlistStore.fetch(forceRefresh = true) } },
         modifier = Modifier.fillMaxSize(),
     ) {
+        val emptyError =
+            watchlistState.errorMessage?.takeIf { watchlistState.mangaSeries.isEmpty() && !showWatchlistSkeleton }
+        if (emptyError != null) {
+            CenteredErrorState(
+                message = emptyError,
+                onRetry = { scope.launch { watchlistStore.fetch(forceRefresh = true) } },
+            )
+            return@ScrollablePullToRefresh
+        }
         AutoLoadMoreEffect(
             gridState = gridState,
             enabled = settings.autoLoadMore,
@@ -120,8 +133,6 @@ internal fun BookmarkWatchlistTab(
             isLoading = watchlistState.isPaginating || watchlistState.isLoading,
             onLoadMore = { scope.launch { watchlistStore.loadMore() } },
         )
-        val showWatchlistSkeleton = (!watchlistState.hasLoaded || watchlistState.isLoading) && watchlistState.mangaSeries.isEmpty()
-        val watchlistPending = !watchlistState.hasLoaded || watchlistState.isLoading || watchlistState.errorMessage != null
         val shimmer = if (showWatchlistSkeleton) rememberIllustSkeletonShimmer() else null
         val columns = adaptiveIllustColumns(settings)
         LazyVerticalGrid(
@@ -398,6 +409,14 @@ internal fun BookmarkMainTab(
         onRefresh = { viewModel.refreshBookmarks(forceRefresh = true) },
         modifier = Modifier.fillMaxSize(),
     ) {
+        val emptyError = (loadState as? LoadState.Error)?.takeIf { bookmarkItems.isEmpty() }
+        if (emptyError != null) {
+            CenteredErrorState(
+                message = emptyError.message,
+                onRetry = { viewModel.refreshBookmarks(forceRefresh = true) },
+            )
+            return@ScrollablePullToRefresh
+        }
         AutoLoadMoreEffect(
             gridState = gridState,
             enabled = settings.autoLoadMore,
@@ -526,6 +545,14 @@ internal fun BookmarkTimelineTab(
         onRefresh = { viewModel.refreshTimeline(forceRefresh = true) },
         modifier = Modifier.fillMaxSize(),
     ) {
+        val emptyError = (loadState as? LoadState.Error)?.takeIf { timelineItems.isEmpty() }
+        if (emptyError != null) {
+            CenteredErrorState(
+                message = emptyError.message,
+                onRetry = { viewModel.refreshTimeline(forceRefresh = true) },
+            )
+            return@ScrollablePullToRefresh
+        }
         AutoLoadMoreEffect(
             gridState = gridState,
             enabled = settings.autoLoadMore,
@@ -665,6 +692,14 @@ internal fun BookmarkFollowingTab(
         onRefresh = { viewModel.refreshFollowingUsers(forceRefresh = true) },
         modifier = Modifier.fillMaxSize(),
     ) {
+        val emptyError = (loadState as? LoadState.Error)?.takeIf { followingUsers.isEmpty() }
+        if (emptyError != null) {
+            CenteredErrorState(
+                message = emptyError.message,
+                onRetry = { viewModel.refreshFollowingUsers(forceRefresh = true) },
+            )
+            return@ScrollablePullToRefresh
+        }
         AutoLoadMoreEffect(
             gridState = gridState,
             enabled = settings.autoLoadMore,
