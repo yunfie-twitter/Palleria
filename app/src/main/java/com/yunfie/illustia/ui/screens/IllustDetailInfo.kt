@@ -1,5 +1,9 @@
 package com.yunfie.illustia.ui.screens
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -388,7 +392,15 @@ internal fun IllustDetailInfo(
                                     fontWeight = FontWeight.Bold,
                                     modifier = Modifier.padding(horizontal = 16.dp),
                                 )
-                                relatedContent(relatedSectionReady)
+                                // 24dp の Spacer からフルグリッドへ一瞬で入れ替わるため、スクロール中に
+                                // レイアウトが飛んで見えていた。フェードで差し替えて出現をならす。
+                                AnimatedContent(
+                                    targetState = relatedSectionReady,
+                                    transitionSpec = { fadeIn() togetherWith fadeOut() },
+                                    label = "relatedSectionAppear",
+                                ) { ready ->
+                                    relatedContent(ready)
+                                }
                             }
                         }
                     }
