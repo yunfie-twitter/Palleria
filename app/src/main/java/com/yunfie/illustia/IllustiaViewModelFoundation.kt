@@ -1029,6 +1029,7 @@ abstract class IllustiaViewModelFoundation(
                 user = _uiState.value.selectedIllustUser,
                 firstComment = _uiState.value.selectedIllustFirstComment,
                 relatedIllusts = _uiState.value.relatedIllusts,
+                relatedIllustsLoaded = _uiState.value.relatedIllustsLoaded,
             )
     }
 

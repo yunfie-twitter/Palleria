@@ -11,6 +11,7 @@ internal data class DetailSnapshot(
     val user: UserProfile?,
     val firstComment: Comment?,
     val relatedIllusts: List<Illust>,
+    val relatedIllustsLoaded: Boolean = false,
 )
 
 internal data class SearchSnapshot(

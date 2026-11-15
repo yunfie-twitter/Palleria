@@ -44,6 +44,7 @@ abstract class IllustiaDetailProfileModule(
                 selectedIllustUser = cached?.user,
                 selectedIllustFirstComment = cached?.firstComment,
                 relatedIllusts = cached?.relatedIllusts ?: emptyList(),
+                relatedIllustsLoaded = cached?.relatedIllustsLoaded == true,
             )
         }
         requestDetailNavigation(illust.id)
@@ -106,6 +107,7 @@ abstract class IllustiaDetailProfileModule(
                                     it.copy(
                                         selectedIllust = mergedIllust,
                                         relatedIllusts = related.items.visibleRelatedWithSettings(it.settings),
+                                        relatedIllustsLoaded = true,
                                         selectedIllustUser = user,
                                         selectedIllustFirstComment = null,
                                     )
@@ -127,7 +129,11 @@ abstract class IllustiaDetailProfileModule(
                     GlitchTipTelemetry.recordException(error, tag = "illust_detail", extras = mapOf("illustId" to illust.id))
                     _uiState.update {
                         if (it.selectedIllust?.id == illust.id) {
-                            it.copy(message = cleanErrorMessage(error, str(R.string.error_load_detail_failed)))
+                            // 取得に失敗してもスピナーを回し続けない。空のまま「完了」にする。
+                            it.copy(
+                                message = cleanErrorMessage(error, str(R.string.error_load_detail_failed)),
+                                relatedIllustsLoaded = true,
+                            )
                         } else {
                             it
                         }
@@ -207,6 +213,7 @@ abstract class IllustiaDetailProfileModule(
                                 it.copy(
                                     selectedIllust = fullIllust,
                                     relatedIllusts = related.items.visibleRelatedWithSettings(it.settings),
+                                    relatedIllustsLoaded = true,
                                     selectedIllustUser = user,
                                     selectedIllustFirstComment = null,
                                 )
@@ -219,7 +226,10 @@ abstract class IllustiaDetailProfileModule(
                     if (handleAuthExpired(error)) return@launch
                     _uiState.update {
                         if (it.selectedIllust?.id == illustId) {
-                            it.copy(message = cleanErrorMessage(error, str(R.string.error_load_detail_failed)))
+                            it.copy(
+                                message = cleanErrorMessage(error, str(R.string.error_load_detail_failed)),
+                                relatedIllustsLoaded = true,
+                            )
                         } else {
                             it
                         }
@@ -305,6 +315,7 @@ abstract class IllustiaDetailProfileModule(
         user: UserProfile?,
         firstComment: Comment?,
         relatedIllusts: List<Illust>,
+        relatedIllustsLoaded: Boolean = false,
     ) {
         detailExtrasJob?.cancel()
         _uiState.update {
@@ -313,6 +324,7 @@ abstract class IllustiaDetailProfileModule(
                 selectedIllustUser = user,
                 selectedIllustFirstComment = firstComment,
                 relatedIllusts = relatedIllusts,
+                relatedIllustsLoaded = relatedIllustsLoaded,
             )
         }
     }
@@ -704,6 +716,7 @@ abstract class IllustiaDetailProfileModule(
                 selectedIllustUser = snapshot.user,
                 selectedIllustFirstComment = snapshot.firstComment,
                 relatedIllusts = snapshot.relatedIllusts,
+                relatedIllustsLoaded = snapshot.relatedIllustsLoaded,
             )
         }
         return true
