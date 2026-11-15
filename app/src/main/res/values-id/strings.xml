@@ -178,6 +178,7 @@
     <string name="detail_muted_work">Pekerjaan yang Diredam</string>
     <string name="detail_muted_work_blur">Karya yang mengandung tag yang dibisukan akan diburamkan.</string>
     <string name="detail_unmute">Suarakan</string>
+    <string name="detail_image_load_failed">Gagal memuat gambar</string>
     <string name="detail_no_caption">Tidak ada keterangan</string>
     <string name="detail_comments">Komentar</string>
     <string name="detail_show_comments">Tampilkan Komentar</string>

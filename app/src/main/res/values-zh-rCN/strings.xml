@@ -165,6 +165,7 @@
     <string name="detail_muted_work">静音工作</string>
     <string name="detail_muted_work_blur">包含静音标签的作品模糊。</string>
     <string name="detail_unmute">取消静音</string>
+    <string name="detail_image_load_failed">无法加载图片</string>
     <string name="detail_no_caption">无标题</string>
     <string name="detail_comments">评论</string>
     <string name="detail_show_comments">显示评论</string>

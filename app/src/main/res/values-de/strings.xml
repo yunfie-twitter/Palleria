@@ -178,6 +178,7 @@
     <string name="detail_muted_work">Gedämpfte Arbeit</string>
     <string name="detail_muted_work_blur">Werke, die stummgeschaltete Tags enthalten, werden unscharf.</string>
     <string name="detail_unmute">Stummschaltung aufheben</string>
+    <string name="detail_image_load_failed">Bild konnte nicht geladen werden</string>
     <string name="detail_no_caption">Keine Bildunterschrift</string>
     <string name="detail_comments">Kommentare</string>
     <string name="detail_show_comments">Kommentare anzeigen</string>

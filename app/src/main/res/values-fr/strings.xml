@@ -178,6 +178,7 @@
     <string name="detail_muted_work">Travail en sourdine</string>
     <string name="detail_muted_work_blur">Les œuvres contenant des balises muettes sont floues.</string>
     <string name="detail_unmute">Activer le son</string>
+    <string name="detail_image_load_failed">Impossible de charger l\'image</string>
     <string name="detail_no_caption">Pas de légende</string>
     <string name="detail_comments">Commentaires</string>
     <string name="detail_show_comments">Afficher les commentaires</string>

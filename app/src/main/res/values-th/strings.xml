@@ -178,6 +178,7 @@
     <string name="detail_muted_work">ปิดเสียงการทำงาน</string>
     <string name="detail_muted_work_blur">งานที่มีแท็กปิดเสียงจะถูกเบลอ</string>
     <string name="detail_unmute">เปิดเสียง</string>
+    <string name="detail_image_load_failed">ไม่สามารถโหลดรูปภาพได้</string>
     <string name="detail_no_caption">ไม่มีคำอธิบายภาพ</string>
     <string name="detail_comments">ความคิดเห็น</string>
     <string name="detail_show_comments">แสดงความคิดเห็น</string>

@@ -178,6 +178,7 @@
     <string name="detail_muted_work">Công việc bị tắt tiếng</string>
     <string name="detail_muted_work_blur">Tác phẩm chứa thẻ bị tắt tiếng sẽ bị mờ.</string>
     <string name="detail_unmute">Bật tiếng</string>
+    <string name="detail_image_load_failed">Không thể tải hình ảnh</string>
     <string name="detail_no_caption">Không có chú thích</string>
     <string name="detail_comments">Bình luận</string>
     <string name="detail_show_comments">Hiển thị bình luận</string>

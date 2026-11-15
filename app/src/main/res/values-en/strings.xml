@@ -181,6 +181,7 @@
     <string name="detail_muted_work">Muted Work</string>
     <string name="detail_muted_work_blur">Works containing muted tags are blurred.</string>
     <string name="detail_unmute">Unmute</string>
+    <string name="detail_image_load_failed">Couldn\'t load the image</string>
     <string name="detail_no_caption">No caption</string>
     <string name="detail_comments">Comments</string>
     <string name="detail_show_comments">Show Comments</string>
