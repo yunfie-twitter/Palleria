@@ -142,6 +142,7 @@ fun IllustDetailScreen(
     onBookmark: () -> Unit,
     onBookmarkLongClick: (() -> Unit)? = null,
     onRefresh: () -> Unit = {},
+    isRefreshingExternal: Boolean? = null,
     onOpenUser: (Long) -> Unit,
     onOpenComments: () -> Unit,
     onOpenSeries: (() -> Unit)? = null,
@@ -241,10 +242,15 @@ fun IllustDetailScreen(
         statusBarColor = TransparentStatusBarColor,
     )
 
-    LaunchedEffect(isRefreshing) {
-        if (isRefreshing) {
-            onRefresh()
-            delay(300)
+    // 手動リフレッシュの完了は取得側が知っている。固定 delay で消すと遅い回線で
+    // 何も起きていないように見え、続けて引くと前のジョブが取り消されるだけになる。
+    LaunchedEffect(isRefreshingExternal) {
+        if (isRefreshingExternal == true) {
+            if (!isRefreshing) {
+                isRefreshing = true
+                onRefresh()
+            }
+        } else if (isRefreshingExternal == false) {
             isRefreshing = false
         }
     }
@@ -471,7 +477,12 @@ fun IllustDetailScreen(
             ) {
                 ScrollablePullToRefresh(
                     isRefreshing = isRefreshing,
-                    onRefresh = { isRefreshing = true },
+                    onRefresh = {
+                        if (!isRefreshing) {
+                            isRefreshing = true
+                            onRefresh()
+                        }
+                    },
                     pullToRefreshState = pullToRefreshState,
                     circleSize = 0.dp,
                     color = Color.Transparent,

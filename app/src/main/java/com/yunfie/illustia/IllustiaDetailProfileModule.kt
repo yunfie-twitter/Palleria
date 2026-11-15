@@ -17,6 +17,8 @@ import com.yunfie.illustia.models.pixiv.UserProfileEdit
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.map
@@ -69,7 +71,12 @@ abstract class IllustiaDetailProfileModule(
 
     @Suppress("LongMethod")
     private fun launchDetailExtras(illust: Illust) {
-        if (detailExtrasPaused) return
+        if (detailExtrasPaused) {
+            // 停止中の openIllust を取りこぼさない。シートを閉じた時点でこの作品を取得し直す。
+            pendingDetailExtrasIllust = illust
+            return
+        }
+        pendingDetailExtrasIllust = null
         detailExtrasJob?.cancel()
         detailExtrasJob =
             viewModelScope.launch(Dispatchers.IO) {
@@ -192,9 +199,14 @@ abstract class IllustiaDetailProfileModule(
                 ?: runCatching { repository.illustDetail(illustId).mediumImageUrl }.getOrNull()
         }
 
-    fun refreshIllustDetail(illustId: Long) {
+    /**
+     * 手動リフレッシュ。戻り値の Job が完了するまでが実際の取得時間なので、
+     * UI 側は固定 delay ではなくこれを見てインジケータを閉じる。
+     */
+    fun refreshIllustDetail(illustId: Long): Job {
         detailExtrasJob?.cancel()
-        detailExtrasJob =
+        _uiState.update { it.copy(isSelectedIllustRefreshing = true) }
+        val job =
             viewModelScope.launch(Dispatchers.IO) {
                 try {
                     val fullIllust = repository.illustDetail(illustId)
@@ -222,7 +234,7 @@ abstract class IllustiaDetailProfileModule(
                     }
                 } catch (expectedFailure: Exception) {
                     val error = expectedFailure
-                    if (isCancellation(error)) throw error
+                    if (isCancellation(error)) return@launch
                     if (handleAuthExpired(error)) return@launch
                     _uiState.update {
                         if (it.selectedIllust?.id == illustId) {
@@ -234,8 +246,14 @@ abstract class IllustiaDetailProfileModule(
                             it
                         }
                     }
+                } finally {
+                    withContext(NonCancellable) {
+                        _uiState.update { it.copy(isSelectedIllustRefreshing = false) }
+                    }
                 }
             }
+        detailExtrasJob = job
+        return job
     }
 
     fun lazyLoadPartialIllust(illustId: Long) {
@@ -264,10 +282,20 @@ abstract class IllustiaDetailProfileModule(
      * コメントシートが作品詳細の上に開く間、関連作品・ユーザー詳細の取得と、その結果による
      * UI 状態の更新を止める。重なったアニメーション中に状態更新が走らないようにするだけで、
      * 表示内容は変わらない（シートを閉じると通常の詳細取得に戻る）。
+     *
+     * 解除時は打ち切った取得を必ずやり直す。以前はジョブが cancel されたまま再開されず、
+     * コメントを閉じても関連作品や作者名が空のまま残っていた。
      */
     fun setDetailExtrasSuppressed(suppressed: Boolean) {
         detailExtrasPaused = suppressed
-        if (suppressed) detailExtrasJob?.cancel()
+        if (suppressed) {
+            detailExtrasJob?.cancel()
+            return
+        }
+        val pending = pendingDetailExtrasIllust
+        pendingDetailExtrasIllust = null
+        val current = pending ?: _uiState.value.selectedIllust
+        if (current != null) launchDetailExtras(current)
     }
 
     /**

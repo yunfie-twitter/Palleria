@@ -205,6 +205,7 @@ internal data class DetailEntrySnapshot(
     val relatedIllustsLoaded: Boolean = false,
     val firstComment: Comment? = null,
     val user: UserProfile? = null,
+    val isRefreshing: Boolean = false,
 )
 
 internal data class SearchEntrySnapshot(

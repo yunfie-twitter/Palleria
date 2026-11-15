@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -309,23 +310,30 @@ fun HeaderOverlayIcon(
     contentDescription: String? = null,
 ) {
     val performHaptic = rememberHapticFeedbackAction()
-    IconButton(
-        onClick = {
-            performHaptic(AppHapticEffect.Click)
-            onClick()
-        },
-        modifier = modifier.pointerHoverIcon(PointerIcon.Hand).size(38.dp),
-        backgroundColor = backgroundColor,
-        cornerRadius = 19.dp,
-        minWidth = 38.dp,
-        minHeight = 38.dp,
+    // 見た目の丸は 38dp のまま、タップ領域だけ 48dp に広げる。オーバーレイ上の
+    // 最初のタップ対象が小さいと押し損ねやすいので、最小タッチターゲットを確保する。
+    Box(
+        modifier = modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
+        contentAlignment = Alignment.Center,
     ) {
-        Icon(
-            icon,
-            contentDescription = contentDescription,
-            tint = contentColor,
-            modifier = Modifier.size(24.dp),
-        )
+        IconButton(
+            onClick = {
+                performHaptic(AppHapticEffect.Click)
+                onClick()
+            },
+            modifier = Modifier.pointerHoverIcon(PointerIcon.Hand).size(38.dp),
+            backgroundColor = backgroundColor,
+            cornerRadius = 19.dp,
+            minWidth = 38.dp,
+            minHeight = 38.dp,
+        ) {
+            Icon(
+                icon,
+                contentDescription = contentDescription,
+                tint = contentColor,
+                modifier = Modifier.size(24.dp),
+            )
+        }
     }
 }
 
