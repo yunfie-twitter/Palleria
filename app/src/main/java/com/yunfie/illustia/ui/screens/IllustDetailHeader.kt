@@ -182,7 +182,20 @@ internal fun IllustDetailHeader(
             if (transitionInFlight) {
                 emptyList()
             } else {
+                // low tier には下位 tier が無いので、共通ヘルパーは空を返す。しかし詳細画面では
+                // 共有要素が働かない経路（履歴・別ルートからの遷移・共有要素オフ）で
+                // 「空白 → いきなり本画像」になるのを避けたいので、サムネイルだけを下敷きにする。
+                // ビューア側の従来挙動を変えないよう、ここで補う。
+                // 下敷きがあると PixivImage は crossfade を切り、ハードスワップになる。これは
+                // 半透明に見えるのを避けるための意図した挙動で、カード遷移経路と同じ考え方。
                 resolveProgressivePlaceholderUrls(illust, effectiveDetailQuality, progressiveQuality)
+                    .ifEmpty {
+                        if (progressiveQuality && effectiveDetailQuality == QUALITY_LOW) {
+                            listOf(illust.thumbnailUrl).filter { it.isNotBlank() && it != illust.previewUrl }
+                        } else {
+                            emptyList()
+                        }
+                    }
             }
         }
     val previewUrl: String = imageUrls.firstOrNull() ?: ""
