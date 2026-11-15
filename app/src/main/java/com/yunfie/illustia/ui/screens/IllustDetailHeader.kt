@@ -17,6 +17,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,9 +29,11 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -68,6 +71,7 @@ import com.yunfie.illustia.ui.components.OverlayIconCascadingDropdownMenu
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PixivReportDialog
 import com.yunfie.illustia.ui.components.QUALITY_LOW
+import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.performAppHapticFeedback
 import com.yunfie.illustia.ui.components.rememberLiquidGlassBackdrop
 import com.yunfie.illustia.ui.components.resolveDarkHeaderIcons
@@ -84,6 +88,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
 import top.yukonga.miuix.kmp.icon.extended.More
+import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -199,6 +204,12 @@ internal fun IllustDetailHeader(
             }
         }
     val previewUrl: String = imageUrls.firstOrNull() ?: ""
+
+    // 取得に失敗したヒーロー画像のページ番号。失敗時は無地の矩形に戻るボタンが浮くだけだったので、
+    // 失敗を検知して再試行の導線を出す。imageRetryTick を retryToken として渡し、値を変えることで
+    // PixivImage に新しいリクエストを発行させる。
+    var failedPages by remember(illust.id) { mutableStateOf(emptySet<Int>()) }
+    var imageRetryTick by remember(illust.id) { mutableIntStateOf(0) }
 
     val pagerState =
         rememberPagerState(
@@ -336,6 +347,9 @@ internal fun IllustDetailHeader(
                                 // double up on the transition instead of continuing it.
                                 crossfade = !followsCardBitmap,
                                 placeholderUrl = placeholderUrls.getOrNull(page),
+                                onSuccess = { failedPages = failedPages - page },
+                                onError = { failedPages = failedPages + page },
+                                retryToken = imageRetryTick,
                                 modifier =
                                     Modifier
                                         .fillMaxSize()
@@ -361,6 +375,14 @@ internal fun IllustDetailHeader(
                                             },
                                         ),
                             )
+                            // 取得に失敗したページは無地の矩形になっていた。タップで取り直せるよう
+                            // 再試行の導線を重ねる。ミュート中のマスクとは排他にする。
+                            if (page in failedPages && !maskMutedArtwork) {
+                                HeroImageRetry(
+                                    onRetry = { imageRetryTick += 1 },
+                                    modifier = Modifier.align(Alignment.Center),
+                                )
+                            }
                             if (maskMutedArtwork) {
                                 Box(
                                     modifier =
@@ -665,6 +687,45 @@ internal fun IllustDetailHeader(
                 )
             }
         }
+    }
+}
+
+/**
+ * ヒーロー画像の取得に失敗したときに重ねる再試行の導線。
+ * 以前は失敗しても無地の矩形に戻るボタンが浮くだけで、取り直す手段が無かった。
+ */
+@Composable
+private fun HeroImageRetry(
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier =
+            modifier
+                .clip(RoundedCornerShape(16.dp))
+                .background(Color.Black.copy(alpha = 0.55f))
+                .miuixClickable(haptic = true, onClick = onRetry)
+                .padding(horizontal = 20.dp, vertical = 14.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Icon(
+            imageVector = MiuixIcons.Refresh,
+            contentDescription = null,
+            tint = Color.White,
+            modifier = Modifier.size(26.dp),
+        )
+        Text(
+            text = stringResource(R.string.detail_image_load_failed),
+            color = Color.White,
+            style = MiuixTheme.textStyles.footnote1,
+            fontWeight = FontWeight.Bold,
+        )
+        Text(
+            text = stringResource(R.string.action_retry),
+            color = Color.White.copy(alpha = 0.85f),
+            style = MiuixTheme.textStyles.footnote1,
+        )
     }
 }
 

@@ -183,6 +183,7 @@
     <string name="detail_muted_work">뮤트한 작품</string>
     <string name="detail_muted_work_blur">뮤트한 태그가 포함된 작품은 흐리게 표시됩니다.</string>
     <string name="detail_unmute">뮤트 해제</string>
+    <string name="detail_image_load_failed">이미지를 불러오지 못했습니다</string>
     <string name="detail_no_caption">캡션 없음</string>
     <string name="detail_comments">댓글</string>
     <string name="detail_show_comments">댓글 보기</string>

@@ -219,6 +219,7 @@
     <string name="detail_muted_work">Скрытая работа</string>
     <string name="detail_muted_work_blur">Работы со скрытыми тегами размыты.</string>
     <string name="detail_unmute">Вернуть</string>
+    <string name="detail_image_load_failed">Не удалось загрузить изображение</string>
     <string name="detail_no_caption">Описание отсутствует</string>
     <string name="detail_comments">Комментарии</string>
     <string name="detail_show_comments">Показать комментарии</string>

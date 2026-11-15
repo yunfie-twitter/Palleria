@@ -178,6 +178,7 @@
     <string name="detail_muted_work">Trabalho silenciado</string>
     <string name="detail_muted_work_blur">Trabalhos contendo tags silenciadas ficam desfocados.</string>
     <string name="detail_unmute">Ativar som</string>
+    <string name="detail_image_load_failed">Não foi possível carregar a imagem</string>
     <string name="detail_no_caption">Sem legenda</string>
     <string name="detail_comments">Comentários</string>
     <string name="detail_show_comments">Mostrar comentários</string>

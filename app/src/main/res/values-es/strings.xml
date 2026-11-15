@@ -178,6 +178,7 @@
     <string name="detail_muted_work">Trabajo silenciado</string>
     <string name="detail_muted_work_blur">Las obras que contienen etiquetas silenciadas aparecen borrosas.</string>
     <string name="detail_unmute">Dejar de silenciar</string>
+    <string name="detail_image_load_failed">No se pudo cargar la imagen</string>
     <string name="detail_no_caption">Sin título</string>
     <string name="detail_comments">Comentarios</string>
     <string name="detail_show_comments">Mostrar comentarios</string>

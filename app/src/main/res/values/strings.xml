@@ -219,6 +219,7 @@
     <string name="detail_muted_work">ミュート中の作品です</string>
     <string name="detail_muted_work_blur">ミュート中のタグを含む作品をぼかしています。</string>
     <string name="detail_unmute">ミュート解除</string>
+    <string name="detail_image_load_failed">画像を読み込めませんでした</string>
     <string name="detail_no_caption">キャプションはありません</string>
     <string name="detail_comments">コメント</string>
     <string name="detail_show_comments">コメントを表示</string>
