@@ -26,6 +26,7 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -38,6 +39,7 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
@@ -69,6 +71,8 @@ import com.yunfie.illustia.ui.screens.RankingScreen
 import com.yunfie.illustia.ui.screens.SearchScreen
 import com.yunfie.illustia.ui.screens.ShortsFeedScreen
 import com.yunfie.illustia.visibleWith
+import top.yukonga.miuix.kmp.anim.SinOutEasing
+import top.yukonga.miuix.kmp.anim.folmeSpring
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBarItem
 import top.yukonga.miuix.kmp.basic.Icon
@@ -237,109 +241,123 @@ internal fun MainSurface(
                             Box(modifier = Modifier.fillMaxSize())
                             return@HorizontalPager
                         }
+                        // ページのスクロール位置（ページ単位）を 1 本の進捗に正規化し、
+                        // MIUI 風のフェード＋微スケールを graphicsLayer だけで適用する。
+                        // state の読み取りを graphicsLayer 内に閉じ込めることで、
+                        // スワイプ中に再コンポーズせず draw 段階だけで補間できる。
                         // アクティブなページかを state のまま配ると Pager 側の再コンポーズで
                         // 全ページが無効化されるため、provider 経由で読ませる。非アクティブな
                         // ページはブラー合成を止め、スワイプ中の負荷を下げる。
+                        val pageOffset =
+                            remember(page, pagerState) {
+                                derivedStateOf {
+                                    (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
+                                }
+                            }
+                        val pageModifier =
+                            Modifier
+                                .fillMaxSize()
+                                .graphicsLayer {
+                                    val t = tabTransitionFraction(pageOffset.value)
+                                    alpha = 1f - t * (1f - tabTransitionMinAlpha)
+                                    val scale = 1f - t * (1f - tabTransitionMinScale)
+                                    scaleX = scale
+                                    scaleY = scale
+                                }
                         CompositionLocalProvider(LocalTabPageActive provides { page == pagerState.settledPage }) {
-                            when (tabs[page]) {
-                                AppTab.Home -> {
-                                    HomeScreen(
-                                        items = appState.homeItems,
-                                        timelineItems = appState.timelineItems,
-                                        loadState = appState.loadState,
-                                        timelineLoadState = appState.timelineLoadState,
-                                        nextUrl = appState.homeChrome.homeNextUrl,
-                                        timelineNextUrl = appState.homeChrome.timelineNextUrl,
-                                        settings = appState.settings,
-                                        currentAccount = appState.state.currentAccount,
-                                        viewModel = viewModel,
-                                        scrollBehavior = homeScrollBehavior,
-                                        onSearch = onSearch,
-                                        onOpenNovels = onOpenNovels,
-                                        isHomeRefreshing = appState.homeChrome.isHomeRefreshing,
-                                        isHomePaginating = appState.homeChrome.isHomePaginating,
-                                        isTimelineRefreshing = appState.homeChrome.isTimelineRefreshing,
-                                        isTimelinePaginating = appState.homeChrome.isTimelinePaginating,
-                                        isOfflineCached = appState.homeChrome.isOfflineCached,
-                                        pendingHomeItemsCount = appState.homeChrome.pendingHomeItemsCount,
-                                        initialTab = appState.homeChrome.selectedTab,
-                                    )
-                                }
+                            Box(modifier = pageModifier) {
+                                when (tabs[page]) {
+                                    AppTab.Home -> {
+                                        HomeScreen(
+                                            items = appState.homeItems,
+                                            timelineItems = appState.timelineItems,
+                                            loadState = appState.loadState,
+                                            timelineLoadState = appState.timelineLoadState,
+                                            nextUrl = appState.homeChrome.homeNextUrl,
+                                            timelineNextUrl = appState.homeChrome.timelineNextUrl,
+                                            settings = appState.settings,
+                                            currentAccount = appState.state.currentAccount,
+                                            viewModel = viewModel,
+                                            scrollBehavior = homeScrollBehavior,
+                                            onSearch = onSearch,
+                                            onOpenNovels = onOpenNovels,
+                                            isHomeRefreshing = appState.homeChrome.isHomeRefreshing,
+                                            isHomePaginating = appState.homeChrome.isHomePaginating,
+                                            isTimelineRefreshing = appState.homeChrome.isTimelineRefreshing,
+                                            isTimelinePaginating = appState.homeChrome.isTimelinePaginating,
+                                            isOfflineCached = appState.homeChrome.isOfflineCached,
+                                            pendingHomeItemsCount = appState.homeChrome.pendingHomeItemsCount,
+                                            initialTab = appState.homeChrome.selectedTab,
+                                        )
+                                    }
 
-                                AppTab.Novel -> {
-                                    // Novel はタブとして表示されない（小説は NovelList ルート）。
-                                    // Unit のままだと、万一ページに入ったとき何も描かれず空白に
-                                    // なるため、背景だけは必ず塗る。
-                                    Box(
-                                        modifier =
-                                            Modifier
-                                                .fillMaxSize()
-                                                .background(MiuixTheme.colorScheme.surface),
-                                    )
-                                }
+                                    AppTab.Novel -> {
+                                        Unit
+                                    }
 
-                                AppTab.Ranking -> {
-                                    RankingScreen(
-                                        items = appState.rankingItems,
-                                        loadState = appState.loadState,
-                                        nextUrl = appState.rankingChrome.rankingNextUrl,
-                                        mode = appState.rankingChrome.rankingMode,
-                                        settings = appState.settings,
-                                        viewModel = viewModel,
-                                    )
-                                }
+                                    AppTab.Ranking -> {
+                                        RankingScreen(
+                                            items = appState.rankingItems,
+                                            loadState = appState.loadState,
+                                            nextUrl = appState.rankingChrome.rankingNextUrl,
+                                            mode = appState.rankingChrome.rankingMode,
+                                            settings = appState.settings,
+                                            viewModel = viewModel,
+                                        )
+                                    }
 
-                                AppTab.Bookmarks -> {
-                                    BookmarkScreen(
-                                        settings = appState.settings,
-                                        loadState = appState.loadState,
-                                        timelineLoadState = appState.timelineLoadState,
-                                        followingUsersLoadState = appState.followingUsersLoadState,
-                                        bookmarkItems = appState.bookmarkItems,
-                                        bookmarkTag = appState.state.bookmarkTag,
-                                        timelineItems = appState.timelineItems,
-                                        followingUsers = appState.followingUsers,
-                                        chrome = appState.bookmarkChrome,
-                                        viewModel = viewModel,
-                                        onOpenWatchlistSeries = onOpenWatchlistSeries,
-                                        onOpenBookmarkTagSort = onOpenBookmarkTagSort,
-                                    )
-                                }
+                                    AppTab.Bookmarks -> {
+                                        BookmarkScreen(
+                                            settings = appState.settings,
+                                            loadState = appState.loadState,
+                                            timelineLoadState = appState.timelineLoadState,
+                                            followingUsersLoadState = appState.followingUsersLoadState,
+                                            bookmarkItems = appState.bookmarkItems,
+                                            bookmarkTag = appState.state.bookmarkTag,
+                                            timelineItems = appState.timelineItems,
+                                            followingUsers = appState.followingUsers,
+                                            chrome = appState.bookmarkChrome,
+                                            viewModel = viewModel,
+                                            onOpenWatchlistSeries = onOpenWatchlistSeries,
+                                            onOpenBookmarkTagSort = onOpenBookmarkTagSort,
+                                        )
+                                    }
 
-                                AppTab.Search -> {
-                                    SearchTabContent(
-                                        onFocusRequestHandled = onSearchFocusHandled,
-                                        focusRequest = if (selectedTab == AppTab.Search) searchFocusRequest else 0,
-                                        viewModel = viewModel,
-                                        onNavigateToResults = onNavigateToResults,
-                                    )
-                                }
+                                    AppTab.Search -> {
+                                        SearchTabContent(
+                                            onFocusRequestHandled = onSearchFocusHandled,
+                                            focusRequest = if (selectedTab == AppTab.Search) searchFocusRequest else 0,
+                                            viewModel = viewModel,
+                                            onNavigateToResults = onNavigateToResults,
+                                        )
+                                    }
 
-                                AppTab.ShortsFeed -> {
-                                    val shortsFeedItems =
-                                        remember(
-                                            appState.state.shortsFeedItems,
-                                            appState.state.mutedIllustsSet,
-                                            appState.state.mutedUsersSet,
-                                            appState.state.mutedTagsSet,
-                                        ) {
-                                            appState.state.shortsFeedItems.visibleWith(appState.state)
-                                        }
-                                    ShortsFeedScreen(
-                                        items = shortsFeedItems,
-                                        loadState = appState.state.loadState,
-                                        currentIllustId = appState.state.shortsFeedCurrentIllustId,
-                                        viewModel = viewModel,
-                                        onOpenComments = onOpenComments,
-                                    )
-                                }
+                                    AppTab.ShortsFeed -> {
+                                        val shortsFeedItems =
+                                            remember(
+                                                appState.state.shortsFeedItems,
+                                                appState.state.mutedIllustsSet,
+                                                appState.state.mutedUsersSet,
+                                                appState.state.mutedTagsSet,
+                                            ) {
+                                                appState.state.shortsFeedItems.visibleWith(appState.state)
+                                            }
+                                        ShortsFeedScreen(
+                                            items = shortsFeedItems,
+                                            loadState = appState.state.loadState,
+                                            currentIllustId = appState.state.shortsFeedCurrentIllustId,
+                                            viewModel = viewModel,
+                                            onOpenComments = onOpenComments,
+                                        )
+                                    }
 
-                                AppTab.More -> {
-                                    MoreScreen(
-                                        state = appState.state,
-                                        viewModel = viewModel,
-                                        onOpenWatchlistSeries = onOpenWatchlistSeries,
-                                    )
+                                    AppTab.More -> {
+                                        MoreScreen(
+                                            state = appState.state,
+                                            viewModel = viewModel,
+                                            onOpenWatchlistSeries = onOpenWatchlistSeries,
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -489,6 +507,21 @@ private fun <Backdrop> SystemUiAwareBackdropBox(
         content = { content() },
     )
 }
+
+/**
+ * タブ切り替え時の Pager アニメーション。MIUI の標準スプリング（folmeSpring）に合わせる。
+ */
+internal val tabScrollAnimationSpec = folmeSpring<Float>(damping = 0.86f, response = 0.32f)
+
+/**
+ * Pager のページずれ（ページ単位）を 0..1 の遷移進捗に変換する。
+ * 0 が完全に表示中、1 以上は画面外（隣接ページ）。
+ * MIUI の SinOut イージングで知覚カーブを揃える。
+ */
+private fun tabTransitionFraction(offset: Float): Float = SinOutEasing.transform(offset.coerceIn(0f, 1f))
+
+private const val tabTransitionMinAlpha = 0.55f
+private const val tabTransitionMinScale = 0.94f
 
 @Composable
 private fun SearchTabContent(
