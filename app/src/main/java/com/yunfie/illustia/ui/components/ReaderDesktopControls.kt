@@ -3,7 +3,6 @@ package com.yunfie.illustia.ui.components
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
-import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Build
 import android.view.Window
@@ -32,10 +31,19 @@ import androidx.core.view.WindowInsetsCompat
  *
  * また、バーを出し直したときに OS がナビゲーションバーを不透明色で塗り直す
  * ことがあるため、復帰時は透明色・コントラスト強制無効を再適用する。
+ *
+ * 復帰時に書き戻すバーの明暗は、デバイスのナイトモードではなく [isDarkTheme]
+ * （アプリ設定から解決したテーマ）を使う。デバイス設定とアプリテーマが食い違う
+ * 場合、デバイス値で上書きすると復帰後のアイコンが誤ったコントラストになる。
  */
 @Composable
-internal fun ReaderFullscreen(enabled: Boolean) {
+internal fun ReaderFullscreen(
+    enabled: Boolean,
+    isDarkTheme: Boolean,
+) {
     val view = LocalView.current
+    // 復帰書き込みで常に最新のアプリテーマを使う。
+    val currentIsDarkTheme by rememberUpdatedState(isDarkTheme)
     DisposableEffect(view, enabled) {
         val activity = view.context.readerActivity()
         val window = activity?.window
@@ -45,10 +53,7 @@ internal fun ReaderFullscreen(enabled: Boolean) {
         onDispose {
             controller?.show(bars)
             if (window != null) {
-                val isDark =
-                    (view.context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
-                        Configuration.UI_MODE_NIGHT_YES
-                TransparentSystemBars.reapplyTransparent(window, isDark)
+                TransparentSystemBars.reapplyTransparent(window, currentIsDarkTheme)
             }
         }
     }
