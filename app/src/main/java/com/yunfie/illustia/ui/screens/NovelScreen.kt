@@ -409,8 +409,11 @@ fun NovelReaderScreen(
     var controlsVisible by rememberSaveable { mutableStateOf(true) }
     var fullscreen by rememberSaveable { mutableStateOf(false) }
     var paragraphStep by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    // 全画面の復帰書き込みとバー配色の両方で、デバイスのナイトモードではなく
+    // アプリのテーマ（MiuixTheme）から解決した値を使う。
+    val isDarkTheme = MiuixTheme.colorScheme.surface.luminance() < DARK_LUMINANCE_THRESHOLD
     com.yunfie.illustia.ui.components
-        .ReaderFullscreen(fullscreen)
+        .ReaderFullscreen(fullscreen, isDarkTheme = isDarkTheme)
     LaunchedEffect(fullscreen) { controlsVisible = !fullscreen }
     com.yunfie.illustia.ui.components.ParagraphNavigation(
         continuousListState,
@@ -431,7 +434,6 @@ fun NovelReaderScreen(
     var showTocSheet by rememberSaveable { mutableStateOf(false) }
     var showSettingsSheet by rememberSaveable { mutableStateOf(false) }
 
-    val isDarkTheme = MiuixTheme.colorScheme.surface.luminance() < DARK_LUMINANCE_THRESHOLD
     NovelReaderSystemBarsEffect(theme = theme, isDarkTheme = isDarkTheme)
 
     val backgroundColor = theme.backgroundColor()
