@@ -721,9 +721,12 @@ private fun UserProfileInfo(
                     .miuixClickable(onClick = onAvatarClick),
             )
             Spacer(Modifier.weight(1f))
-            if (isOwnProfile && isProfileEditEnabled && onEditProfile != null) {
-                Box(Modifier.miuixClickable(pressedScale = 0.94f, haptic = true, onClick = onEditProfile)) {
-                    EditUserPill()
+            if (isOwnProfile) {
+                // 自分のプロフィールにフォローボタンは出さない。編集が使えない場合は何も出さない。
+                if (isProfileEditEnabled && onEditProfile != null) {
+                    Box(Modifier.miuixClickable(pressedScale = 0.94f, haptic = true, onClick = onEditProfile)) {
+                        EditUserPill()
+                    }
                 }
             } else {
                 Box(Modifier.miuixClickable(pressedScale = 0.94f, haptic = true, onClick = if (isMuted) onUnmuteUser else onToggleFollow)) {

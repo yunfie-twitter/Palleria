@@ -350,8 +350,6 @@
     <string name="general_smooth_desc">Make screen transitions and list rendering smoother</string>
     <string name="general_notch">Notch Optimization</string>
     <string name="general_notch_desc">Adjust display in the status bar area</string>
-    <string name="general_swipe">Swipe to Switch Tabs</string>
-    <string name="general_swipe_desc">Swipe left/right to navigate between main screens</string>
     <string name="general_auto_load_more">Auto Load More</string>
     <string name="general_auto_load_more_desc">Automatically fetch the next page when you reach the end</string>
     <string name="general_double_back">Double Back to Exit</string>
@@ -882,8 +880,6 @@
     <string name="nav_shorts_feed">Shorts</string>
     <string name="general_shorts_feed">Shorts Feed</string>
     <string name="general_shorts_feed_desc">Browse illustrations in a full-screen vertical feed</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe">Disable Horizontal Swipe</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe_desc">Prevent sideways swipes from changing tabs in the Shorts feed</string>
     <string name="calculator_error">Error</string>
     <string name="error_novel_load_failed">Could not load the novel.</string>
     <string name="error_notifications_load_failed">Could not load notifications.</string>

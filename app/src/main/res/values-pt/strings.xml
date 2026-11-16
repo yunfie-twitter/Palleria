@@ -346,8 +346,6 @@
     <string name="general_smooth_desc">Torne as transições de tela e a renderização de listas mais suaves</string>
     <string name="general_notch">Otimização de entalhe</string>
     <string name="general_notch_desc">Ajustar a exibição na área da barra de status</string>
-    <string name="general_swipe">Deslize para alternar entre guias</string>
-    <string name="general_swipe_desc">Deslize para a esquerda/direita para navegar entre as telas principais</string>
     <string name="general_auto_load_more">Carregar mais automaticamente</string>
     <string name="general_auto_load_more_desc">Buscar automaticamente a próxima página quando chegar ao final</string>
     <string name="general_double_back">Voltar duas vezes para sair</string>
@@ -867,8 +865,6 @@
     <string name="nav_shorts_feed">Calções</string>
     <string name="general_shorts_feed">Feed de Shorts</string>
     <string name="general_shorts_feed_desc">Navegue pelas ilustrações em um feed vertical em tela cheia</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe">Desativar deslizamento horizontal</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe_desc">Impedir que deslizar lateralmente altere as guias no feed do Shorts</string>
     <string name="calculator_error">Erro</string>
     <string name="error_novel_load_failed">Não foi possível carregar o romance.</string>
     <string name="error_notifications_load_failed">Não foi possível carregar as notificações.</string>

@@ -107,6 +107,11 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
             pageCount = { tabs.size },
         )
     val coroutineScope = rememberCoroutineScope()
+    // どのタブページを一度でも表示したか。MainSurface（Main エントリ）の中で remember すると、
+    // エントリが作り直されるたびに pagerState の現在ページだけを初期値に取り直し、
+    // その後 pager が scrollToPage で移動したページが未訪問のまま残って空白になる。
+    // pagerState と同じ寿命になるようここで保持する。
+    val visitedTabs = remember { mutableStateOf(setOf(pagerState.currentPage)) }
     val snackbarHostState = remember { SnackbarHostState() }
     val homeScrollBehavior = MiuixScrollBehavior()
     val context = LocalContext.current
@@ -773,7 +778,9 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         val index = tabs.indexOf(tab)
         if (index >= 0) {
             selectedTab = tab
-            coroutineScope.launch { pagerState.scrollToPage(index) }
+            coroutineScope.launch {
+                pagerState.animateScrollToPage(index, animationSpec = tabScrollAnimationSpec)
+            }
         }
     }
     // パレットのアクション実行は画面ツリーから切り離したハンドラに委譲する。
@@ -840,6 +847,8 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                     visibleTabs = rootVisibleTabs,
                     selectedTab = selectedTab,
                     pagerState = pagerState,
+                    visitedTabs = visitedTabs.value,
+                    onTabPageVisited = { page -> if (page !in visitedTabs.value) visitedTabs.value = visitedTabs.value + page },
                     homeScrollBehavior = homeScrollBehavior,
                     artworkPopSettling = artworkPopSettling,
                     artworkEnterSettling = artworkEnterSettling,
@@ -870,7 +879,9 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                             viewModel.tabScrollToTopRequests.tryEmit(tab)
                         } else {
                             selectedTab = tab
-                            coroutineScope.launch { pagerState.animateScrollToPage(index) }
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(index, animationSpec = tabScrollAnimationSpec)
+                            }
                             if (tab == AppTab.Bookmarks) viewModel.refreshBookmarks()
                         }
                     },
@@ -886,7 +897,9 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                             viewModel.tabScrollToTopRequests.tryEmit(tab)
                         } else {
                             selectedTab = tab
-                            coroutineScope.launch { pagerState.animateScrollToPage(pageIndex) }
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(pageIndex, animationSpec = tabScrollAnimationSpec)
+                            }
                             if (tab == AppTab.Bookmarks) viewModel.refreshBookmarks()
                         }
                     },

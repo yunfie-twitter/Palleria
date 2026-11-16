@@ -293,8 +293,6 @@
     <string name="general_smooth_desc">화면 전환과 목록 표시를 더 부드럽게 합니다</string>
     <string name="general_notch">노치 최적화</string>
     <string name="general_notch_desc">상태 표시줄 영역의 표시를 조정합니다</string>
-    <string name="general_swipe">스와이프로 탭 전환</string>
-    <string name="general_swipe_desc">왼쪽이나 오른쪽으로 스와이프하여 기본 화면 사이를 이동합니다</string>
     <string name="general_auto_load_more">자동으로 더 불러오기</string>
     <string name="general_auto_load_more_desc">끝에 도달하면 다음 페이지를 자동으로 가져옵니다</string>
     <string name="general_double_back">뒤로 두 번 눌러 종료</string>
@@ -781,8 +779,6 @@
     <string name="nav_shorts_feed">쇼츠</string>
     <string name="general_shorts_feed">쇼츠 피드</string>
     <string name="general_shorts_feed_desc">전체 화면 세로 피드에서 일러스트를 감상합니다</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe">가로 스와이프 사용 안 함</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe_desc">쇼츠 피드에서 옆으로 스와이프하여 탭이 바뀌는 것을 방지합니다</string>
     <string name="calculator_error">오류</string>
     <string name="error_novel_load_failed">소설을 불러올 수 없습니다.</string>
     <string name="error_notifications_load_failed">알림을 불러올 수 없습니다.</string>

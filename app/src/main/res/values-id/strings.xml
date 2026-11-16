@@ -326,8 +326,6 @@
     <string name="general_smooth_desc">Jadikan transisi layar dan rendering daftar lebih lancar</string>
     <string name="general_notch">Optimasi Takik</string>
     <string name="general_notch_desc">Sesuaikan tampilan di area bilah status</string>
-    <string name="general_swipe">Gesek untuk Beralih Tab</string>
-    <string name="general_swipe_desc">Gesek ke kiri/kanan untuk bernavigasi di antara layar utama</string>
     <string name="general_auto_load_more">Muat Otomatis Lebih Banyak</string>
     <string name="general_auto_load_more_desc">Ambil halaman berikutnya secara otomatis saat Anda mencapai bagian akhir</string>
     <string name="general_double_back">Gandakan Kembali untuk Keluar</string>
@@ -847,8 +845,6 @@
     <string name="nav_shorts_feed">Celana pendek</string>
     <string name="general_shorts_feed">Umpan Celana Pendek</string>
     <string name="general_shorts_feed_desc">Telusuri ilustrasi dalam umpan vertikal layar penuh</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe">Nonaktifkan Gesek Horizontal</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe_desc">Cegah gesekan ke samping agar tidak mengubah tab di feed Shorts</string>
     <string name="calculator_error">Kesalahan</string>
     <string name="error_novel_load_failed">Could not load the novel.</string>
     <string name="error_notifications_load_failed">Tidak dapat memuat notifikasi.</string>

@@ -346,7 +346,22 @@ fun NovelReaderScreen(
     onBack: () -> Unit,
     onRetry: () -> Unit,
 ) {
-    val currentNovel = novel ?: return
+    val currentNovel =
+        novel ?: run {
+            // ルートが積まれているのに表示対象が無い瞬間（連続で戻る操作をしたときなど）
+            // がある。ここで何も描かずに return すると画面全体が空白になるため、
+            // 背景とインジケータを必ず出す。
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .background(MiuixTheme.colorScheme.surface),
+                contentAlignment = Alignment.Center,
+            ) {
+                LoadingIndicator()
+            }
+            return
+        }
     val scrollBehavior = MiuixScrollBehavior()
     val pages by produceState(
         initialValue = listOf(NovelPage(emptyList())),

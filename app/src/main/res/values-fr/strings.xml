@@ -326,8 +326,6 @@
     <string name="general_smooth_desc">Rendre les transitions d\'écran et le rendu des listes plus fluides</string>
     <string name="general_notch">Optimisation de l\'encoche</string>
     <string name="general_notch_desc">Ajuster l\'affichage dans la zone de la barre d\'état</string>
-    <string name="general_swipe">Faites glisser pour changer d\'onglet</string>
-    <string name="general_swipe_desc">Faites glisser votre doigt vers la gauche/droite pour naviguer entre les écrans principaux</string>
     <string name="general_auto_load_more">Charger automatiquement plus</string>
     <string name="general_auto_load_more_desc">Récupère automatiquement la page suivante lorsque vous atteignez la fin</string>
     <string name="general_double_back">Double retour pour sortir</string>
@@ -847,8 +845,6 @@
     <string name="nav_shorts_feed">Short</string>
     <string name="general_shorts_feed">Flux de courts métrages</string>
     <string name="general_shorts_feed_desc">Parcourez les illustrations dans un flux vertical plein écran</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe">Désactiver le balayage horizontal</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe_desc">Empêcher les balayages latéraux de changer d\'onglet dans le flux Shorts</string>
     <string name="calculator_error">Erreur</string>
     <string name="error_novel_load_failed">Impossible de charger le roman.</string>
     <string name="error_notifications_load_failed">Impossible de charger les notifications.</string>
