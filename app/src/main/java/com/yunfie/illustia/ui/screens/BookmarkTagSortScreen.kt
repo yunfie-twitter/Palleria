@@ -30,13 +30,11 @@ import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
-import com.yunfie.illustia.ui.components.TopTabBar
-import com.yunfie.illustia.ui.components.clampTabIndex
-import com.yunfie.illustia.ui.components.rememberPagerTabIndex
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
+import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -78,12 +76,10 @@ internal fun BookmarkTagSortScreen(
         Column(
             modifier = Modifier.fillMaxSize().padding(padding),
         ) {
-            TopTabBar(
+            TabRowWithContour(
                 tabs = listOf(stringResource(R.string.restrict_public), stringResource(R.string.restrict_private)),
-                selectedTabIndex = rememberPagerTabIndex(pagerState),
-                onTabSelected = { index ->
-                    coroutineScope.launch { pagerState.animateScrollToPage(clampTabIndex(index, 2)) }
-                },
+                selectedTabIndex = if (restrict == Restrict.Public) 0 else 1,
+                onTabSelected = { index -> coroutineScope.launch { pagerState.animateScrollToPage(index) } },
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
             )
             TextField(
@@ -96,7 +92,6 @@ internal fun BookmarkTagSortScreen(
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.weight(1f),
-                beyondViewportPageCount = 1,
             ) { page ->
                 BookmarkTagSortPage(
                     restrict = if (page == 0) Restrict.Public else Restrict.Private,
@@ -222,7 +217,7 @@ private fun BookmarkTagSortRow(
             Text(text = count.toString(), color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.7f))
         }
         if (selected) {
-            Text(text = "\u2713", modifier = Modifier.padding(start = 12.dp), color = MiuixTheme.colorScheme.primary)
+            Text(text = "✓", modifier = Modifier.padding(start = 12.dp), color = MiuixTheme.colorScheme.primary)
         }
     }
 }

@@ -77,11 +77,8 @@ import com.yunfie.illustia.ui.components.IllustGridSkeleton
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.ScrollBlurScaffold
-import com.yunfie.illustia.ui.components.TopTabBar
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
-import com.yunfie.illustia.ui.components.clampTabIndex
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
-import com.yunfie.illustia.ui.components.rememberPagerTabIndex
 import com.yunfie.illustia.ui.components.smoothScrollToTop
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -90,6 +87,7 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.PullToRefresh
 import top.yukonga.miuix.kmp.basic.Surface
+import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -477,18 +475,17 @@ private fun SearchResultsArea(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            TopTabBar(
+            TabRowWithContour(
                 tabs = tabs,
-                selectedTabIndex = rememberPagerTabIndex(resultPagerState),
+                selectedTabIndex = selectedResultTab,
                 onTabSelected = { index ->
-                    val target = clampTabIndex(index, tabs.size)
-                    if (target != resultPagerState.currentPage) {
+                    if (index != selectedResultTab) {
                         performHaptic(AppHapticEffect.Toggle)
                     }
-                    viewModel.updateSearchSelectedTab(target)
-                    coroutineScope.launch { resultPagerState.animateScrollToPage(target) }
+                    viewModel.updateSearchSelectedTab(index)
+                    coroutineScope.launch { resultPagerState.animateScrollToPage(index) }
                 },
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f).pointerHoverIcon(PointerIcon.Hand),
             )
             Box {
                 IconButton(modifier = Modifier.pointerHoverIcon(PointerIcon.Hand), onClick = {
@@ -534,13 +531,7 @@ private fun SearchResultsArea(
                     IllustGridSkeleton(columns = adaptiveIllustColumns(state.settings))
                 }
             } else {
-                HorizontalPager(
-                    state = resultPagerState,
-                    modifier = Modifier.fillMaxSize(),
-                    // 隣接ページを先にコンポーズしておき、指に追従するドラッグ中から
-                    // 次のタブの中身が見えるようにする。
-                    beyondViewportPageCount = 1,
-                ) { page ->
+                HorizontalPager(state = resultPagerState, modifier = Modifier.fillMaxSize()) { page ->
                     SearchResultGrid(
                         page = page,
                         state = state,

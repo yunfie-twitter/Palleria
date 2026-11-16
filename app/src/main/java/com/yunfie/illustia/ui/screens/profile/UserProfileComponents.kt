@@ -100,13 +100,13 @@ import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.pinchToChangeColumns
 import com.yunfie.illustia.ui.components.profileGridContentPadding
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
-import com.yunfie.illustia.ui.components.rememberPagerTabIndex
 import com.yunfie.illustia.ui.screens.UserResultCard
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
@@ -116,7 +116,6 @@ import top.yukonga.miuix.kmp.overlay.OverlayCascadingListPopup
 import top.yukonga.miuix.kmp.squircle.squircleBorder
 import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import kotlin.math.roundToInt
 import androidx.compose.foundation.lazy.items as lazyListItems
 
 enum class UserWorkSortOrder {
@@ -175,8 +174,6 @@ internal fun UserProfilePagerContent(
     liquidGlassFollowBackdrop: LayerBackdrop? = null,
 ) {
     val tabListState = rememberLazyListState()
-    // タブのハイライトを指の位置に追従させるため、ここで 1 度だけ評価する。
-    val tabIndex = rememberPagerTabIndex(pagerState)
     Column(modifier = modifier.background(backgroundColor)) {
         AnimatedVisibility(
             visible = showProfileHeader,
@@ -193,7 +190,7 @@ internal fun UserProfilePagerContent(
         ) {
             UserProfileHeader(
                 user = user,
-                selectedTabProvider = { tabIndex },
+                selectedTabProvider = { pagerState.currentPage },
                 onTabSelected = onTabSelected,
                 onToggleFollow = onToggleFollow,
                 isMuted = isMuted,
@@ -201,6 +198,7 @@ internal fun UserProfilePagerContent(
                 followAnimationTrigger = followAnimationTrigger,
                 backgroundColor = backgroundColor,
                 onAvatarClick = onAvatarClick,
+                tabListState = tabListState,
                 onCollapseHeader = onCollapseHeader,
                 isOwnProfile = isOwnProfile,
                 isProfileEditEnabled = isProfileEditEnabled,
@@ -229,18 +227,16 @@ internal fun UserProfilePagerContent(
                         .height(54.dp),
                 )
                 UserProfileTabs(
-                    selectedTabProvider = { tabIndex },
+                    selectedTabProvider = { pagerState.currentPage },
                     onTabSelected = onTabSelected,
                     modifier = Modifier.padding(horizontal = 14.dp),
+                    listState = tabListState,
                 )
             }
         }
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxWidth().weight(1f).background(backgroundColor),
-            // 隣接ページを先にコンポーズしておき、指に追従するドラッグ中から
-            // 次のタブの中身が見えるようにする。
-            beyondViewportPageCount = 1,
         ) { page ->
             when (page) {
                 0 -> {
@@ -302,7 +298,7 @@ internal fun UserProfilePagerContent(
 @Composable
 private fun UserProfileHeader(
     user: UserProfile,
-    selectedTabProvider: () -> Float,
+    selectedTabProvider: () -> Int,
     onTabSelected: (Int) -> Unit,
     onToggleFollow: () -> Unit,
     isMuted: Boolean,
@@ -310,6 +306,7 @@ private fun UserProfileHeader(
     followAnimationTrigger: Int,
     backgroundColor: Color,
     onAvatarClick: () -> Unit,
+    tabListState: LazyListState,
     onCollapseHeader: () -> Unit = {},
     isOwnProfile: Boolean = false,
     isProfileEditEnabled: Boolean = false,
@@ -356,6 +353,7 @@ private fun UserProfileHeader(
             followAnimationTrigger = followAnimationTrigger,
             backgroundColor = backgroundColor,
             onAvatarClick = onAvatarClick,
+            tabListState = tabListState,
             isOwnProfile = isOwnProfile,
             isProfileEditEnabled = isProfileEditEnabled,
             onEditProfile = onEditProfile,
@@ -694,7 +692,7 @@ private fun TopBarTitle(
 @Composable
 private fun UserProfileInfo(
     user: UserProfile,
-    selectedTabProvider: () -> Float,
+    selectedTabProvider: () -> Int,
     onTabSelected: (Int) -> Unit,
     onToggleFollow: () -> Unit,
     isMuted: Boolean,
@@ -702,6 +700,7 @@ private fun UserProfileInfo(
     followAnimationTrigger: Int,
     backgroundColor: Color,
     onAvatarClick: () -> Unit,
+    tabListState: LazyListState,
     isOwnProfile: Boolean = false,
     isProfileEditEnabled: Boolean = false,
     onEditProfile: (() -> Unit)? = null,
@@ -772,6 +771,7 @@ private fun UserProfileInfo(
         }
         UserProfileTabs(
             onTabSelected = onTabSelected,
+            listState = tabListState,
             selectedTabProvider = selectedTabProvider,
         )
     }
@@ -779,10 +779,11 @@ private fun UserProfileInfo(
 
 @Composable
 internal fun UserProfileTabs(
-    selectedTab: Float = 0f,
+    selectedTab: Int = 0,
     onTabSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
-    selectedTabProvider: (() -> Float)? = null,
+    listState: LazyListState = rememberLazyListState(),
+    selectedTabProvider: (() -> Int)? = null,
 ) {
     val performHaptic =
         com.yunfie.illustia.ui.components
@@ -794,16 +795,17 @@ internal fun UserProfileTabs(
             stringResource(R.string.user_tab_info),
         )
     val currentSelectedTab = selectedTabProvider?.invoke() ?: selectedTab
-    com.yunfie.illustia.ui.components.TopTabBar(
+    TabRowWithContour(
         modifier = modifier.fillMaxWidth(),
         tabs = tabs,
         selectedTabIndex = currentSelectedTab,
         onTabSelected = { index ->
-            if (index != currentSelectedTab.roundToInt()) {
+            if (index != currentSelectedTab) {
                 performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Toggle)
             }
             onTabSelected(index)
         },
+        listState = listState,
     )
 }
 
@@ -921,7 +923,7 @@ private fun UserIllustGridPage(
     )
 
     val shimmer = if (isPaginating) rememberIllustSkeletonShimmer() else null
-    // グリッドが常に空で取得に失敗しているときは、下端アイテムとして出さず
+    // グリッドが丸ごと空で取得に失敗しているときは、先頭アイテムとして上端に出すのではなく
     // 画面全体の中央に出す。
     val emptyError = errorMessage?.takeIf { illusts.isEmpty() && !isPaginating }
     if (emptyError != null) {
