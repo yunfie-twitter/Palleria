@@ -49,7 +49,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.core.os.LocaleListCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.core.view.WindowCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
@@ -839,11 +838,10 @@ class MainActivity : FragmentActivity() {
                     SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
                 },
         )
-        disableNavigationBarContrastEnforcement(window)
-        WindowCompat.getInsetsController(window, window.decorView).apply {
-            isAppearanceLightStatusBars = !isDarkTheme
-            isAppearanceLightNavigationBars = !isDarkTheme
-        }
+        // 全画面（リーダー/ビューア）から戻った直後は OS がバーを不透明色で塗り直す
+        // ことがあるため、透明色・コントラスト無効・外観はここで一括して再適用する。
+        com.yunfie.illustia.ui.components.TransparentSystemBars
+            .reapplyTransparent(window, isDarkTheme)
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
