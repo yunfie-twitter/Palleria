@@ -773,7 +773,9 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         val index = tabs.indexOf(tab)
         if (index >= 0) {
             selectedTab = tab
-            coroutineScope.launch { pagerState.scrollToPage(index) }
+            coroutineScope.launch {
+                pagerState.animateScrollToPage(index, animationSpec = tabScrollAnimationSpec)
+            }
         }
     }
     // パレットのアクション実行は画面ツリーから切り離したハンドラに委譲する。
@@ -870,7 +872,9 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                             viewModel.tabScrollToTopRequests.tryEmit(tab)
                         } else {
                             selectedTab = tab
-                            coroutineScope.launch { pagerState.animateScrollToPage(index) }
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(index, animationSpec = tabScrollAnimationSpec)
+                            }
                             if (tab == AppTab.Bookmarks) viewModel.refreshBookmarks()
                         }
                     },
@@ -886,7 +890,9 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                             viewModel.tabScrollToTopRequests.tryEmit(tab)
                         } else {
                             selectedTab = tab
-                            coroutineScope.launch { pagerState.animateScrollToPage(pageIndex) }
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(pageIndex, animationSpec = tabScrollAnimationSpec)
+                            }
                             if (tab == AppTab.Bookmarks) viewModel.refreshBookmarks()
                         }
                     },
