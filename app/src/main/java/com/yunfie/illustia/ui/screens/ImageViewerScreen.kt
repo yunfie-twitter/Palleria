@@ -267,8 +267,9 @@ fun ImageViewerScreen(
             }
     }
 
+    // ビューアの背景は常に黒なので、復帰後のバーは明るいアイコン（ダーク前提）に戻す。
     com.yunfie.illustia.ui.components
-        .ReaderFullscreen(fullscreen)
+        .ReaderFullscreen(fullscreen, isDarkTheme = true)
 
     fun shareCurrentPage() {
         val url = imageUrls.getOrNull(currentPageState.value) ?: return

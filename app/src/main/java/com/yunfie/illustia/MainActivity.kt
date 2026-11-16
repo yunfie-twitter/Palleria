@@ -49,7 +49,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.core.os.LocaleListCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.core.view.WindowCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
@@ -150,6 +149,10 @@ class MainActivity : FragmentActivity() {
     private var processLifecycleObserver: DefaultLifecycleObserver? = null
     private var appliedAppLanguage: String? = null
     private var appliedDarkTheme: Boolean? = null
+
+    // 設定変更時に書き戻すための、解決済みのアプリテーマ。デバイスのナイトモードではなく
+    // アプリ設定（themeMode）から決まるため、onConfigurationChanged ではこちらを使う。
+    private var resolvedAppDarkTheme: Boolean? = null
     private var isSnapshotBlurApplied = false
     private var appliedSecureWindowFlag: Boolean? = null
     private var appliedRecentsScreenshotEnabled: Boolean? = null
@@ -223,6 +226,8 @@ class MainActivity : FragmentActivity() {
             }
         }
         val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        // 設定ロード前の暫定値。ロード後にアプリ設定から解決した値で上書きされる。
+        resolvedAppDarkTheme = isDark
         applySystemBarAppearance(isDark)
         super.onCreate(savedInstanceState)
         // Warm up ViewModel immediately so settings/cache loading starts in parallel with window setup.
@@ -315,7 +320,9 @@ class MainActivity : FragmentActivity() {
 
             LaunchedEffect(settingsLoaded, settings.themeMode, systemDark) {
                 if (!settingsLoaded) return@LaunchedEffect
-                applySystemBarAppearance(isAppDarkTheme(settings.themeMode, systemDark))
+                val isDarkTheme = isAppDarkTheme(settings.themeMode, systemDark)
+                resolvedAppDarkTheme = isDarkTheme
+                applySystemBarAppearance(isDarkTheme)
             }
 
             LaunchedEffect(
@@ -839,16 +846,17 @@ class MainActivity : FragmentActivity() {
                     SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
                 },
         )
-        disableNavigationBarContrastEnforcement(window)
-        WindowCompat.getInsetsController(window, window.decorView).apply {
-            isAppearanceLightStatusBars = !isDarkTheme
-            isAppearanceLightNavigationBars = !isDarkTheme
-        }
+        // 全画面（リーダー/ビューア）から戻った直後は OS がバーを不透明色で塗り直す
+        // ことがあるため、透明色・コントラスト無効・外観はここで一括して再適用する。
+        com.yunfie.illustia.ui.components.TransparentSystemBars
+            .reapplyTransparent(window, isDarkTheme)
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        val isDark = (newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        // デバイスのナイトモードではなく、アプリ設定から解決済みのテーマを書き戻す。
+        // themeMode が "light"/"dark" 固定のとき、デバイス設定で上書きしないため。
+        val isDark = resolvedAppDarkTheme ?: return
         if (appliedDarkTheme != isDark) {
             applySystemBarAppearance(isDark)
         }
