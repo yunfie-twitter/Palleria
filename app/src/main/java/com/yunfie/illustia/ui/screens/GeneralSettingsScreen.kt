@@ -214,13 +214,6 @@ fun GeneralSettingsScreen(
                 Section(stringResource(R.string.general_section_gestures)) {
                     ElevatedPanel {
                         SettingSwitchRow(
-                            title = stringResource(R.string.general_swipe),
-                            checked = settings.swipeToSwitchWorks,
-                            onCheckedChange = viewModel::updateSwipeToSwitchWorks,
-                            summary = stringResource(R.string.general_swipe_desc),
-                        )
-                        DividerLine()
-                        SettingSwitchRow(
                             title = stringResource(R.string.general_auto_load_more),
                             checked = settings.autoLoadMore,
                             onCheckedChange = viewModel::updateAutoLoadMore,

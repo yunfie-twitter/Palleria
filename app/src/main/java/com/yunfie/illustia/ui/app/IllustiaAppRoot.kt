@@ -107,6 +107,11 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
             pageCount = { tabs.size },
         )
     val coroutineScope = rememberCoroutineScope()
+    // どのタブページを一度でも表示したか。MainSurface（Main エントリ）の中で remember すると、
+    // エントリが作り直されるたびに pagerState の現在ページだけを初期値に取り直し、
+    // その後 pager が scrollToPage で移動したページが未訪問のまま残って空白になる。
+    // pagerState と同じ寿命になるようここで保持する。
+    val visitedTabs = remember { mutableStateOf(setOf(pagerState.currentPage)) }
     val snackbarHostState = remember { SnackbarHostState() }
     val homeScrollBehavior = MiuixScrollBehavior()
     val context = LocalContext.current
@@ -842,6 +847,8 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                     visibleTabs = rootVisibleTabs,
                     selectedTab = selectedTab,
                     pagerState = pagerState,
+                    visitedTabs = visitedTabs.value,
+                    onTabPageVisited = { page -> if (page !in visitedTabs.value) visitedTabs.value = visitedTabs.value + page },
                     homeScrollBehavior = homeScrollBehavior,
                     artworkPopSettling = artworkPopSettling,
                     artworkEnterSettling = artworkEnterSettling,

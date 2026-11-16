@@ -17,6 +17,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -100,6 +101,8 @@ internal fun AppNavHost(
     searchSnapshots: Map<String, SearchEntrySnapshot> = emptyMap(),
     selectedTab: AppTab,
     pagerState: androidx.compose.foundation.pager.PagerState,
+    visitedPages: Set<Int> = emptySet(),
+    onPageVisited: (Int) -> Unit = {},
     homeScrollBehavior: ScrollBehavior,
     artworkPopSettling: Boolean = false,
     artworkEnterSettling: Boolean = false,
@@ -136,6 +139,8 @@ internal fun AppNavHost(
                         viewModel = viewModel,
                         selectedTab = selectedTab,
                         pagerState = pagerState,
+                        visitedPages = visitedPages,
+                        onPageVisited = onPageVisited,
                         homeScrollBehavior = homeScrollBehavior,
                         onTabSelected = onTabSelected,
                         onSearch = {
@@ -425,7 +430,8 @@ internal fun AppNavHost(
                 AppRoute.ImageViewer,
                 metadata = artworkMetadata,
             ) {
-                appState.state.imageViewerIllust?.let { illust ->
+                val illust = appState.state.imageViewerIllust
+                if (illust != null) {
                     androidx.compose.runtime.CompositionLocalProvider(
                         com.yunfie.illustia.ui.components.LocalImageRefreshRequest provides viewerRefreshRequest,
                     ) {
@@ -449,6 +455,18 @@ internal fun AppNavHost(
                             mangaAdaptivePreload = appState.state.settings.isFeatureEnabled(FeatureFlag.MangaAdaptivePreload),
                             progressiveQuality = appState.state.settings.isFeatureEnabled(FeatureFlag.ProgressiveImageQuality),
                         )
+                    }
+                } else {
+                    // ルートが積まれているのに表示対象が無い瞬間（拡大→戻るを素早く繰り返した
+                    // ときなど）がある。以前はここで何も描かれず画面全体が空白になっていた。
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .background(Color.Black),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        LoadingIndicator()
                     }
                 }
             }

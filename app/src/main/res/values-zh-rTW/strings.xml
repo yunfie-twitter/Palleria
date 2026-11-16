@@ -287,8 +287,6 @@
     <string name="general_smooth_desc">讓螢幕過渡和清單渲染更加平滑</string>
     <string name="general_notch">缺口優化</string>
     <string name="general_notch_desc">調整狀態列區域的顯示</string>
-    <string name="general_swipe">滑動切換選項卡</string>
-    <string name="general_swipe_desc">向左/向右滑動可在主畫面之間導航</string>
     <string name="general_auto_load_more">自動載入更多</string>
     <string name="general_auto_load_more_desc">到達結尾時自動取得下一頁</string>
     <string name="general_double_back">雙擊返回退出</string>
@@ -742,8 +740,6 @@
     <string name="nav_shorts_feed">直式動態</string>
     <string name="general_shorts_feed">Shorts Feed</string>
     <string name="general_shorts_feed_desc">以全螢幕垂直方式瀏覽插圖</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe">停用水平滑動</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe_desc">防止橫向滑動更改 Shorts Feed 中的選項卡</string>
     <string name="calculator_error">錯誤</string>
     <string name="error_novel_load_failed">無法載入小說。</string>
     <string name="error_notifications_load_failed">無法載入通知。</string>
