@@ -326,8 +326,6 @@
     <string name="general_smooth_desc">Thực hiện chuyển tiếp màn hình và hiển thị danh sách mượt mà hơn</string>
     <string name="general_notch">Tối ưu hóa notch</string>
     <string name="general_notch_desc">Điều chỉnh hiển thị ở khu vực thanh trạng thái</string>
-    <string name="general_swipe">Vuốt để chuyển tab</string>
-    <string name="general_swipe_desc">Vuốt sang trái/phải để điều hướng giữa các màn hình chính</string>
     <string name="general_auto_load_more">Tự động tải thêm</string>
     <string name="general_auto_load_more_desc">Tự động tìm nạp trang tiếp theo khi bạn đến cuối</string>
     <string name="general_double_back">Quay lại gấp đôi để thoát</string>
@@ -847,8 +845,6 @@
     <string name="nav_shorts_feed">quần short</string>
     <string name="general_shorts_feed">Nguồn cấp dữ liệu ngắn</string>
     <string name="general_shorts_feed_desc">Duyệt hình minh họa trong nguồn cấp dữ liệu dọc toàn màn hình</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe">Tắt tính năng vuốt ngang</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe_desc">Ngăn chặn thao tác vuốt sang một bên để thay đổi tab trong trang Video ngắn</string>
     <string name="calculator_error">Lỗi</string>
     <string name="error_novel_load_failed">Không thể tải tiểu thuyết.</string>
     <string name="error_notifications_load_failed">Không thể tải thông báo.</string>

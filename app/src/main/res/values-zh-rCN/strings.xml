@@ -287,8 +287,6 @@
     <string name="general_smooth_desc">使屏幕过渡和列表渲染更加平滑</string>
     <string name="general_notch">缺口优化</string>
     <string name="general_notch_desc">调整状态栏区域的显示</string>
-    <string name="general_swipe">滑动切换选项卡</string>
-    <string name="general_swipe_desc">向左/向右滑动可在主屏幕之间导航</string>
     <string name="general_auto_load_more">自动加载更多</string>
     <string name="general_auto_load_more_desc">到达末尾时自动获取下一页</string>
     <string name="general_double_back">双击返回退出</string>
@@ -742,8 +740,6 @@
     <string name="nav_shorts_feed">竖屏动态</string>
     <string name="general_shorts_feed">Shorts Feed</string>
     <string name="general_shorts_feed_desc">以全屏垂直方式浏览插图</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe">禁用水平滑动</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe_desc">防止横向滑动更改 Shorts Feed 中的选项卡</string>
     <string name="calculator_error">错误</string>
     <string name="error_novel_load_failed">无法加载小说。</string>
     <string name="error_notifications_load_failed">无法加载通知。</string>

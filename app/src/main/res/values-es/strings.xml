@@ -326,8 +326,6 @@
     <string name="general_smooth_desc">Haga que las transiciones de pantalla y la representación de listas sean más fluidas</string>
     <string name="general_notch">Optimización de muesca</string>
     <string name="general_notch_desc">Ajustar la visualización en el área de la barra de estado</string>
-    <string name="general_swipe">Desliza para cambiar de pestaña</string>
-    <string name="general_swipe_desc">Desliza hacia la izquierda/derecha para navegar entre las pantallas principales</string>
     <string name="general_auto_load_more">Cargar automáticamente más</string>
     <string name="general_auto_load_more_desc">Recupera automáticamente la página siguiente cuando llegues al final</string>
     <string name="general_double_back">Doble regreso para salir</string>
@@ -847,8 +845,6 @@
     <string name="nav_shorts_feed">Pantalones cortos</string>
     <string name="general_shorts_feed">Feed de cortos</string>
     <string name="general_shorts_feed_desc">Explore ilustraciones en una fuente vertical de pantalla completa</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe">Deshabilitar el deslizamiento horizontal</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe_desc">Evite que los deslizamientos laterales cambien de pestaña en el feed de Shorts</string>
     <string name="calculator_error">error</string>
     <string name="error_novel_load_failed">No se pudo cargar la novela.</string>
     <string name="error_notifications_load_failed">No se pudieron cargar las notificaciones.</string>
