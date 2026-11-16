@@ -61,7 +61,6 @@ internal object TransparentSystemBars {
         window: Window,
         isDark: Boolean,
     ) {
-        window.navigationBarColor = Color.TRANSPARENT
         window.statusBarColor = Color.TRANSPARENT
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             window.isNavigationBarContrastEnforced = false
