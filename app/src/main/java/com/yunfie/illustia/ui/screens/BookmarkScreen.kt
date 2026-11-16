@@ -44,10 +44,8 @@ import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.OverlayIconCascadingDropdownMenu
 import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
 import com.yunfie.illustia.ui.components.ScrollBlurScaffold
-import com.yunfie.illustia.ui.components.clampTabIndex
 import com.yunfie.illustia.ui.components.onTopBarTap
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
-import com.yunfie.illustia.ui.components.rememberPagerTabIndex
 import com.yunfie.illustia.ui.components.smoothScrollToTop
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
@@ -93,16 +91,15 @@ fun BookmarkScreen(
     }
     val pagerState =
         rememberPagerState(
-            initialPage = clampTabIndex(chrome.selectedTab, BookmarkTab.entries.size),
-            pageCount = { BookmarkTab.entries.size },
+            initialPage = chrome.selectedTab,
+            pageCount = { 4 },
         )
     val coroutineScope = rememberCoroutineScope()
-    // タブのハイライトは指の位置に追従させる（currentPage + offsetFraction）。
-    // 選択済みタブの確定は settledPage で行い、途中のページ変化で画面全体が
-    // 再コンポーズされないようにしている。
-    val indicatorTab = rememberPagerTabIndex(pagerState)
-    val selectedTopTab =
-        BookmarkTab.entries[pagerState.settledPage.coerceIn(0, BookmarkTab.entries.lastIndex)]
+    // Drive the tab indicator from targetPage so it reacts immediately on tap,
+    // like RankingScreen. Commit selected tab only when the pager settles, so
+    // swiping does not recompose the whole screen for every intermediate page.
+    val indicatorTab = pagerState.targetPage.coerceIn(0, 3)
+    val selectedTopTab = pagerState.settledPage
 
     LaunchedEffect(pagerState) {
         snapshotFlow { pagerState.settledPage }
@@ -111,7 +108,7 @@ fun BookmarkScreen(
     }
 
     LaunchedEffect(selectedTopTab) {
-        if (selectedTopTab == BookmarkTab.Watchlist && watchlistState.model == null && !watchlistState.isLoading) {
+        if (selectedTopTab == 2 && watchlistState.model == null && !watchlistState.isLoading) {
             watchlistStore.fetch()
         }
     }
@@ -128,7 +125,7 @@ fun BookmarkScreen(
             }
         }
     when (selectedTopTab) {
-        BookmarkTab.Timeline -> {
+        0 -> {
             PrefetchIllustGridImages(
                 items = timelineItems,
                 gridState = viewModel.bookmarkTimelineGridState,
@@ -138,7 +135,7 @@ fun BookmarkScreen(
             )
         }
 
-        BookmarkTab.Bookmarks -> {
+        1 -> {
             PrefetchIllustGridImages(
                 items = sortedBookmarkItems,
                 gridState = viewModel.bookmarkMainGridState,
@@ -146,20 +143,14 @@ fun BookmarkScreen(
                 highQualityImages = feedHighQuality,
             )
         }
-
-        BookmarkTab.Watchlist,
-        BookmarkTab.Following,
-        -> {
-            Unit
-        }
     }
 
     LaunchedEffect(selectedTopTab) {
         when (selectedTopTab) {
-            BookmarkTab.Timeline -> if (timelineItems.isEmpty()) viewModel.refreshTimeline()
-            BookmarkTab.Bookmarks -> if (bookmarkItems.isEmpty()) viewModel.refreshBookmarks()
-            BookmarkTab.Watchlist -> if (watchlistState.model == null && !watchlistState.isLoading) watchlistStore.fetch()
-            BookmarkTab.Following -> if (followingUsers.isEmpty()) viewModel.refreshFollowingUsers()
+            0 -> if (timelineItems.isEmpty()) viewModel.refreshTimeline()
+            1 -> if (bookmarkItems.isEmpty()) viewModel.refreshBookmarks()
+            2 -> if (watchlistState.model == null && !watchlistState.isLoading) watchlistStore.fetch()
+            3 -> if (followingUsers.isEmpty()) viewModel.refreshFollowingUsers()
         }
     }
 
@@ -170,13 +161,14 @@ fun BookmarkScreen(
         viewModel.tabScrollToTopRequests.collect { tab ->
             if (tab == AppTab.Bookmarks) {
                 val targetState =
-                    when (BookmarkTab.entries[pagerState.currentPage.coerceIn(0, BookmarkTab.entries.lastIndex)]) {
-                        BookmarkTab.Timeline -> viewModel.bookmarkTimelineGridState
-                        BookmarkTab.Bookmarks -> viewModel.bookmarkMainGridState
-                        BookmarkTab.Watchlist -> viewModel.bookmarkWatchlistGridState
-                        BookmarkTab.Following -> viewModel.bookmarkFollowingGridState
+                    when (pagerState.currentPage) {
+                        0 -> viewModel.bookmarkTimelineGridState
+                        1 -> viewModel.bookmarkMainGridState
+                        2 -> viewModel.bookmarkWatchlistGridState
+                        3 -> viewModel.bookmarkFollowingGridState
+                        else -> null
                     }
-                targetState.smoothScrollToTop(scrollBehavior)
+                targetState?.smoothScrollToTop(scrollBehavior)
             }
         }
     }
@@ -203,17 +195,18 @@ fun BookmarkScreen(
                         performHaptic(AppHapticEffect.Click)
                         coroutineScope.launch {
                             val targetState =
-                                when (BookmarkTab.entries[pagerState.currentPage.coerceIn(0, BookmarkTab.entries.lastIndex)]) {
-                                    BookmarkTab.Timeline -> viewModel.bookmarkTimelineGridState
-                                    BookmarkTab.Bookmarks -> viewModel.bookmarkMainGridState
-                                    BookmarkTab.Watchlist -> viewModel.bookmarkWatchlistGridState
-                                    BookmarkTab.Following -> viewModel.bookmarkFollowingGridState
+                                when (pagerState.currentPage) {
+                                    0 -> viewModel.bookmarkTimelineGridState
+                                    1 -> viewModel.bookmarkMainGridState
+                                    2 -> viewModel.bookmarkWatchlistGridState
+                                    3 -> viewModel.bookmarkFollowingGridState
+                                    else -> null
                                 }
-                            targetState.smoothScrollToTop(scrollBehavior)
+                            targetState?.smoothScrollToTop(scrollBehavior)
                         }
                     },
                 actions = {
-                    if (selectedTopTab == BookmarkTab.Bookmarks) {
+                    if (selectedTopTab == 1) {
                         val tagSortLabel = stringResource(R.string.bookmark_tag_sort_button)
                         val publicLabel = stringResource(R.string.restrict_public)
                         val privateLabel = stringResource(R.string.restrict_private)
@@ -332,7 +325,7 @@ fun BookmarkScreen(
                             contentDescription = stringResource(R.string.nav_bookmarks_full),
                         )
                     }
-                    if (selectedTopTab == BookmarkTab.Following) {
+                    if (selectedTopTab == 3) {
                         val publicLabel = stringResource(R.string.restrict_public)
                         val privateLabel = stringResource(R.string.restrict_private)
                         val sortLabel = stringResource(R.string.action_sort)
@@ -428,10 +421,10 @@ fun BookmarkScreen(
                     IconButton(onClick = {
                         performHaptic(AppHapticEffect.Click)
                         when (selectedTopTab) {
-                            BookmarkTab.Timeline -> viewModel.refreshTimeline(forceRefresh = true)
-                            BookmarkTab.Bookmarks -> viewModel.refreshBookmarks(forceRefresh = true)
-                            BookmarkTab.Watchlist -> coroutineScope.launch { watchlistStore.fetch() }
-                            BookmarkTab.Following -> viewModel.refreshFollowingUsers(forceRefresh = true)
+                            0 -> viewModel.refreshTimeline(forceRefresh = true)
+                            2 -> coroutineScope.launch { watchlistStore.fetch() }
+                            3 -> viewModel.refreshFollowingUsers(forceRefresh = true)
+                            else -> viewModel.refreshBookmarks(forceRefresh = true)
                         }
                     }) {
                         Icon(
@@ -446,21 +439,21 @@ fun BookmarkScreen(
                     CompactBookmarkTabs(
                         selectedTab = indicatorTab,
                         onSelect = { index ->
-                            val target = clampTabIndex(index, BookmarkTab.entries.size)
-                            if (target != pagerState.currentPage) {
+                            if (index != pagerState.currentPage) {
                                 performHaptic(AppHapticEffect.Toggle)
-                                coroutineScope.launch { pagerState.animateScrollToPage(target) }
+                                coroutineScope.launch { pagerState.animateScrollToPage(index) }
                             } else {
                                 performHaptic(AppHapticEffect.Click)
                                 coroutineScope.launch {
                                     val targetState =
-                                        when (BookmarkTab.entries[target]) {
-                                            BookmarkTab.Timeline -> viewModel.bookmarkTimelineGridState
-                                            BookmarkTab.Bookmarks -> viewModel.bookmarkMainGridState
-                                            BookmarkTab.Watchlist -> viewModel.bookmarkWatchlistGridState
-                                            BookmarkTab.Following -> viewModel.bookmarkFollowingGridState
+                                        when (index) {
+                                            0 -> viewModel.bookmarkTimelineGridState
+                                            1 -> viewModel.bookmarkMainGridState
+                                            2 -> viewModel.bookmarkWatchlistGridState
+                                            3 -> viewModel.bookmarkFollowingGridState
+                                            else -> null
                                         }
-                                    targetState.smoothScrollToTop(scrollBehavior)
+                                    targetState?.smoothScrollToTop(scrollBehavior)
                                 }
                             }
                         },
@@ -478,12 +471,10 @@ fun BookmarkScreen(
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize(),
-                // 隣接ページを先にコンポーズしておき、指に追従するドラッグ中から
-                // 次のタブの中身が見えるようにする。
-                beyondViewportPageCount = 1,
+                beyondViewportPageCount = 0,
             ) { page ->
-                when (BookmarkTab.entries[page]) {
-                    BookmarkTab.Timeline -> {
+                when (page) {
+                    0 -> {
                         BookmarkTimelineTab(
                             timelineItems = timelineItems,
                             loadState = timelineLoadState,
@@ -496,7 +487,7 @@ fun BookmarkScreen(
                         )
                     }
 
-                    BookmarkTab.Bookmarks -> {
+                    1 -> {
                         BookmarkMainTab(
                             bookmarkItems = sortedBookmarkItems,
                             loadState = loadState,
@@ -509,7 +500,7 @@ fun BookmarkScreen(
                         )
                     }
 
-                    BookmarkTab.Watchlist -> {
+                    2 -> {
                         BookmarkWatchlistTab(
                             settings = settings,
                             watchlistState = watchlistState,
@@ -521,7 +512,7 @@ fun BookmarkScreen(
                         )
                     }
 
-                    BookmarkTab.Following -> {
+                    3 -> {
                         BookmarkFollowingTab(
                             settings = settings,
                             followingUsers = followingUsers,
