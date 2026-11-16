@@ -326,8 +326,6 @@
     <string name="general_smooth_desc">Rendi le transizioni dello schermo e il rendering degli elenchi più fluidi</string>
     <string name="general_notch">Ottimizzazione della tacca</string>
     <string name="general_notch_desc">Regola la visualizzazione nell\'area della barra di stato</string>
-    <string name="general_swipe">Scorri per cambiare scheda</string>
-    <string name="general_swipe_desc">Scorrere verso sinistra/destra per navigare tra le schermate principali</string>
     <string name="general_auto_load_more">Carica automaticamente altro</string>
     <string name="general_auto_load_more_desc">Recupera automaticamente la pagina successiva quando raggiungi la fine</string>
     <string name="general_double_back">Torna indietro per uscire</string>
@@ -847,8 +845,6 @@
     <string name="nav_shorts_feed">Pantaloncini</string>
     <string name="general_shorts_feed">Alimentazione dei cortometraggi</string>
     <string name="general_shorts_feed_desc">Sfoglia le illustrazioni in un feed verticale a schermo intero</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe">Disattiva lo scorrimento orizzontale</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe_desc">Impedisci agli scorrimenti laterali di modificare le schede nel feed di Shorts</string>
     <string name="calculator_error">Errore</string>
     <string name="error_novel_load_failed">Impossibile caricare il romanzo.</string>
     <string name="error_notifications_load_failed">Impossibile caricare le notifiche.</string>

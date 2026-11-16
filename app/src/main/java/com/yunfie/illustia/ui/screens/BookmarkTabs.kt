@@ -30,11 +30,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.input.pointer.PointerIcon
-import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -71,6 +67,7 @@ import com.yunfie.illustia.ui.components.ProfileGridVerticalSpacing
 import com.yunfie.illustia.ui.components.RequestErrorState
 import com.yunfie.illustia.ui.components.ScrollablePullToRefresh
 import com.yunfie.illustia.ui.components.StateBanner
+import com.yunfie.illustia.ui.components.TopTabBar
 import com.yunfie.illustia.ui.components.UserResultCardSkeleton
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
@@ -87,12 +84,9 @@ import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
-import top.yukonga.miuix.kmp.basic.TabRowDefaults
-import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
-import top.yukonga.miuix.kmp.squircle.squircleBorder
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import androidx.compose.foundation.lazy.grid.items as gridItems
@@ -791,56 +785,25 @@ internal fun BookmarkFollowingTab(
     }
 }
 
+/**
+ * ブックマーク画面の上部タブ。並び順はそのままスワイプ／タップの移動順になる。
+ * 0 が左端・3 が右端で、端では循環しない（Pager 側が pageCount を超えない）。
+ */
+internal enum class BookmarkTab {
+    Timeline,
+    Bookmarks,
+    Watchlist,
+    Following,
+}
+
 @Composable
 internal fun CompactBookmarkTabs(
-    selectedTab: Int,
+    selectedTab: Float,
     onSelect: (Int) -> Unit,
     isBlurEnabled: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
-    val isDark = MiuixTheme.colorScheme.surface.luminance() < 0.5f
-    val colors =
-        if (isBlurEnabled) {
-            TabRowDefaults.tabRowColors(
-                backgroundColor =
-                    if (isDark) {
-                        MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.45f)
-                    } else {
-                        MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f)
-                    },
-                contentColor = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                selectedBackgroundColor =
-                    if (isDark) {
-                        Color.White.copy(alpha = 0.18f)
-                    } else {
-                        Color.White.copy(alpha = 0.95f)
-                    },
-                selectedContentColor = MiuixTheme.colorScheme.onSurface,
-            )
-        } else {
-            TabRowDefaults.tabRowColors(
-                backgroundColor = MiuixTheme.colorScheme.surfaceContainer,
-                contentColor = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                selectedBackgroundColor =
-                    if (isDark) {
-                        Color.White.copy(alpha = 0.16f)
-                    } else {
-                        Color.White.copy(alpha = 0.92f)
-                    },
-                selectedContentColor = MiuixTheme.colorScheme.onSurface,
-            )
-        }
-    val borderModifier =
-        if (isBlurEnabled) {
-            Modifier.squircleBorder(
-                width = 0.75.dp,
-                color = if (isDark) Color.White.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.08f),
-                cornerRadius = TabRowDefaults.TabRowWithContourCornerRadius,
-            )
-        } else {
-            Modifier
-        }
-    TabRowWithContour(
+    TopTabBar(
         tabs =
             listOf(
                 stringResource(R.string.bookmark_tab_timeline),
@@ -850,9 +813,7 @@ internal fun CompactBookmarkTabs(
             ),
         selectedTabIndex = selectedTab,
         onTabSelected = onSelect,
-        modifier = modifier.then(borderModifier).pointerHoverIcon(PointerIcon.Hand),
-        colors = colors,
-        minWidth = 86.dp,
-        maxWidth = 116.dp,
+        modifier = modifier,
+        isBlurEnabled = isBlurEnabled,
     )
 }

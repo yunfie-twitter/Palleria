@@ -34,7 +34,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
@@ -68,6 +67,7 @@ import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
 import com.yunfie.illustia.ui.components.ScrollBlurScaffold
 import com.yunfie.illustia.ui.components.ScrollablePullToRefresh
 import com.yunfie.illustia.ui.components.StateBanner
+import com.yunfie.illustia.ui.components.TopTabBar
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
 import com.yunfie.illustia.ui.components.animatedGridPlacement
@@ -75,6 +75,7 @@ import com.yunfie.illustia.ui.components.onTopBarTap
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
+import com.yunfie.illustia.ui.components.rememberPagerTabIndex
 import com.yunfie.illustia.ui.components.smoothScrollToTop
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
@@ -86,13 +87,10 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Surface
-import top.yukonga.miuix.kmp.basic.TabRowDefaults
-import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Refresh
-import top.yukonga.miuix.kmp.squircle.squircleBorder
 import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.absoluteValue
@@ -251,7 +249,9 @@ fun RankingScreen(
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize(),
-                beyondViewportPageCount = 0,
+                // 隣接ページを先にコンポーズしておき、指に追従するドラッグ中から
+                // 次のランキングの中身が見えるようにする。
+                beyondViewportPageCount = 1,
             ) { page ->
                 val isPageActiveOrVisited = page == pagerState.currentPage || page in visitedPages
                 if (!isPageActiveOrVisited) {
@@ -455,55 +455,11 @@ private fun RankingTabRow(
     isBlurEnabled: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
-    val isDark = MiuixTheme.colorScheme.surface.luminance() < 0.5f
-    val colors =
-        if (isBlurEnabled) {
-            TabRowDefaults.tabRowColors(
-                backgroundColor =
-                    if (isDark) {
-                        MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.5f)
-                    } else {
-                        MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.6f)
-                    },
-                contentColor = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                selectedBackgroundColor =
-                    if (isDark) {
-                        Color.White.copy(alpha = 0.18f)
-                    } else {
-                        Color.White.copy(alpha = 0.95f)
-                    },
-                selectedContentColor = MiuixTheme.colorScheme.onSurface,
-            )
-        } else {
-            TabRowDefaults.tabRowColors(
-                backgroundColor = MiuixTheme.colorScheme.surfaceContainer,
-                contentColor = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                selectedBackgroundColor =
-                    if (isDark) {
-                        Color.White.copy(alpha = 0.16f)
-                    } else {
-                        Color.White.copy(alpha = 0.92f)
-                    },
-                selectedContentColor = MiuixTheme.colorScheme.onSurface,
-            )
-        }
-    val borderModifier =
-        if (isBlurEnabled) {
-            Modifier.squircleBorder(
-                width = 0.75.dp,
-                color = if (isDark) Color.White.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.08f),
-                cornerRadius = TabRowDefaults.TabRowWithContourCornerRadius,
-            )
-        } else {
-            Modifier
-        }
-    TabRowWithContour(
+    TopTabBar(
         tabs = tabs,
-        selectedTabIndex = pagerState.targetPage.coerceIn(0, (tabs.size - 1).coerceAtLeast(0)),
+        selectedTabIndex = rememberPagerTabIndex(pagerState),
         onTabSelected = onTabSelected,
-        modifier = modifier.then(borderModifier).pointerHoverIcon(PointerIcon.Hand),
-        colors = colors,
-        minWidth = 84.dp,
-        maxWidth = 140.dp,
+        modifier = modifier,
+        isBlurEnabled = isBlurEnabled,
     )
 }

@@ -217,9 +217,10 @@ internal fun MainSurface(
                     HorizontalPager(
                         state = pagerState,
                         beyondViewportPageCount = 0,
-                        userScrollEnabled =
-                            appState.settings.swipeToSwitchWorks &&
-                                !(selectedTab == AppTab.ShortsFeed && appState.settings.disableHorizontalSwipeInShortsFeed),
+                        // 下部ナビゲーションはタップ操作のみで切り替える。ここをスワイプ可能に
+                        // すると、画面内の上部タブ（タイムライン/ブックマーク など）を横スワイプ
+                        // したときに下部タブまで同時に動いてしまうため、常に無効化する。
+                        userScrollEnabled = false,
                         modifier =
                             Modifier
                                 .fillMaxSize()
