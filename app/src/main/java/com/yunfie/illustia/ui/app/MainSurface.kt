@@ -259,8 +259,8 @@ internal fun MainSurface(
                                 .fillMaxSize()
                                 .graphicsLayer {
                                     val t = tabTransitionFraction(pageOffset.value)
-                                    alpha = 1f - t * (1f - tabTransitionMinAlpha)
-                                    val scale = 1f - t * (1f - tabTransitionMinScale)
+                                    alpha = 1f - t * (1f - TAB_TRANSITION_MIN_ALPHA)
+                                    val scale = 1f - t * (1f - TAB_TRANSITION_MIN_SCALE)
                                     scaleX = scale
                                     scaleY = scale
                                 }
@@ -520,8 +520,8 @@ internal val tabScrollAnimationSpec = folmeSpring<Float>(damping = 0.86f, respon
  */
 private fun tabTransitionFraction(offset: Float): Float = SinOutEasing.transform(offset.coerceIn(0f, 1f))
 
-private const val tabTransitionMinAlpha = 0.55f
-private const val tabTransitionMinScale = 0.94f
+private const val TAB_TRANSITION_MIN_ALPHA = 0.55f
+private const val TAB_TRANSITION_MIN_SCALE = 0.94f
 
 @Composable
 private fun SearchTabContent(
