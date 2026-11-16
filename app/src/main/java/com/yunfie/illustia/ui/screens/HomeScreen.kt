@@ -32,8 +32,10 @@ import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.app.AppTab
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.ScrollBlurScaffold
+import com.yunfie.illustia.ui.components.clampTabIndex
 import com.yunfie.illustia.ui.components.onTopBarTap
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
+import com.yunfie.illustia.ui.components.rememberPagerTabIndex
 import com.yunfie.illustia.ui.components.smoothScrollToTop
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Icon
@@ -78,10 +80,10 @@ fun HomeScreen(
             pageCount = { HomeTab.entries.size },
         )
     val coroutineScope = rememberCoroutineScope()
-    // Drive the tab indicator from targetPage so it reacts immediately on tap.
-    // Commit selectedTab only when the pager settles, so swiping does not
-    // recompose the whole screen on every intermediate page change.
-    val indicatorTab = pagerState.targetPage.coerceIn(0, HomeTab.entries.lastIndex)
+    // タブのハイライトは指の位置に追従させる（currentPage + offsetFraction）。
+    // 選択済みタブの確定は settledPage で行い、途中のページ変化で画面全体が
+    // 再コンポーズされないようにしている。
+    val indicatorTab = rememberPagerTabIndex(pagerState)
     val selectedTab = HomeTab.entries[pagerState.settledPage.coerceIn(0, HomeTab.entries.lastIndex)]
 
     LaunchedEffect(pagerState.settledPage) {
@@ -209,9 +211,10 @@ fun HomeScreen(
                     HomeTabRow(
                         selectedTabIndex = indicatorTab,
                         onTabSelected = { index ->
-                            if (index != pagerState.currentPage) {
+                            val target = clampTabIndex(index, HomeTab.entries.size)
+                            if (target != pagerState.currentPage) {
                                 performHaptic(AppHapticEffect.Toggle)
-                                coroutineScope.launch { pagerState.animateScrollToPage(index) }
+                                coroutineScope.launch { pagerState.animateScrollToPage(target) }
                             } else {
                                 performHaptic(AppHapticEffect.Click)
                                 coroutineScope.launch {
@@ -250,7 +253,9 @@ fun HomeScreen(
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize(),
-                beyondViewportPageCount = 0,
+                // 隣接ページを先にコンポーズしておき、指に追従するドラッグ中から
+                // 次のタブの中身が見えるようにする。
+                beyondViewportPageCount = 1,
             ) { page ->
                 when (HomeTab.entries[page]) {
                     HomeTab.Feed -> {

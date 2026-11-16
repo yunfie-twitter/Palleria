@@ -326,8 +326,6 @@
     <string name="general_smooth_desc">ทำให้การเปลี่ยนหน้าจอและการเรนเดอร์รายการราบรื่นยิ่งขึ้น</string>
     <string name="general_notch">การเพิ่มประสิทธิภาพรอยบาก</string>
     <string name="general_notch_desc">ปรับการแสดงผลในพื้นที่แถบสถานะ</string>
-    <string name="general_swipe">ปัดเพื่อสลับแท็บ</string>
-    <string name="general_swipe_desc">ปัดไปทางซ้าย/ขวาเพื่อเลื่อนไปมาระหว่างหน้าจอหลัก</string>
     <string name="general_auto_load_more">โหลดอัตโนมัติเพิ่มเติม</string>
     <string name="general_auto_load_more_desc">ดึงหน้าถัดไปโดยอัตโนมัติเมื่อคุณอ่านถึงจุดสิ้นสุด</string>
     <string name="general_double_back">ย้อนกลับสองครั้งเพื่อออก</string>
@@ -847,8 +845,6 @@
     <string name="nav_shorts_feed">กางเกงขาสั้น</string>
     <string name="general_shorts_feed">ฟีดสั้น</string>
     <string name="general_shorts_feed_desc">เรียกดูภาพประกอบในฟีดแนวตั้งแบบเต็มหน้าจอ</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe">ปิดใช้งานการปัดแนวนอน</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe_desc">ป้องกันไม่ให้การเลื่อนไปด้านข้างเปลี่ยนแท็บในฟีด Shorts</string>
     <string name="calculator_error">เกิดข้อผิดพลาด</string>
     <string name="error_novel_load_failed">ไม่สามารถโหลดนวนิยายได้</string>
     <string name="error_notifications_load_failed">ไม่สามารถโหลดการแจ้งเตือน</string>

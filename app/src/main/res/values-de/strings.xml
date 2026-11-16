@@ -326,8 +326,6 @@
     <string name="general_smooth_desc">Machen Sie Bildschirmübergänge und Listenwiedergabe flüssiger</string>
     <string name="general_notch">Notch-Optimierung</string>
     <string name="general_notch_desc">Passen Sie die Anzeige im Statusleistenbereich an</string>
-    <string name="general_swipe">Wischen Sie, um die Tabs zu wechseln</string>
-    <string name="general_swipe_desc">Wischen Sie nach links/rechts, um zwischen den Hauptbildschirmen zu navigieren</string>
     <string name="general_auto_load_more">Mehr automatisch laden</string>
     <string name="general_auto_load_more_desc">Rufen Sie automatisch die nächste Seite ab, wenn Sie das Ende erreicht haben</string>
     <string name="general_double_back">Doppelt zurück zum Ausgang</string>
@@ -847,8 +845,6 @@
     <string name="nav_shorts_feed">Shorts</string>
     <string name="general_shorts_feed">Shorts-Feed</string>
     <string name="general_shorts_feed_desc">Durchsuchen Sie Illustrationen in einem vertikalen Vollbild-Feed</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe">Deaktivieren Sie das horizontale Wischen</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe_desc">Verhindern Sie, dass durch seitliches Wischen die Tabs im Shorts-Feed gewechselt werden</string>
     <string name="calculator_error">Fehler</string>
     <string name="error_novel_load_failed">Der Roman konnte nicht geladen werden.</string>
     <string name="error_notifications_load_failed">Benachrichtigungen konnten nicht geladen werden.</string>

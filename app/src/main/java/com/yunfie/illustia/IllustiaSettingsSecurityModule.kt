@@ -213,10 +213,6 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(doubleBackToExit = value) }
     }
 
-    fun updateSwipeToSwitchWorks(value: Boolean) {
-        updateSettings { it.copy(swipeToSwitchWorks = value) }
-    }
-
     fun updateSecureWindow(value: Boolean) {
         updateSettings { it.copy(secureWindow = value) }
     }
@@ -357,10 +353,6 @@ abstract class IllustiaSettingsSecurityModule(
 
     fun updateShortsFeedEnabled(value: Boolean) {
         updateSettings { it.copy(shortsFeedEnabled = value) }
-    }
-
-    fun updateDisableHorizontalSwipeInShortsFeed(value: Boolean) {
-        updateSettings { it.copy(disableHorizontalSwipeInShortsFeed = value) }
     }
 
     fun updateHideHomeNovelButton(value: Boolean) {

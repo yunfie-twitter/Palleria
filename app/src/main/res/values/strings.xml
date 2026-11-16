@@ -24,8 +24,6 @@
     <string name="nav_shorts_feed">フィード</string>
     <string name="general_shorts_feed">縦型フィード</string>
     <string name="general_shorts_feed_desc">ホームとフォロー中のイラストを、縦スワイプで全画面表示します</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe">フィード内の左右スワイプを無効化</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe_desc">フィード表示中に左右スワイプでタブが切り替わらないようにします</string>
     <string name="nav_more">もっと見る</string>
 
     <!-- Common actions -->
@@ -385,8 +383,6 @@
     <string name="general_haptics_clear">クリア ハプティクス</string>
     <string name="general_notch">ノッチ最適化</string>
     <string name="general_notch_desc">ステータスバー領域の表示を調整します</string>
-    <string name="general_swipe">タブのスワイプ切替</string>
-    <string name="general_swipe_desc">左右スワイプで主要画面を移動します</string>
     <string name="general_auto_load_more">さらに読み込むを自動化</string>
     <string name="general_auto_load_more_desc">末尾に着いたら次ページを自動で取得します</string>
     <string name="general_double_back">ダブルバックで終了</string>
