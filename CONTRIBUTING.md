@@ -30,6 +30,17 @@ Palleria is an Android app built with Kotlin, Jetpack Compose, and Miuix-based U
   - `..\gradlew.bat :app:assembleDebug`
 - If you touch release packaging, resource shrinking, or R8-sensitive code, run a broader build before submitting.
 
+### Faster debug builds
+
+Debug builds default to one ABI (`arm64-v8a`) and the unoptimized Rust profile, so iterating does not pay for three LTO release builds of the Rust core. Adding `-Ppalleria.splits=false` also skips the four-way APK packaging. Match your device's ABI if it differs:
+
+```sh
+adb shell getprop ro.product.cpu.abi
+..\gradlew.bat :app:assembleDebug -Ppalleria.abis=arm64-v8a -Ppalleria.splits=false
+```
+
+Release always uses all three ABIs with the optimized profile and ABI splits; these properties only shorten local debug builds. See [docs/dev/build.md](../docs/dev/build.md#debugビルドを速くする) for the full matrix.
+
 ## Style Guidelines
 
 - Prefer the smallest change that solves the problem.

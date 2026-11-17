@@ -70,6 +70,8 @@ fun QuickPeekOverlay(
     useSharedElementTransition: Boolean = false,
 ) {
     val performHaptic = rememberHapticFeedbackAction()
+    // CompositionLocal は composition で解決し、State の値だけを draw 段階で読む。
+    val fastScrolling = LocalFastScrolling.current
     var isVisible by remember { mutableStateOf(false) }
 
     DisposableEffect(Unit) {
@@ -155,9 +157,12 @@ fun QuickPeekOverlay(
                             .padding(24.dp)
                             .widthIn(max = 400.dp)
                             .heightIn(max = 620.dp)
-                            .shadow(if (LocalFastScrolling.current.value) 0.dp else 24.dp, RoundedCornerShape(24.dp))
-                            .clip(RoundedCornerShape(24.dp))
-                            .background(MiuixTheme.colorScheme.surface)
+                            // 高速スクロール中の影を落とす判定は draw 段階で読む。composition で読むと再コンポーズする。
+                            .graphicsLayer {
+                                shadowElevation = (if (fastScrolling.value) 0.dp else 24.dp).toPx()
+                                shape = RoundedCornerShape(24.dp)
+                                clip = true
+                            }.background(MiuixTheme.colorScheme.surface)
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null,

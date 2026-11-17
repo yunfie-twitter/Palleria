@@ -5,21 +5,21 @@ description: Palleriaのビルド環境、GradleとRustの手順、署名付き�
 
 # ビルドと公開パイプライン
 
-このページは2026年11月11日に `app/build.gradle`、Gradle Wrapper、Rustクレート、GitHub Actionsを確認した内容です。設定を変更した場合はコード側の値を優先してください。
+このページは2026年11月16日に `app/build.gradle`、Gradle Wrapper、Rustクレート、GitHub Actionsを確認した内容です。設定を変更した場合はコード側の値を優先してください。
 
 ## 開発環境
 
 | 項目 | リポジトリの設定 |
 | --- | --- |
-| Gradle | Wrapperで9.8.2を取得 |
-| Gradle daemon JVM | JetBrains JDK 21（`gradle/gradle-daemon-jvm.properties`） |
+| Gradle | Wrapperで9.8.2を取得（`distributionSha256Sum` で改ざん検証） |
+| Gradle daemon JVM | ツールチェーン21（`gradle/gradle-daemon-jvm.properties` の `toolchainVersion=21`） |
 | Javaソース・バイトコード | 17 |
 | Android SDK | compileSdk 37、targetSdk 37、minSdk 24 |
 | Android NDK | Android StudioのSDK Managerで導入。`cargo-ndk`から参照できること |
 | Rust | edition 2024対応のstableツールチェーン。依存関係はCargo.lockに従う |
 | ドキュメント | Node.jsとnpm。docsのCIはNode.js 22を使用 |
 
-JDK 17というコンパイル設定と、Gradle daemonのJDK 21指定は別です。NDKの版は `app/build.gradle` で固定していません。WindowsではRustのホストビルドに必要なリンカーも用意してください。
+JDK 17というコンパイル設定と、Gradle daemonのJDK 21指定は別です。daemon JVMは `gradle/gradle-daemon-jvm.properties` で固定しており、PATH上の `java` には依存しません。NDKの版は `app/build.gradle` で固定していません。WindowsではRustのホストビルドに必要なリンカーも用意してください。
 
 ## 準備とビルド
 
@@ -38,10 +38,34 @@ Windows PowerShellでは最後のコマンドを `.\gradlew.bat :app:assembleDeb
 | タスク | 役割 |
 | --- | --- |
 | `buildUniFfiHost` | ホスト用の `palleria_pixiv_api` ライブラリをビルド |
-| `generateUniFfiBindings` | `app/build/generated/uniffi/kotlin` にKotlinコードを生成 |
-| `buildRustAndroid` | 3 ABIの `libpalleria_pixiv_api.so` を生成 |
+| `generateUniFfiBindings` | `app/build/generated/uniffi/kotlin` にKotlinコードを生成（キャッシュ可能） |
+| `buildRustAndroidDebug` / `buildRustAndroidRelease` | 各variantのABI別タスクをまとめる集約タスク |
+| `buildRustAndroid<variant><Abi>` | 1 ABI分の `libpalleria_pixiv_api.so` を生成（ABIごとに並列実行） |
 
 Cargoの出力先は共通の `rust/target`、Androidの共有ライブラリの配置先は `app/build/generated/uniffi/jniLibs` です。
+
+### debugビルドを速くする
+
+debugの既定値はリリース配布物と分けています。
+
+| 設定 | debug の既定 | release の既定 | 上書き |
+| --- | --- | --- | --- |
+| ABI | `arm64-v8a` の1つ | `arm64-v8a,armeabi-v7a,x86_64` | `-Ppalleria.abis=arm64-v8a,x86_64` |
+| Rustプロファイル | `debug`（LTOなし） | `release`（LTO, codegen-units=1） | `-Ppalleria.rustProfile=release` |
+| ABI別APK分割 | 有効 | 有効 | `-Ppalleria.splits=false` で無効 |
+
+`-Ppalleria.abis` と `-Ppalleria.rustProfile` はdebugにだけ効きます。releaseは常に3 ABIと最適化プロファイルを使うため、配布物の再現性は変わりません。
+
+開発端末に合わせる場合は、接続中デバイスのABIだけを指定すると最も短くなります。
+
+```sh
+adb shell getprop ro.product.cpu.abi
+./gradlew :app:assembleDebug -Ppalleria.abis=arm64-v8a -Ppalleria.splits=false
+```
+
+`-Ppalleria.abis` を複数指定すると、そのABIの分だけ `buildRustAndroidDebug<Abi>` が並列に走ります。
+
+AGP 9.5の `splits.abi` はvariant単位で切り替えられないモジュール全体の設定です。そのため分割APKの無効化はローカル専用の `-Ppalleria.splits=false` で行い、CIとリリースは既定（有効）のままにしています。無効にしてもuniversal APKは生成されます。
 
 ## 署名付きリリース
 
@@ -61,6 +85,9 @@ Palleria-v<versionName>-release-x86_64.apk
 - `release-apk.yml`: mainの `app/build.gradle` 更新、`v*` タグpush、手動実行でビルドします。成功時はDraft Releaseを作成し、ビルド失敗時もタグを保持します。
 - `fdroid.yml`: Releaseの公開・削除イベントで起動します。公開時は添付APKを取得・検証し、削除時は対応するAPKを取り除いてインデックスを更新します。
 - `docs.yml`: ドキュメントをビルドして同じ `gh-pages` へ公開します。F-Droid更新と共通のキューで直列化し、互いの成果物を保持します。
+- `kotlin-quality.yml`: ktlint・detekt・Android Lint を1ジョブで実行します。Rustのビルドは1回だけ行い、`rust/**` などの変更が無いPRではRustツールチェーンの導入を省略します。Gradleキャッシュはmainで更新し、PRからは読み取り専用で利用します。
+
+`release-apk.yml` と `nightly.yml` は Gradle のバージョンをCI側で固定せず、Wrapperの定義に従います。
 
 公開・復旧の詳しい手順は[RELEASING.md](https://github.com/yunfie-twitter/Palleria/blob/main/.github/RELEASING.md)を参照してください。
 

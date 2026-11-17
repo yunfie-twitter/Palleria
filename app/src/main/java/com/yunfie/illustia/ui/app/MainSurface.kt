@@ -4,6 +4,7 @@ import android.app.Activity
 import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -26,7 +27,6 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -133,6 +133,20 @@ internal fun MainSurface(
             }
         }
     val doubleBackExitMessage = stringResource(R.string.msg_double_back_exit)
+
+    // タップによるタブ切り替えのフェード進捗。0 = 切り替え直後（新ページが透明）、
+    // 1 = 表示完了。Pager を横にスクロールさせる代わりに、この 1 本の値だけで
+    // フェードと微スケールを完結させる。横スライドだと重量級の画面が 2 つ同時に
+    // 描画されてフレーム落ちになるが、フェードなら遷移中も 1 ページ分の描画で済む。
+    val tabFade = remember { Animatable(1f) }
+    var lastSettledPage by remember { mutableIntStateOf(pagerState.currentPage) }
+    LaunchedEffect(pagerState.settledPage) {
+        if (pagerState.settledPage != lastSettledPage) {
+            lastSettledPage = pagerState.settledPage
+            tabFade.snapTo(0f)
+            tabFade.animateTo(1f, tabScrollAnimationSpec)
+        }
+    }
 
     LaunchedEffect(selectedTab) {
         if (appState.state.showAccountSwitcher) {
@@ -259,7 +273,7 @@ internal fun MainSurface(
                                     // 切替中のオーバードローを抑える。
                                     alpha = if (abs(pageOffset.value) >= 1f) 0f else 1f
                                 }
-                        CompositionLocalProvider(LocalTabPageActive provides { page == pagerState.settledPage }) {
+                        CompositionLocalProvider(LocalTabPageActive provides pageAlphaProvider) {
                             Box(modifier = pageModifier) {
                                 when (tabs[page]) {
                                     AppTab.Home -> {
@@ -504,7 +518,7 @@ private fun <Backdrop> SystemUiAwareBackdropBox(
 }
 
 /**
- * タブ切り替え時の Pager アニメーション。MIUI の標準スプリング（folmeSpring）に合わせる。
+ * タブ切り替え時のフェードの時間感。MIUI の標準スプリング（folmeSpring）に合わせる。
  */
 internal val tabScrollAnimationSpec = folmeSpring<Float>(damping = 0.86f, response = 0.32f)
 
