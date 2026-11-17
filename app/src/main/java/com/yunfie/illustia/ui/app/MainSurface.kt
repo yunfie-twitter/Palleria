@@ -4,6 +4,7 @@ import android.app.Activity
 import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -26,7 +27,6 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -71,7 +71,6 @@ import com.yunfie.illustia.ui.screens.RankingScreen
 import com.yunfie.illustia.ui.screens.SearchScreen
 import com.yunfie.illustia.ui.screens.ShortsFeedScreen
 import com.yunfie.illustia.visibleWith
-import top.yukonga.miuix.kmp.anim.SinOutEasing
 import top.yukonga.miuix.kmp.anim.folmeSpring
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBarItem
@@ -133,6 +132,20 @@ internal fun MainSurface(
             }
         }
     val doubleBackExitMessage = stringResource(R.string.msg_double_back_exit)
+
+    // タップによるタブ切り替えのフェード進捗。0 = 切り替え直後（新ページが透明）、
+    // 1 = 表示完了。Pager を横にスクロールさせる代わりに、この 1 本の値だけで
+    // フェードと微スケールを完結させる。横スライドだと重量級の画面が 2 つ同時に
+    // 描画されてフレーム落ちになるが、フェードなら遷移中も 1 ページ分の描画で済む。
+    val tabFade = remember { Animatable(1f) }
+    var lastSettledPage by remember { mutableIntStateOf(pagerState.currentPage) }
+    LaunchedEffect(pagerState.settledPage) {
+        if (pagerState.settledPage != lastSettledPage) {
+            lastSettledPage = pagerState.settledPage
+            tabFade.snapTo(0f)
+            tabFade.animateTo(1f, tabScrollAnimationSpec)
+        }
+    }
 
     LaunchedEffect(selectedTab) {
         if (appState.state.showAccountSwitcher) {
@@ -241,30 +254,28 @@ internal fun MainSurface(
                             Box(modifier = Modifier.fillMaxSize())
                             return@HorizontalPager
                         }
-                        // ページのスクロール位置（ページ単位）を 1 本の進捗に正規化し、
-                        // MIUI 風のフェード＋微スケールを graphicsLayer だけで適用する。
-                        // state の読み取りを graphicsLayer 内に閉じ込めることで、
-                        // スワイプ中に再コンポーズせず draw 段階だけで補間できる。
-                        // アクティブなページかを state のまま配ると Pager 側の再コンポーズで
-                        // 全ページが無効化されるため、provider 経由で読ませる。非アクティブな
-                        // ページはブラー合成を止め、スワイプ中の負荷を下げる。
-                        val pageOffset =
-                            remember(page, pagerState) {
-                                derivedStateOf {
-                                    (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
-                                }
-                            }
+                        // タブ切り替えは横スライドではなく、ページ自身のフェード＋微スケールで
+                        // 見せる。横スライドだと重い画面が 2 つ同時に描画されてしまうが、
+                        // フェードなら非アクティブページは透明になるだけで、実質 1 ページ分の
+                        // 描画で済む。進捗（tabFade）の読み取りは graphicsLayer 内に閉じ込め、
+                        // 遷移中に再コンポーズさせず draw 段階だけで補間する。
+                        val pageAlphaProvider = { page == currentPage }
                         val pageModifier =
                             Modifier
                                 .fillMaxSize()
                                 .graphicsLayer {
-                                    val t = tabTransitionFraction(pageOffset.value)
-                                    alpha = 1f - t * (1f - TAB_TRANSITION_MIN_ALPHA)
-                                    val scale = 1f - t * (1f - TAB_TRANSITION_MIN_SCALE)
+                                    if (page != currentPage) {
+                                        // 表示されていないページは描画しない。
+                                        alpha = 0f
+                                        return@graphicsLayer
+                                    }
+                                    val progress = tabFade.value
+                                    alpha = progress
+                                    val scale = TAB_TRANSITION_MIN_SCALE + (1f - TAB_TRANSITION_MIN_SCALE) * progress
                                     scaleX = scale
                                     scaleY = scale
                                 }
-                        CompositionLocalProvider(LocalTabPageActive provides { page == pagerState.settledPage }) {
+                        CompositionLocalProvider(LocalTabPageActive provides pageAlphaProvider) {
                             Box(modifier = pageModifier) {
                                 when (tabs[page]) {
                                     AppTab.Home -> {
@@ -509,18 +520,11 @@ private fun <Backdrop> SystemUiAwareBackdropBox(
 }
 
 /**
- * タブ切り替え時の Pager アニメーション。MIUI の標準スプリング（folmeSpring）に合わせる。
+ * タブ切り替え時のフェードの時間感。MIUI の標準スプリング（folmeSpring）に合わせる。
  */
 internal val tabScrollAnimationSpec = folmeSpring<Float>(damping = 0.86f, response = 0.32f)
 
-/**
- * Pager のページずれ（ページ単位）を 0..1 の遷移進捗に変換する。
- * 0 が完全に表示中、1 以上は画面外（隣接ページ）。
- * MIUI の SinOut イージングで知覚カーブを揃える。
- */
-private fun tabTransitionFraction(offset: Float): Float = SinOutEasing.transform(offset.coerceIn(0f, 1f))
-
-private const val TAB_TRANSITION_MIN_ALPHA = 0.55f
+/** 切り替え直後のスケール。1 に向かって広がりながらフェードインする。 */
 private const val TAB_TRANSITION_MIN_SCALE = 0.94f
 
 @Composable
