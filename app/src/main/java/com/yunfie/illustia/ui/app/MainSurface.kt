@@ -71,7 +71,6 @@ import com.yunfie.illustia.ui.screens.RankingScreen
 import com.yunfie.illustia.ui.screens.SearchScreen
 import com.yunfie.illustia.ui.screens.ShortsFeedScreen
 import com.yunfie.illustia.visibleWith
-import top.yukonga.miuix.kmp.anim.SinOutEasing
 import top.yukonga.miuix.kmp.anim.folmeSpring
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBarItem
@@ -88,6 +87,7 @@ import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.progressiveTextureBlur
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import kotlin.math.abs
 
 @Composable
 internal fun MainSurface(
@@ -241,28 +241,23 @@ internal fun MainSurface(
                             Box(modifier = Modifier.fillMaxSize())
                             return@HorizontalPager
                         }
-                        // ページのスクロール位置（ページ単位）を 1 本の進捗に正規化し、
-                        // MIUI 風のフェード＋微スケールを graphicsLayer だけで適用する。
-                        // state の読み取りを graphicsLayer 内に閉じ込めることで、
-                        // スワイプ中に再コンポーズせず draw 段階だけで補間できる。
-                        // アクティブなページかを state のまま配ると Pager 側の再コンポーズで
-                        // 全ページが無効化されるため、provider 経由で読ませる。非アクティブな
-                        // ページはブラー合成を止め、スワイプ中の負荷を下げる。
+                        // ページのスクロール位置（ページ単位）。Pager 自身が横方向の移動を
+                        // 描くため、フェードやスケールは重ねない（タップ切替を素直な横
+                        // スライドとして見せる）。state の読み取りは graphicsLayer 内に
+                        // 閉じ込め、再コンポーズせず draw 段階で反映する。
                         val pageOffset =
                             remember(page, pagerState) {
                                 derivedStateOf {
-                                    (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
+                                    pagerState.currentPage - page + pagerState.currentPageOffsetFraction
                                 }
                             }
                         val pageModifier =
                             Modifier
                                 .fillMaxSize()
                                 .graphicsLayer {
-                                    val t = tabTransitionFraction(pageOffset.value)
-                                    alpha = 1f - t * (1f - TAB_TRANSITION_MIN_ALPHA)
-                                    val scale = 1f - t * (1f - TAB_TRANSITION_MIN_SCALE)
-                                    scaleX = scale
-                                    scaleY = scale
+                                    // 画面外へ完全に出たページは描画を省き、
+                                    // 切替中のオーバードローを抑える。
+                                    alpha = if (abs(pageOffset.value) >= 1f) 0f else 1f
                                 }
                         CompositionLocalProvider(LocalTabPageActive provides { page == pagerState.settledPage }) {
                             Box(modifier = pageModifier) {
@@ -512,16 +507,6 @@ private fun <Backdrop> SystemUiAwareBackdropBox(
  * タブ切り替え時の Pager アニメーション。MIUI の標準スプリング（folmeSpring）に合わせる。
  */
 internal val tabScrollAnimationSpec = folmeSpring<Float>(damping = 0.86f, response = 0.32f)
-
-/**
- * Pager のページずれ（ページ単位）を 0..1 の遷移進捗に変換する。
- * 0 が完全に表示中、1 以上は画面外（隣接ページ）。
- * MIUI の SinOut イージングで知覚カーブを揃える。
- */
-private fun tabTransitionFraction(offset: Float): Float = SinOutEasing.transform(offset.coerceIn(0f, 1f))
-
-private const val TAB_TRANSITION_MIN_ALPHA = 0.55f
-private const val TAB_TRANSITION_MIN_SCALE = 0.94f
 
 @Composable
 private fun SearchTabContent(
