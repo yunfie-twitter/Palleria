@@ -76,9 +76,14 @@ android {
     // Publish one installable universal APK and ABI-specific APKs. The universal
     // output remains the compatibility fallback for F-Droid clients and manual
     // installation; split outputs reduce download size on supported devices.
+    //
+    // AGP 9.5 exposes no per-variant switch for splits, so this is global. The
+    // release pipeline needs the splits, hence the default of true; local debug
+    // iteration can skip the extra packaging/signing with -Ppalleria.splits=false
+    // (you still get the universal APK).
     splits {
         abi {
-            enable = true
+            enable = (findProperty("palleria.splits") ?: "true").toString().toBoolean()
             reset()
             include "arm64-v8a", "armeabi-v7a", "x86_64"
             universalApk = true
@@ -179,22 +184,25 @@ def uniffiHostLibrary = new File(rustTargetDir, "debug/${uniffiHostLibraryName}"
 def uniffiKotlinDir = layout.buildDirectory.dir("generated/uniffi/kotlin")
 def uniffiJniDir = layout.buildDirectory.dir("generated/uniffi/jniLibs")
 
-// Local iteration can build only the connected device's ABI and use the fast dev
-// profile. Release builds keep the shipped defaults (all ABIs, optimized profile).
-def androidRustAbis = (findProperty("palleria.abis") ?: "arm64-v8a,armeabi-v7a,x86_64")
-    .toString()
+// Release builds keep the shipped defaults: all ABIs with the optimized profile.
+// Debug builds pay an LTO release build per ABI that is never distributed, so they
+// default to one ABI and the fast dev profile. Both knobs affect debug only:
+//   -Ppalleria.abis=arm64-v8a                  build only the connected device's ABI
+//   -Ppalleria.abis=arm64-v8a,x86_64           build a custom set
+//   -Ppalleria.rustProfile=release             force the optimized profile in debug
+def rustAbiProperty = findProperty("palleria.abis")?.toString()?.trim()
+def rustProfileProperty = findProperty("palleria.rustProfile")?.toString()?.trim()
+def debugRustAbis = (rustAbiProperty ?: "arm64-v8a")
     .split(",")
     .collect { it.trim() }
     .findAll { it }
-def androidRustProfile = (findProperty("palleria.rustProfile") ?: "release").toString()
-def androidRustRelease = androidRustProfile != "debug"
-def androidRustArgs = {
-    def args = [cargoExecutable, "ndk", "--platform", androidMinSdk.toString()]
-    androidRustAbis.each { abi -> args.addAll(["-t", abi]) }
-    args.addAll(["-o", uniffiJniDir.get().asFile.absolutePath, "build", "--locked"])
-    if (androidRustRelease) args.add("--release")
-    args
-}
+def releaseRustAbis = "arm64-v8a,armeabi-v7a,x86_64"
+    .split(",")
+    .collect { it.trim() }
+def debugRustProfile = (rustProfileProperty ?: "debug").toString()
+// Release always uses the optimized profile: the published APKs must not change
+// based on a developer's local property.
+def releaseRustProfile = "release"
 def rustInputs = files(
     fileTree(new File(rustCrateDir, "src")) { include "**/*.rs" },
     new File(rustCrateDir, "Cargo.toml"),
@@ -210,6 +218,9 @@ def buildUniFfiHost = tasks.register("buildUniFfiHost", Exec) {
     outputs.file(uniffiHostLibrary)
 }
 
+// The generated Kotlin surface is a pure function of the Rust sources and uniffi.toml.
+// Marking it cacheable lets read-only CI jobs and clean checkouts reuse it instead of
+// invoking cargo again; all inputs are already declared below.
 def generateUniFfiBindings = tasks.register("generateUniFfiBindings", Exec) {
     workingDir rustCrateDir
     environment "CARGO_TARGET_DIR", rustTargetDir
@@ -222,19 +233,44 @@ def generateUniFfiBindings = tasks.register("generateUniFfiBindings", Exec) {
     inputs.file(uniffiHostLibrary)
     outputs.file(uniffiKotlinDir.map { it.file("com/yunfie/illustia/rust/palleria_pixiv_api.kt") })
     outputs.dir(uniffiKotlinDir)
+    outputs.cacheIf { true }
 }
 
-def buildRustAndroid = tasks.register("buildRustAndroid", Exec) {
-    workingDir rustCrateDir
-    environment "CARGO_TARGET_DIR", rustTargetDir
-    commandLine androidRustArgs()
-    inputs.files(rustInputs)
-    inputs.property("abis", androidRustAbis.join(","))
-    inputs.property("rustProfile", androidRustProfile)
-    outputs.files(
-        androidRustAbis.collect { abi -> uniffiJniDir.map { it.file("${abi}/libpalleria_pixiv_api.so") } },
-    )
+// One task per (variant, ABI). Splitting the previous single task lets Gradle run the
+// ABIs in parallel and keeps each ABI's output independent, so changing one ABI's
+// sources never rebuilds the others. cargo-ndk passes each ABI to cargo separately
+// anyway; the only loss is a shared dependency-compile phase, which the global
+// cargo-ndk --jobs below keeps saturating.
+def rustAndroidTasks = [:]
+def registerRustAndroidTasks = { String variantName, List<String> abis, String profile ->
+    def perAbi = abis.collect { abi ->
+        tasks.register("buildRustAndroid${variantName.capitalize()}${abi.replace('-', '_').capitalize()}", Exec) {
+            group = "build"
+            description = "Builds libpalleria_pixiv_api.so for ${variantName} ${abi} (${profile})."
+            workingDir rustCrateDir
+            environment "CARGO_TARGET_DIR", rustTargetDir
+            def args = [cargoExecutable, "ndk", "--platform", androidMinSdk.toString(), "-t", abi,
+                        "-o", uniffiJniDir.get().asFile.absolutePath, "build", "--locked"]
+            if (profile != "debug") args.add("--release")
+            args.addAll(["--jobs", gradle.startParameter.maxWorkerCount.toString()])
+            commandLine args
+            inputs.files(rustInputs)
+            inputs.property("abi", abi)
+            inputs.property("profile", profile)
+            outputs.file(uniffiJniDir.map { it.file("${abi}/libpalleria_pixiv_api.so") })
+        }
+    }
+    def aggregate = tasks.register("buildRustAndroid${variantName.capitalize()}") {
+        group = "build"
+        description = "Builds the Rust shared libraries for ${variantName}: ${abis.join(', ')} (${profile})."
+        dependsOn perAbi
+    }
+    rustAndroidTasks[variantName] = aggregate
+    aggregate
 }
+
+registerRustAndroidTasks("Debug", debugRustAbis, debugRustProfile)
+registerRustAndroidTasks("Release", releaseRustAbis, releaseRustProfile)
 
 def detektBaselineBudget = 425
 // Counted from detekt-baseline.xml after regenerating it for detekt 2.0. The previous ceiling was
@@ -308,15 +344,12 @@ tasks.matching { it.name.startsWith("ksp") && it.name.endsWith("Kotlin") }.confi
 tasks.matching {
     (it.name.startsWith("merge") || it.name.startsWith("strip")) &&
         (it.name.contains("NativeLibs") || it.name.contains("JniLib"))
-}.configureEach {
-    dependsOn(buildRustAndroid)
-}
-
-tasks.matching {
-    def lower = it.name.toLowerCase(Locale.ROOT)
-    lower.contains("ktlint") || lower.contains("detekt") || lower.contains("lint") || lower.contains("spotless")
-}.configureEach {
-    dependsOn(generateUniFfiBindings)
+}.configureEach { task ->
+    if (task.name.toLowerCase(Locale.ROOT).contains("release")) {
+        task.dependsOn(rustAndroidTasks["Release"])
+    } else if (task.name.toLowerCase(Locale.ROOT).contains("debug")) {
+        task.dependsOn(rustAndroidTasks["Debug"])
+    }
 }
 
 androidComponents {
