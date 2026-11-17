@@ -196,15 +196,17 @@ fun PrefetchNovelGridImages(
         }
 
     var lastFirstVisibleIndex by remember(gridState) { androidx.compose.runtime.mutableIntStateOf(gridState.firstVisibleItemIndex) }
-    var isFastScrolling by remember(gridState) { androidx.compose.runtime.mutableStateOf(false) }
+    // State のまま保持する。値を derivedStateOf の remember キーに渡すと、高速スクロールの
+    // 切り替えごとに derivedStateOf が作り直されてキャッシュが失われるため。
+    val isFastScrollingState = remember(gridState) { androidx.compose.runtime.mutableStateOf(false) }
 
     androidx.compose.runtime.LaunchedEffect(gridState.firstVisibleItemIndex, gridState.isScrollInProgress) {
         if (gridState.isScrollInProgress) {
             val delta = gridState.firstVisibleItemIndex - lastFirstVisibleIndex
-            isFastScrolling = delta >= FAST_SCROLL_INDEX_DELTA_THRESHOLD
+            isFastScrollingState.value = delta >= FAST_SCROLL_INDEX_DELTA_THRESHOLD
             lastFirstVisibleIndex = gridState.firstVisibleItemIndex
         } else {
-            isFastScrolling = false
+            isFastScrollingState.value = false
             lastFirstVisibleIndex = gridState.firstVisibleItemIndex
         }
     }
@@ -245,7 +247,7 @@ fun PrefetchNovelGridImages(
     val landingPrefetchSetting = LocalVelocityLandingPrefetchEnabled.current
     val effectiveVelocityLanding = velocityLandingEnabled && landingPrefetchSetting
 
-    val urls by remember(items, enabled, limit, effectiveVelocityLanding, isFastScrolling) {
+    val urls by remember(items, enabled, limit, effectiveVelocityLanding) {
         derivedStateOf(structuralEqualityPolicy()) {
             val lastVisibleIndex = lastVisibleIndexState.value
             if (!enabled || items.isEmpty() || lastVisibleIndex < 0) {
@@ -256,7 +258,7 @@ fun PrefetchNovelGridImages(
                         lastVisibleIndex = lastVisibleIndex,
                         itemCount = items.size,
                         limit = limit,
-                        isFastScrollingDown = effectiveVelocityLanding && isFastScrolling,
+                        isFastScrollingDown = effectiveVelocityLanding && isFastScrollingState.value,
                     )
                 val result = ArrayList<String>(range.last - range.first + 1)
                 for (index in range) {
