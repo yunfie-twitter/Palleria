@@ -318,7 +318,12 @@ internal fun AppNavHost(
                         } else {
                             detailSnapshots[route.illustId]
                         }
-                    if (snapshot != null) {
+                    val errorMessage =
+                        appState.state.selectedIllustError.takeIf {
+                            appState.state.selectedIllustErrorId ==
+                                route.illustId
+                        }
+                    if (snapshot != null && errorMessage == null) {
                         val illust = snapshot.illust
                         IllustDetailScreen(
                             illust = illust,
@@ -416,11 +421,7 @@ internal fun AppNavHost(
                         }
                         IllustDetailSkeletonScreen(
                             onBack = onPopRoute,
-                            errorMessage =
-                                appState.state.selectedIllustError.takeIf {
-                                    appState.state.selectedIllustErrorId ==
-                                        route.illustId
-                                },
+                            errorMessage = errorMessage,
                             onRetry = { viewModel.openIllust(route.illustId) },
                         )
                     }

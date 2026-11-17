@@ -82,12 +82,10 @@ abstract class IllustiaDetailProfileModule(
             viewModelScope.launch(Dispatchers.IO) {
                 try {
                     GlitchTipTelemetry.traceAsync("illust.detail.load", "illust.detail") {
-                        val fullIllust =
-                            if (illust.artistId <= 0L) {
-                                runCatching { repository.illustDetail(illust.id) }.getOrNull() ?: illust
-                            } else {
-                                illust
-                            }
+                        // 履歴やプロフィールのカードは詳細情報が欠けている場合があるため、
+                        // artistId の有無にかかわらず詳細を取得する。404 もここで検出でき、
+                        // 取得に失敗したときは catch 側で selectedIllustError を設定する。
+                        val fullIllust = repository.illustDetail(illust.id)
                         kotlinx.coroutines.coroutineScope {
                             val relatedDeferred = async { repository.relatedIllusts(illust.id) }
                             val userDeferred =
@@ -100,17 +98,7 @@ abstract class IllustiaDetailProfileModule(
                                 if (it.selectedIllust?.id != illust.id) {
                                     it
                                 } else {
-                                    val currentIllust = it.selectedIllust
-                                    val mergedIllust =
-                                        if (currentIllust != null) {
-                                            if (fullIllust === illust) {
-                                                currentIllust
-                                            } else {
-                                                fullIllust.copy(isBookmarked = currentIllust.isBookmarked)
-                                            }
-                                        } else {
-                                            fullIllust
-                                        }
+                                    val mergedIllust = fullIllust.copy(isBookmarked = it.selectedIllust.isBookmarked)
                                     it.copy(
                                         selectedIllust = mergedIllust,
                                         relatedIllusts = related.items.visibleRelatedWithSettings(it.settings),
@@ -120,7 +108,7 @@ abstract class IllustiaDetailProfileModule(
                                     )
                                 }
                             }
-                            if (fullIllust !== illust && fullIllust.artistId > 0L) {
+                            if (fullIllust.artistId > 0L) {
                                 val updatedHistory =
                                     _uiState.value.settings.viewHistory.map {
                                         if (it.id == illust.id) fullIllust.copy(isBookmarked = it.isBookmarked) else it
@@ -134,11 +122,16 @@ abstract class IllustiaDetailProfileModule(
                     if (isCancellation(error)) throw error
                     if (handleAuthExpired(error)) return@launch
                     GlitchTipTelemetry.recordException(error, tag = "illust_detail", extras = mapOf("illustId" to illust.id))
+                    val errorMessage = illustOpenErrorMessage(error)
                     _uiState.update {
                         if (it.selectedIllust?.id == illust.id) {
                             // 取得に失敗してもスピナーを回し続けない。空のまま「完了」にする。
+                            // 履歴やプロフィールから開いた場合もカード情報を表示したままにせず、
+                            // 404 などの失敗を詳細画面側のエラーとして出す。
                             it.copy(
-                                message = cleanErrorMessage(error, str(R.string.error_load_detail_failed)),
+                                selectedIllustError = errorMessage,
+                                selectedIllustErrorId = illust.id,
+                                message = errorMessage,
                                 relatedIllustsLoaded = true,
                             )
                         } else {
@@ -151,9 +144,11 @@ abstract class IllustiaDetailProfileModule(
 
     override fun openIllust(illustId: Long) {
         if (illustId <= 0L) return
+        val retryAfterError = _uiState.value.selectedIllustErrorId == illustId
         _uiState.update { it.copy(selectedIllustError = null, selectedIllustErrorId = null) }
         requestDetailNavigation(illustId)
-        val localIllust = findIllustById(illustId)
+        // 一度エラーになった作品はローカルキャッシュを信頼せず必ず取り直す。
+        val localIllust = if (retryAfterError) null else findIllustById(illustId)
         if (localIllust != null && localIllust.artistId > 0L) {
             openIllust(localIllust)
             return
