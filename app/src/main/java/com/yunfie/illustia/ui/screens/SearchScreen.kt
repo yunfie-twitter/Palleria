@@ -292,10 +292,20 @@ fun SearchScreen(
             modifier = Modifier.fillMaxSize(),
             enabled = state.settings.isFeatureEnabled(FeatureFlag.TopScrollBlur) && !isResultMode && !searchExpanded,
             scrollBehavior = scrollBehavior,
-            scrollFraction = {
-                val grid = viewModel.searchBrowseGridState
-                if (grid.firstVisibleItemIndex > 0) 1f else (grid.firstVisibleItemScrollOffset / 64f).coerceIn(0f, 1f)
-            },
+            // ラムダを remember で固定する。毎回新しいインスタンスを渡すと
+            // ScrollBlurScaffold 内の remember(fraction) { derivedStateOf } が作り直され、
+            // スクロール読み取りの隔離が効かなくなる。
+            scrollFraction =
+                remember(viewModel) {
+                    {
+                        val grid = viewModel.searchBrowseGridState
+                        if (grid.firstVisibleItemIndex > 0) {
+                            1f
+                        } else {
+                            (grid.firstVisibleItemScrollOffset / 64f).coerceIn(0f, 1f)
+                        }
+                    }
+                },
             header = {
                 val hasBackButton = isResultMode || onBack != null
                 Row(
