@@ -102,11 +102,14 @@ private fun AutoLoadMoreCore(
     val currentNextUrl by rememberUpdatedState(nextUrl)
     val currentIsLoading by rememberUpdatedState(isLoading)
     val currentOnLoadMore by rememberUpdatedState(onLoadMore)
+    // checkNearBottom は呼び出し元の gridState/listState を閉じ込むため、キーに含めると
+    // state が切り替わるたびに derivedStateOf を作り直してしまう。最新参照だけ追わせる。
+    val currentCheckNearBottom by rememberUpdatedState(checkNearBottom)
 
     val isNearBottom by remember(buffer) {
         derivedStateOf {
             if (!currentEnabled || currentNextUrl == null || currentIsLoading) return@derivedStateOf false
-            checkNearBottom()
+            currentCheckNearBottom()
         }
     }
 
@@ -152,7 +155,7 @@ private fun AutoLoadMoreCore(
                 }
 
                 val canTrigger = currentEnabled && !currentIsLoading
-                if (canTrigger && currentNextUrl == targetUrl && checkNearBottom()) {
+                if (canTrigger && currentNextUrl == targetUrl && currentCheckNearBottom()) {
                     lastRequestedUrl = targetUrl
                     lastRequestTime = System.currentTimeMillis()
                     currentOnLoadMore()
