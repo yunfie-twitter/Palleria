@@ -172,7 +172,9 @@ fun UserProfileScreen(
             }
         }
 
-    val isContentScrolled by remember(isHeaderCollapsed, activeIsAtTop) {
+    // activeIsAtTop は State のまま参照し、値をキーにしない。キーにするとトップ境界を
+    // 跨ぐたびに derivedStateOf が破棄・再生成されてキャッシュが失われる。
+    val isContentScrolled by remember(isHeaderCollapsed) {
         derivedStateOf {
             isHeaderCollapsed || !activeIsAtTop
         }

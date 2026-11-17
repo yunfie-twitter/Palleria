@@ -81,10 +81,9 @@ jobs:
           distribution: temurin
 
       # release-apk.yml と同じ Gradle / キャッシュ設定に揃えます。
+      # バージョンは wrapper に一本化し、CI 側で別バージョンを固定しない。
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
-        with:
-          gradle-version: 9.4.1
 
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2

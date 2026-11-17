@@ -552,7 +552,7 @@ fun IllustListRow(
     val hapticMode = LocalAppHapticMode.current
     val cardPreferences = LocalArtworkCardPreferences.current
     val pageBadgeText =
-        remember(illust.id) {
+        remember(illust.id, illust.pageCount) {
             if (illust.pageCount > 1) "${illust.pageCount}P" else null
         }
     val ageRestrictionBadgeText =
@@ -785,7 +785,7 @@ fun IllustGrid(
                 )
             }
             if (hasMore && onLoadMore != null) {
-                item {
+                item(key = "illust_load_more", contentType = "load_more") {
                     Button(onClick = onLoadMore, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
                         Text(stringResource(R.string.illust_load_more))
                     }
