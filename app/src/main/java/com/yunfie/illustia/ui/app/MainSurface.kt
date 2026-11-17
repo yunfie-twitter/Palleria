@@ -87,6 +87,7 @@ import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.progressiveTextureBlur
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import kotlin.math.abs
 
 @Composable
 internal fun MainSurface(
@@ -254,26 +255,23 @@ internal fun MainSurface(
                             Box(modifier = Modifier.fillMaxSize())
                             return@HorizontalPager
                         }
-                        // タブ切り替えは横スライドではなく、ページ自身のフェード＋微スケールで
-                        // 見せる。横スライドだと重い画面が 2 つ同時に描画されてしまうが、
-                        // フェードなら非アクティブページは透明になるだけで、実質 1 ページ分の
-                        // 描画で済む。進捗（tabFade）の読み取りは graphicsLayer 内に閉じ込め、
-                        // 遷移中に再コンポーズさせず draw 段階だけで補間する。
-                        val pageAlphaProvider = { page == currentPage }
+                        // ページのスクロール位置（ページ単位）。Pager 自身が横方向の移動を
+                        // 描くため、フェードやスケールは重ねない（タップ切替を素直な横
+                        // スライドとして見せる）。state の読み取りは graphicsLayer 内に
+                        // 閉じ込め、再コンポーズせず draw 段階で反映する。
+                        val pageOffset =
+                            remember(page, pagerState) {
+                                derivedStateOf {
+                                    pagerState.currentPage - page + pagerState.currentPageOffsetFraction
+                                }
+                            }
                         val pageModifier =
                             Modifier
                                 .fillMaxSize()
                                 .graphicsLayer {
-                                    if (page != currentPage) {
-                                        // 表示されていないページは描画しない。
-                                        alpha = 0f
-                                        return@graphicsLayer
-                                    }
-                                    val progress = tabFade.value
-                                    alpha = progress
-                                    val scale = TAB_TRANSITION_MIN_SCALE + (1f - TAB_TRANSITION_MIN_SCALE) * progress
-                                    scaleX = scale
-                                    scaleY = scale
+                                    // 画面外へ完全に出たページは描画を省き、
+                                    // 切替中のオーバードローを抑える。
+                                    alpha = if (abs(pageOffset.value) >= 1f) 0f else 1f
                                 }
                         CompositionLocalProvider(LocalTabPageActive provides pageAlphaProvider) {
                             Box(modifier = pageModifier) {
@@ -523,9 +521,6 @@ private fun <Backdrop> SystemUiAwareBackdropBox(
  * タブ切り替え時のフェードの時間感。MIUI の標準スプリング（folmeSpring）に合わせる。
  */
 internal val tabScrollAnimationSpec = folmeSpring<Float>(damping = 0.86f, response = 0.32f)
-
-/** 切り替え直後のスケール。1 に向かって広がりながらフェードインする。 */
-private const val TAB_TRANSITION_MIN_SCALE = 0.94f
 
 @Composable
 private fun SearchTabContent(
