@@ -145,7 +145,12 @@ abstract class IllustiaDetailProfileModule(
     override fun openIllust(illustId: Long) {
         if (illustId <= 0L) return
         val retryAfterError = _uiState.value.selectedIllustErrorId == illustId
-        _uiState.update { it.copy(selectedIllustError = null, selectedIllustErrorId = null) }
+        // オフラインなどで再試行を繰り返すと、開始時に毎回エラーを消していたため
+        // エラー → スケルトン → エラー と点滅していた。再試行中は前回のエラーを
+        // 出したままにし、取得成功時だけ消す。初回表示（エラー無し）は従来どおり。
+        if (!retryAfterError) {
+            _uiState.update { it.copy(selectedIllustError = null, selectedIllustErrorId = null) }
+        }
         requestDetailNavigation(illustId)
         // 一度エラーになった作品はローカルキャッシュを信頼せず必ず取り直す。
         val localIllust = if (retryAfterError) null else findIllustById(illustId)

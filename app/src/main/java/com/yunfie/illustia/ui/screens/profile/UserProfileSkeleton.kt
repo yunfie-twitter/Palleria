@@ -276,7 +276,15 @@ internal fun UserProfileStatusPlaceholder(
     modifier: Modifier = Modifier,
 ) {
     if (isError) {
-        RequestErrorState(message = message, onRetry = onClick, modifier = modifier)
+        // RequestErrorState は fillMaxWidth だけで高さを持たない Column のため、
+        // fillMaxSize の modifier をそのまま渡すと内容が上端に張り付く。
+        // 空/ローディングと同じく Box で包んで上下左右を中央に揃える。
+        Box(
+            modifier = modifier,
+            contentAlignment = Alignment.Center,
+        ) {
+            RequestErrorState(message = message, onRetry = onClick)
+        }
         return
     }
 

@@ -95,6 +95,7 @@ import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.ScrollablePullToRefresh
 import com.yunfie.illustia.ui.components.SystemBarAppearanceEffect
+import com.yunfie.illustia.ui.components.TransparentNavigationBarColor
 import com.yunfie.illustia.ui.components.TransparentStatusBarColor
 import com.yunfie.illustia.ui.components.adaptiveRelatedIllustColumns
 import com.yunfie.illustia.ui.components.miuixClickable
@@ -246,6 +247,7 @@ fun IllustDetailScreen(
         restoreLightStatusBars = !isDarkTheme,
         restoreLightNavigationBars = !isDarkTheme,
         statusBarColor = TransparentStatusBarColor,
+        navigationBarColor = TransparentNavigationBarColor,
     )
 
     // 手動リフレッシュの完了は取得側が知っている。固定 delay で消すと遅い回線で
