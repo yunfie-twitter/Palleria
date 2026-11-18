@@ -779,9 +779,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         if (index >= 0) {
             selectedTab = tab
             coroutineScope.launch {
-                // 横スライドはさせず即座にページを差し替え、フェードは MainSurface 側で
-                // 掛ける。重い画面 2 つを同時に描画しないぶん遷移が軽くなる。
-                pagerState.scrollToPage(index)
+                pagerState.animateScrollToPage(index, animationSpec = tabScrollAnimationSpec)
             }
         }
     }
@@ -882,7 +880,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                         } else {
                             selectedTab = tab
                             coroutineScope.launch {
-                                pagerState.scrollToPage(index)
+                                pagerState.animateScrollToPage(index, animationSpec = tabScrollAnimationSpec)
                             }
                             if (tab == AppTab.Bookmarks) viewModel.refreshBookmarks()
                         }
@@ -900,7 +898,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                         } else {
                             selectedTab = tab
                             coroutineScope.launch {
-                                pagerState.scrollToPage(pageIndex)
+                                pagerState.animateScrollToPage(pageIndex, animationSpec = tabScrollAnimationSpec)
                             }
                             if (tab == AppTab.Bookmarks) viewModel.refreshBookmarks()
                         }
