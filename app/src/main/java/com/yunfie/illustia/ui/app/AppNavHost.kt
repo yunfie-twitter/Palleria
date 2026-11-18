@@ -415,8 +415,13 @@ internal fun AppNavHost(
                         )
                     } else {
                         if (backStack.lastOrNull() == route) {
-                            LaunchedEffect(route.illustId) {
-                                viewModel.openIllust(route.illustId)
+                            // エラー表示中は自動再取得しない。ここで毎回 openIllust を呼ぶと
+                            // オフライン時に エラー→スケルトン→エラー を繰り返して点滅する。
+                            // 再試行はユーザーの明示操作（エラー画面の再試行ボタン）に任せる。
+                            if (errorMessage == null) {
+                                LaunchedEffect(route.illustId) {
+                                    viewModel.openIllust(route.illustId)
+                                }
                             }
                         }
                         IllustDetailSkeletonScreen(
