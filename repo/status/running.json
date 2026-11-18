@@ -1,5 +1,5 @@
 {
-  "/etc/issue.net": "Ubuntu 24.04.5 LTS",
+  "/etc/issue.net": "Ubuntu 26.04.1 LTS",
   "antiFeatures": {
     "NonFreeNet": {
       "apps": [
@@ -15,7 +15,7 @@
     "--pretty"
   ],
   "disabled": [],
-  "endTimestamp": 1794845334505,
+  "endTimestamp": 1795005358575,
   "failedBuilds": {},
   "jarsigner": "/opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.13-9/x64/bin/jarsigner",
   "keytool": "/opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.13-9/x64/bin/keytool",
@@ -27,14 +27,14 @@
     "com.yunfie.illustia"
   ],
   "stages": {
-    "delete_disabled_builds": 1794845315334,
-    "index.make repo": 1794845331179,
-    "prepare_apps repo": 1794845325560,
-    "process_apks": 1794845315335,
-    "read_added_date_from_all_apks": 1794845325559,
-    "remove_apks": 1794845325541,
-    "scan_repo_files": 1794845325541
+    "delete_disabled_builds": 1795005337710,
+    "index.make repo": 1795005355431,
+    "prepare_apps repo": 1795005347651,
+    "process_apks": 1795005337710,
+    "read_added_date_from_all_apks": 1795005347650,
+    "remove_apks": 1795005347617,
+    "scan_repo_files": 1795005347617
   },
-  "startTimestamp": 1794845315000,
+  "startTimestamp": 1795005337000,
   "subcommand": "update"
 }
