@@ -49,10 +49,20 @@ internal fun ReaderFullscreen(
         val window = activity?.window
         val controller = window?.let { WindowCompat.getInsetsController(it, view) }
         val bars = WindowInsetsCompat.Type.systemBars()
-        if (enabled) controller?.hide(bars) else controller?.show(bars)
+        if (enabled) {
+            controller?.hide(bars)
+        } else {
+            controller?.show(bars)
+            // バーを出し直すと OS がナビゲーションバーを不透明色で塗り直すため、
+            // 解除したこの時点で透明色を再適用する。onDispose だけだと画面に留まった
+            // まま全画面を抜けたときにバーが不透明のまま残る。
+            if (window != null) {
+                TransparentSystemBars.reapplyTransparent(window, currentIsDarkTheme)
+            }
+        }
         onDispose {
             controller?.show(bars)
-            if (window != null) {
+            if (window != null && enabled) {
                 TransparentSystemBars.reapplyTransparent(window, currentIsDarkTheme)
             }
         }
@@ -67,6 +77,10 @@ internal object TransparentSystemBars {
         isDark: Boolean,
     ) {
         window.statusBarColor = Color.TRANSPARENT
+        // ナビゲーションバーも透明に揃える。ステータスバーだけ透明にしていると、
+        // 全画面から戻った直後に OS が不透明色で塗り直したナビゲーションバーが
+        // そのまま残り、バー領域だけ別色に見える。
+        window.navigationBarColor = Color.TRANSPARENT
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             window.isNavigationBarContrastEnforced = false
             window.isStatusBarContrastEnforced = false
