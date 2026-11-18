@@ -247,17 +247,18 @@ internal fun MainSurface(
                         // 閉じ込め、再コンポーズせず draw 段階で反映する。
                         val pageOffset =
                             remember(page, pagerState) {
-                                derivedStateOf {
+                                derivedStateOf<Float> {
                                     pagerState.currentPage - page + pagerState.currentPageOffsetFraction
                                 }
                             }
-                        val pageModifier =
+                        val pageModifier: Modifier =
                             Modifier
                                 .fillMaxSize()
                                 .graphicsLayer {
                                     // 画面外へ完全に出たページは描画を省き、
                                     // 切替中のオーバードローを抑える。
-                                    alpha = if (abs(pageOffset.value) >= 1f) 0f else 1f
+                                    val targetAlpha: Float = if (abs(pageOffset.value) >= 1f) 0f else 1f
+                                    alpha = targetAlpha
                                 }
                         CompositionLocalProvider(LocalTabPageActive provides { page == pagerState.settledPage }) {
                             Box(modifier = pageModifier) {
