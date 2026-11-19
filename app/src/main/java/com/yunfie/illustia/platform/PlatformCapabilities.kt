@@ -40,6 +40,7 @@ internal data class DeviceHardwareProfile(
  */
 internal object PlatformCapabilities {
     const val HANDOFF_API = 37
+    const val APP_FUNCTIONS_API = 36
 
     // OpenGL ES 3.2 is encoded as 0x00030002 in reqGlEsVersion
     internal const val GL_ES_VERSION_3_2 = 0x00030002

@@ -10,6 +10,7 @@ import coil3.memory.MemoryCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import com.yunfie.illustia.account.PalleriaAccount
 import com.yunfie.illustia.data.IllustiaRepository
+import com.yunfie.illustia.nativebridge.DynamicShortcutPublisher
 import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.SettingsStore
@@ -149,6 +150,7 @@ class IllustiaApplication : Application() {
             }
             com.yunfie.illustia.data.FollowDeltaSyncScheduler
                 .schedulePeriodicSync(appContext)
+            publishDynamicShortcuts(appContext)
             launch {
                 delay(WIDGET_PREVIEW_DELAY_MILLIS)
                 RankingWidgetProvider.publishPreview(appContext)
@@ -159,6 +161,12 @@ class IllustiaApplication : Application() {
             startupTransaction?.finish(SpanStatus.OK)
             startupTransaction = null
         }
+    }
+
+    private suspend fun publishDynamicShortcuts(appContext: android.content.Context) {
+        val settings = repository.readSettings()
+        if (settings.privacyModeEnabled) return
+        DynamicShortcutPublisher.publish(appContext, settings.viewHistory)
     }
 
     fun setTelemetryEnabled(enabled: Boolean) {
