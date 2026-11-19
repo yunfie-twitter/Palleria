@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.PermissionRationaleType
 import com.yunfie.illustia.R
+import com.yunfie.illustia.ui.components.AppDialog
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
@@ -28,7 +29,6 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Messages
 import top.yukonga.miuix.kmp.icon.extended.TopDownloads
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -57,7 +57,7 @@ fun PermissionRationaleDialog(
             PermissionRationaleType.Storage -> MiuixIcons.TopDownloads
         }
 
-    OverlayDialog(
+    AppDialog(
         show = true,
         title = title,
         summary = description,

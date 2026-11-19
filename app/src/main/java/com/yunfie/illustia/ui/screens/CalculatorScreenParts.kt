@@ -52,11 +52,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.yunfie.illustia.CalculatorHistoryEntry
 import com.yunfie.illustia.R
+import com.yunfie.illustia.ui.components.AppDialog
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private val LocalCompactCalculatorButtons = compositionLocalOf { false }
@@ -126,7 +126,7 @@ internal fun CalculatorHistorySection(
     }
 
     if (showUnlockDialog) {
-        OverlayDialog(
+        AppDialog(
             show = true,
             title = stringResource(R.string.privacy_enter_unlock_code),
             onDismissRequest = {

@@ -33,6 +33,8 @@ import com.yunfie.illustia.platform.ImageClipboardHelper
 import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
+import com.yunfie.illustia.ui.components.AppBottomSheet
+import com.yunfie.illustia.ui.components.AppDialog
 import com.yunfie.illustia.ui.components.BookmarkTagPickerBottomSheet
 import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.DividerLine
@@ -58,8 +60,6 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.More
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
@@ -161,7 +161,7 @@ internal fun AppOverlayHost(
                 },
             )
         } else {
-            OverlayBottomSheet(
+            AppBottomSheet(
                 show = true,
                 modifier = Modifier.scrollEndHaptic(),
                 title = illust.title.ifBlank { stringResource(R.string.dialog_work_options) },
@@ -360,7 +360,7 @@ internal fun AppOverlayHost(
     var showLockResetConfirmDialog by remember { mutableStateOf(false) }
 
     if (appState.state.showLockRecoveryDialog) {
-        OverlayDialog(
+        AppDialog(
             show = true,
             title = stringResource(R.string.app_lock_recovery_title),
             summary = stringResource(R.string.app_lock_recovery_summary, appState.state.settings.appLockFailCount),

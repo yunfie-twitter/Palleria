@@ -30,12 +30,12 @@ import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.settings.AppSettings
+import com.yunfie.illustia.ui.components.AppDialog
 import com.yunfie.illustia.ui.components.miuixClickable
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.CheckboxPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -105,7 +105,7 @@ internal fun OnboardingLoginScreen(
         }
     }
 
-    OverlayDialog(
+    AppDialog(
         show = showDetails,
         title = stringResource(R.string.about_title),
         summary = stringResource(R.string.login_disclaimer),
