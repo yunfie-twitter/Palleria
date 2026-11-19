@@ -31,7 +31,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.layerBackdrop
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.UserPreview
@@ -52,6 +51,7 @@ import com.yunfie.illustia.ui.screens.profile.UserWorkSortOrder
 import com.yunfie.illustia.ui.screens.profile.UserWorkTypeFilter
 import com.yunfie.illustia.ui.screens.profile.rememberUserWorks
 import kotlinx.coroutines.launch
+import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable

@@ -53,6 +53,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -71,8 +72,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.kyant.backdrop.Backdrop
-import com.kyant.backdrop.backdrops.layerBackdrop
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.pixiv.Comment
@@ -108,6 +107,8 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.rememberPullToRefreshState
+import top.yukonga.miuix.kmp.blur.Backdrop
+import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Background
 import top.yukonga.miuix.kmp.icon.extended.Favorites
@@ -231,6 +232,8 @@ fun IllustDetailScreen(
     val activity = context as? Activity
     val surfaceColor = MiuixTheme.colorScheme.surface
     val isDarkTheme = surfaceColor.luminance() < 0.5f
+    // 基本のナビゲーションバー色。AppNavigationBar の既定色と同じ surfaceContainer を使う。
+    val navigationBarSurfaceColor = MiuixTheme.colorScheme.surfaceContainer.toArgb()
 
     val isPulling by remember {
         derivedStateOf { pullToRefreshState.pullProgress > 0.05f || isRefreshing }
@@ -248,6 +251,10 @@ fun IllustDetailScreen(
         restoreLightNavigationBars = !isDarkTheme,
         statusBarColor = TransparentStatusBarColor,
         navigationBarColor = TransparentNavigationBarColor,
+        // 離脱時はテーマのナビゲーションバー色に戻す。透過のまま残すと、
+        // 戻った先の画面でバー領域だけ背景色が欠けて見える。
+        restoreStatusBarColor = TransparentStatusBarColor,
+        restoreNavigationBarColor = navigationBarSurfaceColor,
     )
 
     // 手動リフレッシュの完了は取得側が知っている。固定 delay で消すと遅い回線で

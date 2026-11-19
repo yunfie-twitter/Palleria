@@ -57,6 +57,7 @@ import com.yunfie.illustia.ui.components.NoOpHapticFeedback
 import com.yunfie.illustia.ui.components.appNavigationSafeArea
 import com.yunfie.illustia.ui.components.isActiveNetworkMetered
 import com.yunfie.illustia.ui.components.isAppHapticsSupported
+import com.yunfie.illustia.ui.components.recordMiuixGlassLayer
 import com.yunfie.illustia.ui.components.rememberScrollRendering
 import com.yunfie.illustia.ui.screens.CalculatorScreen
 import kotlinx.coroutines.Dispatchers
@@ -802,7 +803,13 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         } else {
             null
         }
+    val miuixGlassEnabled = settings.isFeatureEnabled(FeatureFlag.MiuixGlass)
+    val miuixGlassBackdrop =
+        com.yunfie.illustia.ui.components
+            .rememberMiuixGlassBackdrop(miuixGlassEnabled)
     CompositionLocalProvider(
+        com.yunfie.illustia.ui.components.LocalMiuixGlassEnabled provides miuixGlassEnabled,
+        com.yunfie.illustia.ui.components.LocalMiuixGlassBackdrop provides miuixGlassBackdrop,
         LocalFastScrolling provides fastScrollingState,
         com.yunfie.illustia.ui.components.LocalArtworkDesktopActions provides desktopActions,
         LocalPixivImageProxyBaseUrl provides state.settings.pixivImageProxyBaseUrl,
@@ -825,6 +832,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                 Modifier
                     .fillMaxSize()
                     .appNavigationSafeArea()
+                    .recordMiuixGlassLayer(miuixGlassBackdrop)
                     .nestedScroll(scrollRenderingConnection)
                     .then(
                         if (effectiveHapticMode == AppHapticMode.Off) Modifier else Modifier.scrollEndHaptic(),
