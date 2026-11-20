@@ -25,6 +25,7 @@ import com.yunfie.illustia.data.PixivImageProxyOptions
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.pixivNetworkModeLabel
 import com.yunfie.illustia.settings.pixivNetworkModeOptions
+import com.yunfie.illustia.ui.components.AppDialog
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -42,7 +43,6 @@ import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -137,7 +137,7 @@ fun NetworkSettingsScreen(
         }
 
         if (showCustomDialog) {
-            OverlayDialog(
+            AppDialog(
                 show = showCustomDialog,
                 title = stringResource(R.string.image_proxy_custom_dialog_title),
                 summary = stringResource(R.string.image_proxy_custom_dialog_summary),

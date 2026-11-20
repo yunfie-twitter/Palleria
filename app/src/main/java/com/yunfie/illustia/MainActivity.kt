@@ -6,6 +6,7 @@ import android.app.HandoffActivityData
 import android.app.HandoffActivityDataRequestInfo
 import android.app.HandoffActivityParams
 import android.app.LocaleManager
+import android.app.assist.AssistContent
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.ComponentName
@@ -61,6 +62,7 @@ import coil3.request.SuccessResult
 import coil3.toBitmap
 import com.yunfie.illustia.data.NativeImageAnalysis
 import com.yunfie.illustia.data.proxyPixivImageUrl
+import com.yunfie.illustia.nativebridge.AssistantContentProvider
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
 import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.settings.AppFont
@@ -513,6 +515,13 @@ class MainActivity : FragmentActivity() {
             intent.removeExtra(NativeIntentRouter.EXTRA_HANDOFF_URI)
             intent.action = Intent.ACTION_MAIN
         }
+    }
+
+    override fun onProvideAssistContent(outContent: AssistContent) {
+        super.onProvideAssistContent(outContent)
+        val snapshot = AssistantContentProvider.resolve(viewModel.uiState.value) ?: return
+        outContent.webUri = Uri.parse(snapshot.webUri)
+        snapshot.structuredData?.let(outContent::setStructuredData)
     }
 
     @RequiresApi(PlatformCapabilities.HANDOFF_API)

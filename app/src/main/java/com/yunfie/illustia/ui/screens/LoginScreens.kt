@@ -48,6 +48,7 @@ import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.PixivWebLoginRequest
 import com.yunfie.illustia.R
 import com.yunfie.illustia.data.pixivLoginCodeOrNull
+import com.yunfie.illustia.ui.components.AppBottomSheet
 import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -71,7 +72,6 @@ import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Show
 import top.yukonga.miuix.kmp.icon.extended.Theme
 import top.yukonga.miuix.kmp.icon.extended.Update
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
@@ -88,7 +88,7 @@ fun RefreshTokenLoginBottomSheet(
     onDismiss: () -> Unit,
 ) {
     var tokenVisible by remember { mutableStateOf(false) }
-    OverlayBottomSheet(
+    AppBottomSheet(
         show = true,
         modifier = Modifier.scrollEndHaptic(),
         title = stringResource(R.string.login_token_title),

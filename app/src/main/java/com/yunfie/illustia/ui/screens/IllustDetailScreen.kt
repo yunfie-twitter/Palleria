@@ -53,6 +53,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -71,8 +72,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.kyant.backdrop.Backdrop
-import com.kyant.backdrop.backdrops.layerBackdrop
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.pixiv.Comment
@@ -95,7 +94,6 @@ import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.ScrollablePullToRefresh
 import com.yunfie.illustia.ui.components.SystemBarAppearanceEffect
-import com.yunfie.illustia.ui.components.TransparentNavigationBarColor
 import com.yunfie.illustia.ui.components.TransparentStatusBarColor
 import com.yunfie.illustia.ui.components.adaptiveRelatedIllustColumns
 import com.yunfie.illustia.ui.components.miuixClickable
@@ -108,6 +106,8 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.rememberPullToRefreshState
+import top.yukonga.miuix.kmp.blur.Backdrop
+import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Background
 import top.yukonga.miuix.kmp.icon.extended.Favorites
@@ -231,6 +231,8 @@ fun IllustDetailScreen(
     val activity = context as? Activity
     val surfaceColor = MiuixTheme.colorScheme.surface
     val isDarkTheme = surfaceColor.luminance() < 0.5f
+    // 基本のナビゲーションバー色。AppNavigationBar の既定色と同じ surfaceContainer を使う。
+    val navigationBarSurfaceColor = MiuixTheme.colorScheme.surfaceContainer.toArgb()
 
     val isPulling by remember {
         derivedStateOf { pullToRefreshState.pullProgress > 0.05f || isRefreshing }
@@ -247,7 +249,13 @@ fun IllustDetailScreen(
         restoreLightStatusBars = !isDarkTheme,
         restoreLightNavigationBars = !isDarkTheme,
         statusBarColor = TransparentStatusBarColor,
-        navigationBarColor = TransparentNavigationBarColor,
+        // この画面のコンテンツは Scaffold が navigationBars 分を確保し、その帯には何も
+        // 描かない。window 背景も破棄済みのため、バーを透過にすると確保した帯が
+        // 「最後に合成された古いフレーム」を見せたままになり、スクロールのたびに
+        // 残像が点滅する。テーマ色で塗って帯を確定させる。
+        navigationBarColor = navigationBarSurfaceColor,
+        restoreStatusBarColor = TransparentStatusBarColor,
+        restoreNavigationBarColor = navigationBarSurfaceColor,
     )
 
     // 手動リフレッシュの完了は取得側が知っている。固定 delay で消すと遅い回線で

@@ -12,6 +12,7 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -31,7 +32,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerIcon
@@ -44,22 +44,21 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.Backdrop
-import com.kyant.backdrop.drawBackdrop
-import com.kyant.backdrop.effects.blur
-import com.kyant.backdrop.effects.lens
-import com.kyant.backdrop.effects.vibrancy
 import com.yunfie.illustia.R
 import kotlinx.coroutines.delay
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.blur.Backdrop
+import top.yukonga.miuix.kmp.glass.glass
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Favorites
 import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
 import top.yukonga.miuix.kmp.icon.extended.Lock
 import top.yukonga.miuix.kmp.icon.extended.Ok
+import top.yukonga.miuix.kmp.material.GlassMaterials
+import top.yukonga.miuix.kmp.material.GlassShape
 import top.yukonga.miuix.kmp.squircle.squircleBorder
 import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -125,22 +124,11 @@ fun FollowPill(
     val containerModifier =
         if (glassBackdrop != null) {
             modifier
-                .drawBackdrop(
+                .glass(
                     backdrop = glassBackdrop,
-                    shape = { pillShape },
-                    effects = {
-                        vibrancy()
-                        blur(3.dp.toPx())
-                        lens(10.dp.toPx(), 20.dp.toPx())
-                    },
-                    onDrawSurface = {
-                        if (isActiveFollow) {
-                            drawRect(scheme.primary, blendMode = BlendMode.Hue)
-                            drawRect(scheme.primary.copy(alpha = 0.55f))
-                        } else {
-                            drawRect(scheme.surfaceContainerHigh.copy(alpha = 0.20f))
-                        }
-                    },
+                    shape = GlassShape(24.dp),
+                    material = GlassMaterials.puredThinGlass(isSystemInDarkTheme()),
+                    tint = if (isActiveFollow) scheme.primary else scheme.surfaceContainerHigh,
                 ).clip(pillShape)
                 .padding(horizontal = 22.dp, vertical = 11.dp)
         } else {

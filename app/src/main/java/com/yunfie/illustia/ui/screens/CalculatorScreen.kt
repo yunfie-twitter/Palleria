@@ -56,13 +56,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.CalculatorHistoryEntry
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.ui.components.AppDialog
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -231,7 +231,7 @@ fun CalculatorScreen(
 
                 // ── パターンC: 解除コード入力ダイアログ (Req 2.6, 4.6, 4.7) ─────────
                 if (showCornerUnlockDialog) {
-                    OverlayDialog(
+                    AppDialog(
                         show = true,
                         title = stringResource(R.string.privacy_enter_unlock_code),
                         onDismissRequest = {

@@ -176,6 +176,22 @@
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />
 
+        <!-- AppFunctions (Android 16 / API 36). Only the system may bind; the service is
+             inert on older platforms because neither the interface action nor the
+             permission exist there. -->
+        <service
+            android:name=".appfunctions.PalleriaAppFunctionService"
+            android:exported="true"
+            android:permission="android.permission.BIND_APP_FUNCTION_SERVICE"
+            tools:targetApi="36">
+            <property
+                android:name="android.app.appfunctions"
+                android:value="appfunctions/app_functions.xml" />
+            <intent-filter>
+                <action android:name="android.app.appfunctions.AppFunctionService" />
+            </intent-filter>
+        </service>
+
         <activity
             android:name=".MainActivity"
             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden|locale|layoutDirection"

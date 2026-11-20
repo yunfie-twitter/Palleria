@@ -15,7 +15,10 @@ def androidMinSdk = 24
 
 android {
     namespace = "com.yunfie.illustia"
+    // miuix-glass などの 0.9.5-beta 系 AAR が API 37.2 以上でのコンパイルを要求する。
+    // targetSdk は 37 のまま（実行時挙動は変えない）。
     compileSdk = 37
+    compileSdkMinor = 2
     defaultConfig {
         applicationId = "com.yunfie.illustia"
         // Android 7.0 (API 24) and newer.
@@ -413,8 +416,9 @@ dependencies {
     implementation libs.miuix.icons
     implementation libs.miuix.squircle
     implementation libs.miuix.blur
+    // 実験的機能（グラス調マテリアル）。
+    implementation libs.miuix.glass
     implementation libs.miuix.navigation3.ui
-    implementation "io.github.kyant0:backdrop:2.0.1"
     implementation libs.shizuku.api
     implementation libs.shizuku.provider
     implementation 'com.github.woheller69:FreeDroidWarn:V1.14'

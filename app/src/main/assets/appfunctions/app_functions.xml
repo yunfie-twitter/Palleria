@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Declares the Palleria app functions exposed through AppFunctionService
+  (Android 16 / API 36). The file name is referenced from AndroidManifest.xml by
+  <property android:name="android.app.appfunctions" android:value="appfunctions/app_functions.xml" />.
+
+  Child element and attribute names match the AppFunctionMetadata constants:
+    id, enabledByDefault, scope (global|activity), schemaName, schemaVersion, schemaCategory
+-->
+<appfunctions>
+    <appfunction>
+        <id>openArtwork</id>
+        <enabledByDefault>true</enabledByDefault>
+        <scope>global</scope>
+        <schemaName>OpenArtwork</schemaName>
+        <schemaVersion>1</schemaVersion>
+        <schemaCategory>media</schemaCategory>
+        <parameters>
+            <parameter>
+                <name>illustId</name>
+                <type>number</type>
+                <description>Pixiv artwork id to open in Palleria.</description>
+                <required>true</required>
+            </parameter>
+        </parameters>
+    </appfunction>
+
+    <appfunction>
+        <id>search</id>
+        <enabledByDefault>true</enabledByDefault>
+        <scope>global</scope>
+        <schemaName>SearchArtworks</schemaName>
+        <schemaVersion>1</schemaVersion>
+        <schemaCategory>media</schemaCategory>
+        <parameters>
+            <parameter>
+                <name>query</name>
+                <type>string</type>
+                <description>Search keyword or tag.</description>
+                <required>true</required>
+            </parameter>
+        </parameters>
+    </appfunction>
+</appfunctions>

@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.settings.AppSettings
+import com.yunfie.illustia.ui.components.AppDialog
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -42,7 +43,6 @@ import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private val DOH_PROVIDERS = listOf("system", "cloudflare", "google", "quad9", "adguard", "custom")
@@ -186,7 +186,7 @@ fun InternalProxySettingsScreen(
         }
 
         if (showCustomDohDialog) {
-            OverlayDialog(
+            AppDialog(
                 show = showCustomDohDialog,
                 title = stringResource(R.string.internal_proxy_doh_custom_url),
                 onDismissRequest = { showCustomDohDialog = false },
@@ -233,7 +233,7 @@ fun InternalProxySettingsScreen(
         }
 
         if (showProxyHostDialog) {
-            OverlayDialog(
+            AppDialog(
                 show = showProxyHostDialog,
                 title = stringResource(R.string.internal_proxy_host),
                 onDismissRequest = { showProxyHostDialog = false },
@@ -280,7 +280,7 @@ fun InternalProxySettingsScreen(
         }
 
         if (showProxyPortDialog) {
-            OverlayDialog(
+            AppDialog(
                 show = showProxyPortDialog,
                 title = stringResource(R.string.internal_proxy_port),
                 onDismissRequest = { showProxyPortDialog = false },
@@ -329,7 +329,7 @@ fun InternalProxySettingsScreen(
         }
 
         if (showBypassHostsDialog) {
-            OverlayDialog(
+            AppDialog(
                 show = showBypassHostsDialog,
                 title = stringResource(R.string.internal_proxy_bypass_hosts),
                 summary = stringResource(R.string.internal_proxy_bypass_hosts_desc),

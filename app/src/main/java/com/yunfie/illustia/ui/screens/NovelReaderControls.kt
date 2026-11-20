@@ -34,6 +34,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.R
+import com.yunfie.illustia.ui.components.AppBottomSheet
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.DividerLine
@@ -62,7 +63,6 @@ import top.yukonga.miuix.kmp.icon.extended.Filter
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.icon.extended.Remove
 import top.yukonga.miuix.kmp.icon.extended.Settings
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.squircle.squircleBorder
 import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -441,7 +441,7 @@ internal fun NovelTocBottomSheet(
     onDismiss: () -> Unit,
 ) {
     if (!show) return
-    OverlayBottomSheet(
+    AppBottomSheet(
         show = true,
         modifier = Modifier.scrollEndHaptic(),
         title = stringResource(R.string.novel_toc),
@@ -650,7 +650,7 @@ internal fun NovelSettingsBottomSheet(
     val performHaptic = rememberHapticFeedbackAction()
     var showDictionarySheet by remember { mutableStateOf(false) }
 
-    OverlayBottomSheet(
+    AppBottomSheet(
         show = true,
         modifier = Modifier.scrollEndHaptic(),
         title = stringResource(R.string.novel_display_settings),
@@ -1049,7 +1049,7 @@ private fun NovelTtsDictionarySheet(
     var wordInput by remember { mutableStateOf("") }
     var readingInput by remember { mutableStateOf("") }
 
-    OverlayBottomSheet(
+    AppBottomSheet(
         show = true,
         modifier = Modifier.scrollEndHaptic(),
         title = stringResource(R.string.tts_dictionary_title),

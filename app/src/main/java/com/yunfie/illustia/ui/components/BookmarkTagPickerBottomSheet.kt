@@ -28,6 +28,7 @@ import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.pixiv.BookmarkTag
+import com.yunfie.illustia.ui.components.AppBottomSheet
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -36,7 +37,6 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.preference.CheckboxPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -78,7 +78,7 @@ fun BookmarkTagPickerBottomSheet(
         }
     val visibleTags = availableTags.filter { it.name.contains(tagQuery.trim(), ignoreCase = true) }
 
-    OverlayBottomSheet(
+    AppBottomSheet(
         show = true,
         modifier = Modifier.scrollEndHaptic(),
         title = stringResource(if (isPrivate) R.string.bookmark_tag_picker_private else R.string.bookmark_tag_picker_public),

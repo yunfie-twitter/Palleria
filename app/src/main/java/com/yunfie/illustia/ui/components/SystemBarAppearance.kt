@@ -20,6 +20,10 @@ import androidx.core.view.WindowCompat
  * @param navigationBarColor ナビゲーションバーに塗る色。Transparent を渡すと透過。
  *   全画面（リーダー/ビューア）から戻った直後に OS が不透明色で塗り直すことがあるため、
  *   画面側でも明示的に透明を再適用できるようにしている。
+ * @param restoreStatusBarColor 画面を離れたときに戻すステータスバーの色。[statusBarColor] を
+ *   一時的に上書きした画面（作品ページの透過など）が、離脱後に別画面へ色を持ち越さないため、
+ *   呼び出し側がテーマに沿った色を指定する。null なら色は触らない。
+ * @param restoreNavigationBarColor 画面を離れたときに戻すナビゲーションバーの色。
  */
 @Composable
 internal fun SystemBarAppearanceEffect(
@@ -29,6 +33,8 @@ internal fun SystemBarAppearanceEffect(
     restoreLightNavigationBars: Boolean = restoreLightStatusBars,
     statusBarColor: Int? = null,
     navigationBarColor: Int? = null,
+    restoreStatusBarColor: Int? = null,
+    restoreNavigationBarColor: Int? = null,
 ) {
     val window = (LocalContext.current as? Activity)?.window ?: return
     DisposableEffect(
@@ -39,6 +45,8 @@ internal fun SystemBarAppearanceEffect(
         restoreLightNavigationBars,
         statusBarColor,
         navigationBarColor,
+        restoreStatusBarColor,
+        restoreNavigationBarColor,
     ) {
         val controller = WindowCompat.getInsetsController(window, window.decorView)
         if (statusBarColor != null) window.statusBarColor = statusBarColor
@@ -50,6 +58,12 @@ internal fun SystemBarAppearanceEffect(
             val restored = WindowCompat.getInsetsController(window, window.decorView)
             restored.isAppearanceLightStatusBars = restoreLightStatusBars
             restored.isAppearanceLightNavigationBars = restoreLightNavigationBars
+            // 透過を適用した画面（作品ページ等）から離れたら、ナビゲーションバーの色を
+            // テーマ色へ戻す。戻さないと全画面から戻った直後と同じ「透明のまま」状態が
+            // 他画面に残り、バー領域だけ背景色が欠けて見える。
+            if (restoreStatusBarColor != null) window.statusBarColor = restoreStatusBarColor
+            @Suppress("DEPRECATION")
+            if (restoreNavigationBarColor != null) window.navigationBarColor = restoreNavigationBarColor
         }
     }
 }
