@@ -42,6 +42,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
@@ -413,7 +414,11 @@ fun NovelReaderScreen(
     // アプリのテーマ（MiuixTheme）から解決した値を使う。
     val isDarkTheme = MiuixTheme.colorScheme.surface.luminance() < DARK_LUMINANCE_THRESHOLD
     com.yunfie.illustia.ui.components
-        .ReaderFullscreen(fullscreen, isDarkTheme = isDarkTheme)
+        .ReaderFullscreen(
+            fullscreen,
+            isDarkTheme = isDarkTheme,
+            navigationBarColor = MiuixTheme.colorScheme.surfaceContainer.toArgb(),
+        )
     LaunchedEffect(fullscreen) { controlsVisible = !fullscreen }
     com.yunfie.illustia.ui.components.ParagraphNavigation(
         continuousListState,

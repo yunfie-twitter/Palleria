@@ -40,10 +40,12 @@ import androidx.core.view.WindowInsetsCompat
 internal fun ReaderFullscreen(
     enabled: Boolean,
     isDarkTheme: Boolean,
+    navigationBarColor: Int = Color.TRANSPARENT,
 ) {
     val view = LocalView.current
     // 復帰書き込みで常に最新のアプリテーマを使う。
     val currentIsDarkTheme by rememberUpdatedState(isDarkTheme)
+    val currentNavigationBarColor by rememberUpdatedState(navigationBarColor)
     DisposableEffect(view, enabled) {
         val activity = view.context.readerActivity()
         val window = activity?.window
@@ -54,34 +56,36 @@ internal fun ReaderFullscreen(
         } else {
             controller?.show(bars)
             // バーを出し直すと OS がナビゲーションバーを不透明色で塗り直すため、
-            // 解除したこの時点で透明色を再適用する。onDispose だけだと画面に留まった
-            // まま全画面を抜けたときにバーが不透明のまま残る。
+            // 解除したこの時点でアプリのナビゲーションバー色を再適用する。onDispose だけだと
+            // 画面に留まったまま全画面を抜けたときにバーが不透明のまま残る。
             if (window != null) {
-                TransparentSystemBars.reapplyTransparent(window, currentIsDarkTheme)
+                TransparentSystemBars.applySystemBars(window, currentIsDarkTheme, currentNavigationBarColor)
             }
         }
         onDispose {
             controller?.show(bars)
-            if (window != null && enabled) {
-                TransparentSystemBars.reapplyTransparent(window, currentIsDarkTheme)
+            if (window != null) {
+                // 全画面を抜けた後は、ビューアの黒背景ではなくアプリのナビゲーションバー色に
+                // 戻す。透明のままにすると、window 背景が無い（setBackgroundDrawable(null)）
+                // ため全画面時の黒サーフェスがバー領域に透けて見える。
+                TransparentSystemBars.applySystemBars(window, currentIsDarkTheme, currentNavigationBarColor)
             }
         }
     }
 }
 
-/** 全画面表示から戻ったあと、システムバーを透明のまま保つための共通処理。 */
+/** 全画面表示から戻ったあと、システムバーを整えるための共通処理。 */
 internal object TransparentSystemBars {
     @Suppress("DEPRECATION")
-    fun reapplyTransparent(
+    fun applySystemBars(
         window: Window,
         isDark: Boolean,
+        navigationBarColor: Int,
     ) {
         window.statusBarColor = Color.TRANSPARENT
-        // ナビゲーションバーも透明に揃える。ステータスバーだけ透明にしていると、
-        // 全画面から戻った直後に OS が不透明色で塗り直したナビゲーションバーが
-        // そのまま残り、バー領域だけ別色に見える。
-        window.navigationBarColor = Color.TRANSPARENT
+        window.navigationBarColor = navigationBarColor
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            // ナビゲーションバーに色を戻すときはコントラスト強制を無効にしておく。
             window.isNavigationBarContrastEnforced = false
             window.isStatusBarContrastEnforced = false
         }

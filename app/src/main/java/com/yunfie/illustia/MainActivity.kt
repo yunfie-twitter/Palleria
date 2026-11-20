@@ -44,6 +44,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -325,6 +326,18 @@ class MainActivity : FragmentActivity() {
                 val isDarkTheme = isAppDarkTheme(settings.themeMode, systemDark)
                 resolvedAppDarkTheme = isDarkTheme
                 applySystemBarAppearance(isDarkTheme)
+            }
+
+            // システム ナビゲーションバーの帯にアプリのナビゲーションバー色（surfaceContainer）
+            // を塗る。window 背景を捨てている（setBackgroundDrawable(null)）かつルートが
+            // navigationBars inset を消費しているため、ここで色を入れないと全画面ビューアの
+            // 黒サーフェスがバー領域に透けて見える。全画面画面は各自で透明を上書きする。
+            val navigationBarColor = themeColors.surfaceContainer
+            LaunchedEffect(navigationBarColor) {
+                window.navigationBarColor = navigationBarColor.toArgb()
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    window.isNavigationBarContrastEnforced = false
+                }
             }
 
             LaunchedEffect(
@@ -857,8 +870,11 @@ class MainActivity : FragmentActivity() {
         )
         // 全画面（リーダー/ビューア）から戻った直後は OS がバーを不透明色で塗り直す
         // ことがあるため、透明色・コントラスト無効・外観はここで一括して再適用する。
+        // ただしナビゲーションバーの塗り色は Compose 側（LaunchedEffect）に任せる。
+        // ここで透明を書き込むと、作品ページのように帯を確保して何も描かない画面で
+        // 残像が残るため（#647）。
         com.yunfie.illustia.ui.components.TransparentSystemBars
-            .reapplyTransparent(window, isDarkTheme)
+            .applySystemBars(window, isDarkTheme, window.navigationBarColor)
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {

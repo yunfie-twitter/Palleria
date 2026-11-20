@@ -4,6 +4,9 @@ import android.app.Activity
 import android.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.view.WindowCompat
 
@@ -37,23 +40,8 @@ internal fun SystemBarAppearanceEffect(
     restoreNavigationBarColor: Int? = null,
 ) {
     val window = (LocalContext.current as? Activity)?.window ?: return
-    DisposableEffect(
-        window,
-        lightStatusBars,
-        lightNavigationBars,
-        restoreLightStatusBars,
-        restoreLightNavigationBars,
-        statusBarColor,
-        navigationBarColor,
-        restoreStatusBarColor,
-        restoreNavigationBarColor,
-    ) {
+    DisposableEffect(window) {
         val controller = WindowCompat.getInsetsController(window, window.decorView)
-        if (statusBarColor != null) window.statusBarColor = statusBarColor
-        @Suppress("DEPRECATION")
-        if (navigationBarColor != null) window.navigationBarColor = navigationBarColor
-        controller.isAppearanceLightStatusBars = lightStatusBars
-        controller.isAppearanceLightNavigationBars = lightNavigationBars
         onDispose {
             val restored = WindowCompat.getInsetsController(window, window.decorView)
             restored.isAppearanceLightStatusBars = restoreLightStatusBars
@@ -65,6 +53,20 @@ internal fun SystemBarAppearanceEffect(
             @Suppress("DEPRECATION")
             if (restoreNavigationBarColor != null) window.navigationBarColor = restoreNavigationBarColor
         }
+    }
+    // 色と明暗は DisposableEffect の key にしない。作品ページは lightStatusBars が
+    // スクロール位置で切り替わるため、key に含めるとスクロールのたびに onDispose が
+    // 走って window のバー色を書き戻し続け、バー領域が点滅する（#647）。
+    // 値の変化は DisposableEffect を作り直さずに反映する。
+    val currentLightStatusBars by rememberUpdatedState(lightStatusBars)
+    val currentLightNavigationBars by rememberUpdatedState(lightNavigationBars)
+    SideEffect {
+        val controller = WindowCompat.getInsetsController(window, window.decorView)
+        if (statusBarColor != null) window.statusBarColor = statusBarColor
+        @Suppress("DEPRECATION")
+        if (navigationBarColor != null) window.navigationBarColor = navigationBarColor
+        controller.isAppearanceLightStatusBars = currentLightStatusBars
+        controller.isAppearanceLightNavigationBars = currentLightNavigationBars
     }
 }
 
