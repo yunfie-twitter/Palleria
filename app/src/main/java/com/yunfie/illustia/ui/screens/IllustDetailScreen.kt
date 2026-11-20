@@ -94,7 +94,6 @@ import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.ScrollablePullToRefresh
 import com.yunfie.illustia.ui.components.SystemBarAppearanceEffect
-import com.yunfie.illustia.ui.components.TransparentNavigationBarColor
 import com.yunfie.illustia.ui.components.TransparentStatusBarColor
 import com.yunfie.illustia.ui.components.adaptiveRelatedIllustColumns
 import com.yunfie.illustia.ui.components.miuixClickable
@@ -250,9 +249,11 @@ fun IllustDetailScreen(
         restoreLightStatusBars = !isDarkTheme,
         restoreLightNavigationBars = !isDarkTheme,
         statusBarColor = TransparentStatusBarColor,
-        navigationBarColor = TransparentNavigationBarColor,
-        // 離脱時はテーマのナビゲーションバー色に戻す。透過のまま残すと、
-        // 戻った先の画面でバー領域だけ背景色が欠けて見える。
+        // この画面のコンテンツは Scaffold が navigationBars 分を確保し、その帯には何も
+        // 描かない。window 背景も破棄済みのため、バーを透過にすると確保した帯が
+        // 「最後に合成された古いフレーム」を見せたままになり、スクロールのたびに
+        // 残像が点滅する。テーマ色で塗って帯を確定させる。
+        navigationBarColor = navigationBarSurfaceColor,
         restoreStatusBarColor = TransparentStatusBarColor,
         restoreNavigationBarColor = navigationBarSurfaceColor,
     )
