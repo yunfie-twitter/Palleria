@@ -94,6 +94,7 @@ import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.ScrollablePullToRefresh
 import com.yunfie.illustia.ui.components.SystemBarAppearanceEffect
+import com.yunfie.illustia.ui.components.TransparentNavigationBarColor
 import com.yunfie.illustia.ui.components.TransparentStatusBarColor
 import com.yunfie.illustia.ui.components.adaptiveRelatedIllustColumns
 import com.yunfie.illustia.ui.components.miuixClickable
@@ -231,8 +232,6 @@ fun IllustDetailScreen(
     val activity = context as? Activity
     val surfaceColor = MiuixTheme.colorScheme.surface
     val isDarkTheme = surfaceColor.luminance() < 0.5f
-    // 基本のナビゲーションバー色。AppNavigationBar の既定色と同じ surfaceContainer を使う。
-    val navigationBarSurfaceColor = MiuixTheme.colorScheme.surfaceContainer.toArgb()
 
     val isPulling by remember {
         derivedStateOf { pullToRefreshState.pullProgress > 0.05f || isRefreshing }
@@ -249,13 +248,11 @@ fun IllustDetailScreen(
         restoreLightStatusBars = !isDarkTheme,
         restoreLightNavigationBars = !isDarkTheme,
         statusBarColor = TransparentStatusBarColor,
-        // この画面のコンテンツは Scaffold が navigationBars 分を確保し、その帯には何も
-        // 描かない。window 背景も破棄済みのため、バーを透過にすると確保した帯が
-        // 「最後に合成された古いフレーム」を見せたままになり、スクロールのたびに
-        // 残像が点滅する。テーマ色で塗って帯を確定させる。
-        navigationBarColor = navigationBarSurfaceColor,
+        // ナビゲーションバーの帯は Compose（appNavigationScrim）がアプリ色で塗る。
+        // window 側で色を持つと、帯を確保しているのに何も描かない画面で残像が点滅する（#647）。
+        navigationBarColor = TransparentNavigationBarColor,
         restoreStatusBarColor = TransparentStatusBarColor,
-        restoreNavigationBarColor = navigationBarSurfaceColor,
+        restoreNavigationBarColor = TransparentNavigationBarColor,
     )
 
     // 手動リフレッシュの完了は取得側が知っている。固定 delay で消すと遅い回線で

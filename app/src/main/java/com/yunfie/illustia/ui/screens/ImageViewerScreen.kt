@@ -66,7 +66,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onKeyEvent
@@ -269,13 +268,13 @@ fun ImageViewerScreen(
     }
 
     // ビューアの背景は常に黒なので、復帰後のバーは明るいアイコン（ダーク前提）に戻す。
-    // ナビゲーションバーの色はアプリの基本色（surfaceContainer）に戻す。透明のままにすると
-    // window 背景が無いため全画面の黒がバー領域に透ける。
+    // ナビゲーションバーの帯は Compose（appNavigationScrim）がアプリ色で塗るため、
+    // window 側は透過のままにする。ここで不透明色を書くと帯が点滅する（#647）。
     com.yunfie.illustia.ui.components
         .ReaderFullscreen(
             fullscreen,
             isDarkTheme = true,
-            navigationBarColor = MiuixTheme.colorScheme.surfaceContainer.toArgb(),
+            navigationBarColor = android.graphics.Color.TRANSPARENT,
         )
 
     fun shareCurrentPage() {

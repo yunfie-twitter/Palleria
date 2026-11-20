@@ -54,7 +54,7 @@ import com.yunfie.illustia.ui.components.LocalFastScrolling
 import com.yunfie.illustia.ui.components.LocalPixivImageProxyBaseUrl
 import com.yunfie.illustia.ui.components.LocalPreferLowDataImages
 import com.yunfie.illustia.ui.components.NoOpHapticFeedback
-import com.yunfie.illustia.ui.components.appNavigationSafeArea
+import com.yunfie.illustia.ui.components.appNavigationScrim
 import com.yunfie.illustia.ui.components.isActiveNetworkMetered
 import com.yunfie.illustia.ui.components.isAppHapticsSupported
 import com.yunfie.illustia.ui.components.recordMiuixGlassLayer
@@ -831,7 +831,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .appNavigationSafeArea()
+                    .appNavigationScrim()
                     .recordMiuixGlassLayer(miuixGlassBackdrop)
                     .nestedScroll(scrollRenderingConnection)
                     .then(

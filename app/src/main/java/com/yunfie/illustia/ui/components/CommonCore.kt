@@ -65,7 +65,7 @@ val BottomSheetInsideMargin = DpSize(width = 24.dp, height = 12.dp)
 /**
  * ダイアログ内容の下端に確保する余白。
  *
- * アプリのルートは `appNavigationSafeArea()` で navigationBars を消費済みだが、miuix の
+ * アプリのルートは `appNavigationScrim()` で navigationBars を消費し帯も塗り済みだが、miuix の
  * `OverlayDialog` は既定で imePadding と navigationBarsPadding を両方適用する。そのため
  * キーボード表示時に両者が積まれ、キーボードとの間に隙間ができる。`OverlayDialog` 側で
  * `defaultWindowInsetsPadding = false` にしたうえで、内側で大きい方だけを確保する。

@@ -44,7 +44,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -328,13 +327,13 @@ class MainActivity : FragmentActivity() {
                 applySystemBarAppearance(isDarkTheme)
             }
 
-            // システム ナビゲーションバーの帯にアプリのナビゲーションバー色（surfaceContainer）
-            // を塗る。window 背景を捨てている（setBackgroundDrawable(null)）かつルートが
-            // navigationBars inset を消費しているため、ここで色を入れないと全画面ビューアの
-            // 黒サーフェスがバー領域に透けて見える。全画面画面は各自で透明を上書きする。
-            val navigationBarColor = themeColors.surfaceContainer
-            LaunchedEffect(navigationBarColor) {
-                window.navigationBarColor = navigationBarColor.toArgb()
+            // システム ナビゲーションバーの帯はルートの Compose（appNavigationScrim）が
+            // アプリ色で塗る。window 側で色を持たせると、全画面からの復帰や各画面の
+            // SystemBarAppearanceEffect が透過と不透明を交互に書き込み、帯が点滅し、
+            // 透過になった瞬間に前のフレームが残像として見える（#647）。
+            // window は常に透過のままにし、色の所有権を Compose 側へ一本化する。
+            LaunchedEffect(Unit) {
+                window.navigationBarColor = Color.TRANSPARENT
                 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
                     window.isNavigationBarContrastEnforced = false
                 }
@@ -870,11 +869,10 @@ class MainActivity : FragmentActivity() {
         )
         // 全画面（リーダー/ビューア）から戻った直後は OS がバーを不透明色で塗り直す
         // ことがあるため、透明色・コントラスト無効・外観はここで一括して再適用する。
-        // ただしナビゲーションバーの塗り色は Compose 側（LaunchedEffect）に任せる。
-        // ここで透明を書き込むと、作品ページのように帯を確保して何も描かない画面で
-        // 残像が残るため（#647）。
+        // ナビゲーションバーの塗り色は常に透過にする。帯の色は Compose 側
+        // （appNavigationScrim）が塗るため、ここで不透明色を書くと点滅と残像の原因になる（#647）。
         com.yunfie.illustia.ui.components.TransparentSystemBars
-            .applySystemBars(window, isDarkTheme, window.navigationBarColor)
+            .applySystemBars(window, isDarkTheme, Color.TRANSPARENT)
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
