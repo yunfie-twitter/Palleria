@@ -194,24 +194,18 @@ internal fun MainSurface(
                 }
             },
         ) { paddingValues ->
+            // グラス調バー、または標準バーでのブラー有効時は、バーがコンテンツに重なるため
+            // 下部パディングを 0 にして本文をバーの下まで伸ばす。
+            val overlaysBottomBar =
+                glassNavEnabled ||
+                    (isBlurEnabled && !useNavigationRail && appState.settings.navigationStyle == "standard")
             Box(
                 modifier =
                     Modifier
                         .fillMaxSize()
                         .padding(
                             top = paddingValues.calculateTopPadding(),
-                            bottom =
-                                if (glassNavEnabled ||
-                                    (
-                                        isBlurEnabled &&
-                                            !useNavigationRail &&
-                                            appState.settings.navigationStyle == "standard"
-                                    )
-                                ) {
-                                    0.dp
-                                } else {
-                                    paddingValues.calculateBottomPadding()
-                                },
+                            bottom = if (overlaysBottomBar) 0.dp else paddingValues.calculateBottomPadding(),
                             start = paddingValues.calculateStartPadding(LocalLayoutDirection.current),
                             end = paddingValues.calculateEndPadding(LocalLayoutDirection.current),
                         ),
