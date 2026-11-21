@@ -108,8 +108,6 @@ internal fun IllustDetailInfo(
     onRelatedSectionReady: () -> Unit = {},
     sectionsOverride: List<String>? = null,
     showHeader: Boolean = true,
-    liquidGlassFollowButton: Boolean = false,
-    followBackdrop: Backdrop? = null,
 ) {
     val uriHandler = LocalUriHandler.current
     val screenHeightDp = LocalConfiguration.current.screenHeightDp
@@ -328,8 +326,6 @@ internal fun IllustDetailInfo(
                                         FollowPill(
                                             isFollowed = isArtistFollowed,
                                             followAnimationTrigger = followAnimationTrigger,
-                                            liquidGlass = liquidGlassFollowButton,
-                                            backdrop = followBackdrop,
                                         )
                                     }
                                 }

@@ -92,6 +92,7 @@ import com.yunfie.illustia.ui.components.LocalArtworkCardPreferences
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
+import com.yunfie.illustia.ui.components.ProvideAppNavigationScrimColor
 import com.yunfie.illustia.ui.components.ScrollablePullToRefresh
 import com.yunfie.illustia.ui.components.SystemBarAppearanceEffect
 import com.yunfie.illustia.ui.components.TransparentNavigationBarColor
@@ -393,11 +394,6 @@ fun IllustDetailScreen(
     val relatedColumns = adaptiveRelatedIllustColumns(relatedIllustColumnCount)
     val relatedRows = remember(relatedIllusts, relatedColumns) { relatedIllustRows(relatedIllusts, relatedColumns) }
     val relatedCardPreferences = LocalArtworkCardPreferences.current
-    val followGlassBackdrop =
-        rememberLiquidGlassBackdrop(
-            enabled = liquidGlassFollowButton,
-            backgroundColor = MiuixTheme.colorScheme.surface,
-        )
     val detailInfoContent: @Composable (List<String>?, Boolean) -> Unit = { sections, showHeader ->
         DetailInfoSlot(
             illust = illust,
@@ -424,213 +420,205 @@ fun IllustDetailScreen(
             onRelatedSectionReady = onRelatedSectionReady,
             sectionsOverride = sections,
             showHeader = showHeader,
-            liquidGlassFollowButton = liquidGlassFollowButton,
-            followBackdrop = followGlassBackdrop,
         )
     }
 
-    Scaffold(
-        containerColor = MiuixTheme.colorScheme.surface,
-        floatingActionButton = {
-            BookmarkHeartButton(
-                isBookmarked = illust.isBookmarked,
-                onClick = onBookmark,
-                onLongClick = onBookmarkLongClick,
-                size = 56.dp,
-                iconSize = 26.dp,
-                cornerRadius = 18.dp,
-                activeBackground = MiuixTheme.colorScheme.surfaceContainerHigh,
-                inactiveBackground = MiuixTheme.colorScheme.surfaceContainerHigh,
-            )
-        },
-    ) { scaffoldPadding ->
-        val statusBarTopPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .background(MiuixTheme.colorScheme.surface),
-        ) {
-            if (isActive && isPulling && PlatformCapabilities.supportsHardwareBlur(context)) {
-                PixivImage(
-                    url = illust.thumbnailUrl.ifBlank { illust.squareImageUrl.ifBlank { illust.previewUrl } },
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .blur(36.dp)
-                            .graphicsLayer {
-                                val raw = pullToRefreshState.pullProgress
-                                val progress = if (raw > 0.06f) ((raw - 0.06f) / 0.94f).coerceIn(0f, 1f) else 0f
-                                alpha = progress * 0.55f
-                            },
-                    thumbnail = true,
+    // 作品ページは surface を全面に敷いているので、ナビ帯は塗らずに背景を透かす。
+    ProvideAppNavigationScrimColor(Color.Transparent) {
+        Scaffold(
+            containerColor = MiuixTheme.colorScheme.surface,
+            floatingActionButton = {
+                BookmarkHeartButton(
+                    isBookmarked = illust.isBookmarked,
+                    onClick = onBookmark,
+                    onLongClick = onBookmarkLongClick,
+                    size = 56.dp,
+                    iconSize = 26.dp,
+                    cornerRadius = 18.dp,
+                    activeBackground = MiuixTheme.colorScheme.surfaceContainerHigh,
+                    inactiveBackground = MiuixTheme.colorScheme.surfaceContainerHigh,
                 )
-            }
-            if (isPulling) {
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .graphicsLayer {
-                                val raw = pullToRefreshState.pullProgress
-                                val progress = if (raw > 0.06f) ((raw - 0.06f) / 0.94f).coerceIn(0f, 1f) else 0f
-                                alpha = progress * 0.42f
-                            }.background(MiuixTheme.colorScheme.surface),
-                )
-            }
-
-            Surface(
+            },
+        ) { scaffoldPadding ->
+            val statusBarTopPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+            Box(
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .padding(bottom = scaffoldPadding.calculateBottomPadding().coerceAtLeast(0.dp)),
-                color = Color.Transparent,
+                        .background(MiuixTheme.colorScheme.surface),
             ) {
-                ScrollablePullToRefresh(
-                    isRefreshing = isRefreshing,
-                    onRefresh = {
-                        if (!isRefreshing) {
-                            isRefreshing = true
-                            onRefresh()
-                        }
-                    },
-                    pullToRefreshState = pullToRefreshState,
-                    circleSize = 0.dp,
-                    color = Color.Transparent,
-                    refreshTexts = emptyList(),
-                    contentPadding = PaddingValues(top = statusBarTopPadding + 8.dp),
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .then(
-                                if (followGlassBackdrop != null) {
-                                    Modifier.layerBackdrop(followGlassBackdrop)
-                                } else {
-                                    Modifier
-                                },
-                            ),
-                ) {
-                    BoxWithConstraints(
+                if (isActive && isPulling && PlatformCapabilities.supportsHardwareBlur(context)) {
+                    PixivImage(
+                        url = illust.thumbnailUrl.ifBlank { illust.squareImageUrl.ifBlank { illust.previewUrl } },
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
                         modifier =
                             Modifier
                                 .fillMaxSize()
-                                .pointerInput(Unit) {
-                                    // Inactive (background) pages keep receiving pointer events while a
-                                    // new artwork slides in; only the visible page may drive the
-                                    // mouse-wheel coalescing timestamp shared by both lists.
-                                    if (!isActive) return@pointerInput
-                                    awaitPointerEventScope {
-                                        while (true) {
-                                            val event = awaitPointerEvent(PointerEventPass.Initial)
-                                            if (event.type == PointerEventType.Scroll ||
-                                                event.changes.any { it.type == PointerType.Mouse }
-                                            ) {
-                                                lastMouseScrollTime[0] = System.currentTimeMillis()
+                                .blur(36.dp)
+                                .graphicsLayer {
+                                    val raw = pullToRefreshState.pullProgress
+                                    val progress = if (raw > 0.06f) ((raw - 0.06f) / 0.94f).coerceIn(0f, 1f) else 0f
+                                    alpha = progress * 0.55f
+                                },
+                        thumbnail = true,
+                    )
+                }
+                if (isPulling) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .graphicsLayer {
+                                    val raw = pullToRefreshState.pullProgress
+                                    val progress = if (raw > 0.06f) ((raw - 0.06f) / 0.94f).coerceIn(0f, 1f) else 0f
+                                    alpha = progress * 0.42f
+                                }.background(MiuixTheme.colorScheme.surface),
+                    )
+                }
+
+                Surface(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(bottom = scaffoldPadding.calculateBottomPadding().coerceAtLeast(0.dp)),
+                    color = Color.Transparent,
+                ) {
+                    ScrollablePullToRefresh(
+                        isRefreshing = isRefreshing,
+                        onRefresh = {
+                            if (!isRefreshing) {
+                                isRefreshing = true
+                                onRefresh()
+                            }
+                        },
+                        pullToRefreshState = pullToRefreshState,
+                        circleSize = 0.dp,
+                        color = Color.Transparent,
+                        refreshTexts = emptyList(),
+                        contentPadding = PaddingValues(top = statusBarTopPadding + 8.dp),
+                        modifier = Modifier.fillMaxSize(),
+                    ) {
+                        BoxWithConstraints(
+                            modifier =
+                                Modifier
+                                    .fillMaxSize()
+                                    .pointerInput(Unit) {
+                                        // Inactive (background) pages keep receiving pointer events while a
+                                        // new artwork slides in; only the visible page may drive the
+                                        // mouse-wheel coalescing timestamp shared by both lists.
+                                        if (!isActive) return@pointerInput
+                                        awaitPointerEventScope {
+                                            while (true) {
+                                                val event = awaitPointerEvent(PointerEventPass.Initial)
+                                                if (event.type == PointerEventType.Scroll ||
+                                                    event.changes.any { it.type == PointerType.Mouse }
+                                                ) {
+                                                    lastMouseScrollTime[0] = System.currentTimeMillis()
+                                                }
                                             }
                                         }
+                                    }.nestedScroll(mouseScrollConnection),
+                        ) {
+                            val useTwoPaneLayout = maxWidth >= 840.dp && maxWidth > maxHeight
+                            if (useTwoPaneLayout) {
+                                Row(modifier = Modifier.fillMaxSize()) {
+                                    detailHeaderContent(true, Modifier.weight(1.1f).fillMaxHeight())
+                                    LazyColumn(
+                                        state = detailListState,
+                                        modifier =
+                                            Modifier
+                                                .weight(0.9f)
+                                                .fillMaxHeight()
+                                                .background(MiuixTheme.colorScheme.surface),
+                                        // 2ペインでは FAB が右ペイン（情報側）の下端に重なるので、
+                                        // スクロール末尾の行が隠れないよう余白を多めに取る。
+                                        contentPadding = PaddingValues(top = 12.dp, bottom = TwoPaneFabBottomPadding),
+                                    ) {
+                                        item(key = "detail_info", contentType = "detail_info") { detailInfoContent(null, true) }
                                     }
-                                }.nestedScroll(mouseScrollConnection),
-                    ) {
-                        val useTwoPaneLayout = maxWidth >= 840.dp && maxWidth > maxHeight
-                        if (useTwoPaneLayout) {
-                            Row(modifier = Modifier.fillMaxSize()) {
-                                detailHeaderContent(true, Modifier.weight(1.1f).fillMaxHeight())
+                                }
+                            } else {
                                 LazyColumn(
                                     state = detailListState,
                                     modifier =
                                         Modifier
-                                            .weight(0.9f)
-                                            .fillMaxHeight()
+                                            .fillMaxSize()
                                             .background(MiuixTheme.colorScheme.surface),
-                                    // 2ペインでは FAB が右ペイン（情報側）の下端に重なるので、
-                                    // スクロール末尾の行が隠れないよう余白を多めに取る。
-                                    contentPadding = PaddingValues(top = 12.dp, bottom = TwoPaneFabBottomPadding),
+                                    contentPadding = PaddingValues(bottom = 96.dp),
                                 ) {
-                                    item(key = "detail_info", contentType = "detail_info") { detailInfoContent(null, true) }
-                                }
-                            }
-                        } else {
-                            LazyColumn(
-                                state = detailListState,
-                                modifier =
-                                    Modifier
-                                        .fillMaxSize()
-                                        .background(MiuixTheme.colorScheme.surface),
-                                contentPadding = PaddingValues(bottom = 96.dp),
-                            ) {
-                                item(key = "detail_header", contentType = "detail_header") { detailHeaderContent(false, Modifier) }
-                                // 関連が 0 件で確定しているなら、見出しごと出さない。
-                                val showRelatedSection = shouldShowRelatedSection(relatedIllusts, relatedIllustsLoaded)
-                                if (relatedSectionIndex >= 0 && showRelatedSection) {
-                                    val beforeSections = orderedSections.take(relatedSectionIndex)
-                                    val afterSections = orderedSections.drop(relatedSectionIndex + 1)
-                                    item(key = "detail_info_before", contentType = "detail_info") {
-                                        detailInfoContent(beforeSections, true)
-                                    }
-                                    item(key = "related_header", contentType = "related_header") {
-                                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                                            Spacer(Modifier.height(8.dp))
-                                            Text(
-                                                text = stringResource(R.string.detail_related),
-                                                color = MiuixTheme.colorScheme.onBackground,
-                                                style = MiuixTheme.textStyles.title4,
-                                                fontWeight = FontWeight.Bold,
-                                                modifier = Modifier.padding(horizontal = 16.dp),
-                                            )
+                                    item(key = "detail_header", contentType = "detail_header") { detailHeaderContent(false, Modifier) }
+                                    // 関連が 0 件で確定しているなら、見出しごと出さない。
+                                    val showRelatedSection = shouldShowRelatedSection(relatedIllusts, relatedIllustsLoaded)
+                                    if (relatedSectionIndex >= 0 && showRelatedSection) {
+                                        val beforeSections = orderedSections.take(relatedSectionIndex)
+                                        val afterSections = orderedSections.drop(relatedSectionIndex + 1)
+                                        item(key = "detail_info_before", contentType = "detail_info") {
+                                            detailInfoContent(beforeSections, true)
                                         }
-                                    }
-                                    if (relatedRows.isEmpty()) {
-                                        item(key = "related_loading", contentType = "related_loading") {
-                                            Box(
-                                                modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
-                                                contentAlignment = Alignment.Center,
-                                            ) {
-                                                LoadingIndicator()
+                                        item(key = "related_header", contentType = "related_header") {
+                                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                                Spacer(Modifier.height(8.dp))
+                                                Text(
+                                                    text = stringResource(R.string.detail_related),
+                                                    color = MiuixTheme.colorScheme.onBackground,
+                                                    style = MiuixTheme.textStyles.title4,
+                                                    fontWeight = FontWeight.Bold,
+                                                    modifier = Modifier.padding(horizontal = 16.dp),
+                                                )
+                                            }
+                                        }
+                                        if (relatedRows.isEmpty()) {
+                                            item(key = "related_loading", contentType = "related_loading") {
+                                                Box(
+                                                    modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
+                                                    contentAlignment = Alignment.Center,
+                                                ) {
+                                                    LoadingIndicator()
+                                                }
+                                            }
+                                        } else {
+                                            itemsIndexed(
+                                                items = relatedRows,
+                                                key = { index, row -> "related_row_${row.firstOrNull()?.id ?: index}" },
+                                                contentType = { _, _ -> "related_row" },
+                                            ) { _, row ->
+                                                RelatedIllustRow(
+                                                    rowItems = row,
+                                                    columns = relatedColumns,
+                                                    cardPreferences = relatedCardPreferences,
+                                                    onOpenIllust = onOpenIllust,
+                                                    onLongPressIllust = onLongPressIllust,
+                                                    modifier = Modifier.padding(bottom = 4.dp),
+                                                )
+                                            }
+                                        }
+                                        if (afterSections.isNotEmpty()) {
+                                            item(key = "detail_info_after", contentType = "detail_info") {
+                                                detailInfoContent(afterSections, false)
                                             }
                                         }
                                     } else {
-                                        itemsIndexed(
-                                            items = relatedRows,
-                                            key = { index, row -> "related_row_${row.firstOrNull()?.id ?: index}" },
-                                            contentType = { _, _ -> "related_row" },
-                                        ) { _, row ->
-                                            RelatedIllustRow(
-                                                rowItems = row,
-                                                columns = relatedColumns,
-                                                cardPreferences = relatedCardPreferences,
-                                                onOpenIllust = onOpenIllust,
-                                                onLongPressIllust = onLongPressIllust,
-                                                modifier = Modifier.padding(bottom = 4.dp),
-                                            )
-                                        }
+                                        item(key = "detail_info", contentType = "detail_info") { detailInfoContent(null, true) }
                                     }
-                                    if (afterSections.isNotEmpty()) {
-                                        item(key = "detail_info_after", contentType = "detail_info") {
-                                            detailInfoContent(afterSections, false)
-                                        }
-                                    }
-                                } else {
-                                    item(key = "detail_info", contentType = "detail_info") { detailInfoContent(null, true) }
                                 }
                             }
                         }
                     }
                 }
-            }
 
-            androidx.compose.animation.AnimatedVisibility(
-                visible = isRefreshing,
-                enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.expandVertically(),
-                exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.shrinkVertically(),
-                modifier = Modifier.align(androidx.compose.ui.Alignment.TopCenter),
-            ) {
-                top.yukonga.miuix.kmp.basic.LinearProgressIndicator(
-                    // Draw in the edge-to-edge layer so the refresh bar remains visible
-                    // over the transparent status bar instead of below the artwork header.
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = isRefreshing,
+                    enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.expandVertically(),
+                    exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.shrinkVertically(),
+                    modifier = Modifier.align(androidx.compose.ui.Alignment.TopCenter),
+                ) {
+                    top.yukonga.miuix.kmp.basic.LinearProgressIndicator(
+                        // Draw in the edge-to-edge layer so the refresh bar remains visible
+                        // over the transparent status bar instead of below the artwork header.
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             }
         }
     }
@@ -755,8 +743,6 @@ private fun DetailInfoSlot(
     sectionsOverride: List<String>? = null,
     showHeader: Boolean = true,
     relatedSectionVisible: Boolean = true,
-    liquidGlassFollowButton: Boolean,
-    followBackdrop: Backdrop?,
 ) {
     val currentOnOpenUser by rememberUpdatedState(onOpenUser)
     val currentOnOpenIllustById by rememberUpdatedState(onOpenIllustById)
@@ -813,7 +799,5 @@ private fun DetailInfoSlot(
         onRelatedSectionReady = onRelatedSectionReady,
         sectionsOverride = sectionsOverride,
         showHeader = showHeader,
-        liquidGlassFollowButton = liquidGlassFollowButton,
-        followBackdrop = followBackdrop,
     )
 }

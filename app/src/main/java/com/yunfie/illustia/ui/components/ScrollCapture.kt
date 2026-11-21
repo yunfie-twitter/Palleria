@@ -99,35 +99,48 @@ private class RootScrollCaptureCallback(
     ) {
         // captureArea はウィンドウ座標。ビュー内座標に直してスナップショットから切り出す。
         view.getLocationOnScreen(locationOnScreen)
-        val viewLocation = Rect(
-            locationOnScreen[0],
-            locationOnScreen[1],
-            locationOnScreen[0] + view.width,
-            locationOnScreen[1] + view.height,
-        )
+        val viewLocation =
+            Rect(
+                locationOnScreen[0],
+                locationOnScreen[1],
+                locationOnScreen[0] + view.width,
+                locationOnScreen[1] + view.height,
+            )
         val visibleArea = Rect(captureArea)
-        if (!visibleArea.intersect(viewLocation)) {
+        if (visibleArea.intersect(viewLocation)) {
+            if (drawIntoSession(view, session, visibleArea)) {
+                onComplete.accept(captureArea)
+            } else {
+                onComplete.accept(Rect())
+            }
+        } else {
             onComplete.accept(Rect())
-            return
         }
+    }
 
-        val bitmap = view.captureWithinBounds(visibleArea, locationOnScreen) ?: run {
-            onComplete.accept(Rect())
-            return
+    /** [bounds]（画面座標）の枠をセッションの surface へ描き込む。成功時 true。 */
+    private fun drawIntoSession(
+        view: View,
+        session: ScrollCaptureSession,
+        bounds: Rect,
+    ): Boolean {
+        val bitmap = view.captureWithinBounds(bounds, locationOnScreen)
+        var drawn = false
+        if (bitmap != null) {
+            val canvas = session.surface.lockCanvas(null)
+            if (canvas != null) {
+                try {
+                    canvas.drawBitmap(bitmap, 0f, 0f, null)
+                    drawn = true
+                } finally {
+                    session.surface.unlockCanvasAndPost(canvas)
+                    bitmap.recycle()
+                }
+            } else {
+                bitmap.recycle()
+            }
         }
-        val surface = session.surface
-        val canvas = surface.lockCanvas(null) ?: run {
-            bitmap.recycle()
-            onComplete.accept(Rect())
-            return
-        }
-        try {
-            canvas.drawBitmap(bitmap, 0f, 0f, null)
-        } finally {
-            surface.unlockCanvasAndPost(canvas)
-            bitmap.recycle()
-        }
-        onComplete.accept(captureArea)
+        return drawn
     }
 
     override fun onScrollCaptureEnd(onReady: Runnable) = onReady.run()

@@ -170,8 +170,6 @@ internal fun UserProfilePagerContent(
     onEditProfile: (() -> Unit)? = null,
     onColumnsChange: (Int) -> Unit = {},
     onAvatarClick: () -> Unit = {},
-    liquidGlassFollowButton: Boolean = false,
-    liquidGlassFollowBackdrop: LayerBackdrop? = null,
 ) {
     val tabListState = rememberLazyListState()
     Column(modifier = modifier.background(backgroundColor)) {
@@ -203,8 +201,6 @@ internal fun UserProfilePagerContent(
                 isOwnProfile = isOwnProfile,
                 isProfileEditEnabled = isProfileEditEnabled,
                 onEditProfile = onEditProfile,
-                liquidGlassFollowButton = liquidGlassFollowButton,
-                liquidGlassFollowBackdrop = liquidGlassFollowBackdrop,
             )
         }
         AnimatedVisibility(
@@ -311,8 +307,6 @@ private fun UserProfileHeader(
     isOwnProfile: Boolean = false,
     isProfileEditEnabled: Boolean = false,
     onEditProfile: (() -> Unit)? = null,
-    liquidGlassFollowButton: Boolean = false,
-    liquidGlassFollowBackdrop: LayerBackdrop? = null,
 ) {
     Column(
         Modifier
@@ -357,8 +351,6 @@ private fun UserProfileHeader(
             isOwnProfile = isOwnProfile,
             isProfileEditEnabled = isProfileEditEnabled,
             onEditProfile = onEditProfile,
-            liquidGlassFollowButton = liquidGlassFollowButton,
-            liquidGlassFollowBackdrop = liquidGlassFollowBackdrop,
         )
     }
 }
@@ -600,7 +592,6 @@ internal fun UserProfileSmallTopAppBar(
                         performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Click)
                         onBack()
                     },
-                    backdrop = liquidGlassBackdrop,
                     iconTint = buttonContentColor,
                     surfaceColor = buttonBgColor.copy(alpha = buttonBgColor.alpha * 0.55f),
                     performHaptic = false,
@@ -634,7 +625,6 @@ internal fun UserProfileSmallTopAppBar(
                             performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Click)
                             showMoreMenu = true
                         },
-                        backdrop = liquidGlassBackdrop,
                         iconTint = buttonContentColor,
                         surfaceColor = buttonBgColor.copy(alpha = buttonBgColor.alpha * 0.55f),
                         performHaptic = false,
@@ -704,8 +694,6 @@ private fun UserProfileInfo(
     isOwnProfile: Boolean = false,
     isProfileEditEnabled: Boolean = false,
     onEditProfile: (() -> Unit)? = null,
-    liquidGlassFollowButton: Boolean = false,
-    liquidGlassFollowBackdrop: LayerBackdrop? = null,
 ) {
     Column(
         Modifier.fillMaxWidth().padding(horizontal = 18.dp).offset(y = (-48).dp),
@@ -736,8 +724,6 @@ private fun UserProfileInfo(
                         FollowPill(
                             isFollowed = user.isFollowed,
                             followAnimationTrigger = followAnimationTrigger,
-                            liquidGlass = liquidGlassFollowButton,
-                            backdrop = liquidGlassFollowBackdrop,
                         )
                     }
                 }

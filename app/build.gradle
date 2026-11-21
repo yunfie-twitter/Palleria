@@ -15,7 +15,7 @@ def androidMinSdk = 24
 
 android {
     namespace = "com.yunfie.illustia"
-    // miuix-glass などの 0.9.5-beta 系 AAR が API 37.2 以上でのコンパイルを要求する。
+    // 一部の AndroidX / miuix AAR が API 37.2 以上でのコンパイルを要求する。
     // targetSdk は 37 のまま（実行時挙動は変えない）。
     compileSdk = 37
     compileSdkMinor = 2
@@ -416,8 +416,8 @@ dependencies {
     implementation libs.miuix.icons
     implementation libs.miuix.squircle
     implementation libs.miuix.blur
-    // 実験的機能（グラス調マテリアル）。
-    implementation libs.miuix.glass
+    // miuix-glass は miuix-ui を 0.9.5-beta01 に引き上げ、0.9.3 系（preference / navigation3）と
+    // OverlayDialog のシグネチャが食い違って NoSuchMethodError になるため導入しない。
     implementation libs.miuix.navigation3.ui
     implementation libs.shizuku.api
     implementation libs.shizuku.provider

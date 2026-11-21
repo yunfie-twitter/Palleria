@@ -162,9 +162,6 @@ internal fun MainSurface(
         val useNavigationRail = LocalUseNavigationRail.current
         val isBlurEnabled = appState.settings.isFeatureEnabled(FeatureFlag.TopScrollBlur)
         val supportsBlur = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-        val glassNavEnabled =
-            com.yunfie.illustia.ui.components
-                .useMiuixGlass()
         val navBackdrop = rememberLayerBackdrop()
 
         Scaffold(
@@ -197,8 +194,7 @@ internal fun MainSurface(
             // グラス調バー、または標準バーでのブラー有効時は、バーがコンテンツに重なるため
             // 下部パディングを 0 にして本文をバーの下まで伸ばす。
             val overlaysBottomBar =
-                glassNavEnabled ||
-                    (isBlurEnabled && !useNavigationRail && appState.settings.navigationStyle == "standard")
+                (isBlurEnabled && !useNavigationRail && appState.settings.navigationStyle == "standard")
             Box(
                 modifier =
                     Modifier
@@ -211,8 +207,7 @@ internal fun MainSurface(
                         ),
             ) {
                 SystemUiAwareBackdropBox(
-                    // グラスバーも背後をサンプリングするので backdrop を有効にする。
-                    enabled = (!useNavigationRail) && ((isBlurEnabled && supportsBlur) || glassNavEnabled),
+                    enabled = (!useNavigationRail) && (isBlurEnabled && supportsBlur),
                     backdrop = navBackdrop,
                     backdropModifier = { Modifier.layerBackdrop(it) },
                     modifier = Modifier.fillMaxSize(),
@@ -422,55 +417,6 @@ internal fun MainSurface(
                                     icon = tab.icon,
                                     label = stringResource(tab.labelResId),
                                 )
-                            }
-                        }
-                    }
-                }
-
-                if (!useNavigationRail && glassNavEnabled) {
-                    // 実験的なグラス調ナビゲーションバー。miuix-glass は背後をサンプリングして
-                    // 描画するため、Blur 用と同じ layer backdrop を渡す。非対応端末では
-                    // Backdrop がサンプリングできないので標準バーへフォールバックさせる。
-                    val glassItems =
-                        navigationTabs.map { tab ->
-                            top.yukonga.miuix.kmp.glass.GlassNavigationItem(
-                                icon = tab.icon,
-                                label = stringResource(tab.labelResId),
-                                contentDescription = stringResource(tab.labelResId),
-                            )
-                        }
-                    if (supportsBlur) {
-                        Box(modifier = Modifier.align(Alignment.BottomCenter)) {
-                            top.yukonga.miuix.kmp.glass.GlassNavigationBar(
-                                items = glassItems,
-                                selectedIndex = tabs.indexOf(selectedTab),
-                                onSelect = { pageIndex ->
-                                    navigationTabs.getOrNull(pageIndex)?.let { tab ->
-                                        performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Click)
-                                        viewModel.closeAccountSwitcher()
-                                        onTabSelected(pageIndex, tab)
-                                    }
-                                },
-                                backdrop = navBackdrop,
-                            )
-                        }
-                    } else {
-                        Box(modifier = Modifier.align(Alignment.BottomCenter)) {
-                            AppNavigationBar(settings = appState.settings) {
-                                navigationTabs.forEach { tab ->
-                                    val pageIndex = tabs.indexOf(tab)
-                                    NavigationBarItem(
-                                        modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
-                                        selected = selectedTab == tab,
-                                        onClick = {
-                                            performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Click)
-                                            viewModel.closeAccountSwitcher()
-                                            onTabSelected(pageIndex, tab)
-                                        },
-                                        icon = tab.icon,
-                                        label = stringResource(tab.labelResId),
-                                    )
-                                }
                             }
                         }
                     }

@@ -483,7 +483,6 @@ internal fun IllustDetailHeader(
                     icon = MiuixIcons.Back,
                     contentDescription = backLabel,
                     onClick = onBack,
-                    backdrop = liquidGlassBackdrop,
                     iconTint = headerIconTint,
                     surfaceColor = liquidGlassSurfaceColor,
                 )
@@ -679,7 +678,6 @@ internal fun IllustDetailHeader(
             if (liquidGlassBackdrop != null) {
                 LiquidGlassOverflowMenu(
                     entries = menuEntries,
-                    backdrop = liquidGlassBackdrop,
                     contentDescription = moreLabel,
                     iconTint = headerIconTint,
                     surfaceColor = liquidGlassSurfaceColor,

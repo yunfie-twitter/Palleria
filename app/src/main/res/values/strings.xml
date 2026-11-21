@@ -1320,8 +1320,6 @@
     <string name="flag_liquid_glass_buttons_desc">作品ページとプロフィールページの戻る・メニューボタンをLiquid Glass表示にします。</string>
     <string name="flag_liquid_glass_follow_button_title">Liquid Glass フォローボタン</string>
     <string name="flag_liquid_glass_follow_button_desc">作品ページとプロフィールページのフォローボタンをLiquid Glass表示にします。</string>
-    <string name="flag_miuix_glass_title">Miuix Glass（実験的）</string>
-    <string name="flag_miuix_glass_desc">miuix-glass のグラス調マテリアルを有効にします。ナビゲーションバー・トップバー・ダイアログ・シートなど、対応するUIパーツをグラス表示に切り替えます。Android 12 未満では通常表示になります。</string>
     <string name="flag_progressive_image_quality_title">動的画質（プログレッシブ表示）</string>
     <string name="flag_progressive_image_quality_desc">詳細画像・全画面画像を開いたとき、選択中の画質で読み込みが終わるまで一段下の画質を先に表示します。</string>
     <string name="flag_miuix_quick_peek_title">MiuixデザインのQuickPeek</string>
