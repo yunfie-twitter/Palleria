@@ -27,8 +27,7 @@ navigation3 = "1.1.4"
 biometric = "1.4.0-beta01"
 miuix = "0.9.3"
 miuix-blur = "0.9.4"
-# 実験的機能。miuix-glass は現状 0.9.5-beta01 のみ公開のため、単独でバージョンを固定する。
-miuix-glass = "0.9.5-beta01"
+# miuix-glass は廃止（miuix-ui 0.9.5-beta01 を引き込み、0.9.3 系と ABI 不整合になるため）。
 shizuku = "13.1.5"
 kotest = "6.2.7"
 junit4 = "4.13.2"
@@ -78,7 +77,6 @@ miuix-preference = { module = "top.yukonga.miuix.kmp:miuix-preference-android", 
 miuix-icons = { module = "top.yukonga.miuix.kmp:miuix-icons-android", version.ref = "miuix" }
 miuix-squircle = { module = "top.yukonga.miuix.kmp:miuix-squircle-android", version.ref = "miuix" }
 miuix-blur = { module = "top.yukonga.miuix.kmp:miuix-blur-android", version.ref = "miuix-blur" }
-miuix-glass = { module = "top.yukonga.miuix.kmp:miuix-glass-android", version.ref = "miuix-glass" }
 miuix-navigation3-ui = { module = "top.yukonga.miuix.kmp:miuix-navigation3-ui-android", version.ref = "miuix" }
 shizuku-api = { module = "dev.rikka.shizuku:api", version.ref = "shizuku" }
 shizuku-provider = { module = "dev.rikka.shizuku:provider", version.ref = "shizuku" }

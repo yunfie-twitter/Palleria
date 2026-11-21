@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
@@ -33,10 +35,14 @@ fun Modifier.appNavigationSafeArea(insets: WindowInsets = WindowInsets.navigatio
  * そこで帯の色は window ではなく Compose 側で確定させる。`drawBehind` は
  * `windowInsetsPadding` より外側に置き、ノードの領域（= insets を含む元サイズ）の
  * 下端 insets 分を塗る。内側の子は従来どおり insets 分だけ寄る。
+ *
+ * 塗る色は [LocalAppNavigationScrimColor] から取る。初期値は [MiuixTheme] の
+ * `surfaceContainer`。画面側で [ProvideAppNavigationScrimColor] を使って
+ * `Color.Transparent` に差し替えると、帯は確保したまま背後のコンテンツが透ける。
  */
 @Composable
 fun Modifier.appNavigationScrim(insets: WindowInsets = WindowInsets.navigationBars): Modifier {
-    val color = MiuixTheme.colorScheme.surfaceContainer
+    val color = LocalAppNavigationScrimColor.current ?: MiuixTheme.colorScheme.surfaceContainer
     val density = androidx.compose.ui.platform.LocalDensity.current
     val bottomPx = with(density) { insets.getBottom(this).toFloat() }
     return this
@@ -48,8 +54,24 @@ fun Modifier.appNavigationScrim(insets: WindowInsets = WindowInsets.navigationBa
                     size = Size(size.width, bottomPx),
                 )
             }
-        }
-        .windowInsetsPadding(insets)
+        }.windowInsetsPadding(insets)
+}
+
+/**
+ * [appNavigationScrim] が塗るナビ帯の色。
+ *
+ * 既定は `surfaceContainer`。`Color.Transparent` を提供すると帯は塗られず、
+ * 背後のコンテンツがそのまま見える（作品ページ・プロフィールページなど）。
+ */
+val LocalAppNavigationScrimColor = compositionLocalOf<Color?> { null }
+
+/** [LocalAppNavigationScrimColor] を上書きする。null を渡すとテーマ既定色に戻る。 */
+@Composable
+fun ProvideAppNavigationScrimColor(
+    color: Color?,
+    content: @Composable () -> Unit,
+) {
+    CompositionLocalProvider(LocalAppNavigationScrimColor provides color, content = content)
 }
 
 @Composable
