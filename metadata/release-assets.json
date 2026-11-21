@@ -1,16 +1,4 @@
 {
-  "453388488": {
-    "tag": "v7.3.0-beta.3",
-    "prerelease": true,
-    "files": [
-      "Palleria-v7.3.0-beta.3-release-arm64-v8a.apk",
-      "Palleria-v7.3.0-beta.3-release-armeabi-v7a.apk",
-      "Palleria-v7.3.0-beta.3-release-universal.apk",
-      "Palleria-v7.3.0-beta.3-release-x86_64.apk"
-    ],
-    "version_name": "7.3.0-beta.3",
-    "version_code": 208
-  },
   "453737867": {
     "tag": "v7.3.0-beta.4",
     "prerelease": true,
@@ -34,5 +22,17 @@
     ],
     "version_name": "7.3.0-beta.5",
     "version_code": 210
+  },
+  "453861773": {
+    "tag": "v7.3.0-beta.6",
+    "prerelease": true,
+    "files": [
+      "Palleria-v7.3.0-beta.6-release-arm64-v8a.apk",
+      "Palleria-v7.3.0-beta.6-release-armeabi-v7a.apk",
+      "Palleria-v7.3.0-beta.6-release-universal.apk",
+      "Palleria-v7.3.0-beta.6-release-x86_64.apk"
+    ],
+    "version_name": "7.3.0-beta.6",
+    "version_code": 211
   }
 }
