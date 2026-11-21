@@ -1324,6 +1324,8 @@
     <string name="flag_progressive_image_quality_desc">詳細画像・全画面画像を開いたとき、選択中の画質で読み込みが終わるまで一段下の画質を先に表示します。</string>
     <string name="flag_miuix_quick_peek_title">MiuixデザインのQuickPeek</string>
     <string name="flag_miuix_quick_peek_desc">長押しプレビューをMiuixガイドラインに沿ったボトムシート表示に作り直します。フォロー中や検索結果のユーザーを長押しすると、ユーザー版のプレビューも表示されます。</string>
+    <string name="flag_tag_menu_redesign_title">タグメニュー刷新</string>
+    <string name="flag_tag_menu_redesign_desc">タグを長押ししたときのメニューを刷新し、シートの背景に作品画像を表示するスタイルにします。タグ名と操作ボタンを1画面にまとめて使いやすくします。</string>
     <string name="quick_peek_show_profile">プロフィールを開く</string>
     <string name="quick_peek_follow">フォロー</string>
     <string name="quick_peek_unfollow">フォロー中</string>

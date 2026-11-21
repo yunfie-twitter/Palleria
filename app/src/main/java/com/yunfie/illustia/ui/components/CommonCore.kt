@@ -91,6 +91,16 @@ fun overlayActionButtonColors() =
         contentColor = MiuixTheme.colorScheme.onSurface,
     )
 
+/**
+ * 作品画像の上に重ねるボタン用。背景を透かして画像を見せつつ、文字は濃色で読ませる。
+ */
+@Composable
+fun tagMenuActionButtonColors() =
+    ButtonDefaults.buttonColors(
+        color = MiuixTheme.colorScheme.surface.copy(alpha = 0.86f),
+        contentColor = MiuixTheme.colorScheme.onSurface,
+    )
+
 fun Context.isActiveNetworkMetered(): Boolean {
     val connectivityManager = getSystemService(ConnectivityManager::class.java)
     return runCatching {

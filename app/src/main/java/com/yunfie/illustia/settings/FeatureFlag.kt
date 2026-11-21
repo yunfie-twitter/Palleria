@@ -197,6 +197,12 @@ enum class FeatureFlag(
         descRes = R.string.flag_miuix_quick_peek_desc,
         defaultEnabled = false,
     ),
+    TagMenuRedesign(
+        key = "flag_tag_menu_redesign",
+        titleRes = R.string.flag_tag_menu_redesign_title,
+        descRes = R.string.flag_tag_menu_redesign_desc,
+        defaultEnabled = false,
+    ),
     ;
 
     companion object {
