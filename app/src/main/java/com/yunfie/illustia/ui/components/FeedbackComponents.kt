@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -187,7 +186,7 @@ fun RequestErrorState(
  * Error card shown dead centre of the screen.
  *
  * Rendered in a full-screen [Dialog] rather than as a Box inside the app tree: the app root
- * applies [appNavigationSafeArea] and the Scaffold's content padding, so a Box there centres
+ * applies [appNavigationScrim] and the Scaffold's content padding, so a Box there centres
  * inside the *inset* area and lands visibly off-centre.
  *
  * The dialog surface is forced to the whole display and consumes no window insets, so the card
@@ -310,30 +309,23 @@ fun HeaderOverlayIcon(
     contentDescription: String? = null,
 ) {
     val performHaptic = rememberHapticFeedbackAction()
-    // 見た目の丸は 38dp のまま、タップ領域だけ 48dp に広げる。オーバーレイ上の
-    // 最初のタップ対象が小さいと押し損ねやすいので、最小タッチターゲットを確保する。
-    Box(
-        modifier = modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
-        contentAlignment = Alignment.Center,
+    IconButton(
+        onClick = {
+            performHaptic(AppHapticEffect.Click)
+            onClick()
+        },
+        modifier = modifier.pointerHoverIcon(PointerIcon.Hand).size(38.dp),
+        backgroundColor = backgroundColor,
+        cornerRadius = 19.dp,
+        minWidth = 38.dp,
+        minHeight = 38.dp,
     ) {
-        IconButton(
-            onClick = {
-                performHaptic(AppHapticEffect.Click)
-                onClick()
-            },
-            modifier = Modifier.pointerHoverIcon(PointerIcon.Hand).size(38.dp),
-            backgroundColor = backgroundColor,
-            cornerRadius = 19.dp,
-            minWidth = 38.dp,
-            minHeight = 38.dp,
-        ) {
-            Icon(
-                icon,
-                contentDescription = contentDescription,
-                tint = contentColor,
-                modifier = Modifier.size(24.dp),
-            )
-        }
+        Icon(
+            icon,
+            contentDescription = contentDescription,
+            tint = contentColor,
+            modifier = Modifier.size(24.dp),
+        )
     }
 }
 

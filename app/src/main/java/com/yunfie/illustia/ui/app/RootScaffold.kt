@@ -17,6 +17,10 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavKey
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.data.pixiv.CommentArtworkType
+import com.yunfie.illustia.ui.components.LocalMiuixGlassBackdrop
+import com.yunfie.illustia.ui.components.rememberIsCompactWindow
+import com.yunfie.illustia.ui.components.scrollCaptureEnabled
+import com.yunfie.illustia.ui.components.useMiuixGlass
 import top.yukonga.miuix.kmp.basic.NavigationRail
 import top.yukonga.miuix.kmp.basic.NavigationRailItem
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -25,6 +29,8 @@ import top.yukonga.miuix.kmp.basic.SnackbarHost
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.rememberNavigationRailState
+import top.yukonga.miuix.kmp.glass.GlassNavigationItem
+import top.yukonga.miuix.kmp.glass.GlassNavigationRail
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -86,15 +92,22 @@ internal fun RootScaffold(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(rootPadding),
+                    .padding(rootPadding)
+                    .scrollCaptureEnabled(),
         ) {
+            val isCompactWindow = rememberIsCompactWindow()
+            // 分割・フリーフォームの狭いペインでは、横幅があってもレールを出すと
+            // 本文が潰れる。コンパクト時はレールを抑止し、下部ナビに任せる。
             val isLandscape = (maxWidth > maxHeight && maxWidth >= 480.dp) || maxWidth >= 600.dp
             val showRootNavigationRail =
-                ((isDesktopDevice && maxWidth >= 480.dp) || isLandscape) &&
+                !isCompactWindow &&
+                    ((isDesktopDevice && maxWidth >= 480.dp) || isLandscape) &&
                     !isFullscreenRoute &&
                     !isPreLogin
 
-            CompositionLocalProvider(LocalUseNavigationRail provides showRootNavigationRail) {
+            CompositionLocalProvider(
+                LocalUseNavigationRail provides showRootNavigationRail,
+            ) {
                 Row(modifier = Modifier.fillMaxSize()) {
                     if (showRootNavigationRail) {
                         RootNavigationRail(
@@ -154,6 +167,28 @@ private fun RootNavigationRail(
     isOnMain: Boolean,
     onTabClick: (AppTab, Int) -> Unit,
 ) {
+    // グラス有効時は GlassNavigationRail（miuix-glass）に切り替える。
+    // 無効・非対応端末では従来の NavigationRail を使う（見た目は surfaceContainer の帯）。
+    val glassBackdrop = LocalMiuixGlassBackdrop.current
+    if (useMiuixGlass() && glassBackdrop != null) {
+        val selectedIndex = navigationTabs.indexOf(selectedTab).takeIf { isOnMain } ?: -1
+        GlassNavigationRail(
+            items =
+                navigationTabs.map { tab ->
+                    GlassNavigationItem(
+                        icon = tab.icon,
+                        label = stringResource(tab.labelResId),
+                        contentDescription = stringResource(tab.labelResId),
+                    )
+                },
+            selectedIndex = selectedIndex,
+            onSelect = { index ->
+                navigationTabs.getOrNull(index)?.let { tab -> onTabClick(tab, tabs.indexOf(tab)) }
+            },
+            backdrop = glassBackdrop,
+        )
+        return
+    }
     NavigationRail(
         state = state,
         color = MiuixTheme.colorScheme.surfaceContainer,

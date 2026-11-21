@@ -78,6 +78,24 @@ class NavigationChromeUiTest {
     }
 
     @Test
+    fun navigationScrimReservesBottomBandLikeSafeArea() {
+        // 帯の塗りは window 側ではなく Compose が持つ。レイアウトは従来どおり
+        // insets 分だけ内側に寄ること（= 二重に余白を取らないこと）を固定する。
+        val side = mutableStateOf(false)
+        compose.setContent {
+            MiuixTheme {
+                val insets = if (side.value) WindowInsets(right = 48.dp) else WindowInsets(bottom = 48.dp)
+                Box(Modifier.size(300.dp).appNavigationScrim(insets)) {
+                    Box(Modifier.fillMaxSize().appNavigationScrim(insets).testTag("scrim"))
+                }
+            }
+        }
+        compose.onNodeWithTag("scrim").assertHeightIsEqualTo(252.dp).assertWidthIsEqualTo(300.dp)
+        compose.runOnIdle { side.value = true }
+        compose.onNodeWithTag("scrim").assertHeightIsEqualTo(300.dp).assertWidthIsEqualTo(252.dp)
+    }
+
+    @Test
     fun fallbackBlurHeaderDoesNotCoverInitialItemsAndStaysVisibleWhenScrolled() {
         compose.setContent {
             MiuixTheme {
