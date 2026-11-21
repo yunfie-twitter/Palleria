@@ -51,14 +51,11 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.blur.Backdrop
-import top.yukonga.miuix.kmp.glass.glass
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Favorites
 import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
 import top.yukonga.miuix.kmp.icon.extended.Lock
 import top.yukonga.miuix.kmp.icon.extended.Ok
-import top.yukonga.miuix.kmp.material.GlassMaterials
-import top.yukonga.miuix.kmp.material.GlassShape
 import top.yukonga.miuix.kmp.squircle.squircleBorder
 import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -119,35 +116,22 @@ fun FollowPill(
 
     val isActiveFollow = stage == FollowPillStage.FOLLOWED || stage == FollowPillStage.CHECK
     val scheme = MiuixTheme.colorScheme
-    val pillShape = RoundedCornerShape(24.dp)
-    val glassBackdrop = if (liquidGlass) backdrop else null
     val containerModifier =
-        if (glassBackdrop != null) {
-            modifier
-                .glass(
-                    backdrop = glassBackdrop,
-                    shape = GlassShape(24.dp),
-                    material = GlassMaterials.puredThinGlass(isSystemInDarkTheme()),
-                    tint = if (isActiveFollow) scheme.primary else scheme.surfaceContainerHigh,
-                ).clip(pillShape)
-                .padding(horizontal = 22.dp, vertical = 11.dp)
-        } else {
-            modifier
-                .squircleSurface(
-                    color = if (isActiveFollow) scheme.primary else scheme.surfaceContainerHigh,
-                    cornerRadius = 24.dp,
-                ).then(
-                    if (!isActiveFollow) {
-                        Modifier.squircleBorder(
-                            width = 1.dp,
-                            color = scheme.onSurface.copy(alpha = 0.15f),
-                            cornerRadius = 24.dp,
-                        )
-                    } else {
-                        Modifier
-                    },
-                ).padding(horizontal = 22.dp, vertical = 11.dp)
-        }
+        modifier
+            .squircleSurface(
+                color = if (isActiveFollow) scheme.primary else scheme.surfaceContainerHigh,
+                cornerRadius = 24.dp,
+            ).then(
+                if (!isActiveFollow) {
+                    Modifier.squircleBorder(
+                        width = 1.dp,
+                        color = scheme.onSurface.copy(alpha = 0.15f),
+                        cornerRadius = 24.dp,
+                    )
+                } else {
+                    Modifier
+                },
+            ).padding(horizontal = 22.dp, vertical = 11.dp)
     Box(
         modifier = containerModifier,
         contentAlignment = Alignment.Center,

@@ -92,6 +92,7 @@ import com.yunfie.illustia.ui.components.LocalArtworkCardPreferences
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
+import com.yunfie.illustia.ui.components.ProvideAppNavigationScrimColor
 import com.yunfie.illustia.ui.components.ScrollablePullToRefresh
 import com.yunfie.illustia.ui.components.SystemBarAppearanceEffect
 import com.yunfie.illustia.ui.components.TransparentNavigationBarColor
@@ -429,21 +430,23 @@ fun IllustDetailScreen(
         )
     }
 
-    Scaffold(
-        containerColor = MiuixTheme.colorScheme.surface,
-        floatingActionButton = {
-            BookmarkHeartButton(
-                isBookmarked = illust.isBookmarked,
-                onClick = onBookmark,
-                onLongClick = onBookmarkLongClick,
-                size = 56.dp,
-                iconSize = 26.dp,
-                cornerRadius = 18.dp,
-                activeBackground = MiuixTheme.colorScheme.surfaceContainerHigh,
-                inactiveBackground = MiuixTheme.colorScheme.surfaceContainerHigh,
-            )
-        },
-    ) { scaffoldPadding ->
+    // 作品ページは surface を全面に敷いているので、ナビ帯は塗らずに背景を透かす。
+    ProvideAppNavigationScrimColor(Color.Transparent) {
+        Scaffold(
+            containerColor = MiuixTheme.colorScheme.surface,
+            floatingActionButton = {
+                BookmarkHeartButton(
+                    isBookmarked = illust.isBookmarked,
+                    onClick = onBookmark,
+                    onLongClick = onBookmarkLongClick,
+                    size = 56.dp,
+                    iconSize = 26.dp,
+                    cornerRadius = 18.dp,
+                    activeBackground = MiuixTheme.colorScheme.surfaceContainerHigh,
+                    inactiveBackground = MiuixTheme.colorScheme.surfaceContainerHigh,
+                )
+            },
+        ) { scaffoldPadding ->
         val statusBarTopPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
         Box(
             modifier =
@@ -625,12 +628,13 @@ fun IllustDetailScreen(
                 enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.expandVertically(),
                 exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.shrinkVertically(),
                 modifier = Modifier.align(androidx.compose.ui.Alignment.TopCenter),
-            ) {
-                top.yukonga.miuix.kmp.basic.LinearProgressIndicator(
-                    // Draw in the edge-to-edge layer so the refresh bar remains visible
-                    // over the transparent status bar instead of below the artwork header.
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                ) {
+                    top.yukonga.miuix.kmp.basic.LinearProgressIndicator(
+                        // Draw in the edge-to-edge layer so the refresh bar remains visible
+                        // over the transparent status bar instead of below the artwork header.
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             }
         }
     }

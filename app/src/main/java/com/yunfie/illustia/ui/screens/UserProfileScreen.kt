@@ -42,6 +42,7 @@ import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.settings.resolvePageBackgroundColor
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
+import com.yunfie.illustia.ui.components.ProvideAppNavigationScrimColor
 import com.yunfie.illustia.ui.components.SystemBarAppearanceEffect
 import com.yunfie.illustia.ui.components.rememberLiquidGlassBackdrop
 import com.yunfie.illustia.ui.screens.profile.UserProfileAvatarPreviewOverlay
@@ -298,34 +299,37 @@ fun UserProfileScreen(
         )
     }
 
-    Box(modifier = contentModifier) {
-        content(
-            Modifier
-                .fillMaxSize()
-                .then(if (liquidGlassBackdrop != null) Modifier.layerBackdrop(liquidGlassBackdrop) else Modifier),
-        )
-        if (showHeaderControls) {
-            UserProfileSmallTopAppBar(
+    // プロフィールページは背景色を全面に敷いているので、ナビ帯は塗らずに背景を透かす。
+    ProvideAppNavigationScrimColor(Color.Transparent) {
+        Box(modifier = contentModifier) {
+            content(
+                Modifier
+                    .fillMaxSize()
+                    .then(if (liquidGlassBackdrop != null) Modifier.layerBackdrop(liquidGlassBackdrop) else Modifier),
+            )
+            if (showHeaderControls) {
+                UserProfileSmallTopAppBar(
+                    user = user,
+                    showWorkControls = pagerState.settledPage < 2,
+                    sortOrder = sortOrder,
+                    typeFilter = typeFilter,
+                    onSortOrderChange = { sortOrder = it },
+                    onTypeFilterChange = { typeFilter = it },
+                    onBack = onBack,
+                    onMuteUser = onMuteUser,
+                    onReport = onReport,
+                    onMessage = onMessage,
+                    onOpenRelatedUsers = onOpenRelatedUsers ?: {},
+                    onTitleClick = scrollToTop,
+                    compact = isContentScrolled,
+                    liquidGlassBackdrop = liquidGlassHeaderBackdrop,
+                )
+            }
+            UserProfileAvatarPreviewOverlay(
+                visible = showAvatarPreview,
                 user = user,
-                showWorkControls = pagerState.settledPage < 2,
-                sortOrder = sortOrder,
-                typeFilter = typeFilter,
-                onSortOrderChange = { sortOrder = it },
-                onTypeFilterChange = { typeFilter = it },
-                onBack = onBack,
-                onMuteUser = onMuteUser,
-                onReport = onReport,
-                onMessage = onMessage,
-                onOpenRelatedUsers = onOpenRelatedUsers ?: {},
-                onTitleClick = scrollToTop,
-                compact = isContentScrolled,
-                liquidGlassBackdrop = liquidGlassHeaderBackdrop,
+                onDismiss = { showAvatarPreview = false },
             )
         }
-        UserProfileAvatarPreviewOverlay(
-            visible = showAvatarPreview,
-            user = user,
-            onDismiss = { showAvatarPreview = false },
-        )
     }
 }
