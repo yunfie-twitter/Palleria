@@ -1,12 +1,12 @@
 {
   "repo": {
-    "timestamp": 1795232654000
+    "timestamp": 1795251994000
   },
   "packages": {
     "com.yunfie.illustia": {
       "metadata": {
-        "added": 1795092756000,
-        "lastUpdated": 1795232648000
+        "added": 1795229993000,
+        "lastUpdated": 1795251983000
       },
       "versions": {
         "8353a66e5396ba4a72944c8cd2cbe736820256f6208c2f68e4746419cfb2004a": null,
@@ -331,6 +331,400 @@
             ],
             "versionName": "7.3.0-beta.3",
             "versionCode": 208,
+            "usesSdk": {
+              "minSdkVersion": 24,
+              "targetSdkVersion": 37
+            },
+            "signer": {
+              "sha256": [
+                "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9"
+              ]
+            },
+            "usesPermission": [
+              {
+                "name": "android.permission.VIBRATE"
+              },
+              {
+                "name": "android.permission.WAKE_LOCK"
+              },
+              {
+                "name": "android.permission.INTERNET"
+              },
+              {
+                "name": "android.permission.FOREGROUND_SERVICE"
+              },
+              {
+                "name": "android.permission.FOREGROUND_SERVICE_DATA_SYNC"
+              },
+              {
+                "name": "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+              },
+              {
+                "name": "android.permission.ACCESS_NETWORK_STATE"
+              },
+              {
+                "name": "android.permission.POST_NOTIFICATIONS"
+              },
+              {
+                "name": "android.permission.READ_MEDIA_IMAGES"
+              },
+              {
+                "name": "android.permission.SET_WALLPAPER"
+              },
+              {
+                "name": "android.permission.READ_SYNC_SETTINGS"
+              },
+              {
+                "name": "android.permission.WRITE_SYNC_SETTINGS"
+              },
+              {
+                "name": "android.permission.READ_EXTERNAL_STORAGE",
+                "maxSdkVersion": 32
+              },
+              {
+                "name": "android.permission.WRITE_EXTERNAL_STORAGE",
+                "maxSdkVersion": 28
+              },
+              {
+                "name": "android.permission.REQUEST_INSTALL_PACKAGES"
+              },
+              {
+                "name": "android.permission.USE_BIOMETRIC"
+              },
+              {
+                "name": "android.permission.USE_FINGERPRINT"
+              },
+              {
+                "name": "android.permission.RECEIVE_BOOT_COMPLETED"
+              },
+              {
+                "name": "com.yunfie.illustia.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+              },
+              {
+                "name": "moe.shizuku.manager.permission.API_V23"
+              }
+            ]
+          },
+          "antiFeatures": {
+            "NonFreeNet": {
+              "en-US": "Depends on Pixiv, which is proprietary.",
+              "ja-JP": "このアプリは、公開されていないPixiv APIに依存しています。"
+            }
+          },
+          "releaseChannels": [
+            "Beta"
+          ]
+        },
+        "7a28a56d89fc665aef7d2eafddc72966be5daf55b70701c621f17fc6341b2e4c": {
+          "added": 1795251981000,
+          "file": {
+            "name": "/Palleria-v7.3.0-beta.2-release-arm64-v8a.apk",
+            "sha256": "7a28a56d89fc665aef7d2eafddc72966be5daf55b70701c621f17fc6341b2e4c",
+            "size": 57613917
+          },
+          "manifest": {
+            "nativecode": [
+              "arm64-v8a"
+            ],
+            "versionName": "7.3.0-beta.2",
+            "versionCode": 207,
+            "usesSdk": {
+              "minSdkVersion": 24,
+              "targetSdkVersion": 37
+            },
+            "signer": {
+              "sha256": [
+                "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9"
+              ]
+            },
+            "usesPermission": [
+              {
+                "name": "android.permission.VIBRATE"
+              },
+              {
+                "name": "android.permission.WAKE_LOCK"
+              },
+              {
+                "name": "android.permission.INTERNET"
+              },
+              {
+                "name": "android.permission.FOREGROUND_SERVICE"
+              },
+              {
+                "name": "android.permission.FOREGROUND_SERVICE_DATA_SYNC"
+              },
+              {
+                "name": "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+              },
+              {
+                "name": "android.permission.ACCESS_NETWORK_STATE"
+              },
+              {
+                "name": "android.permission.POST_NOTIFICATIONS"
+              },
+              {
+                "name": "android.permission.READ_MEDIA_IMAGES"
+              },
+              {
+                "name": "android.permission.SET_WALLPAPER"
+              },
+              {
+                "name": "android.permission.READ_SYNC_SETTINGS"
+              },
+              {
+                "name": "android.permission.WRITE_SYNC_SETTINGS"
+              },
+              {
+                "name": "android.permission.READ_EXTERNAL_STORAGE",
+                "maxSdkVersion": 32
+              },
+              {
+                "name": "android.permission.WRITE_EXTERNAL_STORAGE",
+                "maxSdkVersion": 28
+              },
+              {
+                "name": "android.permission.REQUEST_INSTALL_PACKAGES"
+              },
+              {
+                "name": "android.permission.USE_BIOMETRIC"
+              },
+              {
+                "name": "android.permission.USE_FINGERPRINT"
+              },
+              {
+                "name": "android.permission.RECEIVE_BOOT_COMPLETED"
+              },
+              {
+                "name": "com.yunfie.illustia.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+              },
+              {
+                "name": "moe.shizuku.manager.permission.API_V23"
+              }
+            ]
+          },
+          "antiFeatures": {
+            "NonFreeNet": {
+              "en-US": "Depends on Pixiv, which is proprietary.",
+              "ja-JP": "このアプリは、公開されていないPixiv APIに依存しています。"
+            }
+          },
+          "releaseChannels": [
+            "Beta"
+          ]
+        },
+        "9b7f83c2d36089e2a948cac204d43197b96e12c4c62da98d454c864e7e36e20b": {
+          "added": 1795251981000,
+          "file": {
+            "name": "/Palleria-v7.3.0-beta.2-release-armeabi-v7a.apk",
+            "sha256": "9b7f83c2d36089e2a948cac204d43197b96e12c4c62da98d454c864e7e36e20b",
+            "size": 55609861
+          },
+          "manifest": {
+            "nativecode": [
+              "armeabi-v7a"
+            ],
+            "versionName": "7.3.0-beta.2",
+            "versionCode": 207,
+            "usesSdk": {
+              "minSdkVersion": 24,
+              "targetSdkVersion": 37
+            },
+            "signer": {
+              "sha256": [
+                "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9"
+              ]
+            },
+            "usesPermission": [
+              {
+                "name": "android.permission.VIBRATE"
+              },
+              {
+                "name": "android.permission.WAKE_LOCK"
+              },
+              {
+                "name": "android.permission.INTERNET"
+              },
+              {
+                "name": "android.permission.FOREGROUND_SERVICE"
+              },
+              {
+                "name": "android.permission.FOREGROUND_SERVICE_DATA_SYNC"
+              },
+              {
+                "name": "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+              },
+              {
+                "name": "android.permission.ACCESS_NETWORK_STATE"
+              },
+              {
+                "name": "android.permission.POST_NOTIFICATIONS"
+              },
+              {
+                "name": "android.permission.READ_MEDIA_IMAGES"
+              },
+              {
+                "name": "android.permission.SET_WALLPAPER"
+              },
+              {
+                "name": "android.permission.READ_SYNC_SETTINGS"
+              },
+              {
+                "name": "android.permission.WRITE_SYNC_SETTINGS"
+              },
+              {
+                "name": "android.permission.READ_EXTERNAL_STORAGE",
+                "maxSdkVersion": 32
+              },
+              {
+                "name": "android.permission.WRITE_EXTERNAL_STORAGE",
+                "maxSdkVersion": 28
+              },
+              {
+                "name": "android.permission.REQUEST_INSTALL_PACKAGES"
+              },
+              {
+                "name": "android.permission.USE_BIOMETRIC"
+              },
+              {
+                "name": "android.permission.USE_FINGERPRINT"
+              },
+              {
+                "name": "android.permission.RECEIVE_BOOT_COMPLETED"
+              },
+              {
+                "name": "com.yunfie.illustia.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+              },
+              {
+                "name": "moe.shizuku.manager.permission.API_V23"
+              }
+            ]
+          },
+          "antiFeatures": {
+            "NonFreeNet": {
+              "en-US": "Depends on Pixiv, which is proprietary.",
+              "ja-JP": "このアプリは、公開されていないPixiv APIに依存しています。"
+            }
+          },
+          "releaseChannels": [
+            "Beta"
+          ]
+        },
+        "bfc270d736009fab4362f6a4ee06c07296bea319e179c3032198aa8915a6e3ac": {
+          "added": 1795251982000,
+          "file": {
+            "name": "/Palleria-v7.3.0-beta.2-release-universal.apk",
+            "sha256": "bfc270d736009fab4362f6a4ee06c07296bea319e179c3032198aa8915a6e3ac",
+            "size": 70510555
+          },
+          "manifest": {
+            "nativecode": [
+              "arm64-v8a",
+              "armeabi",
+              "armeabi-v7a",
+              "mips",
+              "mips64",
+              "x86",
+              "x86_64"
+            ],
+            "versionName": "7.3.0-beta.2",
+            "versionCode": 207,
+            "usesSdk": {
+              "minSdkVersion": 24,
+              "targetSdkVersion": 37
+            },
+            "signer": {
+              "sha256": [
+                "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9"
+              ]
+            },
+            "usesPermission": [
+              {
+                "name": "android.permission.VIBRATE"
+              },
+              {
+                "name": "android.permission.WAKE_LOCK"
+              },
+              {
+                "name": "android.permission.INTERNET"
+              },
+              {
+                "name": "android.permission.FOREGROUND_SERVICE"
+              },
+              {
+                "name": "android.permission.FOREGROUND_SERVICE_DATA_SYNC"
+              },
+              {
+                "name": "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+              },
+              {
+                "name": "android.permission.ACCESS_NETWORK_STATE"
+              },
+              {
+                "name": "android.permission.POST_NOTIFICATIONS"
+              },
+              {
+                "name": "android.permission.READ_MEDIA_IMAGES"
+              },
+              {
+                "name": "android.permission.SET_WALLPAPER"
+              },
+              {
+                "name": "android.permission.READ_SYNC_SETTINGS"
+              },
+              {
+                "name": "android.permission.WRITE_SYNC_SETTINGS"
+              },
+              {
+                "name": "android.permission.READ_EXTERNAL_STORAGE",
+                "maxSdkVersion": 32
+              },
+              {
+                "name": "android.permission.WRITE_EXTERNAL_STORAGE",
+                "maxSdkVersion": 28
+              },
+              {
+                "name": "android.permission.REQUEST_INSTALL_PACKAGES"
+              },
+              {
+                "name": "android.permission.USE_BIOMETRIC"
+              },
+              {
+                "name": "android.permission.USE_FINGERPRINT"
+              },
+              {
+                "name": "android.permission.RECEIVE_BOOT_COMPLETED"
+              },
+              {
+                "name": "com.yunfie.illustia.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+              },
+              {
+                "name": "moe.shizuku.manager.permission.API_V23"
+              }
+            ]
+          },
+          "antiFeatures": {
+            "NonFreeNet": {
+              "en-US": "Depends on Pixiv, which is proprietary.",
+              "ja-JP": "このアプリは、公開されていないPixiv APIに依存しています。"
+            }
+          },
+          "releaseChannels": [
+            "Beta"
+          ]
+        },
+        "6222f00cf2ecc5d32ab7e453eb1ba86f73f5e7f262500eaaacb960c24a455118": {
+          "added": 1795251983000,
+          "file": {
+            "name": "/Palleria-v7.3.0-beta.2-release-x86_64.apk",
+            "sha256": "6222f00cf2ecc5d32ab7e453eb1ba86f73f5e7f262500eaaacb960c24a455118",
+            "size": 57631139
+          },
+          "manifest": {
+            "nativecode": [
+              "x86_64"
+            ],
+            "versionName": "7.3.0-beta.2",
+            "versionCode": 207,
             "usesSdk": {
               "minSdkVersion": 24,
               "targetSdkVersion": 37
@@ -808,388 +1202,6 @@
           "releaseChannels": [
             "Beta"
           ]
-        },
-        "765329ebfcd3c43365892b39fc0e97acaba464f54749f2bb32a250cf4ea36847": {
-          "added": 1795092756000,
-          "file": {
-            "name": "/Palleria-v7.2.3-release-arm64-v8a.apk",
-            "sha256": "765329ebfcd3c43365892b39fc0e97acaba464f54749f2bb32a250cf4ea36847",
-            "size": 57544126
-          },
-          "manifest": {
-            "nativecode": [
-              "arm64-v8a"
-            ],
-            "versionName": "7.2.3",
-            "versionCode": 205,
-            "usesSdk": {
-              "minSdkVersion": 24,
-              "targetSdkVersion": 37
-            },
-            "signer": {
-              "sha256": [
-                "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9"
-              ]
-            },
-            "usesPermission": [
-              {
-                "name": "android.permission.VIBRATE"
-              },
-              {
-                "name": "android.permission.WAKE_LOCK"
-              },
-              {
-                "name": "android.permission.INTERNET"
-              },
-              {
-                "name": "android.permission.FOREGROUND_SERVICE"
-              },
-              {
-                "name": "android.permission.FOREGROUND_SERVICE_DATA_SYNC"
-              },
-              {
-                "name": "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
-              },
-              {
-                "name": "android.permission.ACCESS_NETWORK_STATE"
-              },
-              {
-                "name": "android.permission.POST_NOTIFICATIONS"
-              },
-              {
-                "name": "android.permission.READ_MEDIA_IMAGES"
-              },
-              {
-                "name": "android.permission.SET_WALLPAPER"
-              },
-              {
-                "name": "android.permission.READ_SYNC_SETTINGS"
-              },
-              {
-                "name": "android.permission.WRITE_SYNC_SETTINGS"
-              },
-              {
-                "name": "android.permission.READ_EXTERNAL_STORAGE",
-                "maxSdkVersion": 32
-              },
-              {
-                "name": "android.permission.WRITE_EXTERNAL_STORAGE",
-                "maxSdkVersion": 28
-              },
-              {
-                "name": "android.permission.REQUEST_INSTALL_PACKAGES"
-              },
-              {
-                "name": "android.permission.USE_BIOMETRIC"
-              },
-              {
-                "name": "android.permission.USE_FINGERPRINT"
-              },
-              {
-                "name": "android.permission.RECEIVE_BOOT_COMPLETED"
-              },
-              {
-                "name": "com.yunfie.illustia.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
-              },
-              {
-                "name": "moe.shizuku.manager.permission.API_V23"
-              }
-            ]
-          },
-          "antiFeatures": {
-            "NonFreeNet": {
-              "en-US": "Depends on Pixiv, which is proprietary.",
-              "ja-JP": "このアプリは、公開されていないPixiv APIに依存しています。"
-            }
-          }
-        },
-        "062f4bffa5ae329c010d072aeb6124bc6f50d1d42ad3608ee8eed0f2301da181": {
-          "added": 1795092757000,
-          "file": {
-            "name": "/Palleria-v7.2.3-release-armeabi-v7a.apk",
-            "sha256": "062f4bffa5ae329c010d072aeb6124bc6f50d1d42ad3608ee8eed0f2301da181",
-            "size": 55540070
-          },
-          "manifest": {
-            "nativecode": [
-              "armeabi-v7a"
-            ],
-            "versionName": "7.2.3",
-            "versionCode": 205,
-            "usesSdk": {
-              "minSdkVersion": 24,
-              "targetSdkVersion": 37
-            },
-            "signer": {
-              "sha256": [
-                "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9"
-              ]
-            },
-            "usesPermission": [
-              {
-                "name": "android.permission.VIBRATE"
-              },
-              {
-                "name": "android.permission.WAKE_LOCK"
-              },
-              {
-                "name": "android.permission.INTERNET"
-              },
-              {
-                "name": "android.permission.FOREGROUND_SERVICE"
-              },
-              {
-                "name": "android.permission.FOREGROUND_SERVICE_DATA_SYNC"
-              },
-              {
-                "name": "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
-              },
-              {
-                "name": "android.permission.ACCESS_NETWORK_STATE"
-              },
-              {
-                "name": "android.permission.POST_NOTIFICATIONS"
-              },
-              {
-                "name": "android.permission.READ_MEDIA_IMAGES"
-              },
-              {
-                "name": "android.permission.SET_WALLPAPER"
-              },
-              {
-                "name": "android.permission.READ_SYNC_SETTINGS"
-              },
-              {
-                "name": "android.permission.WRITE_SYNC_SETTINGS"
-              },
-              {
-                "name": "android.permission.READ_EXTERNAL_STORAGE",
-                "maxSdkVersion": 32
-              },
-              {
-                "name": "android.permission.WRITE_EXTERNAL_STORAGE",
-                "maxSdkVersion": 28
-              },
-              {
-                "name": "android.permission.REQUEST_INSTALL_PACKAGES"
-              },
-              {
-                "name": "android.permission.USE_BIOMETRIC"
-              },
-              {
-                "name": "android.permission.USE_FINGERPRINT"
-              },
-              {
-                "name": "android.permission.RECEIVE_BOOT_COMPLETED"
-              },
-              {
-                "name": "com.yunfie.illustia.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
-              },
-              {
-                "name": "moe.shizuku.manager.permission.API_V23"
-              }
-            ]
-          },
-          "antiFeatures": {
-            "NonFreeNet": {
-              "en-US": "Depends on Pixiv, which is proprietary.",
-              "ja-JP": "このアプリは、公開されていないPixiv APIに依存しています。"
-            }
-          }
-        },
-        "6d84bb36a951abf2cafc5e7bb61e58f8d6faf46f0712c7a1bd43275a5c4f485b": {
-          "added": 1795092757000,
-          "file": {
-            "name": "/Palleria-v7.2.3-release-universal.apk",
-            "sha256": "6d84bb36a951abf2cafc5e7bb61e58f8d6faf46f0712c7a1bd43275a5c4f485b",
-            "size": 70440764
-          },
-          "manifest": {
-            "nativecode": [
-              "arm64-v8a",
-              "armeabi",
-              "armeabi-v7a",
-              "mips",
-              "mips64",
-              "x86",
-              "x86_64"
-            ],
-            "versionName": "7.2.3",
-            "versionCode": 205,
-            "usesSdk": {
-              "minSdkVersion": 24,
-              "targetSdkVersion": 37
-            },
-            "signer": {
-              "sha256": [
-                "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9"
-              ]
-            },
-            "usesPermission": [
-              {
-                "name": "android.permission.VIBRATE"
-              },
-              {
-                "name": "android.permission.WAKE_LOCK"
-              },
-              {
-                "name": "android.permission.INTERNET"
-              },
-              {
-                "name": "android.permission.FOREGROUND_SERVICE"
-              },
-              {
-                "name": "android.permission.FOREGROUND_SERVICE_DATA_SYNC"
-              },
-              {
-                "name": "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
-              },
-              {
-                "name": "android.permission.ACCESS_NETWORK_STATE"
-              },
-              {
-                "name": "android.permission.POST_NOTIFICATIONS"
-              },
-              {
-                "name": "android.permission.READ_MEDIA_IMAGES"
-              },
-              {
-                "name": "android.permission.SET_WALLPAPER"
-              },
-              {
-                "name": "android.permission.READ_SYNC_SETTINGS"
-              },
-              {
-                "name": "android.permission.WRITE_SYNC_SETTINGS"
-              },
-              {
-                "name": "android.permission.READ_EXTERNAL_STORAGE",
-                "maxSdkVersion": 32
-              },
-              {
-                "name": "android.permission.WRITE_EXTERNAL_STORAGE",
-                "maxSdkVersion": 28
-              },
-              {
-                "name": "android.permission.REQUEST_INSTALL_PACKAGES"
-              },
-              {
-                "name": "android.permission.USE_BIOMETRIC"
-              },
-              {
-                "name": "android.permission.USE_FINGERPRINT"
-              },
-              {
-                "name": "android.permission.RECEIVE_BOOT_COMPLETED"
-              },
-              {
-                "name": "com.yunfie.illustia.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
-              },
-              {
-                "name": "moe.shizuku.manager.permission.API_V23"
-              }
-            ]
-          },
-          "antiFeatures": {
-            "NonFreeNet": {
-              "en-US": "Depends on Pixiv, which is proprietary.",
-              "ja-JP": "このアプリは、公開されていないPixiv APIに依存しています。"
-            }
-          }
-        },
-        "09a831ed0dcb756216650b82a57bf9a3dfe8533679b34df241407f9ed02e37f8": {
-          "added": 1795092758000,
-          "file": {
-            "name": "/Palleria-v7.2.3-release-x86_64.apk",
-            "sha256": "09a831ed0dcb756216650b82a57bf9a3dfe8533679b34df241407f9ed02e37f8",
-            "size": 57561348
-          },
-          "manifest": {
-            "nativecode": [
-              "x86_64"
-            ],
-            "versionName": "7.2.3",
-            "versionCode": 205,
-            "usesSdk": {
-              "minSdkVersion": 24,
-              "targetSdkVersion": 37
-            },
-            "signer": {
-              "sha256": [
-                "28a7f64f373ac1ad5fbb4822870e2e07b2b204c7ec71e58ce40f9d54ef2727d9"
-              ]
-            },
-            "usesPermission": [
-              {
-                "name": "android.permission.VIBRATE"
-              },
-              {
-                "name": "android.permission.WAKE_LOCK"
-              },
-              {
-                "name": "android.permission.INTERNET"
-              },
-              {
-                "name": "android.permission.FOREGROUND_SERVICE"
-              },
-              {
-                "name": "android.permission.FOREGROUND_SERVICE_DATA_SYNC"
-              },
-              {
-                "name": "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
-              },
-              {
-                "name": "android.permission.ACCESS_NETWORK_STATE"
-              },
-              {
-                "name": "android.permission.POST_NOTIFICATIONS"
-              },
-              {
-                "name": "android.permission.READ_MEDIA_IMAGES"
-              },
-              {
-                "name": "android.permission.SET_WALLPAPER"
-              },
-              {
-                "name": "android.permission.READ_SYNC_SETTINGS"
-              },
-              {
-                "name": "android.permission.WRITE_SYNC_SETTINGS"
-              },
-              {
-                "name": "android.permission.READ_EXTERNAL_STORAGE",
-                "maxSdkVersion": 32
-              },
-              {
-                "name": "android.permission.WRITE_EXTERNAL_STORAGE",
-                "maxSdkVersion": 28
-              },
-              {
-                "name": "android.permission.REQUEST_INSTALL_PACKAGES"
-              },
-              {
-                "name": "android.permission.USE_BIOMETRIC"
-              },
-              {
-                "name": "android.permission.USE_FINGERPRINT"
-              },
-              {
-                "name": "android.permission.RECEIVE_BOOT_COMPLETED"
-              },
-              {
-                "name": "com.yunfie.illustia.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
-              },
-              {
-                "name": "moe.shizuku.manager.permission.API_V23"
-              }
-            ]
-          },
-          "antiFeatures": {
-            "NonFreeNet": {
-              "en-US": "Depends on Pixiv, which is proprietary.",
-              "ja-JP": "このアプリは、公開されていないPixiv APIに依存しています。"
-            }
-          }
         }
       }
     }
