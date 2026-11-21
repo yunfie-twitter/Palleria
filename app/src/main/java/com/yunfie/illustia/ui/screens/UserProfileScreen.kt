@@ -294,8 +294,6 @@ fun UserProfileScreen(
             onEditProfile = onEditProfile,
             onColumnsChange = onColumnsChange,
             onAvatarClick = { showAvatarPreview = true },
-            liquidGlassFollowButton = liquidGlassFollowEnabled,
-            liquidGlassFollowBackdrop = liquidGlassFollowBackdrop,
         )
     }
 

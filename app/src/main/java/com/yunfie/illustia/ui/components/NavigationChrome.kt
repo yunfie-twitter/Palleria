@@ -54,8 +54,7 @@ fun Modifier.appNavigationScrim(insets: WindowInsets = WindowInsets.navigationBa
                     size = Size(size.width, bottomPx),
                 )
             }
-        }
-        .windowInsetsPadding(insets)
+        }.windowInsetsPadding(insets)
 }
 
 /**

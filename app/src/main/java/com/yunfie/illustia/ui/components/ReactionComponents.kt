@@ -71,8 +71,6 @@ fun FollowPill(
     isFollowed: Boolean,
     followAnimationTrigger: Int = 0,
     modifier: Modifier = Modifier,
-    liquidGlass: Boolean = false,
-    backdrop: Backdrop? = null,
 ) {
     var animationStage by remember { mutableStateOf<FollowPillStage?>(null) }
     var lastHandledTrigger by remember { mutableStateOf(followAnimationTrigger) }

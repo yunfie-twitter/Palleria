@@ -18,7 +18,6 @@ import androidx.compose.ui.unit.dp
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Surface
-import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -53,14 +52,12 @@ fun rememberLiquidGlassBackdrop(
  * 以前は miuix-glass の `GlassIconButton` を使っていたが、miuix-glass が miuix-ui を
  * 0.9.5-beta01 へ引き上げて `OverlayDialog` のシグネチャ不整合（NoSuchMethodError）を
  * 起こすため撤去した。現在は半透明の [Surface] + 標準の [IconButton] で代替する。
- * [backdrop] は呼び出し側の互換のため受け取るが、描画には使わない。
  */
 @Composable
 fun LiquidGlassIconButton(
     icon: ImageVector,
     contentDescription: String?,
     onClick: () -> Unit,
-    backdrop: Backdrop,
     modifier: Modifier = Modifier,
     iconTint: Color = Color.White,
     surfaceColor: Color = Color.Unspecified,
@@ -92,7 +89,6 @@ fun LiquidGlassIconButton(
 @Composable
 fun LiquidGlassOverflowMenu(
     entries: List<DropdownEntry>,
-    backdrop: Backdrop,
     modifier: Modifier = Modifier,
     contentDescription: String? = null,
     iconTint: Color = Color.White,
@@ -105,7 +101,6 @@ fun LiquidGlassOverflowMenu(
             icon = MiuixIcons.More,
             contentDescription = contentDescription,
             onClick = { expanded = true },
-            backdrop = backdrop,
             iconTint = iconTint,
             surfaceColor = surfaceColor,
             performHaptic = performHaptic,
