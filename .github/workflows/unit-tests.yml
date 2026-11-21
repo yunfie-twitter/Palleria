@@ -84,6 +84,5 @@ jobs:
           set -o pipefail
           ./gradlew :app:testDebugUnitTest \
             --stacktrace \
-            --build-cache \
-            --no-daemon 2>&1 \
+            --build-cache 2>&1 \
             | tee gradle-unit-tests.log

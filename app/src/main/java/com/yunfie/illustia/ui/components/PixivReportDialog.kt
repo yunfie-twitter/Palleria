@@ -20,10 +20,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.R
+import com.yunfie.illustia.ui.components.AppDialog
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /** The caller owns authentication and displays the API result through the app message UI. */
@@ -40,7 +40,7 @@ internal fun PixivReportDialog(
     var failed by rememberSaveable(targetUrl) { mutableStateOf(false) }
     val context = LocalContext.current
     val browserFailedMessage = stringResource(R.string.error_browser_failed)
-    OverlayDialog(
+    AppDialog(
         show = true,
         title = stringResource(R.string.report_dialog_title),
         summary = stringResource(R.string.report_dialog_summary, target),

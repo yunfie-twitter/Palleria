@@ -62,6 +62,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
@@ -83,6 +84,7 @@ import com.yunfie.illustia.settings.isDynamicColorAvailable
 import com.yunfie.illustia.settings.resolvePageBackgroundColor
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.AvatarImage
+import com.yunfie.illustia.ui.components.CenteredErrorState
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.HeaderOverlayIcon
 import com.yunfie.illustia.ui.components.LoadingIndicator
@@ -91,6 +93,7 @@ import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.ProfileGridHorizontalSpacing
 import com.yunfie.illustia.ui.components.ProfileGridVerticalSpacing
 import com.yunfie.illustia.ui.components.RequestErrorState
+import com.yunfie.illustia.ui.components.ScrollablePullToRefresh
 import com.yunfie.illustia.ui.components.SystemBarAppearanceEffect
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
@@ -110,7 +113,6 @@ import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
-import top.yukonga.miuix.kmp.basic.PullToRefresh
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.rememberPullToRefreshState
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -238,7 +240,43 @@ fun WatchlistSeriesScreen(
                 .nestedScroll(watchlistScrollConnection)
                 .background(backgroundColor),
     ) {
-        PullToRefresh(
+        // The blurred cover is invisible until the pull is well underway; composing it up front
+        // would keep a full-screen 36dp RenderEffect alive for the whole screen's lifetime.
+        // derivedStateOf keeps the pull read from recomposing on every drag frame.
+        val showPullCover by remember(pullToRefreshState) {
+            derivedStateOf { pullToRefreshState.pullProgress > 0.06f }
+        }
+        if (showPullCover && !bannerCoverUrl.isNullOrBlank()) {
+            PixivImage(
+                url = bannerCoverUrl.orEmpty(),
+                contentDescription = null,
+                thumbnail = true,
+                maxDecodeDimensionPx = 128,
+                allowRgb565 = true,
+                contentScale = ContentScale.Crop,
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .blur(36.dp)
+                        .graphicsLayer {
+                            val raw = pullToRefreshState.pullProgress
+                            val progress = if (raw > 0.06f) ((raw - 0.06f) / 0.94f).coerceIn(0f, 1f) else 0f
+                            alpha = progress * 0.48f
+                        },
+            )
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            val raw = pullToRefreshState.pullProgress
+                            val progress = if (raw > 0.06f) ((raw - 0.06f) / 0.94f).coerceIn(0f, 1f) else 0f
+                            alpha = progress * 0.65f
+                        }.background(backgroundColor),
+            )
+        }
+
+        ScrollablePullToRefresh(
             isRefreshing = state.isRefreshing,
             onRefresh = { scope.launch { store.fetch() } },
             pullToRefreshState = pullToRefreshState,
@@ -304,6 +342,15 @@ fun WatchlistSeriesScreen(
                 val watchlistPending = !state.hasLoaded || state.isLoading || state.errorMessage != null
                 val showPaginating = settings.autoLoadMore && state.isPaginating
                 val shimmer = if (showInitialLoading || showPaginating) rememberIllustSkeletonShimmer() else null
+                val emptyError = state.errorMessage?.takeIf { state.mangaSeries.isEmpty() && !showInitialLoading }
+                if (emptyError != null) {
+                    CenteredErrorState(
+                        message = emptyError,
+                        onRetry = { scope.launch { store.fetch(forceRefresh = true) } },
+                        modifier = Modifier.fillMaxWidth().weight(1f),
+                    )
+                    return@Column
+                }
                 LazyVerticalGrid(
                     state = gridState,
                     columns = GridCells.Fixed(columns),

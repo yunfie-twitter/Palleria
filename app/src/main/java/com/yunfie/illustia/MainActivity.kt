@@ -6,6 +6,7 @@ import android.app.HandoffActivityData
 import android.app.HandoffActivityDataRequestInfo
 import android.app.HandoffActivityParams
 import android.app.LocaleManager
+import android.app.assist.AssistContent
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.ComponentName
@@ -49,7 +50,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.core.os.LocaleListCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.core.view.WindowCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
@@ -62,6 +62,7 @@ import coil3.request.SuccessResult
 import coil3.toBitmap
 import com.yunfie.illustia.data.NativeImageAnalysis
 import com.yunfie.illustia.data.proxyPixivImageUrl
+import com.yunfie.illustia.nativebridge.AssistantContentProvider
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
 import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.settings.AppFont
@@ -150,6 +151,10 @@ class MainActivity : FragmentActivity() {
     private var processLifecycleObserver: DefaultLifecycleObserver? = null
     private var appliedAppLanguage: String? = null
     private var appliedDarkTheme: Boolean? = null
+
+    // 設定変更時に書き戻すための、解決済みのアプリテーマ。デバイスのナイトモードではなく
+    // アプリ設定（themeMode）から決まるため、onConfigurationChanged ではこちらを使う。
+    private var resolvedAppDarkTheme: Boolean? = null
     private var isSnapshotBlurApplied = false
     private var appliedSecureWindowFlag: Boolean? = null
     private var appliedRecentsScreenshotEnabled: Boolean? = null
@@ -223,6 +228,8 @@ class MainActivity : FragmentActivity() {
             }
         }
         val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        // 設定ロード前の暫定値。ロード後にアプリ設定から解決した値で上書きされる。
+        resolvedAppDarkTheme = isDark
         applySystemBarAppearance(isDark)
         super.onCreate(savedInstanceState)
         // Warm up ViewModel immediately so settings/cache loading starts in parallel with window setup.
@@ -315,7 +322,21 @@ class MainActivity : FragmentActivity() {
 
             LaunchedEffect(settingsLoaded, settings.themeMode, systemDark) {
                 if (!settingsLoaded) return@LaunchedEffect
-                applySystemBarAppearance(isAppDarkTheme(settings.themeMode, systemDark))
+                val isDarkTheme = isAppDarkTheme(settings.themeMode, systemDark)
+                resolvedAppDarkTheme = isDarkTheme
+                applySystemBarAppearance(isDarkTheme)
+            }
+
+            // システム ナビゲーションバーの帯はルートの Compose（appNavigationScrim）が
+            // アプリ色で塗る。window 側で色を持たせると、全画面からの復帰や各画面の
+            // SystemBarAppearanceEffect が透過と不透明を交互に書き込み、帯が点滅し、
+            // 透過になった瞬間に前のフレームが残像として見える（#647）。
+            // window は常に透過のままにし、色の所有権を Compose 側へ一本化する。
+            LaunchedEffect(Unit) {
+                window.navigationBarColor = Color.TRANSPARENT
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    window.isNavigationBarContrastEnforced = false
+                }
             }
 
             LaunchedEffect(
@@ -506,6 +527,13 @@ class MainActivity : FragmentActivity() {
             intent.removeExtra(NativeIntentRouter.EXTRA_HANDOFF_URI)
             intent.action = Intent.ACTION_MAIN
         }
+    }
+
+    override fun onProvideAssistContent(outContent: AssistContent) {
+        super.onProvideAssistContent(outContent)
+        val snapshot = AssistantContentProvider.resolve(viewModel.uiState.value) ?: return
+        outContent.webUri = Uri.parse(snapshot.webUri)
+        snapshot.structuredData?.let(outContent::setStructuredData)
     }
 
     @RequiresApi(PlatformCapabilities.HANDOFF_API)
@@ -839,16 +867,19 @@ class MainActivity : FragmentActivity() {
                     SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
                 },
         )
-        disableNavigationBarContrastEnforcement(window)
-        WindowCompat.getInsetsController(window, window.decorView).apply {
-            isAppearanceLightStatusBars = !isDarkTheme
-            isAppearanceLightNavigationBars = !isDarkTheme
-        }
+        // 全画面（リーダー/ビューア）から戻った直後は OS がバーを不透明色で塗り直す
+        // ことがあるため、透明色・コントラスト無効・外観はここで一括して再適用する。
+        // ナビゲーションバーの塗り色は常に透過にする。帯の色は Compose 側
+        // （appNavigationScrim）が塗るため、ここで不透明色を書くと点滅と残像の原因になる（#647）。
+        com.yunfie.illustia.ui.components.TransparentSystemBars
+            .applySystemBars(window, isDarkTheme, Color.TRANSPARENT)
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        val isDark = (newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        // デバイスのナイトモードではなく、アプリ設定から解決済みのテーマを書き戻す。
+        // themeMode が "light"/"dark" 固定のとき、デバイス設定で上書きしないため。
+        val isDark = resolvedAppDarkTheme ?: return
         if (appliedDarkTheme != isDark) {
             applySystemBarAppearance(isDark)
         }

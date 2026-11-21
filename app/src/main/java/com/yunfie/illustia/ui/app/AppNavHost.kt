@@ -17,6 +17,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -100,6 +101,8 @@ internal fun AppNavHost(
     searchSnapshots: Map<String, SearchEntrySnapshot> = emptyMap(),
     selectedTab: AppTab,
     pagerState: androidx.compose.foundation.pager.PagerState,
+    visitedPages: Set<Int> = emptySet(),
+    onPageVisited: (Int) -> Unit = {},
     homeScrollBehavior: ScrollBehavior,
     artworkPopSettling: Boolean = false,
     artworkEnterSettling: Boolean = false,
@@ -136,6 +139,8 @@ internal fun AppNavHost(
                         viewModel = viewModel,
                         selectedTab = selectedTab,
                         pagerState = pagerState,
+                        visitedPages = visitedPages,
+                        onPageVisited = onPageVisited,
                         homeScrollBehavior = homeScrollBehavior,
                         onTabSelected = onTabSelected,
                         onSearch = {
@@ -305,23 +310,32 @@ internal fun AppNavHost(
                             DetailEntrySnapshot(
                                 illust = selectedIllust,
                                 relatedIllusts = appState.state.relatedIllusts,
+                                relatedIllustsLoaded = appState.state.relatedIllustsLoaded,
                                 firstComment = appState.state.selectedIllustFirstComment,
                                 user = appState.state.selectedIllustUser,
+                                isRefreshing = appState.state.isSelectedIllustRefreshing,
                             )
                         } else {
                             detailSnapshots[route.illustId]
                         }
-                    if (snapshot != null) {
+                    val errorMessage =
+                        appState.state.selectedIllustError.takeIf {
+                            appState.state.selectedIllustErrorId ==
+                                route.illustId
+                        }
+                    if (snapshot != null && errorMessage == null) {
                         val illust = snapshot.illust
                         IllustDetailScreen(
                             illust = illust,
                             isActive = backStack.lastOrNull() == route,
                             relatedIllusts = snapshot.relatedIllusts,
+                            relatedIllustsLoaded = snapshot.relatedIllustsLoaded,
                             firstComment = snapshot.firstComment,
                             onBack = onPopRoute,
                             onBookmark = { viewModel.toggleBookmark(illust) },
                             onBookmarkLongClick = { viewModel.openBookmarkTagPicker(illust) },
                             onRefresh = { viewModel.refreshIllustDetail(illust.id) },
+                            isRefreshingExternal = snapshot.isRefreshing,
                             onOpenUser = viewModel::openUser,
                             onOpenComments = {
                                 viewModel.openComments(illust.id to CommentArtworkType.ILLUST)
@@ -346,6 +360,10 @@ internal fun AppNavHost(
                                 )
                             },
                             isArtistFollowed = snapshot.user?.isFollowed == true,
+                            // userDetail が解決するまではフォロー状態が未確定。未確定のあいだ
+                            // 「未フォロー」を出すと、解決後に Follow → Following と目に見えて
+                            // 反転するため、確定するまでピルを出さない。
+                            isArtistFollowKnown = snapshot.user != null,
                             isArtistMuted =
                                 appState.state.settings.mutedUsers
                                     .contains(illust.artistId),
@@ -397,17 +415,18 @@ internal fun AppNavHost(
                         )
                     } else {
                         if (backStack.lastOrNull() == route) {
-                            LaunchedEffect(route.illustId) {
-                                viewModel.openIllust(route.illustId)
+                            // エラー表示中は自動再取得しない。ここで毎回 openIllust を呼ぶと
+                            // オフライン時に エラー→スケルトン→エラー を繰り返して点滅する。
+                            // 再試行はユーザーの明示操作（エラー画面の再試行ボタン）に任せる。
+                            if (errorMessage == null) {
+                                LaunchedEffect(route.illustId) {
+                                    viewModel.openIllust(route.illustId)
+                                }
                             }
                         }
                         IllustDetailSkeletonScreen(
                             onBack = onPopRoute,
-                            errorMessage =
-                                appState.state.selectedIllustError.takeIf {
-                                    appState.state.selectedIllustErrorId ==
-                                        route.illustId
-                                },
+                            errorMessage = errorMessage,
                             onRetry = { viewModel.openIllust(route.illustId) },
                         )
                     }
@@ -417,7 +436,8 @@ internal fun AppNavHost(
                 AppRoute.ImageViewer,
                 metadata = artworkMetadata,
             ) {
-                appState.state.imageViewerIllust?.let { illust ->
+                val illust = appState.state.imageViewerIllust
+                if (illust != null) {
                     androidx.compose.runtime.CompositionLocalProvider(
                         com.yunfie.illustia.ui.components.LocalImageRefreshRequest provides viewerRefreshRequest,
                     ) {
@@ -441,6 +461,18 @@ internal fun AppNavHost(
                             mangaAdaptivePreload = appState.state.settings.isFeatureEnabled(FeatureFlag.MangaAdaptivePreload),
                             progressiveQuality = appState.state.settings.isFeatureEnabled(FeatureFlag.ProgressiveImageQuality),
                         )
+                    }
+                } else {
+                    // ルートが積まれているのに表示対象が無い瞬間（拡大→戻るを素早く繰り返した
+                    // ときなど）がある。以前はここで何も描かれず画面全体が空白になっていた。
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .background(Color.Black),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        LoadingIndicator()
                     }
                 }
             }

@@ -158,7 +158,7 @@
     <string name="detail_save_image_title">Enregistrer l\'image</string>
     <string name="detail_save_image_confirm">Enregistrez cette image dans le dossier Palleria.</string>
     <string name="detail_save_ugoira_title">Enregistrer Ugoira</string>
-    <string name="detail_save_ugoira_confirm">Enregistrez cette ugoira au format GIF dans le dossier Palleria.</string>
+    <string name="detail_save_ugoira_confirm">Enregistrez l\'image fixe (couverture) de cette ugoira dans le dossier Palleria.</string>
     <string name="detail_unfollow_title">Ne plus suivre</string>
     <string name="detail_unfollow_confirm">Ne plus suivre %1$s ?</string>
     <string name="detail_open_in_browser">Ouvrir dans le navigateur</string>
@@ -178,12 +178,15 @@
     <string name="detail_muted_work">Travail en sourdine</string>
     <string name="detail_muted_work_blur">Les œuvres contenant des balises muettes sont floues.</string>
     <string name="detail_unmute">Activer le son</string>
+    <string name="detail_image_load_failed">Impossible de charger l\'image</string>
     <string name="detail_no_caption">Pas de légende</string>
     <string name="detail_comments">Commentaires</string>
     <string name="detail_show_comments">Afficher les commentaires</string>
     <string name="detail_comments_empty">Pas encore de commentaires</string>
     <string name="detail_series">Série</string>
     <string name="detail_related">Travaux connexes</string>
+    <string name="detail_tags_show_more">Tout afficher (%1$d de plus)</string>
+    <string name="detail_tags_show_less">Afficher moins</string>
     <string name="detail_illust_id">ID d\'illusion</string>
     <string name="detail_resolution">Résolution</string>
 
@@ -323,8 +326,6 @@
     <string name="general_smooth_desc">Rendre les transitions d\'écran et le rendu des listes plus fluides</string>
     <string name="general_notch">Optimisation de l\'encoche</string>
     <string name="general_notch_desc">Ajuster l\'affichage dans la zone de la barre d\'état</string>
-    <string name="general_swipe">Faites glisser pour changer d\'onglet</string>
-    <string name="general_swipe_desc">Faites glisser votre doigt vers la gauche/droite pour naviguer entre les écrans principaux</string>
     <string name="general_auto_load_more">Charger automatiquement plus</string>
     <string name="general_auto_load_more_desc">Récupère automatiquement la page suivante lorsque vous atteignez la fin</string>
     <string name="general_double_back">Double retour pour sortir</string>
@@ -844,8 +845,6 @@
     <string name="nav_shorts_feed">Short</string>
     <string name="general_shorts_feed">Flux de courts métrages</string>
     <string name="general_shorts_feed_desc">Parcourez les illustrations dans un flux vertical plein écran</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe">Désactiver le balayage horizontal</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe_desc">Empêcher les balayages latéraux de changer d\'onglet dans le flux Shorts</string>
     <string name="calculator_error">Erreur</string>
     <string name="error_novel_load_failed">Impossible de charger le roman.</string>
     <string name="error_notifications_load_failed">Impossible de charger les notifications.</string>

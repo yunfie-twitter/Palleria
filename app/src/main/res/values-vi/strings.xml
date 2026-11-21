@@ -158,7 +158,7 @@
     <string name="detail_save_image_title">Lưu hình ảnh</string>
     <string name="detail_save_image_confirm">Lưu hình ảnh này vào thư mục Palleria.</string>
     <string name="detail_save_ugoira_title">Lưu Ugoira</string>
-    <string name="detail_save_ugoira_confirm">Lưu ugoira này dưới dạng GIF vào thư mục Palleria.</string>
+    <string name="detail_save_ugoira_confirm">Lưu ảnh tĩnh (ảnh bìa) của ugoira này vào thư mục Palleria.</string>
     <string name="detail_unfollow_title">Hủy theo dõi</string>
     <string name="detail_unfollow_confirm">Hủy theo dõi %1$s?</string>
     <string name="detail_open_in_browser">Mở trong trình duyệt</string>
@@ -178,12 +178,15 @@
     <string name="detail_muted_work">Công việc bị tắt tiếng</string>
     <string name="detail_muted_work_blur">Tác phẩm chứa thẻ bị tắt tiếng sẽ bị mờ.</string>
     <string name="detail_unmute">Bật tiếng</string>
+    <string name="detail_image_load_failed">Không thể tải hình ảnh</string>
     <string name="detail_no_caption">Không có chú thích</string>
     <string name="detail_comments">Bình luận</string>
     <string name="detail_show_comments">Hiển thị bình luận</string>
     <string name="detail_comments_empty">Chưa có bình luận nào</string>
     <string name="detail_series">loạt</string>
     <string name="detail_related">Tác phẩm liên quan</string>
+    <string name="detail_tags_show_more">Hiện tất cả (thêm %1$d)</string>
+    <string name="detail_tags_show_less">Thu gọn</string>
     <string name="detail_illust_id">ID minh họa</string>
     <string name="detail_resolution">Độ phân giải</string>
 
@@ -323,8 +326,6 @@
     <string name="general_smooth_desc">Thực hiện chuyển tiếp màn hình và hiển thị danh sách mượt mà hơn</string>
     <string name="general_notch">Tối ưu hóa notch</string>
     <string name="general_notch_desc">Điều chỉnh hiển thị ở khu vực thanh trạng thái</string>
-    <string name="general_swipe">Vuốt để chuyển tab</string>
-    <string name="general_swipe_desc">Vuốt sang trái/phải để điều hướng giữa các màn hình chính</string>
     <string name="general_auto_load_more">Tự động tải thêm</string>
     <string name="general_auto_load_more_desc">Tự động tìm nạp trang tiếp theo khi bạn đến cuối</string>
     <string name="general_double_back">Quay lại gấp đôi để thoát</string>
@@ -844,8 +845,6 @@
     <string name="nav_shorts_feed">quần short</string>
     <string name="general_shorts_feed">Nguồn cấp dữ liệu ngắn</string>
     <string name="general_shorts_feed_desc">Duyệt hình minh họa trong nguồn cấp dữ liệu dọc toàn màn hình</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe">Tắt tính năng vuốt ngang</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe_desc">Ngăn chặn thao tác vuốt sang một bên để thay đổi tab trong trang Video ngắn</string>
     <string name="calculator_error">Lỗi</string>
     <string name="error_novel_load_failed">Không thể tải tiểu thuyết.</string>
     <string name="error_notifications_load_failed">Không thể tải thông báo.</string>

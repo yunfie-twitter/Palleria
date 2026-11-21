@@ -158,7 +158,7 @@
     <string name="detail_save_image_title">Salva immagine</string>
     <string name="detail_save_image_confirm">Salva questa immagine nella cartella Palleria.</string>
     <string name="detail_save_ugoira_title">Salva Ugoira</string>
-    <string name="detail_save_ugoira_confirm">Salva questa ugoira come GIF nella cartella Palleria.</string>
+    <string name="detail_save_ugoira_confirm">Salva l\'immagine fissa (copertina) di questa ugoira nella cartella Palleria.</string>
     <string name="detail_unfollow_title">Smetti di seguire</string>
     <string name="detail_unfollow_confirm">Smetti di seguire %1$s?</string>
     <string name="detail_open_in_browser">Apri nel browser</string>
@@ -178,12 +178,15 @@
     <string name="detail_muted_work">Lavoro disattivato</string>
     <string name="detail_muted_work_blur">Le opere contenenti tag disattivati vengono sfocate.</string>
     <string name="detail_unmute">Riattiva</string>
+    <string name="detail_image_load_failed">Impossibile caricare l\'immagine</string>
     <string name="detail_no_caption">Nessuna didascalia</string>
     <string name="detail_comments">Commenti</string>
     <string name="detail_show_comments">Mostra commenti</string>
     <string name="detail_comments_empty">Nessun commento ancora</string>
     <string name="detail_series">Serie</string>
     <string name="detail_related">Lavori correlati</string>
+    <string name="detail_tags_show_more">Mostra tutti (altri %1$d)</string>
+    <string name="detail_tags_show_less">Mostra meno</string>
     <string name="detail_illust_id">ID illustrazione</string>
     <string name="detail_resolution">Risoluzione</string>
 
@@ -323,8 +326,6 @@
     <string name="general_smooth_desc">Rendi le transizioni dello schermo e il rendering degli elenchi più fluidi</string>
     <string name="general_notch">Ottimizzazione della tacca</string>
     <string name="general_notch_desc">Regola la visualizzazione nell\'area della barra di stato</string>
-    <string name="general_swipe">Scorri per cambiare scheda</string>
-    <string name="general_swipe_desc">Scorrere verso sinistra/destra per navigare tra le schermate principali</string>
     <string name="general_auto_load_more">Carica automaticamente altro</string>
     <string name="general_auto_load_more_desc">Recupera automaticamente la pagina successiva quando raggiungi la fine</string>
     <string name="general_double_back">Torna indietro per uscire</string>
@@ -844,8 +845,6 @@
     <string name="nav_shorts_feed">Pantaloncini</string>
     <string name="general_shorts_feed">Alimentazione dei cortometraggi</string>
     <string name="general_shorts_feed_desc">Sfoglia le illustrazioni in un feed verticale a schermo intero</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe">Disattiva lo scorrimento orizzontale</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe_desc">Impedisci agli scorrimenti laterali di modificare le schede nel feed di Shorts</string>
     <string name="calculator_error">Errore</string>
     <string name="error_novel_load_failed">Impossibile caricare il romanzo.</string>
     <string name="error_notifications_load_failed">Impossibile caricare le notifiche.</string>

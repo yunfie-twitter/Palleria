@@ -17,6 +17,8 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavKey
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.data.pixiv.CommentArtworkType
+import com.yunfie.illustia.ui.components.rememberIsCompactWindow
+import com.yunfie.illustia.ui.components.scrollCaptureEnabled
 import top.yukonga.miuix.kmp.basic.NavigationRail
 import top.yukonga.miuix.kmp.basic.NavigationRailItem
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -44,6 +46,8 @@ internal fun RootScaffold(
     visibleTabs: List<AppTab>,
     selectedTab: AppTab,
     pagerState: PagerState,
+    visitedTabs: Set<Int>,
+    onTabPageVisited: (Int) -> Unit,
     homeScrollBehavior: ScrollBehavior,
     artworkPopSettling: Boolean,
     artworkEnterSettling: Boolean,
@@ -84,15 +88,22 @@ internal fun RootScaffold(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(rootPadding),
+                    .padding(rootPadding)
+                    .scrollCaptureEnabled(),
         ) {
+            val isCompactWindow = rememberIsCompactWindow()
+            // 分割・フリーフォームの狭いペインでは、横幅があってもレールを出すと
+            // 本文が潰れる。コンパクト時はレールを抑止し、下部ナビに任せる。
             val isLandscape = (maxWidth > maxHeight && maxWidth >= 480.dp) || maxWidth >= 600.dp
             val showRootNavigationRail =
-                ((isDesktopDevice && maxWidth >= 480.dp) || isLandscape) &&
+                !isCompactWindow &&
+                    ((isDesktopDevice && maxWidth >= 480.dp) || isLandscape) &&
                     !isFullscreenRoute &&
                     !isPreLogin
 
-            CompositionLocalProvider(LocalUseNavigationRail provides showRootNavigationRail) {
+            CompositionLocalProvider(
+                LocalUseNavigationRail provides showRootNavigationRail,
+            ) {
                 Row(modifier = Modifier.fillMaxSize()) {
                     if (showRootNavigationRail) {
                         RootNavigationRail(
@@ -120,6 +131,8 @@ internal fun RootScaffold(
                             searchSnapshots = searchSnapshots,
                             selectedTab = selectedTab,
                             pagerState = pagerState,
+                            visitedPages = visitedTabs,
+                            onPageVisited = onTabPageVisited,
                             homeScrollBehavior = homeScrollBehavior,
                             artworkPopSettling = artworkPopSettling,
                             artworkEnterSettling = artworkEnterSettling,

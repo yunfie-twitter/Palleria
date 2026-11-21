@@ -31,7 +31,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.layerBackdrop
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.UserPreview
@@ -43,6 +42,7 @@ import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.settings.resolvePageBackgroundColor
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
+import com.yunfie.illustia.ui.components.ProvideAppNavigationScrimColor
 import com.yunfie.illustia.ui.components.SystemBarAppearanceEffect
 import com.yunfie.illustia.ui.components.rememberLiquidGlassBackdrop
 import com.yunfie.illustia.ui.screens.profile.UserProfileAvatarPreviewOverlay
@@ -52,6 +52,7 @@ import com.yunfie.illustia.ui.screens.profile.UserWorkSortOrder
 import com.yunfie.illustia.ui.screens.profile.UserWorkTypeFilter
 import com.yunfie.illustia.ui.screens.profile.rememberUserWorks
 import kotlinx.coroutines.launch
+import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -172,7 +173,9 @@ fun UserProfileScreen(
             }
         }
 
-    val isContentScrolled by remember(isHeaderCollapsed, activeIsAtTop) {
+    // activeIsAtTop は State のまま参照し、値をキーにしない。キーにするとトップ境界を
+    // 跨ぐたびに derivedStateOf が破棄・再生成されてキャッシュが失われる。
+    val isContentScrolled by remember(isHeaderCollapsed) {
         derivedStateOf {
             isHeaderCollapsed || !activeIsAtTop
         }
@@ -291,39 +294,40 @@ fun UserProfileScreen(
             onEditProfile = onEditProfile,
             onColumnsChange = onColumnsChange,
             onAvatarClick = { showAvatarPreview = true },
-            liquidGlassFollowButton = liquidGlassFollowEnabled,
-            liquidGlassFollowBackdrop = liquidGlassFollowBackdrop,
         )
     }
 
-    Box(modifier = contentModifier) {
-        content(
-            Modifier
-                .fillMaxSize()
-                .then(if (liquidGlassBackdrop != null) Modifier.layerBackdrop(liquidGlassBackdrop) else Modifier),
-        )
-        if (showHeaderControls) {
-            UserProfileSmallTopAppBar(
+    // プロフィールページは背景色を全面に敷いているので、ナビ帯は塗らずに背景を透かす。
+    ProvideAppNavigationScrimColor(Color.Transparent) {
+        Box(modifier = contentModifier) {
+            content(
+                Modifier
+                    .fillMaxSize()
+                    .then(if (liquidGlassBackdrop != null) Modifier.layerBackdrop(liquidGlassBackdrop) else Modifier),
+            )
+            if (showHeaderControls) {
+                UserProfileSmallTopAppBar(
+                    user = user,
+                    showWorkControls = pagerState.settledPage < 2,
+                    sortOrder = sortOrder,
+                    typeFilter = typeFilter,
+                    onSortOrderChange = { sortOrder = it },
+                    onTypeFilterChange = { typeFilter = it },
+                    onBack = onBack,
+                    onMuteUser = onMuteUser,
+                    onReport = onReport,
+                    onMessage = onMessage,
+                    onOpenRelatedUsers = onOpenRelatedUsers ?: {},
+                    onTitleClick = scrollToTop,
+                    compact = isContentScrolled,
+                    liquidGlassBackdrop = liquidGlassHeaderBackdrop,
+                )
+            }
+            UserProfileAvatarPreviewOverlay(
+                visible = showAvatarPreview,
                 user = user,
-                showWorkControls = pagerState.settledPage < 2,
-                sortOrder = sortOrder,
-                typeFilter = typeFilter,
-                onSortOrderChange = { sortOrder = it },
-                onTypeFilterChange = { typeFilter = it },
-                onBack = onBack,
-                onMuteUser = onMuteUser,
-                onReport = onReport,
-                onMessage = onMessage,
-                onOpenRelatedUsers = onOpenRelatedUsers ?: {},
-                onTitleClick = scrollToTop,
-                compact = isContentScrolled,
-                liquidGlassBackdrop = liquidGlassHeaderBackdrop,
+                onDismiss = { showAvatarPreview = false },
             )
         }
-        UserProfileAvatarPreviewOverlay(
-            visible = showAvatarPreview,
-            user = user,
-            onDismiss = { showAvatarPreview = false },
-        )
     }
 }

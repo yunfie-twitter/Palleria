@@ -12,11 +12,18 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -41,6 +48,7 @@ import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.PixivWebLoginRequest
 import com.yunfie.illustia.R
 import com.yunfie.illustia.data.pixivLoginCodeOrNull
+import com.yunfie.illustia.ui.components.AppBottomSheet
 import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -64,9 +72,14 @@ import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.icon.extended.Show
 import top.yukonga.miuix.kmp.icon.extended.Theme
 import top.yukonga.miuix.kmp.icon.extended.Update
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
+
+@Composable
+private fun sheetBottomInsets(): WindowInsets =
+    WindowInsets.navigationBars
+        .union(WindowInsets.ime)
+        .only(WindowInsetsSides.Bottom)
 
 @Composable
 fun RefreshTokenLoginBottomSheet(
@@ -75,13 +88,17 @@ fun RefreshTokenLoginBottomSheet(
     onDismiss: () -> Unit,
 ) {
     var tokenVisible by remember { mutableStateOf(false) }
-    OverlayBottomSheet(
+    AppBottomSheet(
         show = true,
         modifier = Modifier.scrollEndHaptic(),
         title = stringResource(R.string.login_token_title),
         onDismissRequest = onDismiss,
         backgroundColor = LocalBottomSheetBackgroundColor.current,
         insideMargin = BottomSheetInsideMargin,
+        // シート側の自動インセット処理（imePadding）を切り、内側で navigationBars と ime の
+        // 「大きい方」だけを確保する。既定のままだとルートが消費済みのナビゲーションバー分と
+        // ime 分が二重に積まれ、キーボードとの間に隙間ができる。
+        defaultWindowInsetsPadding = false,
         startAction = {
             IconButton(onClick = onDismiss) {
                 Icon(imageVector = MiuixIcons.Close, contentDescription = stringResource(R.string.action_close))
@@ -94,6 +111,7 @@ fun RefreshTokenLoginBottomSheet(
                     Modifier
                         .fillMaxWidth()
                         .verticalScroll(rememberScrollState())
+                        .windowInsetsPadding(sheetBottomInsets())
                         .padding(horizontal = 18.dp, vertical = 10.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {

@@ -12,6 +12,7 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -31,7 +32,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerIcon
@@ -44,17 +44,13 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.Backdrop
-import com.kyant.backdrop.drawBackdrop
-import com.kyant.backdrop.effects.blur
-import com.kyant.backdrop.effects.lens
-import com.kyant.backdrop.effects.vibrancy
 import com.yunfie.illustia.R
 import kotlinx.coroutines.delay
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Favorites
 import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
@@ -75,8 +71,6 @@ fun FollowPill(
     isFollowed: Boolean,
     followAnimationTrigger: Int = 0,
     modifier: Modifier = Modifier,
-    liquidGlass: Boolean = false,
-    backdrop: Backdrop? = null,
 ) {
     var animationStage by remember { mutableStateOf<FollowPillStage?>(null) }
     var lastHandledTrigger by remember { mutableStateOf(followAnimationTrigger) }
@@ -120,46 +114,22 @@ fun FollowPill(
 
     val isActiveFollow = stage == FollowPillStage.FOLLOWED || stage == FollowPillStage.CHECK
     val scheme = MiuixTheme.colorScheme
-    val pillShape = RoundedCornerShape(24.dp)
-    val glassBackdrop = if (liquidGlass) backdrop else null
     val containerModifier =
-        if (glassBackdrop != null) {
-            modifier
-                .drawBackdrop(
-                    backdrop = glassBackdrop,
-                    shape = { pillShape },
-                    effects = {
-                        vibrancy()
-                        blur(3.dp.toPx())
-                        lens(10.dp.toPx(), 20.dp.toPx())
-                    },
-                    onDrawSurface = {
-                        if (isActiveFollow) {
-                            drawRect(scheme.primary, blendMode = BlendMode.Hue)
-                            drawRect(scheme.primary.copy(alpha = 0.55f))
-                        } else {
-                            drawRect(scheme.surfaceContainerHigh.copy(alpha = 0.20f))
-                        }
-                    },
-                ).clip(pillShape)
-                .padding(horizontal = 22.dp, vertical = 11.dp)
-        } else {
-            modifier
-                .squircleSurface(
-                    color = if (isActiveFollow) scheme.primary else scheme.surfaceContainerHigh,
-                    cornerRadius = 24.dp,
-                ).then(
-                    if (!isActiveFollow) {
-                        Modifier.squircleBorder(
-                            width = 1.dp,
-                            color = scheme.onSurface.copy(alpha = 0.15f),
-                            cornerRadius = 24.dp,
-                        )
-                    } else {
-                        Modifier
-                    },
-                ).padding(horizontal = 22.dp, vertical = 11.dp)
-        }
+        modifier
+            .squircleSurface(
+                color = if (isActiveFollow) scheme.primary else scheme.surfaceContainerHigh,
+                cornerRadius = 24.dp,
+            ).then(
+                if (!isActiveFollow) {
+                    Modifier.squircleBorder(
+                        width = 1.dp,
+                        color = scheme.onSurface.copy(alpha = 0.15f),
+                        cornerRadius = 24.dp,
+                    )
+                } else {
+                    Modifier
+                },
+            ).padding(horizontal = 22.dp, vertical = 11.dp)
     Box(
         modifier = containerModifier,
         contentAlignment = Alignment.Center,

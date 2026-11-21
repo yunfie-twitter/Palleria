@@ -69,7 +69,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.kyant.backdrop.backdrops.LayerBackdrop
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.UserPreview
@@ -77,6 +76,7 @@ import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.AvatarImage
+import com.yunfie.illustia.ui.components.CenteredErrorState
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.EmptyState
@@ -107,6 +107,7 @@ import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Close
@@ -169,8 +170,6 @@ internal fun UserProfilePagerContent(
     onEditProfile: (() -> Unit)? = null,
     onColumnsChange: (Int) -> Unit = {},
     onAvatarClick: () -> Unit = {},
-    liquidGlassFollowButton: Boolean = false,
-    liquidGlassFollowBackdrop: LayerBackdrop? = null,
 ) {
     val tabListState = rememberLazyListState()
     Column(modifier = modifier.background(backgroundColor)) {
@@ -202,8 +201,6 @@ internal fun UserProfilePagerContent(
                 isOwnProfile = isOwnProfile,
                 isProfileEditEnabled = isProfileEditEnabled,
                 onEditProfile = onEditProfile,
-                liquidGlassFollowButton = liquidGlassFollowButton,
-                liquidGlassFollowBackdrop = liquidGlassFollowBackdrop,
             )
         }
         AnimatedVisibility(
@@ -310,8 +307,6 @@ private fun UserProfileHeader(
     isOwnProfile: Boolean = false,
     isProfileEditEnabled: Boolean = false,
     onEditProfile: (() -> Unit)? = null,
-    liquidGlassFollowButton: Boolean = false,
-    liquidGlassFollowBackdrop: LayerBackdrop? = null,
 ) {
     Column(
         Modifier
@@ -356,8 +351,6 @@ private fun UserProfileHeader(
             isOwnProfile = isOwnProfile,
             isProfileEditEnabled = isProfileEditEnabled,
             onEditProfile = onEditProfile,
-            liquidGlassFollowButton = liquidGlassFollowButton,
-            liquidGlassFollowBackdrop = liquidGlassFollowBackdrop,
         )
     }
 }
@@ -599,7 +592,6 @@ internal fun UserProfileSmallTopAppBar(
                         performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Click)
                         onBack()
                     },
-                    backdrop = liquidGlassBackdrop,
                     iconTint = buttonContentColor,
                     surfaceColor = buttonBgColor.copy(alpha = buttonBgColor.alpha * 0.55f),
                     performHaptic = false,
@@ -633,7 +625,6 @@ internal fun UserProfileSmallTopAppBar(
                             performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Click)
                             showMoreMenu = true
                         },
-                        backdrop = liquidGlassBackdrop,
                         iconTint = buttonContentColor,
                         surfaceColor = buttonBgColor.copy(alpha = buttonBgColor.alpha * 0.55f),
                         performHaptic = false,
@@ -703,8 +694,6 @@ private fun UserProfileInfo(
     isOwnProfile: Boolean = false,
     isProfileEditEnabled: Boolean = false,
     onEditProfile: (() -> Unit)? = null,
-    liquidGlassFollowButton: Boolean = false,
-    liquidGlassFollowBackdrop: LayerBackdrop? = null,
 ) {
     Column(
         Modifier.fillMaxWidth().padding(horizontal = 18.dp).offset(y = (-48).dp),
@@ -720,9 +709,12 @@ private fun UserProfileInfo(
                     .miuixClickable(onClick = onAvatarClick),
             )
             Spacer(Modifier.weight(1f))
-            if (isOwnProfile && isProfileEditEnabled && onEditProfile != null) {
-                Box(Modifier.miuixClickable(pressedScale = 0.94f, haptic = true, onClick = onEditProfile)) {
-                    EditUserPill()
+            if (isOwnProfile) {
+                // 自分のプロフィールにフォローボタンは出さない。編集が使えない場合は何も出さない。
+                if (isProfileEditEnabled && onEditProfile != null) {
+                    Box(Modifier.miuixClickable(pressedScale = 0.94f, haptic = true, onClick = onEditProfile)) {
+                        EditUserPill()
+                    }
                 }
             } else {
                 Box(Modifier.miuixClickable(pressedScale = 0.94f, haptic = true, onClick = if (isMuted) onUnmuteUser else onToggleFollow)) {
@@ -732,8 +724,6 @@ private fun UserProfileInfo(
                         FollowPill(
                             isFollowed = user.isFollowed,
                             followAnimationTrigger = followAnimationTrigger,
-                            liquidGlass = liquidGlassFollowButton,
-                            backdrop = liquidGlassFollowBackdrop,
                         )
                     }
                 }
@@ -922,6 +912,17 @@ private fun UserIllustGridPage(
     )
 
     val shimmer = if (isPaginating) rememberIllustSkeletonShimmer() else null
+    // グリッドが丸ごと空で取得に失敗しているときは、先頭アイテムとして上端に出すのではなく
+    // 画面全体の中央に出す。
+    val emptyError = errorMessage?.takeIf { illusts.isEmpty() && !isPaginating }
+    if (emptyError != null) {
+        CenteredErrorState(
+            message = emptyError,
+            onRetry = onLoadMore,
+            modifier = Modifier.fillMaxSize().background(backgroundColor),
+        )
+        return
+    }
     LazyVerticalGrid(
         state = gridState,
         columns = GridCells.Fixed(columns),

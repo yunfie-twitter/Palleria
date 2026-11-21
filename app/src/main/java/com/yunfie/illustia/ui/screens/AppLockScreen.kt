@@ -49,6 +49,7 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.ui.components.AppBottomSheet
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.LocalAppHapticMode
@@ -65,7 +66,6 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Lock
 import top.yukonga.miuix.kmp.icon.extended.Remove
 import top.yukonga.miuix.kmp.icon.extended.Unlock
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
@@ -335,7 +335,7 @@ fun AppLockScreen(
     }
 
     if (showRecoverySheet) {
-        OverlayBottomSheet(
+        AppBottomSheet(
             show = true,
             modifier = Modifier.scrollEndHaptic(),
             onDismissRequest = { showRecoverySheet = false },

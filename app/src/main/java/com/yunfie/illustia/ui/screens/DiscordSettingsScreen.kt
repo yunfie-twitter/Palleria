@@ -32,6 +32,7 @@ import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.discord.DiscordRpcManager
 import com.yunfie.illustia.settings.AppSettings
+import com.yunfie.illustia.ui.components.AppDialog
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -55,7 +56,6 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Hide
 import top.yukonga.miuix.kmp.icon.extended.Show
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -79,7 +79,7 @@ fun DiscordSettingsScreen(
     var tempAppId by remember { mutableStateOf("") }
 
     if (showTokenDialog) {
-        OverlayDialog(
+        AppDialog(
             show = true,
             title = stringResource(R.string.discord_token_dialog_title),
             summary = stringResource(R.string.discord_token_desc),
@@ -136,7 +136,7 @@ fun DiscordSettingsScreen(
     }
 
     if (showAppIdDialog) {
-        OverlayDialog(
+        AppDialog(
             show = true,
             title = stringResource(R.string.discord_application_id_dialog_title),
             summary = stringResource(R.string.discord_application_id_desc),

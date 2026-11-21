@@ -49,6 +49,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -192,6 +193,22 @@ fun ImageViewerScreen(
     LaunchedEffect(isBookmarked) {
         localBookmarked = isBookmarked
     }
+    // 楽観更新の取り消し用。ボタンは即座に見た目を反転するが、削除確認をキャンセルした
+    // 場合など isBookmarked が変化しないまま終わることがある。この場合 LaunchedEffect が
+    // 発火せず反転したまま残るので、少し待っても実際の値が変わっていなければ戻す。
+    var pendingBookmark by remember { mutableStateOf<Boolean?>(null) }
+    LaunchedEffect(pendingBookmark, isBookmarked) {
+        val expected = pendingBookmark ?: return@LaunchedEffect
+        if (isBookmarked == expected) {
+            pendingBookmark = null
+        } else {
+            delay(800)
+            if (isBookmarked != expected) {
+                localBookmarked = isBookmarked
+                pendingBookmark = null
+            }
+        }
+    }
     var triggerPop by remember { mutableStateOf(false) }
     val popScale by animateFloatAsState(
         targetValue = if (triggerPop) 1.25f else 1.0f,
@@ -224,7 +241,13 @@ fun ImageViewerScreen(
         label = "bookmark-button-icon",
     )
 
-    LaunchedEffect(showControls) {
+    // 操作のたびに増やして、ツールバーの自動非表示タイマーを測り直すためのカウンタ。
+    // showControls だけをキーにしていたので、表示中にページを送る・ズームするといった
+    // 操作をしても 4 秒後にツールバーごと消え、ページ番号も見失っていた。
+    var lastInteractionTick by remember { mutableIntStateOf(0) }
+    val onUserInteraction = { lastInteractionTick++ }
+
+    LaunchedEffect(showControls, lastInteractionTick) {
         if (showControls) {
             delay(4000)
             showControls = false
@@ -239,11 +262,20 @@ fun ImageViewerScreen(
             .collect { page ->
                 isZoomed = false
                 onPageChanged(page)
+                // ページ送りも操作なので、ツールバー表示中なら自動非表示を数え直す。
+                if (showControls) onUserInteraction()
             }
     }
 
+    // ビューアの背景は常に黒なので、復帰後のバーは明るいアイコン（ダーク前提）に戻す。
+    // ナビゲーションバーの帯は Compose（appNavigationScrim）がアプリ色で塗るため、
+    // window 側は透過のままにする。ここで不透明色を書くと帯が点滅する（#647）。
     com.yunfie.illustia.ui.components
-        .ReaderFullscreen(fullscreen)
+        .ReaderFullscreen(
+            fullscreen,
+            isDarkTheme = true,
+            navigationBarColor = android.graphics.Color.TRANSPARENT,
+        )
 
     fun shareCurrentPage() {
         val url = imageUrls.getOrNull(currentPageState.value) ?: return
@@ -486,7 +518,9 @@ fun ImageViewerScreen(
                                 IconButton(modifier = Modifier.pointerHoverIcon(PointerIcon.Hand), onClick = {
                                     performHaptic(AppHapticEffect.Toggle)
                                     triggerPop = true
-                                    localBookmarked = !localBookmarked
+                                    val next = !localBookmarked
+                                    localBookmarked = next
+                                    pendingBookmark = next
                                     onBookmark()
                                 }) {
                                     AnimatedContent(
@@ -718,7 +752,10 @@ fun ImageViewerScreen(
                                 placeholderUrl = placeholderUrls.getOrNull(page),
                                 isActive = pagerState.currentPage == page,
                                 onZoomChanged = { zoomed ->
-                                    if (pagerState.currentPage == page) isZoomed = zoomed
+                                    if (pagerState.currentPage == page) {
+                                        isZoomed = zoomed
+                                        if (showControls) onUserInteraction()
+                                    }
                                 },
                                 onTap = { showControls = !showControls },
                             )

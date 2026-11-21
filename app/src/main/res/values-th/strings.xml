@@ -158,7 +158,7 @@
     <string name="detail_save_image_title">บันทึกภาพ</string>
     <string name="detail_save_image_confirm">บันทึกภาพนี้ลงในโฟลเดอร์ Palleria</string>
     <string name="detail_save_ugoira_title">บันทึกอูโกอิรา</string>
-    <string name="detail_save_ugoira_confirm">บันทึก ugoira นี้เป็น GIF ลงในโฟลเดอร์ Palleria</string>
+    <string name="detail_save_ugoira_confirm">บันทึกภาพนิ่ง (ภาพปก) ของ ugoira นี้ลงในโฟลเดอร์ Palleria</string>
     <string name="detail_unfollow_title">เลิกติดตาม</string>
     <string name="detail_unfollow_confirm">เลิกติดตาม %1$s?</string>
     <string name="detail_open_in_browser">เปิดในเบราว์เซอร์</string>
@@ -178,12 +178,15 @@
     <string name="detail_muted_work">ปิดเสียงการทำงาน</string>
     <string name="detail_muted_work_blur">งานที่มีแท็กปิดเสียงจะถูกเบลอ</string>
     <string name="detail_unmute">เปิดเสียง</string>
+    <string name="detail_image_load_failed">ไม่สามารถโหลดรูปภาพได้</string>
     <string name="detail_no_caption">ไม่มีคำอธิบายภาพ</string>
     <string name="detail_comments">ความคิดเห็น</string>
     <string name="detail_show_comments">แสดงความคิดเห็น</string>
     <string name="detail_comments_empty">ยังไม่มีความคิดเห็น</string>
     <string name="detail_series">ซีรีส์</string>
     <string name="detail_related">ผลงานที่เกี่ยวข้อง</string>
+    <string name="detail_tags_show_more">แสดงทั้งหมด (อีก %1$d)</string>
+    <string name="detail_tags_show_less">แสดงน้อยลง</string>
     <string name="detail_illust_id">รหัสภาพประกอบ</string>
     <string name="detail_resolution">ความละเอียด</string>
 
@@ -323,8 +326,6 @@
     <string name="general_smooth_desc">ทำให้การเปลี่ยนหน้าจอและการเรนเดอร์รายการราบรื่นยิ่งขึ้น</string>
     <string name="general_notch">การเพิ่มประสิทธิภาพรอยบาก</string>
     <string name="general_notch_desc">ปรับการแสดงผลในพื้นที่แถบสถานะ</string>
-    <string name="general_swipe">ปัดเพื่อสลับแท็บ</string>
-    <string name="general_swipe_desc">ปัดไปทางซ้าย/ขวาเพื่อเลื่อนไปมาระหว่างหน้าจอหลัก</string>
     <string name="general_auto_load_more">โหลดอัตโนมัติเพิ่มเติม</string>
     <string name="general_auto_load_more_desc">ดึงหน้าถัดไปโดยอัตโนมัติเมื่อคุณอ่านถึงจุดสิ้นสุด</string>
     <string name="general_double_back">ย้อนกลับสองครั้งเพื่อออก</string>
@@ -844,8 +845,6 @@
     <string name="nav_shorts_feed">กางเกงขาสั้น</string>
     <string name="general_shorts_feed">ฟีดสั้น</string>
     <string name="general_shorts_feed_desc">เรียกดูภาพประกอบในฟีดแนวตั้งแบบเต็มหน้าจอ</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe">ปิดใช้งานการปัดแนวนอน</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe_desc">ป้องกันไม่ให้การเลื่อนไปด้านข้างเปลี่ยนแท็บในฟีด Shorts</string>
     <string name="calculator_error">เกิดข้อผิดพลาด</string>
     <string name="error_novel_load_failed">ไม่สามารถโหลดนวนิยายได้</string>
     <string name="error_notifications_load_failed">ไม่สามารถโหลดการแจ้งเตือน</string>

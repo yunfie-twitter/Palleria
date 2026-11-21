@@ -17,6 +17,8 @@ import com.yunfie.illustia.models.pixiv.UserProfileEdit
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.map
@@ -44,6 +46,7 @@ abstract class IllustiaDetailProfileModule(
                 selectedIllustUser = cached?.user,
                 selectedIllustFirstComment = cached?.firstComment,
                 relatedIllusts = cached?.relatedIllusts ?: emptyList(),
+                relatedIllustsLoaded = cached?.relatedIllustsLoaded == true,
             )
         }
         requestDetailNavigation(illust.id)
@@ -68,18 +71,21 @@ abstract class IllustiaDetailProfileModule(
 
     @Suppress("LongMethod")
     private fun launchDetailExtras(illust: Illust) {
-        if (detailExtrasPaused) return
+        if (detailExtrasPaused) {
+            // 停止中の openIllust を取りこぼさない。シートを閉じた時点でこの作品を取得し直す。
+            pendingDetailExtrasIllust = illust
+            return
+        }
+        pendingDetailExtrasIllust = null
         detailExtrasJob?.cancel()
         detailExtrasJob =
             viewModelScope.launch(Dispatchers.IO) {
                 try {
                     GlitchTipTelemetry.traceAsync("illust.detail.load", "illust.detail") {
-                        val fullIllust =
-                            if (illust.artistId <= 0L) {
-                                runCatching { repository.illustDetail(illust.id) }.getOrNull() ?: illust
-                            } else {
-                                illust
-                            }
+                        // 履歴やプロフィールのカードは詳細情報が欠けている場合があるため、
+                        // artistId の有無にかかわらず詳細を取得する。404 もここで検出でき、
+                        // 取得に失敗したときは catch 側で selectedIllustError を設定する。
+                        val fullIllust = repository.illustDetail(illust.id)
                         kotlinx.coroutines.coroutineScope {
                             val relatedDeferred = async { repository.relatedIllusts(illust.id) }
                             val userDeferred =
@@ -92,26 +98,17 @@ abstract class IllustiaDetailProfileModule(
                                 if (it.selectedIllust?.id != illust.id) {
                                     it
                                 } else {
-                                    val currentIllust = it.selectedIllust
-                                    val mergedIllust =
-                                        if (currentIllust != null) {
-                                            if (fullIllust === illust) {
-                                                currentIllust
-                                            } else {
-                                                fullIllust.copy(isBookmarked = currentIllust.isBookmarked)
-                                            }
-                                        } else {
-                                            fullIllust
-                                        }
+                                    val mergedIllust = fullIllust.copy(isBookmarked = it.selectedIllust.isBookmarked)
                                     it.copy(
                                         selectedIllust = mergedIllust,
                                         relatedIllusts = related.items.visibleRelatedWithSettings(it.settings),
+                                        relatedIllustsLoaded = true,
                                         selectedIllustUser = user,
                                         selectedIllustFirstComment = null,
                                     )
                                 }
                             }
-                            if (fullIllust !== illust && fullIllust.artistId > 0L) {
+                            if (fullIllust.artistId > 0L) {
                                 val updatedHistory =
                                     _uiState.value.settings.viewHistory.map {
                                         if (it.id == illust.id) fullIllust.copy(isBookmarked = it.isBookmarked) else it
@@ -125,9 +122,18 @@ abstract class IllustiaDetailProfileModule(
                     if (isCancellation(error)) throw error
                     if (handleAuthExpired(error)) return@launch
                     GlitchTipTelemetry.recordException(error, tag = "illust_detail", extras = mapOf("illustId" to illust.id))
+                    val errorMessage = illustOpenErrorMessage(error)
                     _uiState.update {
                         if (it.selectedIllust?.id == illust.id) {
-                            it.copy(message = cleanErrorMessage(error, str(R.string.error_load_detail_failed)))
+                            // 取得に失敗してもスピナーを回し続けない。空のまま「完了」にする。
+                            // 履歴やプロフィールから開いた場合もカード情報を表示したままにせず、
+                            // 404 などの失敗を詳細画面側のエラーとして出す。
+                            it.copy(
+                                selectedIllustError = errorMessage,
+                                selectedIllustErrorId = illust.id,
+                                message = errorMessage,
+                                relatedIllustsLoaded = true,
+                            )
                         } else {
                             it
                         }
@@ -138,9 +144,16 @@ abstract class IllustiaDetailProfileModule(
 
     override fun openIllust(illustId: Long) {
         if (illustId <= 0L) return
-        _uiState.update { it.copy(selectedIllustError = null, selectedIllustErrorId = null) }
+        val retryAfterError = _uiState.value.selectedIllustErrorId == illustId
+        // オフラインなどで再試行を繰り返すと、開始時に毎回エラーを消していたため
+        // エラー → スケルトン → エラー と点滅していた。再試行中は前回のエラーを
+        // 出したままにし、取得成功時だけ消す。初回表示（エラー無し）は従来どおり。
+        if (!retryAfterError) {
+            _uiState.update { it.copy(selectedIllustError = null, selectedIllustErrorId = null) }
+        }
         requestDetailNavigation(illustId)
-        val localIllust = findIllustById(illustId)
+        // 一度エラーになった作品はローカルキャッシュを信頼せず必ず取り直す。
+        val localIllust = if (retryAfterError) null else findIllustById(illustId)
         if (localIllust != null && localIllust.artistId > 0L) {
             openIllust(localIllust)
             return
@@ -186,9 +199,14 @@ abstract class IllustiaDetailProfileModule(
                 ?: runCatching { repository.illustDetail(illustId).mediumImageUrl }.getOrNull()
         }
 
-    fun refreshIllustDetail(illustId: Long) {
+    /**
+     * 手動リフレッシュ。戻り値の Job が完了するまでが実際の取得時間なので、
+     * UI 側は固定 delay ではなくこれを見てインジケータを閉じる。
+     */
+    fun refreshIllustDetail(illustId: Long): Job {
         detailExtrasJob?.cancel()
-        detailExtrasJob =
+        _uiState.update { it.copy(isSelectedIllustRefreshing = true) }
+        val job =
             viewModelScope.launch(Dispatchers.IO) {
                 try {
                     val fullIllust = repository.illustDetail(illustId)
@@ -207,6 +225,7 @@ abstract class IllustiaDetailProfileModule(
                                 it.copy(
                                     selectedIllust = fullIllust,
                                     relatedIllusts = related.items.visibleRelatedWithSettings(it.settings),
+                                    relatedIllustsLoaded = true,
                                     selectedIllustUser = user,
                                     selectedIllustFirstComment = null,
                                 )
@@ -215,17 +234,26 @@ abstract class IllustiaDetailProfileModule(
                     }
                 } catch (expectedFailure: Exception) {
                     val error = expectedFailure
-                    if (isCancellation(error)) throw error
+                    if (isCancellation(error)) return@launch
                     if (handleAuthExpired(error)) return@launch
                     _uiState.update {
                         if (it.selectedIllust?.id == illustId) {
-                            it.copy(message = cleanErrorMessage(error, str(R.string.error_load_detail_failed)))
+                            it.copy(
+                                message = cleanErrorMessage(error, str(R.string.error_load_detail_failed)),
+                                relatedIllustsLoaded = true,
+                            )
                         } else {
                             it
                         }
                     }
+                } finally {
+                    withContext(NonCancellable) {
+                        _uiState.update { it.copy(isSelectedIllustRefreshing = false) }
+                    }
                 }
             }
+        detailExtrasJob = job
+        return job
     }
 
     fun lazyLoadPartialIllust(illustId: Long) {
@@ -254,10 +282,20 @@ abstract class IllustiaDetailProfileModule(
      * コメントシートが作品詳細の上に開く間、関連作品・ユーザー詳細の取得と、その結果による
      * UI 状態の更新を止める。重なったアニメーション中に状態更新が走らないようにするだけで、
      * 表示内容は変わらない（シートを閉じると通常の詳細取得に戻る）。
+     *
+     * 解除時は打ち切った取得を必ずやり直す。以前はジョブが cancel されたまま再開されず、
+     * コメントを閉じても関連作品や作者名が空のまま残っていた。
      */
     fun setDetailExtrasSuppressed(suppressed: Boolean) {
         detailExtrasPaused = suppressed
-        if (suppressed) detailExtrasJob?.cancel()
+        if (suppressed) {
+            detailExtrasJob?.cancel()
+            return
+        }
+        val pending = pendingDetailExtrasIllust
+        pendingDetailExtrasIllust = null
+        val current = pending ?: _uiState.value.selectedIllust
+        if (current != null) launchDetailExtras(current)
     }
 
     /**
@@ -305,6 +343,7 @@ abstract class IllustiaDetailProfileModule(
         user: UserProfile?,
         firstComment: Comment?,
         relatedIllusts: List<Illust>,
+        relatedIllustsLoaded: Boolean = false,
     ) {
         detailExtrasJob?.cancel()
         _uiState.update {
@@ -313,6 +352,7 @@ abstract class IllustiaDetailProfileModule(
                 selectedIllustUser = user,
                 selectedIllustFirstComment = firstComment,
                 relatedIllusts = relatedIllusts,
+                relatedIllustsLoaded = relatedIllustsLoaded,
             )
         }
     }
@@ -704,6 +744,7 @@ abstract class IllustiaDetailProfileModule(
                 selectedIllustUser = snapshot.user,
                 selectedIllustFirstComment = snapshot.firstComment,
                 relatedIllusts = snapshot.relatedIllusts,
+                relatedIllustsLoaded = snapshot.relatedIllustsLoaded,
             )
         }
         return true

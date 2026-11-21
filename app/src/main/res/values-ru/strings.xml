@@ -24,8 +24,6 @@
     <string name="nav_shorts_feed">Лента</string>
     <string name="general_shorts_feed">Вертикальная лента</string>
     <string name="general_shorts_feed_desc">Полноэкранный просмотр иллюстраций с главной и подписок с помощью вертикального свайпа</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe">Отключить горизонтальный свайп в ленте</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe_desc">Запрещает переключение вкладок горизонтальным свайпом во время просмотра ленты</string>
     <string name="nav_more">Ещё</string>
 
     <!-- Common actions -->
@@ -199,7 +197,7 @@
     <string name="detail_save_image_title">Сохранить изображение</string>
     <string name="detail_save_image_confirm">Сохранить это изображение в папку Palleria?</string>
     <string name="detail_save_ugoira_title">Сохранить угоиру</string>
-    <string name="detail_save_ugoira_confirm">Сохранить эту угоиру как GIF в папку Palleria?</string>
+    <string name="detail_save_ugoira_confirm">Сохранить кадр (обложку) этой угоиры в папку Palleria.</string>
     <string name="detail_unfollow_title">Отписаться</string>
     <string name="detail_unfollow_confirm">Отписаться от %1$s?</string>
     <string name="detail_open_in_browser">Открыть в браузере</string>
@@ -219,12 +217,15 @@
     <string name="detail_muted_work">Скрытая работа</string>
     <string name="detail_muted_work_blur">Работы со скрытыми тегами размыты.</string>
     <string name="detail_unmute">Вернуть</string>
+    <string name="detail_image_load_failed">Не удалось загрузить изображение</string>
     <string name="detail_no_caption">Описание отсутствует</string>
     <string name="detail_comments">Комментарии</string>
     <string name="detail_show_comments">Показать комментарии</string>
     <string name="detail_comments_empty">Комментариев пока нет</string>
     <string name="detail_series">Серия</string>
     <string name="detail_related">Похожие иллюстрации</string>
+    <string name="detail_tags_show_more">Показать все (ещё %1$d)</string>
+    <string name="detail_tags_show_less">Свернуть</string>
     <string name="detail_illust_id">ID иллюстрации</string>
     <string name="detail_resolution">Разрешение</string>
     <string name="detail_resolution_dimensions">%1$d × %2$d px</string>
@@ -382,8 +383,6 @@
     <string name="general_haptics_clear">Чёткий отклик</string>
     <string name="general_notch">Адаптация к вырезам экрана</string>
     <string name="general_notch_desc">Настройка отображения в области строки состояния</string>
-    <string name="general_swipe">Переключение вкладок свайпом</string>
-    <string name="general_swipe_desc">Переход между главными экранами свайпом влево/вправо</string>
     <string name="general_auto_load_more">Автозагрузка</string>
     <string name="general_auto_load_more_desc">Автоматически подгружать следующую страницу при прокрутке до конца</string>
     <string name="general_double_back">Выход по двойному нажатию «Назад»</string>

@@ -145,7 +145,7 @@
     <string name="detail_save_image_title">儲存圖像</string>
     <string name="detail_save_image_confirm">將此圖像儲存到 Palleria 資料夾。</string>
     <string name="detail_save_ugoira_title">儲存動圖</string>
-    <string name="detail_save_ugoira_confirm">將此動圖作為GIF儲存到 Palleria 資料夾。</string>
+    <string name="detail_save_ugoira_confirm">將此動圖的靜止圖（封面）儲存到 Palleria 資料夾。</string>
     <string name="detail_unfollow_title">取消關注</string>
     <string name="detail_unfollow_confirm">取消追蹤 %1$s？</string>
     <string name="detail_open_in_browser">在瀏覽器中開啟</string>
@@ -165,12 +165,15 @@
     <string name="detail_muted_work">靜音工作</string>
     <string name="detail_muted_work_blur">包含靜音標籤的作品模糊。</string>
     <string name="detail_unmute">取消靜音</string>
+    <string name="detail_image_load_failed">無法載入圖片</string>
     <string name="detail_no_caption">無標題</string>
     <string name="detail_comments">評論</string>
     <string name="detail_show_comments">顯示評論</string>
     <string name="detail_comments_empty">尚無評論</string>
     <string name="detail_series">系列</string>
     <string name="detail_related">相關作品</string>
+    <string name="detail_tags_show_more">顯示全部（另有 %1$d 個）</string>
+    <string name="detail_tags_show_less">收合</string>
     <string name="detail_illust_id">插圖 ID</string>
     <string name="detail_resolution">分辨率</string>
     <string name="viewer_share_failed">無法開始共享。</string>
@@ -284,8 +287,6 @@
     <string name="general_smooth_desc">讓螢幕過渡和清單渲染更加平滑</string>
     <string name="general_notch">缺口優化</string>
     <string name="general_notch_desc">調整狀態列區域的顯示</string>
-    <string name="general_swipe">滑動切換選項卡</string>
-    <string name="general_swipe_desc">向左/向右滑動可在主畫面之間導航</string>
     <string name="general_auto_load_more">自動載入更多</string>
     <string name="general_auto_load_more_desc">到達結尾時自動取得下一頁</string>
     <string name="general_double_back">雙擊返回退出</string>
@@ -739,8 +740,6 @@
     <string name="nav_shorts_feed">直式動態</string>
     <string name="general_shorts_feed">Shorts Feed</string>
     <string name="general_shorts_feed_desc">以全螢幕垂直方式瀏覽插圖</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe">停用水平滑動</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe_desc">防止橫向滑動更改 Shorts Feed 中的選項卡</string>
     <string name="calculator_error">錯誤</string>
     <string name="error_novel_load_failed">無法載入小說。</string>
     <string name="error_notifications_load_failed">無法載入通知。</string>

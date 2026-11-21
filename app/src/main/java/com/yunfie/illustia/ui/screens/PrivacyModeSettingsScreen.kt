@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.settings.AppSettings
+import com.yunfie.illustia.ui.components.AppDialog
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -47,7 +48,6 @@ import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 // ── Auto-lock timing options ───────────────────────────────────────────────────
@@ -269,7 +269,7 @@ fun PrivacyModeSettingsScreen(
     // ── Enable Privacy Mode Dialog ────────────────────────────────────────────
     if (showEnableCodeDialog) {
         val requiresNewCode = !viewModel.hasUnlockCodeSet() || isResettingCode
-        OverlayDialog(
+        AppDialog(
             show = true,
             title = stringResource(R.string.privacy_enable_dialog_title),
             onDismissRequest = {
@@ -438,7 +438,7 @@ fun PrivacyModeSettingsScreen(
     // ── Change Unlock Code Dialog ─────────────────────────────────────────────
     // Requirements: 5.3, 5.4, 5.7
     if (showChangeCodeDialog) {
-        OverlayDialog(
+        AppDialog(
             show = true,
             title = stringResource(R.string.privacy_change_code),
             onDismissRequest = {
@@ -543,7 +543,7 @@ fun PrivacyModeSettingsScreen(
     // ── Dummy App Name Dialog ─────────────────────────────────────────────────
     // Requirements: 10.1, 10.3
     if (showDummyNameDialog) {
-        OverlayDialog(
+        AppDialog(
             show = true,
             title = stringResource(R.string.privacy_change_dummy_name),
             onDismissRequest = {

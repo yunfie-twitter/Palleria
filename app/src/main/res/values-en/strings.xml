@@ -161,7 +161,7 @@
     <string name="detail_save_image_title">Save Image</string>
     <string name="detail_save_image_confirm">Save this image to the Palleria folder.</string>
     <string name="detail_save_ugoira_title">Save Ugoira</string>
-    <string name="detail_save_ugoira_confirm">Save this ugoira as a GIF to the Palleria folder.</string>
+    <string name="detail_save_ugoira_confirm">Save this ugoira\'s cover image (still frame) to the Palleria folder.</string>
     <string name="detail_unfollow_title">Unfollow</string>
     <string name="detail_unfollow_confirm">Unfollow %1$s?</string>
     <string name="detail_open_in_browser">Open in Browser</string>
@@ -181,12 +181,15 @@
     <string name="detail_muted_work">Muted Work</string>
     <string name="detail_muted_work_blur">Works containing muted tags are blurred.</string>
     <string name="detail_unmute">Unmute</string>
+    <string name="detail_image_load_failed">Couldn\'t load the image</string>
     <string name="detail_no_caption">No caption</string>
     <string name="detail_comments">Comments</string>
     <string name="detail_show_comments">Show Comments</string>
     <string name="detail_comments_empty">No comments yet</string>
     <string name="detail_series">Series</string>
     <string name="detail_related">Related Works</string>
+    <string name="detail_tags_show_more">Show all (%1$d more)</string>
+    <string name="detail_tags_show_less">Show less</string>
     <string name="detail_illust_id">Illust ID</string>
     <string name="detail_resolution">Resolution</string>
     <string name="detail_resolution_dimensions">%1$d × %2$d px</string>
@@ -347,8 +350,6 @@
     <string name="general_smooth_desc">Make screen transitions and list rendering smoother</string>
     <string name="general_notch">Notch Optimization</string>
     <string name="general_notch_desc">Adjust display in the status bar area</string>
-    <string name="general_swipe">Swipe to Switch Tabs</string>
-    <string name="general_swipe_desc">Swipe left/right to navigate between main screens</string>
     <string name="general_auto_load_more">Auto Load More</string>
     <string name="general_auto_load_more_desc">Automatically fetch the next page when you reach the end</string>
     <string name="general_double_back">Double Back to Exit</string>
@@ -879,8 +880,6 @@
     <string name="nav_shorts_feed">Shorts</string>
     <string name="general_shorts_feed">Shorts Feed</string>
     <string name="general_shorts_feed_desc">Browse illustrations in a full-screen vertical feed</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe">Disable Horizontal Swipe</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe_desc">Prevent sideways swipes from changing tabs in the Shorts feed</string>
     <string name="calculator_error">Error</string>
     <string name="error_novel_load_failed">Could not load the novel.</string>
     <string name="error_notifications_load_failed">Could not load notifications.</string>

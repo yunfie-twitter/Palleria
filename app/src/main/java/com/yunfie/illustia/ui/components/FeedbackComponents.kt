@@ -186,7 +186,7 @@ fun RequestErrorState(
  * Error card shown dead centre of the screen.
  *
  * Rendered in a full-screen [Dialog] rather than as a Box inside the app tree: the app root
- * applies [appNavigationSafeArea] and the Scaffold's content padding, so a Box there centres
+ * applies [appNavigationScrim] and the Scaffold's content padding, so a Box there centres
  * inside the *inset* area and lands visibly off-centre.
  *
  * The dialog surface is forced to the whole display and consumes no window insets, so the card

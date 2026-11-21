@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
@@ -99,7 +100,7 @@ internal fun BrowseArea(
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         if (showHeader) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
+            item(key = "search_header", span = { GridItemSpan(maxLineSpan) }, contentType = "search_header") {
                 Text(
                     text = stringResource(R.string.nav_search),
                     color = MiuixTheme.colorScheme.onBackground,
@@ -120,14 +121,14 @@ internal fun BrowseArea(
             }
         }
         if (recentIllusts.isNotEmpty()) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
+            item(key = "recent_header", span = { GridItemSpan(maxLineSpan) }, contentType = "section_header") {
                 SectionHeader(
                     stringResource(R.string.search_recent_viewed),
                     action = stringResource(R.string.action_view_all),
                     onAction = viewModel::openViewHistory,
                 )
             }
-            item(span = { GridItemSpan(maxLineSpan) }) {
+            item(key = "recent_row", span = { GridItemSpan(maxLineSpan) }, contentType = "recent_row") {
                 androidx.compose.foundation.lazy.LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     contentPadding = PaddingValues(bottom = 4.dp),
@@ -153,7 +154,7 @@ internal fun BrowseArea(
                 }
             }
         }
-        item(span = { GridItemSpan(maxLineSpan) }) {
+        item(key = "recommended_tags_title", span = { GridItemSpan(maxLineSpan) }, contentType = "section_header") {
             Text(
                 stringResource(R.string.search_recommended_tags),
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
@@ -161,7 +162,7 @@ internal fun BrowseArea(
                 fontWeight = FontWeight.Bold,
             )
         }
-        item(span = { GridItemSpan(maxLineSpan) }) {
+        item(key = "recommended_tags", span = { GridItemSpan(maxLineSpan) }, contentType = "recommended_tags") {
             val tagColumns = adaptiveRecommendedTagColumns()
             val recommendedTags =
                 remember(state.recommendedTagTiles, state.recommendedTags) {
@@ -174,10 +175,12 @@ internal fun BrowseArea(
             if (recommendedTags.isEmpty()) {
                 when {
                     state.recommendedTagsError != null -> {
-                        RequestErrorState(
-                            message = state.recommendedTagsError,
-                            onRetry = { viewModel.refreshRecommendedTags(force = true) },
-                        )
+                        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            RequestErrorState(
+                                message = state.recommendedTagsError,
+                                onRetry = { viewModel.refreshRecommendedTags(force = true) },
+                            )
+                        }
                     }
 
                     state.recommendedTagsLoading || state.recommendedTagsFetchedAtMillis == 0L -> {

@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.sp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.StoredAccount
+import com.yunfie.illustia.ui.components.AppBottomSheet
 import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
@@ -44,7 +45,6 @@ import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Contacts
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.icon.extended.Ok
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -60,7 +60,7 @@ fun AccountSwitchSheet(
 ) {
     var pendingRemoval by remember { mutableStateOf<Int?>(null) }
     if (!show) return
-    OverlayBottomSheet(
+    AppBottomSheet(
         show = true,
         modifier = Modifier.scrollEndHaptic(),
         title = stringResource(R.string.account_switch_title),

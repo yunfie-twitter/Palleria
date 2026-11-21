@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
@@ -23,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.settings.AppSettings
+import com.yunfie.illustia.ui.components.AppDialog
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -31,6 +33,7 @@ import com.yunfie.illustia.ui.components.Section
 import com.yunfie.illustia.ui.components.SettingDropdownRow
 import com.yunfie.illustia.ui.components.SettingLinkRow
 import com.yunfie.illustia.ui.components.SettingSwitchRow
+import com.yunfie.illustia.ui.components.dialogBottomInsets
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -40,7 +43,6 @@ import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private val DOH_PROVIDERS = listOf("system", "cloudflare", "google", "quad9", "adguard", "custom")
@@ -184,12 +186,19 @@ fun InternalProxySettingsScreen(
         }
 
         if (showCustomDohDialog) {
-            OverlayDialog(
+            AppDialog(
                 show = showCustomDohDialog,
                 title = stringResource(R.string.internal_proxy_doh_custom_url),
                 onDismissRequest = { showCustomDohDialog = false },
+                defaultWindowInsetsPadding = false,
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .windowInsetsPadding(dialogBottomInsets()),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
                     TextField(
                         value = customDohInput,
                         onValueChange = { customDohInput = it },
@@ -224,12 +233,19 @@ fun InternalProxySettingsScreen(
         }
 
         if (showProxyHostDialog) {
-            OverlayDialog(
+            AppDialog(
                 show = showProxyHostDialog,
                 title = stringResource(R.string.internal_proxy_host),
                 onDismissRequest = { showProxyHostDialog = false },
+                defaultWindowInsetsPadding = false,
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .windowInsetsPadding(dialogBottomInsets()),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
                     TextField(
                         value = proxyHostInput,
                         onValueChange = { proxyHostInput = it },
@@ -264,12 +280,19 @@ fun InternalProxySettingsScreen(
         }
 
         if (showProxyPortDialog) {
-            OverlayDialog(
+            AppDialog(
                 show = showProxyPortDialog,
                 title = stringResource(R.string.internal_proxy_port),
                 onDismissRequest = { showProxyPortDialog = false },
+                defaultWindowInsetsPadding = false,
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .windowInsetsPadding(dialogBottomInsets()),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
                     TextField(
                         value = proxyPortInput,
                         onValueChange = { proxyPortInput = it.filter { char -> char.isDigit() } },
@@ -306,13 +329,20 @@ fun InternalProxySettingsScreen(
         }
 
         if (showBypassHostsDialog) {
-            OverlayDialog(
+            AppDialog(
                 show = showBypassHostsDialog,
                 title = stringResource(R.string.internal_proxy_bypass_hosts),
                 summary = stringResource(R.string.internal_proxy_bypass_hosts_desc),
                 onDismissRequest = { showBypassHostsDialog = false },
+                defaultWindowInsetsPadding = false,
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .windowInsetsPadding(dialogBottomInsets()),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
                     TextField(
                         value = bypassHostsInput,
                         onValueChange = { bypassHostsInput = it },

@@ -36,6 +36,7 @@ import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.pixiv.PixivNotification
 import com.yunfie.illustia.ui.components.AppHapticEffect
+import com.yunfie.illustia.ui.components.CenteredErrorState
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.LoadingIndicator
@@ -109,6 +110,15 @@ fun NotificationScreen(
     ) { padding ->
         val showSkeletons = state.notifications.isEmpty() && state.notificationsLoading
         val shimmer = if (showSkeletons) rememberIllustSkeletonShimmer() else null
+        val emptyError = state.notificationsError?.takeIf { state.notifications.isEmpty() && !showSkeletons }
+        if (emptyError != null) {
+            CenteredErrorState(
+                message = emptyError,
+                onRetry = viewModel::refreshNotifications,
+                modifier = Modifier.padding(padding),
+            )
+            return@Scaffold
+        }
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection),

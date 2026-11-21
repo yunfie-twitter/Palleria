@@ -202,8 +202,10 @@ internal fun shouldLoadUserProfile(
 internal data class DetailEntrySnapshot(
     val illust: Illust,
     val relatedIllusts: List<Illust> = emptyList(),
+    val relatedIllustsLoaded: Boolean = false,
     val firstComment: Comment? = null,
     val user: UserProfile? = null,
+    val isRefreshing: Boolean = false,
 )
 
 internal data class SearchEntrySnapshot(

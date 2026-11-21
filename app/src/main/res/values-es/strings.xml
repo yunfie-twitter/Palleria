@@ -158,7 +158,7 @@
     <string name="detail_save_image_title">Guardar imagen</string>
     <string name="detail_save_image_confirm">Guarde esta imagen en la carpeta Palleria.</string>
     <string name="detail_save_ugoira_title">Salva a Ugoira</string>
-    <string name="detail_save_ugoira_confirm">Guarde esta ugoira como GIF en la carpeta Palleria.</string>
+    <string name="detail_save_ugoira_confirm">Guarde la imagen fija (portada) de esta ugoira en la carpeta Palleria.</string>
     <string name="detail_unfollow_title">Dejar de seguir</string>
     <string name="detail_unfollow_confirm">¿Dejar de seguir a %1$s?</string>
     <string name="detail_open_in_browser">Abrir en el navegador</string>
@@ -178,12 +178,15 @@
     <string name="detail_muted_work">Trabajo silenciado</string>
     <string name="detail_muted_work_blur">Las obras que contienen etiquetas silenciadas aparecen borrosas.</string>
     <string name="detail_unmute">Dejar de silenciar</string>
+    <string name="detail_image_load_failed">No se pudo cargar la imagen</string>
     <string name="detail_no_caption">Sin título</string>
     <string name="detail_comments">Comentarios</string>
     <string name="detail_show_comments">Mostrar comentarios</string>
     <string name="detail_comments_empty">Aún no hay comentarios</string>
     <string name="detail_series">Serie</string>
     <string name="detail_related">Trabajos relacionados</string>
+    <string name="detail_tags_show_more">Ver todos (%1$d más)</string>
+    <string name="detail_tags_show_less">Mostrar menos</string>
     <string name="detail_illust_id">Ilustración de identificación</string>
     <string name="detail_resolution">Resolución</string>
 
@@ -323,8 +326,6 @@
     <string name="general_smooth_desc">Haga que las transiciones de pantalla y la representación de listas sean más fluidas</string>
     <string name="general_notch">Optimización de muesca</string>
     <string name="general_notch_desc">Ajustar la visualización en el área de la barra de estado</string>
-    <string name="general_swipe">Desliza para cambiar de pestaña</string>
-    <string name="general_swipe_desc">Desliza hacia la izquierda/derecha para navegar entre las pantallas principales</string>
     <string name="general_auto_load_more">Cargar automáticamente más</string>
     <string name="general_auto_load_more_desc">Recupera automáticamente la página siguiente cuando llegues al final</string>
     <string name="general_double_back">Doble regreso para salir</string>
@@ -844,8 +845,6 @@
     <string name="nav_shorts_feed">Pantalones cortos</string>
     <string name="general_shorts_feed">Feed de cortos</string>
     <string name="general_shorts_feed_desc">Explore ilustraciones en una fuente vertical de pantalla completa</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe">Deshabilitar el deslizamiento horizontal</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe_desc">Evite que los deslizamientos laterales cambien de pestaña en el feed de Shorts</string>
     <string name="calculator_error">error</string>
     <string name="error_novel_load_failed">No se pudo cargar la novela.</string>
     <string name="error_notifications_load_failed">No se pudieron cargar las notificaciones.</string>

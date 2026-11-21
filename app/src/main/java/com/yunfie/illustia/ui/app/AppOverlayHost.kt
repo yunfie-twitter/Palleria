@@ -33,6 +33,8 @@ import com.yunfie.illustia.platform.ImageClipboardHelper
 import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
+import com.yunfie.illustia.ui.components.AppBottomSheet
+import com.yunfie.illustia.ui.components.AppDialog
 import com.yunfie.illustia.ui.components.BookmarkTagPickerBottomSheet
 import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.DividerLine
@@ -43,6 +45,7 @@ import com.yunfie.illustia.ui.components.MiuixConfirmDialog
 import com.yunfie.illustia.ui.components.MiuixUserQuickPeek
 import com.yunfie.illustia.ui.components.PermissionRationaleDialog
 import com.yunfie.illustia.ui.components.QuickPeekOverlay
+import com.yunfie.illustia.ui.components.TagMenuBottomSheet
 import com.yunfie.illustia.ui.components.TagPreviewBottomSheet
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.screens.CommentScreen
@@ -58,8 +61,6 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.More
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
@@ -161,7 +162,7 @@ internal fun AppOverlayHost(
                 },
             )
         } else {
-            OverlayBottomSheet(
+            AppBottomSheet(
                 show = true,
                 modifier = Modifier.scrollEndHaptic(),
                 title = illust.title.ifBlank { stringResource(R.string.dialog_work_options) },
@@ -289,28 +290,44 @@ internal fun AppOverlayHost(
             appState.settings.mutedTags.any {
                 it.equals(preview.tag, ignoreCase = true)
             }
-        TagPreviewBottomSheet(
-            preview = preview,
-            isFavorite = isFavorite,
-            isMuted = isMuted,
-            onDismiss = viewModel::closeTagOptions,
-            onSearch = {
-                viewModel.closeTagOptions()
-                onSearchTag(preview.tag)
-            },
-            onToggleFavorite = {
-                viewModel.closeTagOptions()
-                viewModel.toggleFavoriteTag(preview.tag)
-            },
-            onToggleMute = {
-                viewModel.closeTagOptions()
-                if (isMuted) {
-                    viewModel.unmuteTag(preview.tag)
-                } else {
-                    viewModel.muteTag(preview.tag)
-                }
-            },
-        )
+        val onSearch = {
+            viewModel.closeTagOptions()
+            onSearchTag(preview.tag)
+        }
+        val onToggleFavorite = {
+            viewModel.closeTagOptions()
+            viewModel.toggleFavoriteTag(preview.tag)
+        }
+        val onToggleMute = {
+            viewModel.closeTagOptions()
+            if (isMuted) {
+                viewModel.unmuteTag(preview.tag)
+            } else {
+                viewModel.muteTag(preview.tag)
+            }
+        }
+        val onDismissTag = viewModel::closeTagOptions
+        if (appState.state.settings.isFeatureEnabled(FeatureFlag.TagMenuRedesign)) {
+            TagMenuBottomSheet(
+                preview = preview,
+                isFavorite = isFavorite,
+                isMuted = isMuted,
+                onDismiss = onDismissTag,
+                onSearch = onSearch,
+                onToggleFavorite = onToggleFavorite,
+                onToggleMute = onToggleMute,
+            )
+        } else {
+            TagPreviewBottomSheet(
+                preview = preview,
+                isFavorite = isFavorite,
+                isMuted = isMuted,
+                onDismiss = onDismissTag,
+                onSearch = onSearch,
+                onToggleFavorite = onToggleFavorite,
+                onToggleMute = onToggleMute,
+            )
+        }
     }
 
     if (showTokenLogin) {
@@ -360,7 +377,7 @@ internal fun AppOverlayHost(
     var showLockResetConfirmDialog by remember { mutableStateOf(false) }
 
     if (appState.state.showLockRecoveryDialog) {
-        OverlayDialog(
+        AppDialog(
             show = true,
             title = stringResource(R.string.app_lock_recovery_title),
             summary = stringResource(R.string.app_lock_recovery_summary, appState.state.settings.appLockFailCount),

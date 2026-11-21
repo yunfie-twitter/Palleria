@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.ui.components.AppBottomSheet
 import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
@@ -66,7 +67,6 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Close
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -562,7 +562,7 @@ private fun OpenSourceLicensesSheet(
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val maxSheetHeight = (configuration.screenHeightDp.dp * 0.75f).coerceAtLeast(300.dp)
 
-    OverlayBottomSheet(
+    AppBottomSheet(
         show = true,
         modifier = Modifier.scrollEndHaptic(),
         title = stringResource(R.string.about_open_source_licenses),

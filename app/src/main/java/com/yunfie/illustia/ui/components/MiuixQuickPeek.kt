@@ -22,10 +22,10 @@ import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.UserPreview
+import com.yunfie.illustia.ui.components.AppBottomSheet
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
@@ -44,7 +44,7 @@ fun MiuixArtworkQuickPeek(
     onBookmark: () -> Unit,
     onCopyImage: () -> Unit,
 ) {
-    OverlayBottomSheet(
+    AppBottomSheet(
         show = true,
         modifier = Modifier.scrollEndHaptic(),
         title = illust.title.ifBlank { stringResource(R.string.dialog_work_options) },
@@ -133,7 +133,7 @@ fun MiuixUserQuickPeek(
     onOpenProfile: () -> Unit,
     onToggleFollow: () -> Unit,
 ) {
-    OverlayBottomSheet(
+    AppBottomSheet(
         show = true,
         modifier = Modifier.scrollEndHaptic(),
         title = user.name.ifBlank { "@${user.account}" },

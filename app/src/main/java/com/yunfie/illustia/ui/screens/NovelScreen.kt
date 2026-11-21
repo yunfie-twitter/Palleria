@@ -65,6 +65,7 @@ import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
+import com.yunfie.illustia.ui.components.CenteredErrorState
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PrefetchNovelGridImages
@@ -216,6 +217,14 @@ fun NovelScreen(
             onRefresh = { viewModel.refreshNovels(forceRefresh = true) },
             modifier = Modifier.fillMaxSize(),
         ) {
+            val emptyError = (loadState as? LoadState.Error)?.takeIf { filteredItems.isEmpty() }
+            if (emptyError != null) {
+                CenteredErrorState(
+                    message = emptyError.message,
+                    onRetry = { viewModel.refreshNovels(forceRefresh = true) },
+                )
+                return@ScrollablePullToRefresh
+            }
             LazyVerticalGrid(
                 state = gridState,
                 columns = GridCells.Fixed(columns),
@@ -337,7 +346,22 @@ fun NovelReaderScreen(
     onBack: () -> Unit,
     onRetry: () -> Unit,
 ) {
-    val currentNovel = novel ?: return
+    val currentNovel =
+        novel ?: run {
+            // ルートが積まれているのに表示対象が無い瞬間（連続で戻る操作をしたときなど）
+            // がある。ここで何も描かずに return すると画面全体が空白になるため、
+            // 背景とインジケータを必ず出す。
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .background(MiuixTheme.colorScheme.surface),
+                contentAlignment = Alignment.Center,
+            ) {
+                LoadingIndicator()
+            }
+            return
+        }
     val scrollBehavior = MiuixScrollBehavior()
     val pages by produceState(
         initialValue = listOf(NovelPage(emptyList())),
@@ -385,8 +409,16 @@ fun NovelReaderScreen(
     var controlsVisible by rememberSaveable { mutableStateOf(true) }
     var fullscreen by rememberSaveable { mutableStateOf(false) }
     var paragraphStep by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    // 全画面の復帰書き込みとバー配色の両方で、デバイスのナイトモードではなく
+    // アプリのテーマ（MiuixTheme）から解決した値を使う。
+    val isDarkTheme = MiuixTheme.colorScheme.surface.luminance() < DARK_LUMINANCE_THRESHOLD
+    // 帯の色は Compose（appNavigationScrim）が塗る。window は透過のまま（#647）。
     com.yunfie.illustia.ui.components
-        .ReaderFullscreen(fullscreen)
+        .ReaderFullscreen(
+            fullscreen,
+            isDarkTheme = isDarkTheme,
+            navigationBarColor = android.graphics.Color.TRANSPARENT,
+        )
     LaunchedEffect(fullscreen) { controlsVisible = !fullscreen }
     com.yunfie.illustia.ui.components.ParagraphNavigation(
         continuousListState,
@@ -407,7 +439,6 @@ fun NovelReaderScreen(
     var showTocSheet by rememberSaveable { mutableStateOf(false) }
     var showSettingsSheet by rememberSaveable { mutableStateOf(false) }
 
-    val isDarkTheme = MiuixTheme.colorScheme.surface.luminance() < DARK_LUMINANCE_THRESHOLD
     NovelReaderSystemBarsEffect(theme = theme, isDarkTheme = isDarkTheme)
 
     val backgroundColor = theme.backgroundColor()

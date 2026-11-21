@@ -158,7 +158,7 @@
     <string name="detail_save_image_title">Salvar imagem</string>
     <string name="detail_save_image_confirm">Salve esta imagem na pasta Palleria.</string>
     <string name="detail_save_ugoira_title">Salve Ugoira</string>
-    <string name="detail_save_ugoira_confirm">Salve esta ugoira como GIF na pasta Palleria.</string>
+    <string name="detail_save_ugoira_confirm">Salve a imagem estática (capa) desta ugoira na pasta Palleria.</string>
     <string name="detail_unfollow_title">Deixar de seguir</string>
     <string name="detail_unfollow_confirm">Deixar de seguir %1$s?</string>
     <string name="detail_open_in_browser">Abrir no navegador</string>
@@ -178,12 +178,15 @@
     <string name="detail_muted_work">Trabalho silenciado</string>
     <string name="detail_muted_work_blur">Trabalhos contendo tags silenciadas ficam desfocados.</string>
     <string name="detail_unmute">Ativar som</string>
+    <string name="detail_image_load_failed">Não foi possível carregar a imagem</string>
     <string name="detail_no_caption">Sem legenda</string>
     <string name="detail_comments">Comentários</string>
     <string name="detail_show_comments">Mostrar comentários</string>
     <string name="detail_comments_empty">Ainda não há comentários</string>
     <string name="detail_series">Série</string>
     <string name="detail_related">Trabalhos Relacionados</string>
+    <string name="detail_tags_show_more">Mostrar tudo (mais %1$d)</string>
+    <string name="detail_tags_show_less">Mostrar menos</string>
     <string name="detail_illust_id">Ilust ID</string>
     <string name="detail_resolution">Resolução</string>
 
@@ -343,8 +346,6 @@
     <string name="general_smooth_desc">Torne as transições de tela e a renderização de listas mais suaves</string>
     <string name="general_notch">Otimização de entalhe</string>
     <string name="general_notch_desc">Ajustar a exibição na área da barra de status</string>
-    <string name="general_swipe">Deslize para alternar entre guias</string>
-    <string name="general_swipe_desc">Deslize para a esquerda/direita para navegar entre as telas principais</string>
     <string name="general_auto_load_more">Carregar mais automaticamente</string>
     <string name="general_auto_load_more_desc">Buscar automaticamente a próxima página quando chegar ao final</string>
     <string name="general_double_back">Voltar duas vezes para sair</string>
@@ -864,8 +865,6 @@
     <string name="nav_shorts_feed">Calções</string>
     <string name="general_shorts_feed">Feed de Shorts</string>
     <string name="general_shorts_feed_desc">Navegue pelas ilustrações em um feed vertical em tela cheia</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe">Desativar deslizamento horizontal</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe_desc">Impedir que deslizar lateralmente altere as guias no feed do Shorts</string>
     <string name="calculator_error">Erro</string>
     <string name="error_novel_load_failed">Não foi possível carregar o romance.</string>
     <string name="error_notifications_load_failed">Não foi possível carregar as notificações.</string>

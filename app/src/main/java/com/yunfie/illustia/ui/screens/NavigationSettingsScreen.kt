@@ -129,15 +129,6 @@ fun NavigationSettingsScreen(
                                 onCheckedChange = viewModel::updateShortsFeedEnabled,
                                 summary = stringResource(R.string.general_shorts_feed_desc),
                             )
-                            if (settings.shortsFeedEnabled) {
-                                DividerLine()
-                                SettingSwitchRow(
-                                    title = stringResource(R.string.general_shorts_feed_disable_horizontal_swipe),
-                                    checked = settings.disableHorizontalSwipeInShortsFeed,
-                                    onCheckedChange = viewModel::updateDisableHorizontalSwipeInShortsFeed,
-                                    summary = stringResource(R.string.general_shorts_feed_disable_horizontal_swipe_desc),
-                                )
-                            }
                             hasItemAbove = true
                         }
 

@@ -69,3 +69,6 @@ jobs:
           publish_dir: ./docs/.vitepress/dist
           publish_branch: gh-pages
           force_orphan: false
+          # dist contains docs/public/CNAME, but pass it explicitly so the custom
+          # domain survives even if the build output ever drops it.
+          cname: palleria.yunfie.date

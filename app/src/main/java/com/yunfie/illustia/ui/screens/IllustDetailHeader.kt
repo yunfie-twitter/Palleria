@@ -17,6 +17,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,9 +29,11 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -49,7 +52,6 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.kyant.backdrop.backdrops.layerBackdrop
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.pixiv.UgoiraPlayback
@@ -68,11 +70,14 @@ import com.yunfie.illustia.ui.components.OverlayIconCascadingDropdownMenu
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PixivReportDialog
 import com.yunfie.illustia.ui.components.QUALITY_LOW
+import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.performAppHapticFeedback
 import com.yunfie.illustia.ui.components.rememberLiquidGlassBackdrop
 import com.yunfie.illustia.ui.components.resolveDarkHeaderIcons
 import com.yunfie.illustia.ui.components.resolveProgressivePlaceholderUrls
 import com.yunfie.illustia.ui.components.resolveQualityImageUrls
+import com.yunfie.illustia.ui.components.resolveSaveImageUrl
+import com.yunfie.illustia.ui.components.resolveSaveImageUrls
 import com.yunfie.illustia.ui.components.sharedArtworkElement
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -80,10 +85,13 @@ import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.blur.Backdrop
+import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
 import top.yukonga.miuix.kmp.icon.extended.More
+import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -182,10 +190,29 @@ internal fun IllustDetailHeader(
             if (transitionInFlight) {
                 emptyList()
             } else {
+                // low tier には下位 tier が無いので、共通ヘルパーは空を返す。しかし詳細画面では
+                // 共有要素が働かない経路（履歴・別ルートからの遷移・共有要素オフ）で
+                // 「空白 → いきなり本画像」になるのを避けたいので、サムネイルだけを下敷きにする。
+                // ビューア側の従来挙動を変えないよう、ここで補う。
+                // 下敷きがあると PixivImage は crossfade を切り、ハードスワップになる。これは
+                // 半透明に見えるのを避けるための意図した挙動で、カード遷移経路と同じ考え方。
                 resolveProgressivePlaceholderUrls(illust, effectiveDetailQuality, progressiveQuality)
+                    .ifEmpty {
+                        if (progressiveQuality && effectiveDetailQuality == QUALITY_LOW) {
+                            listOf(illust.thumbnailUrl).filter { it.isNotBlank() && it != illust.previewUrl }
+                        } else {
+                            emptyList()
+                        }
+                    }
             }
         }
     val previewUrl: String = imageUrls.firstOrNull() ?: ""
+
+    // 取得に失敗したヒーロー画像のページ番号。失敗時は無地の矩形に戻るボタンが浮くだけだったので、
+    // 失敗を検知して再試行の導線を出す。imageRetryTick を retryToken として渡し、値を変えることで
+    // PixivImage に新しいリクエストを発行させる。
+    var failedPages by remember(illust.id) { mutableStateOf(emptySet<Int>()) }
+    var imageRetryTick by remember(illust.id) { mutableIntStateOf(0) }
 
     val pagerState =
         rememberPagerState(
@@ -323,6 +350,9 @@ internal fun IllustDetailHeader(
                                 // double up on the transition instead of continuing it.
                                 crossfade = !followsCardBitmap,
                                 placeholderUrl = placeholderUrls.getOrNull(page),
+                                onSuccess = { failedPages = failedPages - page },
+                                onError = { failedPages = failedPages + page },
+                                retryToken = imageRetryTick,
                                 modifier =
                                     Modifier
                                         .fillMaxSize()
@@ -344,10 +374,20 @@ internal fun IllustDetailHeader(
                                                     } else {
                                                         "illustia_${illust.id}_p$page"
                                                     }
-                                                onSaveImage(imageUrls[page], saveName, confirmOnLongPressSave)
+                                                // 保存はメニュー経路と同じく常に原寸。表示 tier を
+                                                // 渡すと高画質オフ時に低解像度が同じ名前で落ちていた。
+                                                onSaveImage(resolveSaveImageUrl(illust, page), saveName, confirmOnLongPressSave)
                                             },
                                         ),
                             )
+                            // 取得に失敗したページは無地の矩形になっていた。タップで取り直せるよう
+                            // 再試行の導線を重ねる。ミュート中のマスクとは排他にする。
+                            if (page in failedPages && !maskMutedArtwork) {
+                                HeroImageRetry(
+                                    onRetry = { imageRetryTick += 1 },
+                                    modifier = Modifier.align(Alignment.Center),
+                                )
+                            }
                             if (maskMutedArtwork) {
                                 Box(
                                     modifier =
@@ -437,12 +477,12 @@ internal fun IllustDetailHeader(
                 } else {
                     Color.Black.copy(alpha = 0.18f)
                 }
+            val backLabel = stringResource(R.string.action_back)
             if (liquidGlassBackdrop != null) {
                 LiquidGlassIconButton(
                     icon = MiuixIcons.Back,
-                    contentDescription = null,
+                    contentDescription = backLabel,
                     onClick = onBack,
-                    backdrop = liquidGlassBackdrop,
                     iconTint = headerIconTint,
                     surfaceColor = liquidGlassSurfaceColor,
                 )
@@ -452,6 +492,7 @@ internal fun IllustDetailHeader(
                     onClick = onBack,
                     backgroundColor = headerIconBackground,
                     contentColor = headerIconTint,
+                    contentDescription = backLabel,
                 )
             }
             val menuEntries =
@@ -570,7 +611,7 @@ internal fun IllustDetailHeader(
                                                                 } else {
                                                                     "illustia_${illust.id}"
                                                                 }
-                                                            onSaveAllImages(imageUrls, allPrefix)
+                                                            onSaveAllImages(resolveSaveImageUrls(illust), allPrefix)
                                                         },
                                                     ),
                                                 ),
@@ -637,7 +678,6 @@ internal fun IllustDetailHeader(
             if (liquidGlassBackdrop != null) {
                 LiquidGlassOverflowMenu(
                     entries = menuEntries,
-                    backdrop = liquidGlassBackdrop,
                     contentDescription = moreLabel,
                     iconTint = headerIconTint,
                     surfaceColor = liquidGlassSurfaceColor,
@@ -652,6 +692,45 @@ internal fun IllustDetailHeader(
                 )
             }
         }
+    }
+}
+
+/**
+ * ヒーロー画像の取得に失敗したときに重ねる再試行の導線。
+ * 以前は失敗しても無地の矩形に戻るボタンが浮くだけで、取り直す手段が無かった。
+ */
+@Composable
+private fun HeroImageRetry(
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier =
+            modifier
+                .clip(RoundedCornerShape(16.dp))
+                .background(Color.Black.copy(alpha = 0.55f))
+                .miuixClickable(haptic = true, onClick = onRetry)
+                .padding(horizontal = 20.dp, vertical = 14.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Icon(
+            imageVector = MiuixIcons.Refresh,
+            contentDescription = null,
+            tint = Color.White,
+            modifier = Modifier.size(26.dp),
+        )
+        Text(
+            text = stringResource(R.string.detail_image_load_failed),
+            color = Color.White,
+            style = MiuixTheme.textStyles.footnote1,
+            fontWeight = FontWeight.Bold,
+        )
+        Text(
+            text = stringResource(R.string.action_retry),
+            color = Color.White.copy(alpha = 0.85f),
+            style = MiuixTheme.textStyles.footnote1,
+        )
     }
 }
 
@@ -717,7 +796,9 @@ private fun HeaderPageIndicator(
     ) {
         Text(
             "${pagerState.currentPage + 1} / $pageCount",
-            color = MiuixTheme.colorScheme.onSurface,
+            // 自前の黒 40% スクリムの上に乗るので、テーマの onSurface ではなく
+            // 常に白系にする。ライトテーマの onSurface（ほぼ黒）では読めなかった。
+            color = Color.White.copy(alpha = 0.92f),
             style = MiuixTheme.textStyles.footnote1,
             fontWeight = FontWeight.Bold,
         )

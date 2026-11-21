@@ -24,8 +24,6 @@
     <string name="nav_shorts_feed">フィード</string>
     <string name="general_shorts_feed">縦型フィード</string>
     <string name="general_shorts_feed_desc">ホームとフォロー中のイラストを、縦スワイプで全画面表示します</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe">フィード内の左右スワイプを無効化</string>
-    <string name="general_shorts_feed_disable_horizontal_swipe_desc">フィード表示中に左右スワイプでタブが切り替わらないようにします</string>
     <string name="nav_more">もっと見る</string>
 
     <!-- Common actions -->
@@ -199,7 +197,7 @@
     <string name="detail_save_image_title">画像を保存</string>
     <string name="detail_save_image_confirm">この画像をPalleriaフォルダへ保存します。</string>
     <string name="detail_save_ugoira_title">うごイラを保存</string>
-    <string name="detail_save_ugoira_confirm">このうごイラをGIFとしてPalleriaフォルダへ保存します。</string>
+    <string name="detail_save_ugoira_confirm">このうごイラの静止画（カバー画像）をPalleriaフォルダへ保存します。</string>
     <string name="detail_unfollow_title">フォローを解除</string>
     <string name="detail_unfollow_confirm">%1$s さんのフォローを解除しますか？</string>
     <string name="detail_open_in_browser">ブラウザで開く</string>
@@ -219,12 +217,15 @@
     <string name="detail_muted_work">ミュート中の作品です</string>
     <string name="detail_muted_work_blur">ミュート中のタグを含む作品をぼかしています。</string>
     <string name="detail_unmute">ミュート解除</string>
+    <string name="detail_image_load_failed">画像を読み込めませんでした</string>
     <string name="detail_no_caption">キャプションはありません</string>
     <string name="detail_comments">コメント</string>
     <string name="detail_show_comments">コメントを表示</string>
     <string name="detail_comments_empty">まだコメントはありません</string>
     <string name="detail_series">シリーズ</string>
     <string name="detail_related">関連イラスト</string>
+    <string name="detail_tags_show_more">さらに表示（残り %1$d 件）</string>
+    <string name="detail_tags_show_less">折りたたむ</string>
     <string name="detail_illust_id">イラスト ID</string>
     <string name="detail_resolution">解像度</string>
     <string name="detail_resolution_dimensions">%1$d × %2$d px</string>
@@ -382,8 +383,6 @@
     <string name="general_haptics_clear">クリア ハプティクス</string>
     <string name="general_notch">ノッチ最適化</string>
     <string name="general_notch_desc">ステータスバー領域の表示を調整します</string>
-    <string name="general_swipe">タブのスワイプ切替</string>
-    <string name="general_swipe_desc">左右スワイプで主要画面を移動します</string>
     <string name="general_auto_load_more">さらに読み込むを自動化</string>
     <string name="general_auto_load_more_desc">末尾に着いたら次ページを自動で取得します</string>
     <string name="general_double_back">ダブルバックで終了</string>
@@ -1325,6 +1324,8 @@
     <string name="flag_progressive_image_quality_desc">詳細画像・全画面画像を開いたとき、選択中の画質で読み込みが終わるまで一段下の画質を先に表示します。</string>
     <string name="flag_miuix_quick_peek_title">MiuixデザインのQuickPeek</string>
     <string name="flag_miuix_quick_peek_desc">長押しプレビューをMiuixガイドラインに沿ったボトムシート表示に作り直します。フォロー中や検索結果のユーザーを長押しすると、ユーザー版のプレビューも表示されます。</string>
+    <string name="flag_tag_menu_redesign_title">タグメニュー刷新</string>
+    <string name="flag_tag_menu_redesign_desc">タグを長押ししたときのメニューを刷新し、シートの背景に作品画像を表示するスタイルにします。タグ名と操作ボタンを1画面にまとめて使いやすくします。</string>
     <string name="quick_peek_show_profile">プロフィールを開く</string>
     <string name="quick_peek_follow">フォロー</string>
     <string name="quick_peek_unfollow">フォロー中</string>

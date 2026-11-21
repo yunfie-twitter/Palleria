@@ -70,6 +70,7 @@ import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.pixiv.Illusts
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.AvatarImage
+import com.yunfie.illustia.ui.components.CenteredErrorState
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.HeaderOverlayIcon
 import com.yunfie.illustia.ui.components.IllustCard
@@ -338,6 +339,15 @@ fun IllustSeriesScreen(
                 val showInitialSkeletons = state.isLoading && state.illusts.isEmpty()
                 val showPaginationSkeletons = settings.autoLoadMore && state.isPaginating
                 val shimmer = if (showInitialSkeletons || showPaginationSkeletons) rememberIllustSkeletonShimmer() else null
+                val emptyError = state.errorMessage?.takeIf { state.illusts.isEmpty() && !showInitialSkeletons }
+                if (emptyError != null) {
+                    CenteredErrorState(
+                        message = emptyError,
+                        onRetry = { scope.launch { store.fetch(forceRefresh = true) } },
+                        modifier = Modifier.fillMaxWidth().weight(1f),
+                    )
+                    return@Column
+                }
                 LazyVerticalGrid(
                     state = gridState,
                     columns = GridCells.Fixed(columns),
