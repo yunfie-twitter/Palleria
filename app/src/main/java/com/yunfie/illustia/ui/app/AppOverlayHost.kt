@@ -45,6 +45,7 @@ import com.yunfie.illustia.ui.components.MiuixConfirmDialog
 import com.yunfie.illustia.ui.components.MiuixUserQuickPeek
 import com.yunfie.illustia.ui.components.PermissionRationaleDialog
 import com.yunfie.illustia.ui.components.QuickPeekOverlay
+import com.yunfie.illustia.ui.components.TagMenuBottomSheet
 import com.yunfie.illustia.ui.components.TagPreviewBottomSheet
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.screens.CommentScreen
@@ -289,28 +290,44 @@ internal fun AppOverlayHost(
             appState.settings.mutedTags.any {
                 it.equals(preview.tag, ignoreCase = true)
             }
-        TagPreviewBottomSheet(
-            preview = preview,
-            isFavorite = isFavorite,
-            isMuted = isMuted,
-            onDismiss = viewModel::closeTagOptions,
-            onSearch = {
-                viewModel.closeTagOptions()
-                onSearchTag(preview.tag)
-            },
-            onToggleFavorite = {
-                viewModel.closeTagOptions()
-                viewModel.toggleFavoriteTag(preview.tag)
-            },
-            onToggleMute = {
-                viewModel.closeTagOptions()
-                if (isMuted) {
-                    viewModel.unmuteTag(preview.tag)
-                } else {
-                    viewModel.muteTag(preview.tag)
-                }
-            },
-        )
+        val onSearch = {
+            viewModel.closeTagOptions()
+            onSearchTag(preview.tag)
+        }
+        val onToggleFavorite = {
+            viewModel.closeTagOptions()
+            viewModel.toggleFavoriteTag(preview.tag)
+        }
+        val onToggleMute = {
+            viewModel.closeTagOptions()
+            if (isMuted) {
+                viewModel.unmuteTag(preview.tag)
+            } else {
+                viewModel.muteTag(preview.tag)
+            }
+        }
+        val onDismissTag = viewModel::closeTagOptions
+        if (appState.state.settings.isFeatureEnabled(FeatureFlag.TagMenuRedesign)) {
+            TagMenuBottomSheet(
+                preview = preview,
+                isFavorite = isFavorite,
+                isMuted = isMuted,
+                onDismiss = onDismissTag,
+                onSearch = onSearch,
+                onToggleFavorite = onToggleFavorite,
+                onToggleMute = onToggleMute,
+            )
+        } else {
+            TagPreviewBottomSheet(
+                preview = preview,
+                isFavorite = isFavorite,
+                isMuted = isMuted,
+                onDismiss = onDismissTag,
+                onSearch = onSearch,
+                onToggleFavorite = onToggleFavorite,
+                onToggleMute = onToggleMute,
+            )
+        }
     }
 
     if (showTokenLogin) {
