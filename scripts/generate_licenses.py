@@ -3,7 +3,7 @@
 Generate third-party open-source licenses for Palleria.
 Parses gradle/libs.versions.toml for Android libraries.
 Outputs:
-  - app/src/main/assets/licenses.json (used by app's About / Settings screen)
+  - androidApp/src/main/assets/licenses.json (used by app's About / Settings screen)
   - THIRD_PARTY_LICENSES.md (repo root documentation)
 """
 

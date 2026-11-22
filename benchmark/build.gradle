@@ -15,7 +15,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    targetProjectPath = ":app"
+    targetProjectPath = ":androidApp"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

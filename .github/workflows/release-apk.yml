@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     tags: ["v*"]
-    paths: ["app/build.gradle"]
+    paths: ["androidApp/build.gradle"]
   workflow_dispatch:
 
 permissions:
@@ -72,12 +72,12 @@ jobs:
 
           shopt -s nullglob
 
-          APKS=(app/build/outputs/apk/release/*.apk)
-          UNIVERSAL_APKS=(app/build/outputs/apk/release/*-universal.apk)
+          APKS=(androidApp/build/outputs/apk/release/*.apk)
+          UNIVERSAL_APKS=(androidApp/build/outputs/apk/release/*-universal.apk)
           SPLIT_APKS=(
-            app/build/outputs/apk/release/*-arm64-v8a.apk
-            app/build/outputs/apk/release/*-armeabi-v7a.apk
-            app/build/outputs/apk/release/*-x86_64.apk
+            androidApp/build/outputs/apk/release/*-arm64-v8a.apk
+            androidApp/build/outputs/apk/release/*-armeabi-v7a.apk
+            androidApp/build/outputs/apk/release/*-x86_64.apk
           )
 
           if [ ${#UNIVERSAL_APKS[@]} -ne 1 ]; then
@@ -112,7 +112,7 @@ jobs:
           prerelease: ${{ steps.version.outputs.prerelease }}
           generate_release_notes: true
           fail_on_unmatched_files: true
-          files: app/build/outputs/apk/release/*.apk
+          files: androidApp/build/outputs/apk/release/*.apk
 
       - name: Remove signing key
         if: always()
