@@ -13,12 +13,3 @@
 # ---------------------------------------------------------------------------
 # Warnings that are safe to suppress
 # ---------------------------------------------------------------------------
--dontwarn coil3.**
--dontwarn okio.**
--dontwarn javax.annotation.**
--dontwarn org.conscrypt.**
--dontwarn com.google.errorprone.annotations.**
--dontwarn com.google.j2objc.annotations.**
--dontwarn org.slf4j.**
--dontwarn com.my.kizzyrpc.**
--dontwarn org.java_websocket.**
