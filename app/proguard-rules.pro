@@ -13,3 +13,9 @@
 # ---------------------------------------------------------------------------
 # Warnings that are safe to suppress
 # ---------------------------------------------------------------------------
+# Tink references Error Prone annotations that are compile-time only.
+# They are not required on the Android runtime classpath.
+-dontwarn com.google.errorprone.annotations.CanIgnoreReturnValue
+-dontwarn com.google.errorprone.annotations.CheckReturnValue
+-dontwarn com.google.errorprone.annotations.Immutable
+-dontwarn com.google.errorprone.annotations.RestrictedApi
