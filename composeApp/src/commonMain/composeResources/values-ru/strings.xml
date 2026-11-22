@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_flags_title">Флаги функций (Feature Flags)</string>
+    <string name="feature_flags_summary">Управление экспериментальными и тестовыми функциями</string>
+    <string name="feature_flags_reset">Сбросить флаги</string>
+    <string name="feature_flags_reset_confirm">Сбросить все флаги функций к значениям по умолчанию?</string>
+    <string name="feature_flags_unlocked">Экспериментальные функции разблокированы</string>
+    <string name="feature_flags_section_desc">Включение флага добавляет соответствующие настройки в основные меню.</string>
+    <string name="action_reset">Сбросить</string>
+</resources>

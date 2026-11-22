@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_flags_title">Sinalizadores de recursos (Feature Flags)</string>
+    <string name="feature_flags_summary">Gerenciar sinalizadores de recursos experimentais e em desenvolvimento</string>
+    <string name="feature_flags_reset">Redefinir sinalizadores</string>
+    <string name="feature_flags_reset_confirm">Deseja redefinir todos os sinalizadores de recursos para seus estados padrão?</string>
+    <string name="feature_flags_unlocked">Os sinalizadores de recursos foram ativados</string>
+    <string name="feature_flags_section_desc">Quando um sinalizador está ativado, o item de configuração correspondente é adicionado às telas de configurações normais.</string>
+    <string name="action_reset">Redefinir</string>
+</resources>
