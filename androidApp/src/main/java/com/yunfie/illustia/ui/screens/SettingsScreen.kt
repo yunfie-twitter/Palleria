@@ -26,6 +26,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.feature_flags_summary
+import com.yunfie.illustia.resources.feature_flags_title
+import com.yunfie.illustia.resources.feature_flags_unlocked
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -46,6 +50,7 @@ import top.yukonga.miuix.kmp.icon.extended.Timer
 import top.yukonga.miuix.kmp.icon.extended.TopDownloads
 import top.yukonga.miuix.kmp.icon.extended.Tune
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import org.jetbrains.compose.resources.stringResource as resString
 
 private data class SettingsCategory(
     val title: String,
@@ -77,8 +82,19 @@ fun SettingsScreen(
 
     val hasActiveFeatureFlags = settings.featureFlags.any { it.value }
 
+    val featureFlagsTitle = resString(Res.string.feature_flags_title)
+    val featureFlagsSummary = resString(Res.string.feature_flags_summary)
+    val featureFlagsUnlocked = resString(Res.string.feature_flags_unlocked)
+
     val categories =
-        remember(settings.refreshToken, settings.viewHistory.size, mutedTotal, hasActiveFeatureFlags) {
+        remember(
+            settings.refreshToken,
+            settings.viewHistory.size,
+            mutedTotal,
+            hasActiveFeatureFlags,
+            featureFlagsTitle,
+            featureFlagsSummary,
+        ) {
             buildList {
                 add(
                     SettingsCategory(
@@ -148,8 +164,8 @@ fun SettingsScreen(
                 if (hasActiveFeatureFlags) {
                     add(
                         SettingsCategory(
-                            context.getString(R.string.feature_flags_title),
-                            context.getString(R.string.feature_flags_summary),
+                            featureFlagsTitle,
+                            featureFlagsSummary,
                             MiuixIcons.Tune,
                         ) {
                             viewModel.openFeatureFlags()
@@ -229,7 +245,7 @@ fun SettingsScreen(
                                 lastVersionTapTime = now
                                 if (versionTapCount >= 5) {
                                     versionTapCount = 0
-                                    viewModel.showMessage(context.getString(R.string.feature_flags_unlocked))
+                                    viewModel.showMessage(featureFlagsUnlocked)
                                     viewModel.openFeatureFlags()
                                 }
                             },

@@ -31,6 +31,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.discord.DiscordRpcManager
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_reset
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.AppDialog
 import com.yunfie.illustia.ui.components.DividerLine
@@ -57,6 +59,7 @@ import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Hide
 import top.yukonga.miuix.kmp.icon.extended.Show
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import org.jetbrains.compose.resources.stringResource as resString
 
 @Composable
 fun DiscordSettingsScreen(
@@ -165,7 +168,7 @@ fun DiscordSettingsScreen(
                             showAppIdDialog = false
                         },
                         modifier = Modifier.weight(1f),
-                        text = stringResource(R.string.action_reset),
+                        text = resString(Res.string.action_reset),
                     )
                     Spacer(Modifier.width(12.dp))
                     TextButton(
