@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_flags_title">功能旗標 (Feature Flags)</string>
+    <string name="feature_flags_summary">管理開發中與實驗性功能旗標</string>
+    <string name="feature_flags_reset">重設所有旗標</string>
+    <string name="feature_flags_reset_confirm">確定要將所有功能旗標重設為預設值嗎？</string>
+    <string name="feature_flags_unlocked">功能旗標已解鎖</string>
+    <string name="feature_flags_section_desc">開啟旗標後，對應的設定項目將顯示於一般設定中。</string>
+</resources>

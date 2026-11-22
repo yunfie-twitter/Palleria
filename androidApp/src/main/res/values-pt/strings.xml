@@ -1004,12 +1004,6 @@
     <string name="update_notify_new_version_desc">Exibir notificações do sistema quando uma nova versão for lançada</string>
     <string name="update_auto_download">Download automático de atualizações</string>
     <string name="update_auto_download_desc">Baixar automaticamente em segundo plano (instalação automática via Shizuku)</string>
-    <string name="feature_flags_title">Sinalizadores de recursos (Feature Flags)</string>
-    <string name="feature_flags_summary">Gerenciar sinalizadores de recursos experimentais e em desenvolvimento</string>
-    <string name="feature_flags_reset">Redefinir sinalizadores</string>
-    <string name="feature_flags_reset_confirm">Deseja redefinir todos os sinalizadores de recursos para seus estados padrão?</string>
-    <string name="feature_flags_unlocked">Os sinalizadores de recursos foram ativados</string>
-    <string name="feature_flags_section_desc">Quando um sinalizador está ativado, o item de configuração correspondente é adicionado às telas de configurações normais.</string>
     <string name="flag_amoled_theme_title">Tema Preto Puro AMOLED</string>
     <string name="flag_amoled_theme_desc">Adiciona a opção de tema com fundo totalmente preto (AMOLED) às Configurações Gerais</string>
     <string name="flag_user_profile_bottom_sheet_title">Painel Inferior do Perfil</string>

@@ -1059,12 +1059,6 @@
     <string name="update_check_background_desc">12時間ごとにバックグラウンドで新バージョンのリリースを確認します</string>
     <string name="update_auto_download">アップデートの自動取得</string>
     <string name="update_auto_download_desc">新しいバージョンをバックグラウンドで自動取得します（Shizuku選択時は自動インストールまで実行）</string>
-    <string name="feature_flags_title">機能フラグ (Feature Flags)</string>
-    <string name="feature_flags_summary">開発中および試験的な機能フラグを管理します</string>
-    <string name="feature_flags_reset">フラグを初期化</string>
-    <string name="feature_flags_reset_confirm">すべての機能フラグをデフォルト状態に戻しますか？</string>
-    <string name="feature_flags_unlocked">機能フラグが有効になりました</string>
-    <string name="feature_flags_section_desc">フラグをONにすると、対応する設定項目が通常の設定画面に追加されます。</string>
     <string name="flag_amoled_theme_title">AMOLED 純黒テーマ</string>
     <string name="flag_amoled_theme_desc">一般設定に完全な黒背景（AMOLED）テーマの切り替え項目を追加します</string>
     <string name="flag_user_profile_bottom_sheet_title">ユーザー詳細ボトムシート</string>

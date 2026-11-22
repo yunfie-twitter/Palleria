@@ -17,6 +17,11 @@ ktlint {
     }
 }
 
+compose.resources {
+    publicResClass = true
+    packageOfResClass = "com.yunfie.illustia.resources"
+}
+
 kotlin {
     androidLibrary {
         namespace = "com.yunfie.illustia.compose"
@@ -31,6 +36,7 @@ kotlin {
             implementation compose.runtime
             implementation compose.foundation
             implementation compose.ui
+            api compose.components.resources
 
             implementation libs.miuix.ui
             implementation libs.miuix.icons

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_flags_title">功能标志 (Feature Flags)</string>
+    <string name="feature_flags_summary">管理开发中与实验性功能标志</string>
+    <string name="feature_flags_reset">重置所有标志</string>
+    <string name="feature_flags_reset_confirm">确定要将所有功能标志重置为默认值吗？</string>
+    <string name="feature_flags_unlocked">功能标志已解锁</string>
+    <string name="feature_flags_section_desc">开启标志后，对应的设置项将显示于常规设置中。</string>
+</resources>

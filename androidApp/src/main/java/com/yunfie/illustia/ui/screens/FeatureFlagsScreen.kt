@@ -16,7 +16,12 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_reset
+import com.yunfie.illustia.resources.feature_flags_reset
+import com.yunfie.illustia.resources.feature_flags_reset_confirm
+import com.yunfie.illustia.resources.feature_flags_section_desc
+import com.yunfie.illustia.resources.feature_flags_title
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
@@ -35,6 +40,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Delete
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import org.jetbrains.compose.resources.stringResource as resString
 
 @Composable
 fun FeatureFlagsScreen(
@@ -50,8 +56,8 @@ fun FeatureFlagsScreen(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
             TopAppBar(
-                title = stringResource(R.string.feature_flags_title),
-                largeTitle = stringResource(R.string.feature_flags_title),
+                title = resString(Res.string.feature_flags_title),
+                largeTitle = resString(Res.string.feature_flags_title),
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     HeaderIcon(MiuixIcons.Back, onClick = onBack)
@@ -59,7 +65,7 @@ fun FeatureFlagsScreen(
                 actions = {
                     HeaderIcon(
                         icon = MiuixIcons.Delete,
-                        contentDescription = stringResource(R.string.feature_flags_reset),
+                        contentDescription = resString(Res.string.feature_flags_reset),
                         onClick = { showResetDialog = true },
                     )
                 },
@@ -83,7 +89,7 @@ fun FeatureFlagsScreen(
         ) {
             item {
                 Text(
-                    text = stringResource(R.string.feature_flags_section_desc),
+                    text = resString(Res.string.feature_flags_section_desc),
                     style = MiuixTheme.textStyles.footnote1,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
@@ -91,7 +97,7 @@ fun FeatureFlagsScreen(
             }
 
             item {
-                Section(stringResource(R.string.feature_flags_title)) {
+                Section(resString(Res.string.feature_flags_title)) {
                     ElevatedPanel {
                         val flags = FeatureFlag.entries
                         flags.forEachIndexed { index, flag ->
@@ -114,9 +120,9 @@ fun FeatureFlagsScreen(
 
         MiuixConfirmDialog(
             show = showResetDialog,
-            title = stringResource(R.string.feature_flags_reset),
-            summary = stringResource(R.string.feature_flags_reset_confirm),
-            confirmText = stringResource(R.string.action_reset),
+            title = resString(Res.string.feature_flags_reset),
+            summary = resString(Res.string.feature_flags_reset_confirm),
+            confirmText = resString(Res.string.action_reset),
             onConfirm = {
                 viewModel.resetFeatureFlags()
                 showResetDialog = false

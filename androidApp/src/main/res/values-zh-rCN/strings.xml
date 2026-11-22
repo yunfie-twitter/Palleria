@@ -837,12 +837,6 @@
     <string name="update_notify_new_version_desc">有新版本发布时发送系统通知</string>
     <string name="update_auto_download">自动下载更新</string>
     <string name="update_auto_download_desc">在后台自动下载新版本（若启用 Shizuku 则自动完成安装）</string>
-    <string name="feature_flags_title">功能标志 (Feature Flags)</string>
-    <string name="feature_flags_summary">管理开发中与实验性功能标志</string>
-    <string name="feature_flags_reset">重置所有标志</string>
-    <string name="feature_flags_reset_confirm">确定要将所有功能标志重置为默认值吗？</string>
-    <string name="feature_flags_unlocked">功能标志已解锁</string>
-    <string name="feature_flags_section_desc">开启标志后，对应的设置项将显示于常规设置中。</string>
     <string name="flag_amoled_theme_title">AMOLED 纯黑主题</string>
     <string name="flag_amoled_theme_desc">在常规设置中启用 AMOLED 纯黑背景主题切换项</string>
     <string name="flag_user_profile_bottom_sheet_title">用户资料底部面板</string>
