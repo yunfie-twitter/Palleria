@@ -23,7 +23,7 @@ const val AUTO_LOAD_COOLDOWN_MS = 250L
 const val AUTO_LOAD_FAILURE_BACKOFF_MS = 3000L
 const val AUTO_LOAD_DEBOUNCE_MS = 40L
 
-internal object AutoLoadMoreThrottle {
+object AutoLoadMoreThrottle {
     fun calculateDelayMillis(
         now: Long,
         lastRequestTime: Long,
