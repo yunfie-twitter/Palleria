@@ -26,7 +26,7 @@ coroutines = "1.11.0"
 serialization = "1.13.0"
 datetime = "0.8.0"
 navigation3 = "1.1.4"
-biometric = "1.4.0-beta01"
+biometric = "1.4.0-rc01"
 miuix = "0.9.3"
 miuix-blur = "0.9.4"
 # miuix-glass は廃止（miuix-ui 0.9.5-beta01 を引き込み、0.9.3 系と ABI 不整合になるため）。
