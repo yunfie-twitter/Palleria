@@ -11,15 +11,6 @@
 -keepattributes *Annotation*,InnerClasses,EnclosingMethod,Signature
 
 # ---------------------------------------------------------------------------
-# Shizuku
-# Keep only the reflective process-entry point unless the library's own
-# consumer rules are insufficient.
-# ---------------------------------------------------------------------------
--keepclassmembers class rikka.shizuku.Shizuku {
-    private static *** newProcess(...);
-}
-
-# ---------------------------------------------------------------------------
 # Warnings that are safe to suppress
 # ---------------------------------------------------------------------------
 -dontwarn coil3.**
