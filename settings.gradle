@@ -49,5 +49,5 @@ dependencyResolutionManagement {
 rootProject.name = "Illustia"
 include ":shared"
 include ":composeApp"
-include ":app"
+include ":androidApp"
 include ":benchmark"

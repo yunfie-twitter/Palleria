@@ -122,12 +122,12 @@ jobs:
 
           shopt -s nullglob
 
-          APKS=(app/build/outputs/apk/release/*.apk)
-          UNIVERSAL_APKS=(app/build/outputs/apk/release/*-universal.apk)
+          APKS=(androidApp/build/outputs/apk/release/*.apk)
+          UNIVERSAL_APKS=(androidApp/build/outputs/apk/release/*-universal.apk)
           SPLIT_APKS=(
-            app/build/outputs/apk/release/*-arm64-v8a.apk
-            app/build/outputs/apk/release/*-armeabi-v7a.apk
-            app/build/outputs/apk/release/*-x86_64.apk
+            androidApp/build/outputs/apk/release/*-arm64-v8a.apk
+            androidApp/build/outputs/apk/release/*-armeabi-v7a.apk
+            androidApp/build/outputs/apk/release/*-x86_64.apk
           )
 
           if [ ${#UNIVERSAL_APKS[@]} -ne 1 ]; then
@@ -153,7 +153,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          for APK in app/build/outputs/apk/release/*.apk; do
+          for APK in androidApp/build/outputs/apk/release/*.apk; do
             if ! unzip -l "$APK" | grep -qE 'META-INF/.*\.(RSA|DSA|EC|SF)'; then
               echo "::error::$APK is not signed."
               exit 1
@@ -175,9 +175,9 @@ jobs:
           EXPECTED="${{ steps.version.outputs.version }}"
 
           # ファイル名は versionName から生成されるため、注入が効いたかを直接確認できます。
-          if ! ls app/build/outputs/apk/release/*-"$EXPECTED"-release-universal.apk > /dev/null 2>&1; then
+          if ! ls androidApp/build/outputs/apk/release/*-"$EXPECTED"-release-universal.apk > /dev/null 2>&1; then
             echo "::error::No APK named after the generated version $EXPECTED was produced."
-            ls -1 app/build/outputs/apk/release/ || true
+            ls -1 androidApp/build/outputs/apk/release/ || true
             exit 1
           fi
 
@@ -188,7 +188,7 @@ jobs:
         if: success()
         with:
           name: nightly-apks-${{ github.run_number }}
-          path: app/build/outputs/apk/release/*.apk
+          path: androidApp/build/outputs/apk/release/*.apk
           retention-days: 3
 
       - name: Upload build log on failure

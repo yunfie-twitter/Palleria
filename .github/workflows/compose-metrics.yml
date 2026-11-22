@@ -4,15 +4,15 @@ on:
   push:
     branches: ["main"]
     paths:
-      - "app/src/main/**"
-      - "app/build.gradle"
+      - "androidApp/src/main/**"
+      - "androidApp/build.gradle"
       - "compose_compiler_config.conf"
       - ".github/workflows/compose-metrics.yml"
   pull_request:
     branches: ["main"]
     paths:
-      - "app/src/main/**"
-      - "app/build.gradle"
+      - "androidApp/src/main/**"
+      - "androidApp/build.gradle"
       - "compose_compiler_config.conf"
       - ".github/workflows/compose-metrics.yml"
   workflow_dispatch:
@@ -48,7 +48,7 @@ jobs:
 
       - name: Compile with Compose Compiler Metrics & Reports
         run: |
-          ./gradlew :app:compileReleaseKotlin \
+          ./gradlew :androidApp:compileReleaseKotlin \
             -PcomposeCompilerMetrics=true \
             -PcomposeCompilerReports=true \
             --stacktrace
@@ -63,6 +63,6 @@ jobs:
         with:
           name: compose-metrics-reports
           path: |
-            app/build/compose_metrics/
-            app/build/compose_reports/
+            androidApp/build/compose_metrics/
+            androidApp/build/compose_reports/
           retention-days: 3

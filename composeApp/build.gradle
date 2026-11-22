@@ -3,6 +3,18 @@ plugins {
     alias(libs.plugins.android.kmp.library)
     alias(libs.plugins.compose.multiplatform)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.ktlint)
+}
+
+ktlint {
+    version = "1.8.0"
+    outputToConsole = true
+    ignoreFailures = false
+    filter {
+        exclude { element ->
+            element.file.absolutePath.replace('\\', '/').contains('/build/generated/')
+        }
+    }
 }
 
 kotlin {

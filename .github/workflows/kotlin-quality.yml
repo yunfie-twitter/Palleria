@@ -4,7 +4,7 @@ on:
   push:
     branches: ["main"]
     paths:
-      - "app/**"
+      - "androidApp/**"
       - "benchmark/**"
       - "gradle/**"
       - "build.gradle"
@@ -15,7 +15,7 @@ on:
   pull_request:
     branches: ["main"]
     paths:
-      - "app/**"
+      - "androidApp/**"
       - "benchmark/**"
       - "gradle/**"
       - "build.gradle"
@@ -67,10 +67,12 @@ jobs:
         run: |
           set -o pipefail
           ./gradlew \
-            :app:checkQualityBaselineBudgets \
-            :app:ktlintMainSourceSetCheck \
-            :app:ktlintTestSourceSetCheck \
-            :app:detekt \
+            :androidApp:checkQualityBaselineBudgets \
+            :androidApp:ktlintMainSourceSetCheck \
+            :androidApp:ktlintTestSourceSetCheck \
+            :androidApp:detekt \
+            :shared:ktlintCheck \
+            :composeApp:ktlintCheck \
             --continue \
             --stacktrace \
             --build-cache 2>&1 \
@@ -81,7 +83,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          ./gradlew :app:lintDebug \
+          ./gradlew :androidApp:lintDebug \
             --stacktrace \
             --build-cache 2>&1 \
             | tee android-lint.log
@@ -91,7 +93,7 @@ jobs:
         uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
-          sarif_file: app/build/reports/lint-results-debug.sarif
+          sarif_file: androidApp/build/reports/lint-results-debug.sarif
           category: android-lint
 
       - name: Upload logs

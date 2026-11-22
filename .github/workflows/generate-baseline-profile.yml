@@ -42,7 +42,7 @@ jobs:
 
       - name: Run Baseline Profile Generation on GMD
         run: |
-          ./gradlew :app:generateBaselineProfile \
+          ./gradlew :androidApp:generateBaselineProfile \
             -Pandroid.testoptions.manageddevices.emulator.gpu=swiftshader_indirect \
             -Dorg.gradle.workers.max=2 \
             --build-cache \

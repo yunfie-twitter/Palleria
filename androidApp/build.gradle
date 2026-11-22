@@ -243,6 +243,7 @@ dependencies {
     baselineProfile project(":benchmark")
 
     implementation project(":shared")
+    implementation project(":composeApp")
 
     // Backport java.time and other Java library APIs to Android 7.0.
     coreLibraryDesugaring libs.desugar.jdk.libs

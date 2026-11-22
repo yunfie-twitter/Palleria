@@ -31,11 +31,11 @@ jobs:
         run: chmod +x gradlew
 
       - name: Assemble Debug APK
-        run: ./gradlew :app:assembleDebug --build-cache
+        run: ./gradlew :androidApp:assembleDebug --build-cache
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v7
         with:
           name: debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          path: androidApp/build/outputs/apk/debug/*.apk
           retention-days: 3 # 3日後に自動消滅（デフォルトの90日から短縮）
