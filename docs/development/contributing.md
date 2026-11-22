@@ -37,15 +37,6 @@ Android側の変更:
 ./gradlew :app:assembleDebug
 ```
 
-Rust側の変更:
-
-```bash
-cd rust/pixiv-api
-cargo fmt --check
-cargo clippy --all-targets --all-features -- -D warnings
-cargo test --all-features
-```
-
 ドキュメントの変更:
 
 ```bash

@@ -85,33 +85,6 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      - name: Rust Cache
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: "rust/pixiv-api -> rust/target"
-          cache-on-failure: true
-
-      - name: Cache cargo-ndk
-        uses: actions/cache@v6
-        id: cache-cargo-ndk
-        with:
-          path: ~/.cargo/bin/cargo-ndk
-          key: cargo-ndk-${{ runner.os }}-4.0.0
-
-      - name: Set up Rust Android toolchain
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          rustup target add \
-            aarch64-linux-android \
-            armv7-linux-androideabi \
-            x86_64-linux-android
-
-          if [ ! -f ~/.cargo/bin/cargo-ndk ]; then
-            cargo install cargo-ndk --locked
-          fi
-
       - name: Decode Keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}

@@ -40,7 +40,7 @@
 
 **Palleria** is a free, privacy-first, and open-source Android application designed to deliver the best Pixiv browsing experience on mobile devices.
 
-Built from the ground up with Jetpack Compose, Miuix design language, and a native Rust backend via UniFFI, Palleria combines desktop-class performance, low battery consumption, rich tactile micro-interactions, and end-to-end encrypted synchronization.
+Built from the ground up with Jetpack Compose and the Miuix design language on a pure-Kotlin networking core, Palleria combines desktop-class performance, low battery consumption, rich tactile micro-interactions, and end-to-end encrypted synchronization.
 
 > [!IMPORTANT]
 > Palleria is an unofficial Pixiv client and is not affiliated with, endorsed by, or associated with Pixiv Inc.
@@ -49,7 +49,7 @@ Built from the ground up with Jetpack Compose, Miuix design language, and a nati
 
 ## Highlights
 
-*  **High-Performance Rust Core**: Native UniFFI engine for accelerated Ugoira decoding, APNG/WebP/MP4 conversion, and zero-overhead data handling.
+*  **Fast Kotlin Core**: OkHttp + kotlinx.serialization engine for Pixiv API decoding, Ugoira ZIP streaming, and image analysis without a native bridge.
 *  **Modern Miuix & Material You UI**: Fluid animations, AMOLED & dynamic artwork themes, and customizable multi-column adaptive grids.
 *  **Stealth Micro-UX Innovations**:
   * **Pre-DNS & Socket Warming**: Pre-resolves DNS and establishes TLS 1.3 socket pools during splash display for instantaneous first-image loading.
@@ -181,10 +181,10 @@ Download the latest standalone APK directly from GitHub Releases:
 
 | Layer | Technologies |
 | :--- | :--- |
-| **Language** | Kotlin 2.x, Rust (1.80+) |
+| **Language** | Kotlin 2.x |
 | **UI Framework** | Jetpack Compose, Compose Foundation & Material 3 |
 | **Design System** | Miuix KMP (Xiaomi HyperOS / MIUI Design Guidelines) |
-| **Native Engine** | Rust (`pixiv-api`) via UniFFI, Tokio async runtime |
+| **Networking Core** | OkHttp 5 (request signing, OAuth), kotlinx.serialization |
 | **Networking** | OkHttp 4 / 5, DNS over HTTPS (DoH), ConnectionPool Warming |
 | **Image Pipeline** | Coil 3, Hardware Bitmaps, Display P3 Color Gamut, `inBitmap` recycling |
 | **Persistence** | Room (SQLite with migration indexes), Jetpack DataStore Preferences, AtomicFile |
@@ -199,12 +199,6 @@ Download the latest standalone APK directly from GitHub Releases:
 
 1. **Android Studio**: Ladybug / Meerkat or newer
 2. **JDK**: Java 17 or Java 21
-3. **Android NDK**: NDK 26+ installed via Android SDK Manager
-4. **Rust Toolchain**: Stable Rust with `cargo-ndk`:
-   ```bash
-   rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android
-   cargo install cargo-ndk
-   ```
 
 ### Clone and Compile
 

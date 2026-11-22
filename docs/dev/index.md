@@ -23,11 +23,11 @@ description: Palleria の開発者向け技術ドキュメント、モジュー�
  │  - Room DB (アカウント表示情報・履歴・保存作品) │
  │  - DataStore (AppSettings / SettingsStore)             │
  └───────────────────────────┬────────────────────────────┘
-                             │ (UniFFI)
+                             │
  ┌───────────────────────────▼────────────────────────────┐
- │                 Rust Core (pixiv-api)                  │
- │  - Transport Bridge (OkHttp / Rust Client)             │
- │  - Serde JSON Decoder (バッファサイズ上限制御)         │
+ │                 Kotlin Pixiv Core                      │
+ │  - OkHttp Transport (署名 / OAuth)                     │
+ │  - kotlinx.serialization Decoder (サイズ上限制御)      │
  │  - DTO & Domain Model Mapping                          │
  └────────────────────────────────────────────────────────┘
 ```
@@ -39,7 +39,7 @@ description: Palleria の開発者向け技術ドキュメント、モジュー�
 - `account`: AndroidのAccountAuthenticator・SyncAdapter・Provider連携
 - `data`: リポジトリ層 (`IllustiaRepository`)、API クライアント、画像キャッシュ・URL 検証
 - `models`: UI およびデータレイヤーで共有するデータモデル群 (`Illust`, `UserProfile`, `SearchTarget` 等)
-- `nativebridge`: 画像保存やAndroid Intentの処理。UniFFI生成コードは `app/build/generated/uniffi/kotlin` 配下
+- `nativebridge`: 画像保存やAndroid Intentの処理
 - `settings`: `AppSettings` 定義と `SettingsStore` による設定の永続化
 - `ui`: Compose 画面 (`ui/screens/`) および共通 UI コンポーネント (`ui/components/`)
 - `updater`: 更新情報の取得と APK ダウンロード

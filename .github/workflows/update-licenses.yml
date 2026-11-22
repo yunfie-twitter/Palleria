@@ -8,7 +8,6 @@ on:
     branches: ["main"]
     paths:
       - "gradle/libs.versions.toml"
-      - "rust/**/Cargo.lock"
       - "scripts/generate_licenses.py"
   workflow_dispatch:
 

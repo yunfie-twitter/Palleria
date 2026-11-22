@@ -20,7 +20,6 @@ profileinstaller = "1.4.1"
 browser = "1.10.0"
 coil = "3.6.3"
 okhttp = "5.5.1"
-jna = "5.19.1"
 coroutines = "1.11.0"
 serialization = "1.13.0"
 navigation3 = "1.1.4"
@@ -67,7 +66,6 @@ coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" 
 coil-gif = { module = "io.coil-kt.coil3:coil-gif", version.ref = "coil" }
 coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
-jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
 coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
 navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "navigation3" }

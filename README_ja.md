@@ -40,14 +40,14 @@
 
 **Palleria** は、モバイルで快適に Pixiv を閲覧するための、無料・プライバシー重視のオープンソース Android アプリです。
 
-Jetpack Compose と Miuix のデザイン、UniFFI 経由の Rust ネイティブバックエンドを採用し、高速な動作、低い消費電力、豊かな操作感を実現します。
+Jetpack Compose と Miuix のデザイン、Kotlin 実装の通信コアを採用し、高速な動作、低い消費電力、豊かな操作感を実現します。
 
 > [!IMPORTANT]
 > Palleria は非公式 Pixiv クライアントです。Pixiv Inc. との提携・承認・関係はありません。
 
 ## 主な特徴
 
-- **高性能な Rust コア**: UniFFI によるネイティブエンジンで、うごイラのデコード、APNG/WebP/MP4 変換、データ処理を高速化。
+- **高速な Kotlin コア**: OkHttp と kotlinx.serialization による Pixiv API のデコード、うごイラ ZIP のストリーミング展開、画像解析をネイティブブリッジなしで実行。
 - **Miuix と Material You の UI**: 滑らかなアニメーション、AMOLED・作品連動テーマ、カスタマイズ可能な複数列グリッド。
 - **先回りする操作最適化**: 起動中の DNS/TLS 接続準備、差分・ETag 同期、スクロール停止位置の予測プリフェッチ、中断ダウンロードの再開、マンガの方向に応じた先読み。
 - **読書機能**: マンガビューア、小説リーダー、書体設定、読書位置の保存、バックグラウンド TTS。
@@ -120,10 +120,10 @@ https://palleria.yunfie.date/repo/
 
 | 分野 | 技術 |
 | :--- | :--- |
-| 言語 | Kotlin 2.x、Rust 1.80+ |
+| 言語 | Kotlin 2.x |
 | UI | Jetpack Compose、Compose Foundation、Material 3 |
 | デザイン | Miuix KMP（Xiaomi HyperOS / MIUI のデザイン指針） |
-| ネイティブエンジン | UniFFI 経由の Rust (`pixiv-api`)、Tokio |
+| 通信コア | OkHttp 5（リクエスト署名・OAuth）、kotlinx.serialization |
 | 通信 | OkHttp 4 / 5、DoH、接続プールの事前準備 |
 | 画像 | Coil 3、Hardware Bitmap、Display P3、`inBitmap` 再利用 |
 | 保存 | Room、Jetpack DataStore Preferences、AtomicFile |
@@ -136,13 +136,6 @@ https://palleria.yunfie.date/repo/
 
 1. Android Studio Ladybug / Meerkat 以降
 2. JDK 17 または 21
-3. Android SDK Manager から NDK 26 以降
-4. Stable Rust と `cargo-ndk`
-
-```bash
-rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android
-cargo install cargo-ndk
-```
 
 ### クローンとビルド
 

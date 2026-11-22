@@ -8,7 +8,7 @@ description: PalleriaをChromeOSやキーボード・マウスで操作する際
 ## 対応内容
 
 - タッチスクリーン、マルチタッチ、加速度センサー、電話を必須にしない。バイブレーションは Android のハードウェア機能宣言ではなく、既存の `hasVibrator()` 判定で非搭載機を扱う。
-- Rust の `pixiv-api` は既存の `cargo ndk -t x86_64` で `x86_64-linux-android` 用にビルドする。Intel / AMD 向けAPKと universal APKに `.so` を同梱する。速度改善率は実測していない。
+- 通信コアは Kotlin 実装のため、ABI ごとのネイティブ `.so` のビルドは不要。Intel / AMD 向けAPKと universal APKでも同じ Kotlin コードが動作する。
 - MainActivity は既存の `resizeableActivity="true"` と `screenSize|smallestScreenSize|screenLayout|orientation` の構成変更処理を維持する。固定アスペクト比制限はない。
 
 ## キーボード

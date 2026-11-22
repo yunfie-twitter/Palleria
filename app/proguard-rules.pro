@@ -11,27 +11,6 @@
 -keepattributes *Annotation*,InnerClasses,EnclosingMethod,Signature
 
 # ---------------------------------------------------------------------------
-# UniFFI / JNA
-# JNA resolves generated bindings through JNI names, so this boundary must
-# not be renamed or removed.
-# ---------------------------------------------------------------------------
--keep class com.sun.jna.** { *; }
--keep class com.yunfie.illustia.rust.** { *; }
--keep interface com.yunfie.illustia.rust.** { *; }
-
--keep class * extends com.sun.jna.Structure { *; }
--keepclassmembers class * extends com.sun.jna.Structure {
-    <fields>;
-    <init>();
-}
--keep interface * extends com.sun.jna.Library { *; }
--keep interface * extends com.sun.jna.Callback { *; }
--keepclassmembers class * implements com.sun.jna.Callback {
-    <methods>;
-}
--dontwarn com.sun.jna.**
-
-# ---------------------------------------------------------------------------
 # Shizuku
 # Keep only the reflective process-entry point unless the library's own
 # consumer rules are insufficient.

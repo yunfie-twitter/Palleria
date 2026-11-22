@@ -1,11 +1,11 @@
 ---
 title: ビルドと公開パイプライン
-description: Palleriaのビルド環境、GradleとRustの手順、署名付きリリース、GitHub ActionsとF-Droid連携、ベースラインプロファイルを解説します。
+description: Palleriaのビルド環境、Gradleの手順、署名付きリリース、GitHub Actionsと-F-Droid連携、ベースラインプロファイルを解説します。
 ---
 
 # ビルドと公開パイプライン
 
-このページは2026年11月16日に `app/build.gradle`、Gradle Wrapper、Rustクレート、GitHub Actionsを確認した内容です。設定を変更した場合はコード側の値を優先してください。
+このページは2026年11月16日に `app/build.gradle`、Gradle Wrapper、GitHub Actionsを確認した内容です。設定を変更した場合はコード側の値を優先してください。
 
 ## 開発環境
 
@@ -15,55 +15,27 @@ description: Palleriaのビルド環境、GradleとRustの手順、署名付き�
 | Gradle daemon JVM | ツールチェーン21（`gradle/gradle-daemon-jvm.properties` の `toolchainVersion=21`） |
 | Javaソース・バイトコード | 17 |
 | Android SDK | compileSdk 37、targetSdk 37、minSdk 24 |
-| Android NDK | Android StudioのSDK Managerで導入。`cargo-ndk`から参照できること |
-| Rust | edition 2024対応のstableツールチェーン。依存関係はCargo.lockに従う |
 | ドキュメント | Node.jsとnpm。docsのCIはNode.js 22を使用 |
 
-JDK 17というコンパイル設定と、Gradle daemonのJDK 21指定は別です。daemon JVMは `gradle/gradle-daemon-jvm.properties` で固定しており、PATH上の `java` には依存しません。NDKの版は `app/build.gradle` で固定していません。WindowsではRustのホストビルドに必要なリンカーも用意してください。
+JDK 17というコンパイル設定と、Gradle daemonのJDK 21指定は別です。daemon JVMは `gradle/gradle-daemon-jvm.properties` で固定しており、PATH上の `java` には依存しません。
 
 ## 準備とビルド
 
 ```sh
 git clone https://github.com/yunfie-twitter/Palleria.git
 cd Palleria
-rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android
-cargo install cargo-ndk --locked
 ./gradlew :app:assembleDebug
 ```
 
 Windows PowerShellでは最後のコマンドを `.\gradlew.bat :app:assembleDebug` に置き換えます。Android SDKの場所はAndroid Studioまたは `local.properties` で設定します。
 
-`preBuild`から次の処理が実行されます。
-
-| タスク | 役割 |
-| --- | --- |
-| `buildUniFfiHost` | ホスト用の `palleria_pixiv_api` ライブラリをビルド |
-| `generateUniFfiBindings` | `app/build/generated/uniffi/kotlin` にKotlinコードを生成（キャッシュ可能） |
-| `buildRustAndroidDebug` / `buildRustAndroidRelease` | 各variantのABI別タスクをまとめる集約タスク |
-| `buildRustAndroid<variant><Abi>` | 1 ABI分の `libpalleria_pixiv_api.so` を生成（ABIごとに並列実行） |
-
-Cargoの出力先は共通の `rust/target`、Androidの共有ライブラリの配置先は `app/build/generated/uniffi/jniLibs` です。
+Pixiv API クライアントは Kotlin（OkHttp + kotlinx.serialization）で実装しているため、ネイティブライブラリのビルドは不要です。
 
 ### debugビルドを速くする
 
-debugの既定値はリリース配布物と分けています。
-
-| 設定 | debug の既定 | release の既定 | 上書き |
-| --- | --- | --- | --- |
-| ABI | `arm64-v8a` の1つ | `arm64-v8a,armeabi-v7a,x86_64` | `-Ppalleria.abis=arm64-v8a,x86_64` |
-| Rustプロファイル | `debug`（LTOなし） | `release`（LTO, codegen-units=1） | `-Ppalleria.rustProfile=release` |
-| ABI別APK分割 | 有効 | 有効 | `-Ppalleria.splits=false` で無効 |
-
-`-Ppalleria.abis` と `-Ppalleria.rustProfile` はdebugにだけ効きます。releaseは常に3 ABIと最適化プロファイルを使うため、配布物の再現性は変わりません。
-
-開発端末に合わせる場合は、接続中デバイスのABIだけを指定すると最も短くなります。
-
-```sh
-adb shell getprop ro.product.cpu.abi
-./gradlew :app:assembleDebug -Ppalleria.abis=arm64-v8a -Ppalleria.splits=false
-```
-
-`-Ppalleria.abis` を複数指定すると、そのABIの分だけ `buildRustAndroidDebug<Abi>` が並列に走ります。
+| 設定 | 既定 | 上書き |
+| --- | --- | --- |
+| ABI別APK分割 | 有効 | `-Ppalleria.splits=false` で無効 |
 
 AGP 9.5の `splits.abi` はvariant単位で切り替えられないモジュール全体の設定です。そのため分割APKの無効化はローカル専用の `-Ppalleria.splits=false` で行い、CIとリリースは既定（有効）のままにしています。無効にしてもuniversal APKは生成されます。
 
@@ -85,7 +57,7 @@ Palleria-v<versionName>-release-x86_64.apk
 - `release-apk.yml`: mainの `app/build.gradle` 更新、`v*` タグpush、手動実行でビルドします。成功時はDraft Releaseを作成し、ビルド失敗時もタグを保持します。
 - `fdroid.yml`: Releaseの公開・削除イベントで起動します。公開時は添付APKを取得・検証し、削除時は対応するAPKを取り除いてインデックスを更新します。
 - `docs.yml`: ドキュメントをビルドして同じ `gh-pages` へ公開します。F-Droid更新と共通のキューで直列化し、互いの成果物を保持します。
-- `kotlin-quality.yml`: ktlint・detekt・Android Lint を1ジョブで実行します。Rustのビルドは1回だけ行い、`rust/**` などの変更が無いPRではRustツールチェーンの導入を省略します。Gradleキャッシュはmainで更新し、PRからは読み取り専用で利用します。
+- `kotlin-quality.yml`: ktlint・detekt・Android Lint を1ジョブで実行します。Gradleキャッシュはmainで更新し、PRからは読み取り専用で利用します。
 
 `release-apk.yml` と `nightly.yml` は Gradle のバージョンをCI側で固定せず、Wrapperの定義に従います。
 
@@ -110,6 +82,6 @@ AGP 9.5.0 では DEX レイアウト最適化が既定で有効です。release 
 
 Android SDK・NDK と設定済みの管理対象デバイスを利用できる環境で `./gradlew :app:generateBaselineProfile` を実行し、生成したルールを確認・更新します。`StartupBenchmark` はプロファイル適用有無のコールド起動と、適用時のウォーム起動を各10回測定します。ただし同一APKでの ART コンパイル条件の比較だけでは、ビルド時の DEX 配置最適化の効果を単独では測定できません。DEX 最適化の適用は release ビルドの R8 出力でも確認し、短縮時間は実機の測定結果から判断してください。
 
-ABI 別 APK と universal APK は配布形式の違いです。複数 ABI の同梱だけで、すべての共有ライブラリを起動時にロードするわけではありません。Pixiv の UniFFI クライアントは API 操作などで必要になった時に初期化します。設定を読み込んでクライアントのラッパーを生成するだけでは初期化しません。
+ABI 別 APK と universal APK は配布形式の違いです。複数 ABI の同梱だけで、すべての共有ライブラリを起動時にロードするわけではありません。
 
 Sentry は `io.sentry.auto-init = false` に加え、SDK が追加する `SentryInitProvider`・`SentryPerformanceProvider`・`SentryNdkPreloadProvider` を Manifest マージで除外しています。これにより、手動初期化前のライフサイクル登録や起動プロファイル設定ファイルの確認を避けます。代わりに Sentry による初期化前の自動起動計測は行いません。ユーザー操作・ネットワークイベントのブレッドクラムも無効です。テレメトリに同意している場合、起動後の処理で SDK を初期化します。トレース率は Manifest と `GlitchTipTelemetry` の両方で `1.0`（100%）に設定されています。これは同意済みのトレースを全件サンプリングする指定であり、起動前から自動計測する指定ではありません。

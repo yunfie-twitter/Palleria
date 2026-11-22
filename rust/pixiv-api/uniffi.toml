@@ -1,4 +1,0 @@
-[bindings.kotlin]
-package_name = "com.yunfie.illustia.rust"
-cdylib_name = "palleria_pixiv_api"
-android_cleaner = true

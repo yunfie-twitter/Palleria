@@ -43,28 +43,6 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      - name: Install stable Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: aarch64-linux-android, armv7-linux-androideabi, x86_64-linux-android
-
-      - name: Rust Cache
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: "rust/pixiv-api -> rust/target"
-
-      - name: Cache cargo-ndk
-        uses: actions/cache@v6
-        with:
-          path: ~/.cargo/bin/cargo-ndk
-          key: cargo-ndk-${{ runner.os }}-4.0.0
-
-      - name: Install cargo-ndk
-        run: |
-          if [ ! -f ~/.cargo/bin/cargo-ndk ]; then
-            cargo install cargo-ndk --locked
-          fi
-
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
