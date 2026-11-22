@@ -1,6 +1,6 @@
 ---
 title: アーキテクチャ
-description: PalleriaのAndroid・Rustコードの構成。
+description: PalleriaのAndroid・Kotlinコードの構成。
 ---
 
 # アーキテクチャ
@@ -17,8 +17,6 @@ Palleria/
 │     ├─ settings/              設定
 │     ├─ wallpaper/             壁紙機能
 │     └─ widget/                ホーム画面ウィジェット
-├─ rust/
-│  └─ pixiv-api/                Pixiv APIとUniFFI公開層
 ├─ fdroid/                      F-Droidメタデータ
 └─ docs/                        VitePressドキュメント
 ```
@@ -31,15 +29,9 @@ Palleria/
 
 UIはViewModelから状態を受け取り、Repositoryとデータ層を通じてネットワーク、データベース、設定へアクセスします。長時間処理はコルーチンで実行し、画面のライフサイクルに合わせてキャンセルできる構成を保ちます。
 
-## Rust連携
+## 通信コア
 
-`rust/pixiv-api`はRustライブラリをビルドし、UniFFI経由でKotlinバインディングを生成します。Gradleの`preBuild`は、ホスト向けバインディング生成とAndroid ABI向けライブラリビルドに依存します。
-
-対象ABI:
-
-- `arm64-v8a`
-- `armeabi-v7a`
-- `x86_64`
+Pixiv API クライアントは `data/` 配下の Kotlin 実装（OkHttp + kotlinx.serialization）です。リクエスト署名、OAuth、レスポンスのデコード、うごイラ ZIP の展開を Kotlin で処理します。詳細は[Kotlin 通信コア](/dev/networking-core)を参照してください。
 
 ## Android統合
 

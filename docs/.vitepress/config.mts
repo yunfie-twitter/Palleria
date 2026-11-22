@@ -166,7 +166,7 @@ export default defineConfig({
           { text: 'アプリケーション仕様（実装ベース）', link: '/dev/application-specification' },
           { text: 'ビルド & 環境構築パイプライン', link: '/dev/build' },
           { text: 'ChromeOS・キーボード操作', link: '/dev/chromeos' },
-          { text: 'Rust Native コア (pixiv-api)', link: '/dev/rust-core' },
+          { text: 'Kotlin 通信コア (Pixiv API)', link: '/dev/networking-core' },
           { text: 'セキュリティ & 電卓パーサー仕様', link: '/dev/security-engine' },
           { text: 'データベース & DataStore スキーマ', link: '/dev/database-schema' },
           { text: 'テレメトリ & クラッシュハンドラー仕様', link: '/dev/telemetry-spec' },

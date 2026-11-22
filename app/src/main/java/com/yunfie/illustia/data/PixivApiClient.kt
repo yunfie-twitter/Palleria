@@ -43,7 +43,7 @@ import java.time.format.DateTimeFormatter
 class PixivApiClient(
     private val mode: NetworkMode = NetworkMode.Standard,
 ) {
-    private val httpClient = RustPixivHttpClient(mode)
+    private val httpClient = KotlinPixivHttpClient(mode)
 
     suspend fun loginWithRefreshToken(refreshToken: String): PixivSession {
         val token = refreshToken.trim()
@@ -411,8 +411,6 @@ class PixivApiClient(
             .get()
             .build()
             .let { request -> httpClient.newCall(request).awaitBookmarkTags() }
-            .items
-            .map { BookmarkTag(it.name, it.count) }
 
     suspend fun nextIllustPage(
         session: PixivSession,

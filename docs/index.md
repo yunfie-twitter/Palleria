@@ -7,7 +7,7 @@ description: Android向けオープンソースPixivクライアント「Palleri
 hero:
   name: "Palleria"
   text: "Pixiv client for Android"
-  tagline: "Jetpack Compose と Rust ネイティブエンジンで構築された Android 向け Pixiv クライアント"
+  tagline: "Jetpack Compose と Kotlin 通信コアで構築された Android 向け Pixiv クライアント"
   image:
     src: /logo.svg
     alt: Palleria Androidアプリのロゴ

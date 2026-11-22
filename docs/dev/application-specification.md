@@ -5,7 +5,7 @@ description: Palleria 7.1.0 の実装に基づく機能・状態・連携の仕�
 
 # アプリケーション仕様
 
-このページは `app` と `rust/pixiv-api` の現行ソースを基準にした実装仕様です。将来の構想ではなく、リポジトリに実装されている振る舞いを記録します。
+このページは `app` の現行ソースを基準にした実装仕様です。将来の構想ではなく、リポジトリに実装されている振る舞いを記録します。
 
 確認日: 2026年11月11日。バージョン値は `app/build.gradle` を基準にしています。
 
@@ -17,8 +17,7 @@ description: Palleria 7.1.0 の実装に基づく機能・状態・連携の仕�
 | 現行バージョン | `7.1.0`（`versionCode` 194） |
 | 最低 / target SDK | API 24（Android 7.0） / API 37 |
 | UI | Kotlin、Jetpack Compose、Navigation 3、Miuix KMP |
-| ネイティブ層 | Rust 2024 edition、UniFFI 経由で利用 |
-| Rust ABI | `arm64-v8a`、`armeabi-v7a`、`x86_64` |
+| 通信層 | Kotlin（OkHttp、kotlinx.serialization） |
 
 Palleria は Pixiv 非公式クライアントであり、認証と作品取得には Pixiv API を利用します。起動時にはクラッシュハンドラー、画像ローダー、設定ストアを初期化し、設定読込中も保護された空の画面を描画し、ロック・プライバシー状態が確定してからアプリ画面を表示します。アプリ画面の最初のフレーム表示後にアカウント整合、ウィジェットのプレビュー生成を非同期で実行します。
 
@@ -82,16 +81,16 @@ IllustiaRepository / SettingsStore
           ↓
 Pixiv API クライアント
           ↓
- Rust pixiv-api (UniFFI)
+ KotlinPixivHttpClient / PixivApiDecoder (OkHttp)
 ```
 
-`pixiv-api` は Pixiv 応答の転送・復号・モデル変換を担当する。Android 側は UI、永続化、Android 統合、HTTP 実行を担当する。
+Pixiv API クライアントは Pixiv 応答の取得・デコード・モデル変換を担当する。Android 側は UI、永続化、Android 統合、HTTP 実行を担当する。
 
 ## 変更時の確認事項
 
 - 設定値を追加・変更する場合は、`AppSettings` と保存・復元処理を同時に更新する。
 - 公開コンポーネントや URL 受信規則を変更する場合は、Manifest の `exported`、権限、受信データ検証を確認する。
-- Rust API を変更する場合は UniFFI Kotlin バインディングと 3 ABI のネイティブライブラリを再生成する。
+- 通信コアを変更する場合は、対応する DTO・デコーダ・ユニットテストを同時に更新する。
 
 ## デスクトップ操作と読み上げ
 

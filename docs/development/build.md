@@ -5,6 +5,6 @@ description: Palleriaのビルド手順への入口です。最新の環境要�
 
 # ビルド
 
-現在の環境要件、Android・Rustのビルド手順、APK名、Draft ReleaseからF-Droidへ反映する流れは[ビルドと公開パイプライン](/dev/build)にまとめています。
+現在の環境要件、Androidのビルド手順、APK名、Draft ReleaseからF-Droidへ反映する流れは[ビルドと公開パイプライン](/dev/build)にまとめています。
 
 このURLは既存リンクとの互換性のために残しています。実行するGradleの版はWrapper、daemon JVMは `gradle/gradle-daemon-jvm.properties` を基準にしてください。

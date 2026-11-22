@@ -40,14 +40,14 @@
 
 **Palleria**는 모바일에서 쾌적한 Pixiv 탐색 경험을 제공하는 무료·개인정보 보호 중심의 오픈소스 Android 앱입니다.
 
-Jetpack Compose와 Miuix 디자인, UniFFI를 통한 Rust 네이티브 백엔드를 기반으로 빠른 성능, 낮은 배터리 소모, 풍부한 상호작용, 종단 간 암호화 동기화를 제공합니다.
+Jetpack Compose와 Miuix 디자인, Kotlin 기반 네트워킹 코어를 바탕으로 빠른 성능, 낮은 배터리 소모, 풍부한 상호작용, 종단 간 암호화 동기화를 제공합니다.
 
 > [!IMPORTANT]
 > Palleria는 비공식 Pixiv 클라이언트이며 Pixiv Inc.와 제휴·승인·관련이 없습니다.
 
 ## 주요 특징
 
-- **고성능 Rust 코어**: UniFFI 네이티브 엔진으로 우고이라 디코딩, APNG/WebP/MP4 변환, 데이터 처리를 가속합니다.
+- **빠른 Kotlin 코어**: OkHttp와 kotlinx.serialization으로 Pixiv API 디코딩, 우고이라 ZIP 스트리밍, 이미지 분석을 네이티브 브리지 없이 수행합니다.
 - **Miuix 및 Material You UI**: 부드러운 애니메이션, AMOLED 및 작품 색상 테마, 사용자 지정 다중 열 그리드를 지원합니다.
 - **빠른 탐색을 위한 최적화**: 시작 중 DNS/TLS 연결 준비, 차등·ETag 동기화, 스크롤 정지 위치 예측 프리페치, 중단된 다운로드 재개, 만화 방향에 맞춘 적응형 선읽기를 제공합니다.
 - **독서 기능**: 만화 뷰어, 소설 리더, 글꼴 설정, 읽던 위치 저장, 백그라운드 TTS 오디오북을 제공합니다.
@@ -120,10 +120,10 @@ https://palleria.yunfie.date/repo/
 
 | 분야 | 기술 |
 | :--- | :--- |
-| 언어 | Kotlin 2.x, Rust 1.80+ |
+| 언어 | Kotlin 2.x |
 | UI | Jetpack Compose, Compose Foundation, Material 3 |
 | 디자인 시스템 | Miuix KMP(Xiaomi HyperOS / MIUI 디자인 가이드라인) |
-| 네이티브 엔진 | UniFFI의 Rust (`pixiv-api`), Tokio |
+| 네트워킹 코어 | OkHttp 5(요청 서명·OAuth), kotlinx.serialization |
 | 네트워킹 | OkHttp 4 / 5, DoH, 연결 풀 사전 준비 |
 | 이미지 | Coil 3, Hardware Bitmap, Display P3, `inBitmap` 재사용 |
 | 저장소 | Room, Jetpack DataStore Preferences, AtomicFile |
@@ -136,13 +136,6 @@ https://palleria.yunfie.date/repo/
 
 1. Android Studio Ladybug / Meerkat 이상
 2. JDK 17 또는 21
-3. Android SDK Manager에서 NDK 26 이상 설치
-4. Stable Rust 및 `cargo-ndk`
-
-```bash
-rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android
-cargo install cargo-ndk
-```
 
 ### 복제 및 컴파일
 

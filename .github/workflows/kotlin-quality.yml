@@ -35,35 +35,11 @@ concurrency:
 
 jobs:
   # ktlint, detekt, and Android Lint used to be three workflows, each paying for its
-  # own Gradle start, dependency resolution, and (worst) a Rust native build. They
-  # now share a single job so that work happens once, and one daemon is reused across
-  # all three invocations instead of paying JVM startup three times with --no-daemon.
-  #
-  # The Rust Android libraries only need rebuilding when the crate itself changes;
-  # on a Kotlin-only PR the static analysis tasks reuse the cached artifacts instead.
-  changes:
-    name: Detect Rust changes
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: read
-    outputs:
-      rust: ${{ steps.filter.outputs.rust }}
-    steps:
-      - uses: actions/checkout@v7
-      - id: filter
-        uses: dorny/paths-filter@v3
-        with:
-          filters: |
-            rust:
-              - "rust/**"
-              - "gradlew"
-              - "gradle/**"
-
+  # own Gradle start and dependency resolution. They now share a single job so that
+  # work happens once, and one daemon is reused across all invocations.
   kotlin-quality:
     name: Run ktlint, detekt, and Android Lint
     runs-on: ubuntu-latest
-    needs: changes
     timeout-minutes: 45
 
     steps:
@@ -82,34 +58,6 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
         with:
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
-
-      - name: Install stable Rust
-        if: needs.changes.outputs.rust == 'true'
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: aarch64-linux-android, armv7-linux-androideabi, x86_64-linux-android
-
-      - name: Rust Cache
-        if: needs.changes.outputs.rust == 'true'
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: "rust/pixiv-api -> rust/target"
-          cache-on-failure: true
-
-      - name: Cache cargo-ndk
-        if: needs.changes.outputs.rust == 'true'
-        uses: actions/cache@v6
-        id: cache-cargo-ndk
-        with:
-          path: ~/.cargo/bin/cargo-ndk
-          key: cargo-ndk-${{ runner.os }}-4.0.0
-
-      - name: Install cargo-ndk
-        if: needs.changes.outputs.rust == 'true'
-        run: |
-          if [ ! -f ~/.cargo/bin/cargo-ndk ]; then
-            cargo install cargo-ndk --locked
-          fi
 
       - name: Grant execute permission for Gradle wrapper
         run: chmod +x gradlew

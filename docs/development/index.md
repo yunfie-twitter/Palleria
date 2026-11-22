@@ -5,15 +5,15 @@ description: Palleriaの開発環境とプロジェクト構成の概要。
 
 # 開発ガイド
 
-PalleriaはKotlinとJetpack Composeを中心に構成されたAndroidアプリです。Pixiv API処理にはRustとUniFFIを利用します。
+PalleriaはKotlinとJetpack Composeを中心に構成されたAndroidアプリです。Pixiv API処理も Kotlin（OkHttp + kotlinx.serialization）で実装しています。
 
 ## 技術スタック
 
 | 領域 | 技術 |
 | --- | --- |
-| 言語 | Kotlin / Rust |
+| 言語 | Kotlin |
 | UI | Jetpack Compose / Miuix KMP |
-| 通信 | OkHttp / Rust HTTPクライアント |
+| 通信 | OkHttp / kotlinx.serialization |
 | 画像 | Coil 3 |
 | データベース | Room |
 | 設定 | DataStore |
