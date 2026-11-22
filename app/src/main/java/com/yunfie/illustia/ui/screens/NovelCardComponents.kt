@@ -165,9 +165,10 @@ internal fun NovelCard(
                                 colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.5f)),
                             ),
                 )
-                if (cardPreferences.showR18Badge && novel.ageRestrictionBadgeText != null) {
+                val ageBadge = novel.ageRestrictionBadgeText
+                if (cardPreferences.showR18Badge && ageBadge != null) {
                     Text(
-                        text = novel.ageRestrictionBadgeText,
+                        text = ageBadge,
                         color = Color.White,
                         style = MiuixTheme.textStyles.footnote2,
                         fontWeight = FontWeight.Black,

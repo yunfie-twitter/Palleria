@@ -161,13 +161,15 @@ fun NotificationScreen(
                             NotificationCard(child, compact = true, onClick = { viewModel.openNotificationTarget(child.targetUrl) })
                         }
                     }
-                } else if (notification.viewMore != null) {
+                }
+                val viewMore = notification.viewMore
+                if (expanded == null && viewMore != null) {
                     ViewMoreRow(
                         title =
-                            notification.viewMore.title
+                            viewMore.title
                                 .orEmpty()
                                 .ifBlank { stringResource(R.string.notifications_load_more) },
-                        unread = notification.viewMore.unreadExists,
+                        unread = viewMore.unreadExists,
                         onClick = { viewModel.expandNotification(notification.id) },
                     )
                 }

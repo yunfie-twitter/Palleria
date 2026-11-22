@@ -836,18 +836,19 @@ private fun WatchlistSeriesCard(
                     overflow = TextOverflow.Ellipsis,
                     color = MiuixTheme.colorScheme.onBackground,
                 )
-                if (series.user != null) {
+                val seriesUser = series.user
+                if (seriesUser != null) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
                         AvatarImage(
-                            url = series.user.profileImageUrls?.medium,
-                            name = series.user.name,
+                            url = seriesUser.profileImageUrls?.medium,
+                            name = seriesUser.name,
                             size = 18.dp,
                         )
                         Text(
-                            text = series.user.name,
+                            text = seriesUser.name,
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             style = MiuixTheme.textStyles.footnote1,
                             maxLines = 1,

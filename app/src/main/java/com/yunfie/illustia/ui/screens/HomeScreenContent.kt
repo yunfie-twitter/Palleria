@@ -76,9 +76,10 @@ internal fun HomeAccountAvatar(account: UserProfile?) {
                 .background(MiuixTheme.colorScheme.surfaceContainerHigh),
         contentAlignment = Alignment.Center,
     ) {
-        if (account != null && !account.profileImageUrl.isNullOrBlank()) {
+        val avatarUrl = account?.profileImageUrl
+        if (account != null && !avatarUrl.isNullOrBlank()) {
             PixivImage(
-                url = account.profileImageUrl,
+                url = avatarUrl,
                 contentDescription = account.name,
                 contentScale = ContentScale.Crop,
                 thumbnail = true,

@@ -553,9 +553,10 @@ internal fun UserProfileSmallTopAppBar(
         label = "profile-border-alpha",
     )
     Box(Modifier.fillMaxWidth()) {
-        if (blurAlpha > 0.005f && user.backgroundImageUrl != null) {
+        val backgroundUrl = user.backgroundImageUrl
+        if (blurAlpha > 0.005f && backgroundUrl != null) {
             PixivImage(
-                url = user.backgroundImageUrl,
+                url = backgroundUrl,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier =
@@ -1170,9 +1171,10 @@ internal fun UserProfileAvatarPreviewOverlay(
                         ),
                 contentAlignment = Alignment.Center,
             ) {
-                if (!user.profileImageUrl.isNullOrBlank()) {
+                val profileUrl = user.profileImageUrl
+                if (!profileUrl.isNullOrBlank()) {
                     PixivImage(
-                        url = user.profileImageUrl,
+                        url = profileUrl,
                         contentDescription = user.name,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize(),

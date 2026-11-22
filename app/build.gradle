@@ -242,6 +242,8 @@ kotlin {
 dependencies {
     baselineProfile project(":benchmark")
 
+    implementation project(":shared")
+
     // Backport java.time and other Java library APIs to Android 7.0.
     coreLibraryDesugaring libs.desugar.jdk.libs
 

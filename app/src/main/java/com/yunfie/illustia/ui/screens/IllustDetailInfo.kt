@@ -205,9 +205,10 @@ internal fun IllustDetailInfo(
                         fontWeight = FontWeight.Bold,
                         style = MiuixTheme.textStyles.footnote1,
                     )
+                    val seriesTitle = illust.series?.title?.takeIf { it.isNotBlank() }
                     if (illust.series != null && onOpenSeries != null) {
                         Text(
-                            text = illust.series.title?.takeIf { it.isNotBlank() } ?: stringResource(R.string.detail_series),
+                            text = seriesTitle ?: stringResource(R.string.detail_series),
                             color = MiuixTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold,
                             style = MiuixTheme.textStyles.footnote1,

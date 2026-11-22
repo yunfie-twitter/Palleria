@@ -711,9 +711,10 @@ fun HighlightCard(
                 modifier = Modifier.fillMaxSize(),
                 thumbnail = true,
             )
-            if (cardPreferences.showR18Badge && illust.ageRestrictionBadgeText != null) {
+            val badgeText = illust.ageRestrictionBadgeText
+            if (cardPreferences.showR18Badge && badgeText != null) {
                 Text(
-                    text = illust.ageRestrictionBadgeText,
+                    text = badgeText,
                     color = Color.White,
                     style = MiuixTheme.textStyles.footnote2,
                     fontWeight = FontWeight.Black,

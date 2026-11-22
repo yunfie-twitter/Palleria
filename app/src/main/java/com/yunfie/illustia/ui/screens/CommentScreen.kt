@@ -467,9 +467,10 @@ private fun CommentRow(
                     contentScale = ContentScale.Fit,
                 )
             }
-            if (!comment.comment.isNullOrBlank()) {
+            val commentText = comment.comment
+            if (!commentText.isNullOrBlank()) {
                 Text(
-                    text = comment.comment,
+                    text = commentText,
                     color = MiuixTheme.colorScheme.onBackground,
                     style = MiuixTheme.textStyles.body2,
                 )
