@@ -1,0 +1,17 @@
+title = "Palleria gitleaks config"
+
+[extend]
+useDefault = true
+
+# Pixiv 公式モバイルアプリの公開クライアント資格情報。
+# 公式アプリに同梱され広く知られている値で、秘密情報ではない。
+# (main ブランチにも同一の値が既に存在する)
+[[allowlists]]
+description = "Pixiv public mobile client credentials"
+regexTarget = "line"
+regexes = [
+  '''const val CLIENT_ID = "MOBrBDS8blbauoSck0ZfDbtuzpyT"''',
+  '''const val CLIENT_SECRET = "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj"''',
+  '''const val CLIENT_HASH_SECRET = "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c"''',
+]
+paths = ['''shared/src/commonMain/kotlin/com/yunfie/illustia/data/PixivRequestSigner\.kt''']
