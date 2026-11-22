@@ -48,7 +48,7 @@ def version(text):
     name = re.search(r'^\s*versionName\s*=?\s*[\"\x27]([\w.+-]+)[\"\x27]', text, re.M)
     code = re.search(r'^\s*versionCode\s*=?\s*"?(\d+)"?', text, re.M)
     if not name or not code:
-        raise ValueError("Cannot read versionName/versionCode from app/build.gradle")
+        raise ValueError("Cannot read versionName/versionCode from androidApp/build.gradle")
     return name[1], int(code[1])
 
 
@@ -59,7 +59,7 @@ def guard(tag):
 
 
 def prepare():
-    name, _ = version(Path("app/build.gradle").read_text(encoding="utf-8"))
+    name, _ = version(Path("androidApp/build.gradle").read_text(encoding="utf-8"))
     tag = f"v{name}"
     ref = os.environ["GITHUB_REF"]
     if ref.startswith("refs/tags/") and ref != f"refs/tags/{tag}":
@@ -139,7 +139,7 @@ def tag_metadata(tag):
     run("git", "check-ref-format", f"refs/tags/{tag}")
     run("git", "fetch", "origin", f"refs/tags/{tag}")
     commit = run("git", "rev-parse", "FETCH_HEAD^{commit}")
-    name, code = version(run("git", "show", f"{commit}:app/build.gradle"))
+    name, code = version(run("git", "show", f"{commit}:androidApp/build.gradle"))
     if tag != f"v{name}":
         raise ValueError("Release tag does not match its build.gradle")
     paths = run("git", "ls-tree", "-r", "--name-only", commit, "--", "fdroid/metadata").splitlines()

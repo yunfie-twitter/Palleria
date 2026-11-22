@@ -22,8 +22,8 @@ if hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8")
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-METRICS_DIR = os.path.join(REPO_ROOT, "app", "build", "compose_metrics")
-REPORTS_DIR = os.path.join(REPO_ROOT, "app", "build", "compose_reports")
+METRICS_DIR = os.path.join(REPO_ROOT, "androidApp", "build", "compose_metrics")
+REPORTS_DIR = os.path.join(REPO_ROOT, "androidApp", "build", "compose_reports")
 
 def parse_metrics():
     json_files = glob.glob(os.path.join(METRICS_DIR, "*-module.json"))

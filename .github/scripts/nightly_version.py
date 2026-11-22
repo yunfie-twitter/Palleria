@@ -45,7 +45,7 @@ def format_version(year2, week, index):
 
 
 def release_version_code(gradle_text):
-    """Reads the release versionCode from app/build.gradle.
+    """Reads the release versionCode from androidApp/build.gradle.
 
     The literal fallback in the env override is the release value, so nightly builds
     can anchor to whatever release is currently prepared without hardcoding it here.
@@ -54,7 +54,7 @@ def release_version_code(gradle_text):
     text = re.sub(r"\)\.toInteger\(\)", "", text)
     match = re.search(r'^\s*versionCode\s*=?\s*"?(\d+)"?', text, re.M)
     if not match:
-        raise ValueError("Cannot read versionCode from app/build.gradle")
+        raise ValueError("Cannot read versionCode from androidApp/build.gradle")
     return int(match.group(1))
 
 
@@ -92,7 +92,7 @@ def builds_this_week(branch, year2, week):
 
 def main():
     branch = "nightly"
-    gradle = Path("app/build.gradle").read_text(encoding="utf-8")
+    gradle = Path("androidApp/build.gradle").read_text(encoding="utf-8")
     base_code = release_version_code(gradle)
 
     year2, week = iso_week_version()

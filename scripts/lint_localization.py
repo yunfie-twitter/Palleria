@@ -21,7 +21,7 @@ if hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8")
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-RES_DIR = os.path.join(REPO_ROOT, "app", "src", "main", "res")
+RES_DIR = os.path.join(REPO_ROOT, "androidApp", "src", "main", "res")
 BASE_STRINGS = os.path.join(RES_DIR, "values", "strings.xml")
 
 # Regex to match Android string format specifiers: %s, %1$s, %d, %1$2.2f, etc.
