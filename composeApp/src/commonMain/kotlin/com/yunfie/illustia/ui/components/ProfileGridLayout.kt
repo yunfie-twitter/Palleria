@@ -7,18 +7,18 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-internal val ProfileGridHorizontalSpacing = 10.dp
-internal val ProfileGridVerticalSpacing = 18.dp
+val ProfileGridHorizontalSpacing = 10.dp
+val ProfileGridVerticalSpacing = 18.dp
 
 @Composable
-internal fun adaptiveProfileGridColumns(): Int {
+fun adaptiveProfileGridColumns(): Int {
     val configuration = LocalConfiguration.current
     return remember(configuration.screenWidthDp) {
         profileGridColumnsForWidth(configuration.screenWidthDp)
     }
 }
 
-internal fun profileGridColumnsForWidth(screenWidthDp: Int): Int =
+fun profileGridColumnsForWidth(screenWidthDp: Int): Int =
     when {
         screenWidthDp >= 1_200 -> 5
         screenWidthDp >= 840 -> 4
@@ -27,7 +27,7 @@ internal fun profileGridColumnsForWidth(screenWidthDp: Int): Int =
     }
 
 @Composable
-internal fun adaptiveRecommendedTagColumns(): Int {
+fun adaptiveRecommendedTagColumns(): Int {
     val configuration = LocalConfiguration.current
     return remember(configuration.screenWidthDp) {
         recommendedTagColumnsForWidth(configuration.screenWidthDp)
@@ -40,7 +40,7 @@ private const val TAG_COLUMNS_EXTRA_LARGE = 8
 private const val TAG_COLUMNS_LARGE = 7
 private const val TAG_COLUMNS_EXPANDED = 6
 
-internal fun recommendedTagColumnsForWidth(screenWidthDp: Int): Int =
+fun recommendedTagColumnsForWidth(screenWidthDp: Int): Int =
     when {
         screenWidthDp >= WIDTH_DP_EXTRA_LARGE -> TAG_COLUMNS_EXTRA_LARGE
         screenWidthDp >= WIDTH_DP_LARGE -> TAG_COLUMNS_LARGE
@@ -50,14 +50,14 @@ internal fun recommendedTagColumnsForWidth(screenWidthDp: Int): Int =
     }
 
 @Composable
-internal fun adaptiveRelatedIllustColumns(configuredColumns: Int = 3): Int {
+fun adaptiveRelatedIllustColumns(configuredColumns: Int = 3): Int {
     val configuration = LocalConfiguration.current
     return remember(configuration.screenWidthDp, configuredColumns) {
         relatedIllustColumnsForWidth(configuration.screenWidthDp, configuredColumns)
     }
 }
 
-internal fun relatedIllustColumnsForWidth(
+fun relatedIllustColumnsForWidth(
     screenWidthDp: Int,
     configuredColumns: Int = 3,
 ): Int {
@@ -71,7 +71,7 @@ internal fun relatedIllustColumnsForWidth(
     }
 }
 
-internal fun profileGridContentPadding(
+fun profileGridContentPadding(
     top: Dp = 14.dp,
     bottom: Dp = 96.dp,
 ): PaddingValues =

@@ -2,9 +2,9 @@ package com.yunfie.illustia.ui.components
 
 import com.yunfie.illustia.models.Illust
 
-internal const val QUALITY_LOW = "low"
-internal const val QUALITY_MEDIUM = "medium"
-internal const val QUALITY_HIGH = "high"
+const val QUALITY_LOW = "low"
+const val QUALITY_MEDIUM = "medium"
+const val QUALITY_HIGH = "high"
 
 /**
  * 画質 tier に対応する画像 URL の一覧を解決する。
@@ -12,7 +12,7 @@ internal const val QUALITY_HIGH = "high"
  * low は medium、medium は large、high は original を使い、
  * 各 tier が空のときは一段下の tier にフォールバックする。
  */
-internal fun resolveQualityImageUrls(
+fun resolveQualityImageUrls(
     illust: Illust,
     quality: String,
 ): List<String> =
@@ -48,7 +48,7 @@ internal fun resolveQualityImageUrls(
 /**
  * 選択画質の一段下の tier を返す。low 自身には下地が無いため null。
  */
-internal fun lowerQualityTier(quality: String): String? =
+fun lowerQualityTier(quality: String): String? =
     when (quality) {
         QUALITY_HIGH -> QUALITY_MEDIUM
         QUALITY_MEDIUM -> QUALITY_LOW
@@ -63,7 +63,7 @@ internal fun lowerQualityTier(quality: String): String? =
  * `imagePages` と `mediumImagePages` の両方が同じ URL を指すことが多く、一段下では
  * 本画像と同じ URL になって下地が消えてしまうため。
  */
-internal fun resolveProgressivePlaceholderUrls(
+fun resolveProgressivePlaceholderUrls(
     illust: Illust,
     quality: String,
     progressiveQuality: Boolean,
@@ -84,7 +84,7 @@ internal fun resolveProgressivePlaceholderUrls(
  * 高画質オフ時はサムネイル相当が原寸と同じファイル名で保存されていた。
  * 保存は後から見分けがつかないので、経路によらず同じ解像度に揃える。
  */
-internal fun resolveSaveImageUrls(illust: Illust): List<String> =
+fun resolveSaveImageUrls(illust: Illust): List<String> =
     illust.originalImagePages.ifEmpty {
         illust.imagePages.ifEmpty {
             listOfNotNull(firstNonBlank(illust.imageUrl, illust.originalImageUrl, illust.mediumImageUrl))
@@ -92,7 +92,7 @@ internal fun resolveSaveImageUrls(illust: Illust): List<String> =
     }
 
 /** 保存用の単一 URL。ページ指定が範囲外なら先頭ページにフォールバックする。 */
-internal fun resolveSaveImageUrl(
+fun resolveSaveImageUrl(
     illust: Illust,
     page: Int,
 ): String {

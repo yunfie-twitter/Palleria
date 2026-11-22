@@ -20,13 +20,13 @@ import androidx.compose.ui.Modifier
  * which leaves the default transition exactly as before.
  */
 @OptIn(ExperimentalSharedTransitionApi::class)
-internal val LocalNavSharedTransitionScope = compositionLocalOf<SharedTransitionScope?> { null }
+val LocalNavSharedTransitionScope = compositionLocalOf<SharedTransitionScope?> { null }
 
 /**
  * Supplied per Navigation3 entry, because the animated visibility scope exists only inside the
  * entry that Navigation3 is currently animating.
  */
-internal val LocalNavEntryAnimatedVisibilityScope =
+val LocalNavEntryAnimatedVisibilityScope =
     compositionLocalOf<AnimatedVisibilityScope?> { null }
 
 /**
@@ -34,13 +34,13 @@ internal val LocalNavEntryAnimatedVisibilityScope =
  * detail page. Those cards open a page that already shows that artwork, so growing a small row into
  * the hero image would read as a different move from the rest of the page.
  */
-internal val LocalSuppressSharedArtworkTransition = compositionLocalOf { false }
+val LocalSuppressSharedArtworkTransition = compositionLocalOf { false }
 
 /**
  * The key both the card thumbnail and the detail image register under. Keying on the artwork id
  * rather than a composable instance is what lets the two screens match up.
  */
-internal fun sharedArtworkKey(illustId: Long): String = "artwork-image-$illustId"
+fun sharedArtworkKey(illustId: Long): String = "artwork-image-$illustId"
 
 /**
  * True while a card-to-detail shared element flight is still running.
@@ -50,7 +50,7 @@ internal fun sharedArtworkKey(illustId: Long): String = "artwork-image-$illustId
  * would replace it for a frame, and drawing both makes the image look like it steps down in
  * quality while it grows.
  */
-internal val LocalArtworkTransitionInFlight = staticCompositionLocalOf { false }
+val LocalArtworkTransitionInFlight = staticCompositionLocalOf { false }
 
 /**
  * Marks this element as the artwork image for [illustId]. Returns the modifier unchanged when the
@@ -58,7 +58,7 @@ internal val LocalArtworkTransitionInFlight = staticCompositionLocalOf { false }
  */
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-internal fun Modifier.sharedArtworkElement(illustId: Long): Modifier {
+fun Modifier.sharedArtworkElement(illustId: Long): Modifier {
     val scope = LocalNavSharedTransitionScope.current
     val visibilityScope = LocalNavEntryAnimatedVisibilityScope.current
     val suppressed = LocalSuppressSharedArtworkTransition.current
@@ -76,7 +76,7 @@ internal fun Modifier.sharedArtworkElement(illustId: Long): Modifier {
  * inside that entry can join the transition.
  */
 @Composable
-internal fun ProvideEntrySharedTransitionScope(content: @Composable () -> Unit) {
+fun ProvideEntrySharedTransitionScope(content: @Composable () -> Unit) {
     val visibilityScope = androidx.navigation3.ui.LocalNavAnimatedContentScope.current
     CompositionLocalProvider(LocalNavEntryAnimatedVisibilityScope provides visibilityScope) {
         content()

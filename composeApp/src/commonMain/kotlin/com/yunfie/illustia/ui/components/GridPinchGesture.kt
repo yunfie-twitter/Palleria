@@ -1,12 +1,12 @@
 package com.yunfie.illustia.ui.components
 
-internal data class GridPinchUpdate(
+data class GridPinchUpdate(
     val consume: Boolean,
     val columnDelta: Int = 0,
 )
 
 /** Once a pinch starts, own the entire gesture, including the final finger lift. */
-internal class GridPinchGesture {
+class GridPinchGesture {
     private var claimed = false
     private var accumulatedZoom = 1f
 

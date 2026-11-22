@@ -13,7 +13,7 @@ import json
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOML_PATH = os.path.join(ROOT_DIR, "gradle", "libs.versions.toml")
-ASSETS_DIR = os.path.join(ROOT_DIR, "app", "src", "main", "assets")
+ASSETS_DIR = os.path.join(ROOT_DIR, "androidApp", "src", "main", "assets")
 JSON_OUTPUT = os.path.join(ASSETS_DIR, "licenses.json")
 MD_OUTPUT = os.path.join(ROOT_DIR, "THIRD_PARTY_LICENSES.md")
 
