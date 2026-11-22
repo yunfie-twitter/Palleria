@@ -205,7 +205,8 @@ class PixivApiClient(
     suspend fun userDetail(
         session: PixivSession,
         userId: Long,
-    ): UserProfile = getCall(session, pixivApiUrl("v1/user/detail", "user_id" to userId.toString(), "filter" to "for_android")).awaitUserProfile(userId)
+    ): UserProfile =
+        getCall(session, pixivApiUrl("v1/user/detail", "user_id" to userId.toString(), "filter" to "for_android")).awaitUserProfile(userId)
 
     suspend fun illustDetail(
         session: PixivSession,
@@ -220,12 +221,28 @@ class PixivApiClient(
     suspend fun relatedIllusts(
         session: PixivSession,
         illustId: Long,
-    ): PageResult<Illust> = getIllustPage(session, pixivApiUrl("v2/illust/related", "illust_id" to illustId.toString(), "filter" to "for_android"))
+    ): PageResult<Illust> =
+        getIllustPage(
+            session,
+            pixivApiUrl(
+                "v2/illust/related",
+                "illust_id" to illustId.toString(),
+                "filter" to "for_android",
+            ),
+        )
 
     suspend fun illustSeries(
         session: PixivSession,
         seriesId: Long,
-    ): IllustSeriesWithIdModel = getCall(session, pixivApiUrl("v2/illust/manga", "illust_series_id" to seriesId.toString(), "filter" to "for_android")).awaitIllustSeries()
+    ): IllustSeriesWithIdModel =
+        getCall(
+            session,
+            pixivApiUrl(
+                "v2/illust/manga",
+                "illust_series_id" to seriesId.toString(),
+                "filter" to "for_android",
+            ),
+        ).awaitIllustSeries()
 
     suspend fun nextIllustSeriesPage(
         session: PixivSession,
@@ -393,12 +410,20 @@ class PixivApiClient(
         postAuthedForm(session, "https://$APP_API_HOST/v1/novel/marker/delete", listOf("novel_id" to novelId.toString()))
     }
 
-    suspend fun notifications(session: PixivSession): NotificationListResult = getNotificationPage(session, pixivApiUrl("v1/notification/list"))
+    suspend fun notifications(session: PixivSession): NotificationListResult =
+        getNotificationPage(session, pixivApiUrl("v1/notification/list"))
 
     suspend fun notificationViewMore(
         session: PixivSession,
         notificationId: Long,
-    ): NotificationListResult = getNotificationPage(session, pixivApiUrl("v1/notification/view-more", "notification_id" to notificationId.toString()))
+    ): NotificationListResult =
+        getNotificationPage(
+            session,
+            pixivApiUrl(
+                "v1/notification/view-more",
+                "notification_id" to notificationId.toString(),
+            ),
+        )
 
     suspend fun nextNotificationPage(
         session: PixivSession,
@@ -432,13 +457,29 @@ class PixivApiClient(
         session: PixivSession,
         illustId: Long,
         offset: Int? = null,
-    ): CommentResponse = getCall(session, pixivApiUrl("v3/illust/comments", "illust_id" to illustId.toString(), "offset" to offset?.toString())).awaitCommentPage()
+    ): CommentResponse =
+        getCall(
+            session,
+            pixivApiUrl(
+                "v3/illust/comments",
+                "illust_id" to illustId.toString(),
+                "offset" to offset?.toString(),
+            ),
+        ).awaitCommentPage()
 
     suspend fun illustCommentReplies(
         session: PixivSession,
         commentId: Long,
         offset: Int? = null,
-    ): CommentResponse = getCall(session, pixivApiUrl("v2/illust/comment/replies", "comment_id" to commentId.toString(), "offset" to offset?.toString())).awaitCommentPage()
+    ): CommentResponse =
+        getCall(
+            session,
+            pixivApiUrl(
+                "v2/illust/comment/replies",
+                "comment_id" to commentId.toString(),
+                "offset" to offset?.toString(),
+            ),
+        ).awaitCommentPage()
 
     suspend fun novelComments(
         session: PixivSession,
@@ -472,7 +513,15 @@ class PixivApiClient(
     suspend fun relatedUsers(
         session: PixivSession,
         userId: Long,
-    ): RelatedUsersResult = getRelatedUsersPage(session, pixivApiUrl("v1/user/related", "seed_user_id" to userId.toString(), "filter" to "for_android"))
+    ): RelatedUsersResult =
+        getRelatedUsersPage(
+            session,
+            pixivApiUrl(
+                "v1/user/related",
+                "seed_user_id" to userId.toString(),
+                "filter" to "for_android",
+            ),
+        )
 
     suspend fun nextRelatedUsersPage(
         session: PixivSession,
@@ -482,8 +531,7 @@ class PixivApiClient(
     private suspend fun getRelatedUsersPage(
         session: PixivSession,
         url: String,
-    ): RelatedUsersResult =
-        getCall(session, url).awaitUserPreviewPage().let { RelatedUsersResult(users = it.items, nextUrl = it.nextUrl) }
+    ): RelatedUsersResult = getCall(session, url).awaitUserPreviewPage().let { RelatedUsersResult(users = it.items, nextUrl = it.nextUrl) }
 
     suspend fun setUserWorkspace(
         session: PixivSession,
@@ -623,7 +671,11 @@ class PixivApiClient(
     suspend fun novelText(
         session: PixivSession,
         novelId: Long,
-    ): NovelTextContent = getCall(session, pixivApiUrl("webview/v2/novel", "id" to novelId.toString(), "viewer_version" to "20221031_ai")).awaitNovelText(novelId)
+    ): NovelTextContent =
+        getCall(
+            session,
+            pixivApiUrl("webview/v2/novel", "id" to novelId.toString(), "viewer_version" to "20221031_ai"),
+        ).awaitNovelText(novelId)
 
     private suspend fun getIllustPage(
         session: PixivSession,
@@ -671,9 +723,14 @@ private fun String.urlEncode(): String =
         for (byte in this@urlEncode.encodeToByteArray()) {
             val value = byte.toInt() and 0xFF
             val char = value.toChar()
-            if (char.isLetterOrDigit() || char in "-._~") append(char) else append('%').append(HEX_UPPER[value shr 4]).append(HEX_UPPER[value and 0xF])
+            if (char.isLetterOrDigit() ||
+                char in "-._~"
+            ) {
+                append(char)
+            } else {
+                append('%').append(HEX_UPPER[value shr 4]).append(HEX_UPPER[value and 0xF])
+            }
         }
     }
 
 private const val HEX_UPPER = "0123456789ABCDEF"
-

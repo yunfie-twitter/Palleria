@@ -4,6 +4,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
 import kotlin.time.Instant
+
 /**
  * Pixiv API の定数。
  */
@@ -67,8 +68,7 @@ class PixivRequestSigner(
         return "${dateTime.year}-$month-${day}T$hour:$minute:$second+00:00"
     }
 
-    private fun clientHash(clientTime: String): String =
-        md5Hex(clientTime + PixivApiConstants.CLIENT_HASH_SECRET)
+    private fun clientHash(clientTime: String): String = md5Hex(clientTime + PixivApiConstants.CLIENT_HASH_SECRET)
 }
 
 /** MD5 の 16 進小文字表現。x-client-hash の算出に使う。 */

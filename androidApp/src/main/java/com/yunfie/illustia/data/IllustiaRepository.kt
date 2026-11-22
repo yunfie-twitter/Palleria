@@ -1,7 +1,6 @@
 package com.yunfie.illustia.data
 
 import com.yunfie.illustia.isCancellationFailure
-import io.ktor.client.HttpClient
 import com.yunfie.illustia.models.HomeFeedKind
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.NetworkMode
@@ -38,6 +37,7 @@ import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.SettingsStore
 import com.yunfie.illustia.settings.store.STARTUP_LOGGED_IN_TOKEN
 import com.yunfie.illustia.visibleWithSettings
+import io.ktor.client.HttpClient
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart

@@ -7,32 +7,29 @@ import io.kotest.matchers.shouldBe
 class PixivApiUrlPolicyTest :
     StringSpec({
         "accepts canonical Pixiv API pagination URLs" {
-            val url =
-                "https://app-api.pixiv.net/v1/illust/recommended?offset=30"
-                    .toTrustedPixivApiUrl()
+            val url = trustedPixivApiUrl("https://app-api.pixiv.net/v1/illust/recommended?offset=30")
 
-            url.host shouldBe "app-api.pixiv.net"
-            url.isHttps shouldBe true
+            url shouldBe "https://app-api.pixiv.net/v1/illust/recommended?offset=30"
         }
 
         "rejects a response-controlled foreign origin" {
             shouldThrow<IllegalArgumentException> {
-                "https://attacker.example/collect".toTrustedPixivApiUrl()
+                trustedPixivApiUrl("https://attacker.example/collect")
             }
         }
 
         "rejects plaintext and non-default ports" {
             shouldThrow<IllegalArgumentException> {
-                "http://app-api.pixiv.net/v1/illust/recommended".toTrustedPixivApiUrl()
+                trustedPixivApiUrl("http://app-api.pixiv.net/v1/illust/recommended")
             }
             shouldThrow<IllegalArgumentException> {
-                "https://app-api.pixiv.net:8443/v1/illust/recommended".toTrustedPixivApiUrl()
+                trustedPixivApiUrl("https://app-api.pixiv.net:8443/v1/illust/recommended")
             }
         }
 
         "rejects URLs containing user information" {
             shouldThrow<IllegalArgumentException> {
-                "https://app-api.pixiv.net@attacker.example/collect".toTrustedPixivApiUrl()
+                trustedPixivApiUrl("https://app-api.pixiv.net@attacker.example/collect")
             }
         }
     })

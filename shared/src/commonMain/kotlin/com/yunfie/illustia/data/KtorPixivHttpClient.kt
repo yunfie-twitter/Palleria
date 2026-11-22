@@ -125,15 +125,20 @@ class PixivHttpClient(
         }
 }
 
-private fun List<Pair<String, String>>.toFormBody(): String =
-    joinToString("&") { (k, v) -> "${k.encodeForm()}=${v.encodeForm()}" }
+private fun List<Pair<String, String>>.toFormBody(): String = joinToString("&") { (k, v) -> "${k.encodeForm()}=${v.encodeForm()}" }
 
 private fun String.encodeForm(): String =
     buildString {
         for (char in this@encodeForm) {
             when {
-                char.isLetterOrDigit() || char in "-._~" -> append(char)
-                char == ' ' -> append('+')
+                char.isLetterOrDigit() || char in "-._~" -> {
+                    append(char)
+                }
+
+                char == ' ' -> {
+                    append('+')
+                }
+
                 else -> {
                     for (b in char.toString().encodeToByteArray()) {
                         append('%').append(HEX[(b.toInt() shr 4) and 0xF]).append(HEX[b.toInt() and 0xF])
@@ -210,7 +215,12 @@ class PixivCall(
             }
         val text = response.bodyAsText()
         if (!response.status.isSuccess()) {
-            val detail = text.lineSequence().joinToString(" ").take(240).ifBlank { response.status.description }
+            val detail =
+                text
+                    .lineSequence()
+                    .joinToString(" ")
+                    .take(240)
+                    .ifBlank { response.status.description }
             throw PixivApiException(response.status.value, detail)
         }
         return text
