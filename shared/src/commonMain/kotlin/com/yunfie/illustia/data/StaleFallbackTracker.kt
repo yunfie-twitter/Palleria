@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap
  * alone. Treating a replay as fresh writes the current time over old data, which caches the
  * offline state as valid and hides the failure until the TTL expires.
  */
-internal class StaleFallbackTracker {
+class StaleFallbackTracker {
     private val keys = ConcurrentHashMap.newKeySet<String>()
 
     fun markStale(key: String) {

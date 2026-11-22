@@ -4,7 +4,7 @@ import com.yunfie.illustia.models.pixiv.UgoiraFrame
 import java.util.zip.ZipEntry
 
 /** うごイラ ZIP 展開時の入力検証。Rust 版 (`ugoira.rs`) と同じ制約を保つ。 */
-internal object UgoiraValidation {
+object UgoiraValidation {
     fun frameNames(
         frames: List<UgoiraFrame>,
         maxEntries: Int,

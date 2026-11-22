@@ -1,6 +1,7 @@
 package com.yunfie.illustia.data
 
 import com.yunfie.illustia.isCancellationFailure
+import io.ktor.client.HttpClient
 import com.yunfie.illustia.models.HomeFeedKind
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.NetworkMode
@@ -95,12 +96,16 @@ class IllustiaRepository(
     @Volatile
     private var apiClientInstance: PixivApiClient? = null
 
+    /** OkHttp の設定を流用した Ktor クライアント。 */
+    @Volatile
+    private var ktorClient: HttpClient = createKtorPixivClient(createPixivHttpClient(apiClientMode))
+
     private val apiClient: PixivApiClient
         get() {
             val current = apiClientInstance
             if (current != null) return current
             return synchronized(this) {
-                apiClientInstance ?: PixivApiClient(apiClientMode).also { apiClientInstance = it }
+                apiClientInstance ?: PixivApiClient(ktorClient).also { apiClientInstance = it }
             }
         }
 
@@ -551,7 +556,10 @@ class IllustiaRepository(
     suspend fun createWebSocket(
         url: String,
         headers: Map<String, String> = emptyMap(),
-    ): PixivWebSocketClient = apiClient.createWebSocket(requireSession(), url, headers)
+    ): PixivWebSocketClient {
+        val accessToken = requireSession().accessToken
+        return PixivWebSocketClient(createPixivHttpClient(apiClientMode), url, { accessToken }, headers)
+    }
 
     suspend fun currentUserProfile(): CurrentUserProfile = withSessionRetry { session -> apiClient.currentUserProfile(session) }
 
@@ -644,7 +652,7 @@ class IllustiaRepository(
         url: String,
         cacheDir: String,
         frames: List<UgoiraFrame>,
-    ): UgoiraPlayback = apiClient.prepareUgoira(url, cacheDir, frames)
+    ): UgoiraPlayback = UgoiraCache.prepare(ktorClient, defaultSigner(), url, cacheDir, frames)
 
     suspend fun relatedIllusts(
         illustId: Long,
@@ -815,7 +823,9 @@ class IllustiaRepository(
         if (apiClientMode == mode && apiClientInstance != null) return
         synchronized(this) {
             if (apiClientMode != mode || apiClientInstance == null) {
-                apiClientInstance = PixivApiClient(mode)
+                val client = createKtorPixivClient(createPixivHttpClient(mode))
+                apiClientInstance = PixivApiClient(client)
+                ktorClient = client
                 apiClientMode = mode
             }
         }

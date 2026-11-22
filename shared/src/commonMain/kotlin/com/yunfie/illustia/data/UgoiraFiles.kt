@@ -7,7 +7,7 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 
 /** うごイラ ZIP の読み書きユーティリティ（サイズ上限付きコピー・展開・公開）。 */
-internal object UgoiraFiles {
+object UgoiraFiles {
     private const val MAX_ARCHIVE_BYTES = 512L * 1024 * 1024
 
     fun copyLimited(

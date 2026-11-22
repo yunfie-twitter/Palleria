@@ -19,7 +19,7 @@ fun defaultSigner(
 ): PixivRequestSigner = PixivRequestSigner(userAgent, appOsVersion, acceptLanguage)
 
 /** Pixiv API 用の Ktor クライアント。エンジンはプラットフォーム側から注入する。 */
-fun createPixivHttpClient(
+fun createPixivKtorClient(
     engine: HttpClientEngine,
     json: Json = PixivApiJson.json,
 ): HttpClient =

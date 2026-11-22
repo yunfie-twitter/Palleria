@@ -8,6 +8,8 @@ import android.content.Context
 import android.content.SyncResult
 import android.os.Bundle
 import com.yunfie.illustia.data.PixivApiClient
+import com.yunfie.illustia.data.createKtorPixivClient
+import com.yunfie.illustia.data.createPixivHttpClient
 import com.yunfie.illustia.models.NetworkMode
 import com.yunfie.illustia.settings.SettingsStore
 import kotlinx.coroutines.Dispatchers
@@ -39,7 +41,10 @@ class PalleriaSyncAdapter(
                         settings.accounts.firstOrNull { it.userId == userId }
                             ?: error("同期対象のPixivアカウントが見つかりません。")
 
-                    val api = PixivApiClient(NetworkMode.fromCode(settings.pixivNetworkMode))
+                    val api =
+                        PixivApiClient(
+                            createKtorPixivClient(createPixivHttpClient(NetworkMode.fromCode(settings.pixivNetworkMode))),
+                        )
                     val session = api.loginWithRefreshToken(storedAccount.refreshToken)
                     api.notifications(session)
                 }.onFailure {

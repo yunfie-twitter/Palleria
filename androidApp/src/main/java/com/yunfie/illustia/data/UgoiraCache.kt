@@ -3,12 +3,18 @@ package com.yunfie.illustia.data
 import com.yunfie.illustia.models.pixiv.UgoiraFrame
 import com.yunfie.illustia.models.pixiv.UgoiraPlayback
 import com.yunfie.illustia.models.pixiv.UgoiraPlaybackFrame
+import io.ktor.client.HttpClient
+import io.ktor.client.request.get
+import io.ktor.client.request.header
+import io.ktor.client.request.headers
+import io.ktor.client.statement.bodyAsChannel
+import io.ktor.http.isSuccess
+import io.ktor.utils.io.readRemaining
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
-import okhttp3.Request
+import kotlinx.io.readByteArray
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import java.util.zip.ZipFile
@@ -29,7 +35,7 @@ internal object UgoiraCache {
     private val cacheLocks = ConcurrentHashMap<String, Mutex>()
 
     suspend fun prepare(
-        okHttp: OkHttpClient,
+        http: HttpClient,
         signer: PixivRequestSigner,
         url: String,
         cacheDir: String,
@@ -45,7 +51,7 @@ internal object UgoiraCache {
                 dir.parentFile?.mkdirs()
                 val zipFile = File.createTempFile("ugoira", ".zip.download", dir.parentFile).apply { deleteOnExit() }
                 try {
-                    downloadToFile(okHttp, signer, url, zipFile)
+                    downloadToFile(http, signer, url, zipFile)
                     extract(dir, zipFile, frames)
                 } finally {
                     zipFile.delete()
@@ -54,33 +60,25 @@ internal object UgoiraCache {
             }
         }
 
-    private fun downloadToFile(
-        okHttp: OkHttpClient,
+    private suspend fun downloadToFile(
+        http: HttpClient,
         signer: PixivRequestSigner,
         url: String,
         target: File,
     ) {
-        val request =
-            Request
-                .Builder()
-                .url(url)
-                .headers(
-                    signer.sign(
-                        okhttp3.Headers
-                            .Builder()
-                            .add("Referer", "https://www.pixiv.net/")
-                            .build(),
-                    ),
-                ).get()
-                .build()
-        okHttp.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) {
-                throw PixivApiException(response.code, "ugoira download failed: ${response.message}")
+        val response =
+            http.get(url) {
+                headers {
+                    signer.sign(mapOf("Referer" to "https://www.pixiv.net/")).forEach { (name, value) -> header(name, value) }
+                }
             }
-            val body = response.body
-            if (body.contentLength() > MAX_ARCHIVE_BYTES) throw archiveTooLarge()
-            UgoiraFiles.copyLimited(body.byteStream(), target.outputStream())
+        if (!response.status.isSuccess()) {
+            throw PixivApiException(response.status.value, "ugoira download failed: ${response.status.description}")
         }
+        val channel = response.bodyAsChannel()
+        val buffer = channel.readRemaining(MAX_ARCHIVE_BYTES + 1).readByteArray()
+        if (buffer.size > MAX_ARCHIVE_BYTES) throw archiveTooLarge()
+        target.writeBytes(buffer)
     }
 
     private fun extract(

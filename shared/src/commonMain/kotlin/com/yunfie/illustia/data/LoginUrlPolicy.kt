@@ -5,7 +5,7 @@ import java.net.URLDecoder
 
 private const val HTTPS_PORT = 443
 
-internal fun pixivLoginCodeOrNull(url: String): String? =
+fun pixivLoginCodeOrNull(url: String): String? =
     runCatching {
         val uri = URI(url)
         val isAppRedirect =
@@ -31,7 +31,7 @@ internal fun pixivLoginCodeOrNull(url: String): String? =
         }
     }.getOrNull()
 
-internal fun isDiscordAppUrl(url: String?): Boolean {
+fun isDiscordAppUrl(url: String?): Boolean {
     val uri = url?.let { runCatching { URI(it) }.getOrNull() } ?: return false
     return uri.isSecureOrigin("discord.com") &&
         (uri.rawPath == "/app" || uri.rawPath == "/channels/@me" || uri.rawPath.startsWith("/channels/@me/"))
