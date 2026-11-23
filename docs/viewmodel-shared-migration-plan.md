@@ -178,9 +178,9 @@ How the old semantics are preserved:
 
 | Dependency | Remaining sites | Note |
 |---|---|---|
-| `getApplication<…>()` / `contentResolver` | 12 | mostly Context passed to repos/workers |
+| `getApplication<…>()` / `contentResolver` | 8 | all in `IllustiaViewModelFoundation` — collaborator construction |
 | `viewModelScope.launch` sites | 70 | **seam done** — now `deps.scope` |
-| `Intent` | 1 | outbound wallpaper broadcast in the foundation |
+| `Intent` | 0 | `AppServices` facade |
 | `Uri` | 0 | `DocumentIo` facade |
 | `Coil` (`SingletonImageLoader`) | 0 | `ImageCache` facade |
 | `Room` (`SavedIllustEntity`) | 0 | `SavedIllust` model + `SettingsStore` mapping |
@@ -215,6 +215,7 @@ mirroring the `PixivUrlPolicy.kt` split that already works.
 | `DeviceProfile` | `PlatformCapabilities` low-RAM / debounce | ✅ done |
 | `SavedIllust` (model) | Room `SavedIllustEntity` in UI state | ✅ done |
 | `AppServices` | wallpaper scheduler / widget refresh / download service acquire | ✅ done |
+| `AppServices` (拡張) | live-wallpaper broadcast / account reconcile / bookmark enqueue / follow-delta snapshot | ✅ done |
 | `String` URI (save image) | `android.net.Uri` in `saveImageToDocument` | ✅ done |
 
 ### Step 5 — The hard seams (classes 5–6)
