@@ -364,7 +364,7 @@ fun AboutScreen(
                                             fontWeight = FontWeight.Bold,
                                         )
                                         Button(
-                                            onClick = { viewModel.installUpdate(java.io.File(currentUpdate.apkPath)) },
+                                            onClick = { viewModel.installUpdate(currentUpdate.apkPath) },
                                             modifier = Modifier.fillMaxWidth(),
                                             colors = ButtonDefaults.buttonColorsPrimary(),
                                         ) {

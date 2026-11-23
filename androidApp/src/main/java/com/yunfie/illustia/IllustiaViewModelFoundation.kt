@@ -42,7 +42,7 @@ import com.yunfie.illustia.ui.app.DetailEntrySnapshot
 import com.yunfie.illustia.ui.app.SearchEntrySnapshot
 import com.yunfie.illustia.ui.scroll.ScrollPositionProbe
 import com.yunfie.illustia.updater.AppReleaseInfo
-import com.yunfie.illustia.updater.AppUpdaterRepository
+import com.yunfie.illustia.updater.AppUpdateService
 import com.yunfie.illustia.updater.UpdateCheckState
 import com.yunfie.illustia.updater.UpdateInstallMethod
 import kotlinx.coroutines.CoroutineScope
@@ -312,12 +312,7 @@ abstract class IllustiaViewModelFoundation(
     protected val _userNavigationRequests = MutableSharedFlow<Long>(extraBufferCapacity = 16)
     val userNavigationRequests: SharedFlow<Long> = _userNavigationRequests
     internal val tabScrollToTopRequests = MutableSharedFlow<AppTab>(extraBufferCapacity = 16)
-    val appUpdaterRepository: AppUpdaterRepository by lazy {
-        AppUpdaterRepository(
-            context = getApplication(),
-            httpClient = (getApplication<Application>() as IllustiaApplication).sharedHttpClient,
-        )
-    }
+    val appUpdaterRepository: AppUpdateService get() = deps.appUpdateService
 
     @Suppress("VariableNaming")
     protected val _updateCheckState = MutableStateFlow<UpdateCheckState>(UpdateCheckState.Idle)
@@ -1048,7 +1043,7 @@ abstract class IllustiaViewModelFoundation(
         _uiState.update { it.copy(message = str(StringKey.UpdateNotificationDownloadedDesc)) } // Using a placeholder for started download
     }
 
-    fun installUpdate(apkFile: File) {
+    fun installUpdate(apkPath: String) {
         viewModelScope.launch(Dispatchers.IO) {
             _updateCheckState.value = UpdateCheckState.Installing
             val method = UpdateInstallMethod.fromValue(_uiState.value.settings.updateInstallMethod)
@@ -1056,7 +1051,7 @@ abstract class IllustiaViewModelFoundation(
                 backgroundWork.cancelAppUpdateWork()
             }
             appUpdaterRepository
-                .installApk(apkFile, method)
+                .installApk(apkPath, method)
                 .onSuccess {
                     if (method == UpdateInstallMethod.SHIZUKU) {
                         appUpdaterRepository.cleanUpdateApks()

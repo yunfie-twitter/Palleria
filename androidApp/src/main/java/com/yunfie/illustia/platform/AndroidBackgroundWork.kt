@@ -67,7 +67,7 @@ private fun AppUpdateDownloadWorker.DownloadProgressEvent.toAppUpdateEvent(): Ap
         }
 
         is AppUpdateDownloadWorker.DownloadProgressEvent.Completed -> {
-            AppUpdateEvent.Completed(file.absolutePath, release)
+            AppUpdateEvent.Completed(apkPath, release)
         }
 
         is AppUpdateDownloadWorker.DownloadProgressEvent.Failed -> {

@@ -5,6 +5,8 @@ import android.content.ContentResolver
 import com.yunfie.illustia.IllustiaApplication
 import com.yunfie.illustia.data.IllustiaRepository
 import com.yunfie.illustia.settings.SettingsStore
+import com.yunfie.illustia.updater.AppUpdateService
+import com.yunfie.illustia.updater.AppUpdaterRepository
 import kotlinx.coroutines.CoroutineScope
 import okhttp3.OkHttpClient
 
@@ -35,6 +37,9 @@ class ViewModelDeps(
     val telemetry: Telemetry = AndroidTelemetry,
     val strings: StringProvider = AndroidStringProvider(application),
 ) {
+    val appUpdateService: AppUpdateService by lazy {
+        AppUpdaterRepository(application, requireNotNull(illustiaApplication).sharedHttpClient)
+    }
     val appServices: AppServices by lazy { AndroidAppServices(application) }
     val documentIo: DocumentIo by lazy { AndroidDocumentIo(application.contentResolver) }
     val illustiaApplication: IllustiaApplication? get() = application as? IllustiaApplication

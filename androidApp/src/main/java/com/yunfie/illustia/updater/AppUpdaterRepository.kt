@@ -45,7 +45,7 @@ class AppUpdaterRepository(
     private val context: Context,
     private val httpClient: OkHttpClient =
         (context.applicationContext as? IllustiaApplication)?.sharedHttpClient ?: OkHttpClient(),
-) {
+) : AppUpdateService {
     private val json = Json { ignoreUnknownKeys = true }
     private val updatesDir: File
         get() = File(context.filesDir, "updates").apply { if (!exists()) mkdirs() }
@@ -62,13 +62,13 @@ class AppUpdaterRepository(
     private var activeDownloadCall: Call? = null
     private val downloadLock = Any()
 
-    fun getCurrentVersionName(): String =
+    override fun getCurrentVersionName(): String =
         runCatching {
             val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
             packageInfo.versionName.orEmpty()
         }.getOrNull()?.ifBlank { "" } ?: ""
 
-    fun cleanUpdateApks() {
+    override fun cleanUpdateApks() {
         runCatching {
             updatesDir.listFiles()?.forEach { file ->
                 if (file.name.endsWith(".apk", ignoreCase = true) || file.name.endsWith(".tmp", ignoreCase = true)) {
@@ -78,7 +78,7 @@ class AppUpdaterRepository(
         }
     }
 
-    fun cancelDownload() {
+    override fun cancelDownload() {
         synchronized(downloadLock) {
             activeDownloadCall?.cancel()
             activeDownloadCall = null
@@ -86,7 +86,7 @@ class AppUpdaterRepository(
     }
 
     @Suppress("CyclomaticComplexMethod")
-    suspend fun fetchLatestRelease(includePrerelease: Boolean = false): Result<AppReleaseInfo?> =
+    override suspend fun fetchLatestRelease(includePrerelease: Boolean): Result<AppReleaseInfo?> =
         withContext(Dispatchers.IO) {
             runCatching {
                 val url =
@@ -222,16 +222,16 @@ class AppUpdaterRepository(
         )
     }
 
-    fun isNewerVersion(
+    override fun isNewerVersion(
         remoteVersion: String,
-        currentVersion: String = getCurrentVersionName(),
+        currentVersion: String,
     ): Boolean = compareVersions(remoteVersion, currentVersion) > 0
 
     @Suppress("CyclomaticComplexMethod", "LongMethod")
-    suspend fun downloadApk(
+    override suspend fun downloadApk(
         release: AppReleaseInfo,
         onProgress: (progress: Float, downloadedBytes: Long, totalBytes: Long) -> Unit,
-    ): Result<File> =
+    ): Result<String> =
         withContext(Dispatchers.IO) {
             runCatching {
                 val sanitizedFileName = File(release.apkFileName).name.ifBlank { "Palleria-update.apk" }
@@ -240,7 +240,7 @@ class AppUpdaterRepository(
                 if (targetFile.exists() && expectedSize > 0 && targetFile.length() == expectedSize) {
                     if (verifyFileChecksum(targetFile, release.sha256Checksum)) {
                         onProgress(1.0f, expectedSize, expectedSize)
-                        return@runCatching targetFile
+                        return@runCatching targetFile.path
                     }
                     targetFile.delete()
                 }
@@ -301,7 +301,7 @@ class AppUpdaterRepository(
                     }
                     val finalSize = targetFile.length()
                     onProgress(1.0f, finalSize, finalSize)
-                    targetFile
+                    targetFile.path
                 } finally {
                     synchronized(downloadLock) {
                         if (activeDownloadCall === activeCall) {
@@ -336,12 +336,12 @@ class AppUpdaterRepository(
         return actual.equals(expectedSha256.trim(), ignoreCase = true)
     }
 
-    fun isShizukuAvailable(): Boolean =
+    override fun isShizukuAvailable(): Boolean =
         runCatching {
             Shizuku.pingBinder()
         }.getOrDefault(false)
 
-    fun isShizukuPermissionGranted(): Boolean =
+    override fun isShizukuPermissionGranted(): Boolean =
         runCatching {
             if (!isShizukuAvailable()) return false
             if (Shizuku.getVersion() < SHIZUKU_MIN_API_VERSION) {
@@ -351,7 +351,7 @@ class AppUpdaterRepository(
             }
         }.getOrDefault(false)
 
-    fun requestShizukuPermission(requestCode: Int = SHIZUKU_DEFAULT_REQUEST_CODE) {
+    override fun requestShizukuPermission(requestCode: Int) {
         runCatching {
             if (isShizukuAvailable()) {
                 if (!isShizukuPermissionGranted()) {
@@ -426,7 +426,12 @@ class AppUpdaterRepository(
             }.getOrDefault(false)
         }
 
-    suspend fun installApk(
+    override suspend fun installApk(
+        apkPath: String,
+        method: UpdateInstallMethod,
+    ): Result<Unit> = installApkFile(File(apkPath), method)
+
+    private suspend fun installApkFile(
         apkFile: File,
         method: UpdateInstallMethod,
     ): Result<Unit> =
