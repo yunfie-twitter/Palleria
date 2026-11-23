@@ -1,7 +1,6 @@
 package com.yunfie.illustia
 
 import android.app.Application
-import android.net.Uri
 import com.yunfie.illustia.GlitchTipTelemetry
 import com.yunfie.illustia.data.FollowDeltaSyncManager
 import com.yunfie.illustia.data.ManagedDataRepository
@@ -1374,11 +1373,11 @@ abstract class IllustiaAuthFeedModule(
         }
     }
 
-    fun exportManagedData(uri: Uri) {
+    fun exportManagedData(uri: String) {
         val settings = _uiState.value.settings
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
-                managedDataRepository.export(uri, settings)
+                documentIo.export(uri, settings)
             }.onSuccess {
                 _uiState.update { it.copy(message = str(R.string.msg_data_exported)) }
             }.onFailure { expectedFailure ->
@@ -1388,11 +1387,11 @@ abstract class IllustiaAuthFeedModule(
         }
     }
 
-    fun importManagedData(uri: Uri) {
+    fun importManagedData(uri: String) {
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
                 val current = _uiState.value.settings
-                val imported = managedDataRepository.import(uri, current)
+                val imported = documentIo.import(uri, current)
                 repository.saveSettings(imported, current)
                 imported
             }.onSuccess { imported ->

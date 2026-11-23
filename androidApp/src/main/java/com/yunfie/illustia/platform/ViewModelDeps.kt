@@ -3,6 +3,7 @@ package com.yunfie.illustia.platform
 import android.app.Application
 import android.content.ContentResolver
 import com.yunfie.illustia.IllustiaApplication
+import com.yunfie.illustia.data.ManagedDataRepository
 import kotlinx.coroutines.CoroutineScope
 
 /**
@@ -29,6 +30,7 @@ class ViewModelDeps(
     val backgroundWork: BackgroundWork = AndroidBackgroundWork(application),
     val imageCache: ImageCache = AndroidImageCache(application),
 ) {
+    val documentIo: DocumentIo by lazy { AndroidDocumentIo(ManagedDataRepository(application.contentResolver)) }
     val illustiaApplication: IllustiaApplication? get() = application as? IllustiaApplication
 
     val contentResolver: ContentResolver get() = application.contentResolver

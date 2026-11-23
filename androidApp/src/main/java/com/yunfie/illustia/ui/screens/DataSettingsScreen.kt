@@ -51,7 +51,7 @@ fun DataSettingsScreen(
     val exportLauncher =
         rememberLauncherForActivityResult(
             contract = ActivityResultContracts.CreateDocument("application/json"),
-            onResult = { uri -> uri?.let(viewModel::exportManagedData) },
+            onResult = { uri -> uri?.let { viewModel.exportManagedData(it.toString()) } },
         )
     val importLauncher =
         rememberLauncherForActivityResult(
@@ -82,7 +82,7 @@ fun DataSettingsScreen(
             confirmText = stringResource(R.string.data_import),
             onConfirm = {
                 pendingImportUri = null
-                viewModel.importManagedData(uri)
+                viewModel.importManagedData(uri.toString())
             },
             onDismiss = { pendingImportUri = null },
         )

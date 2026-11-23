@@ -29,6 +29,7 @@ import com.yunfie.illustia.platform.AppLogger
 import com.yunfie.illustia.platform.AppPaths
 import com.yunfie.illustia.platform.BackgroundWork
 import com.yunfie.illustia.platform.Connectivity
+import com.yunfie.illustia.platform.DocumentIo
 import com.yunfie.illustia.platform.ImageCache
 import com.yunfie.illustia.platform.MainThreadChecker
 import com.yunfie.illustia.platform.MonotonicClock
@@ -153,6 +154,7 @@ abstract class IllustiaViewModelFoundation(
     protected val appInfo: AppInfo get() = deps.appInfo
     protected val backgroundWork: BackgroundWork get() = deps.backgroundWork
     protected val imageCache: ImageCache get() = deps.imageCache
+    protected val documentIo: DocumentIo get() = deps.documentIo
     protected val settingsStore by lazy {
         illustiaApplication?.settingsStore
             ?: SettingsStore(getApplication<Application>().applicationContext)
