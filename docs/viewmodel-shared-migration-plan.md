@@ -242,22 +242,36 @@ platform type swapped first):
 - `AppServices` — references `SavedIllust`-era models + `IllustiaRepository`
 - `StringProvider` — `Int` resource ids are Android-shaped
 
-ViewModel tree's remaining non-`shared` imports (**11** distinct, down from 25):
+ViewModel tree's remaining non-`shared` imports (**8** distinct, down from 25):
 
 | Import | Blocking on |
 |---|---|
-| `GlitchTipTelemetry` | Sentry SDK + `Context` |
-| `DummyAppIconSwitcher` | `PackageManager` alias switching |
-| `settings.db.SavedIllustPageEntity` | Room entity |
-| `settings.store.STARTUP_LOGGED_IN_TOKEN` | DataStore key constant (top-level `val`) |
+| `DummyAppIconSwitcher` | `PackageManager` alias switching（`context` を受ける） |
+| `settings.store.STARTUP_LOGGED_IN_TOKEN` | DataStore キーと同じパッケージのトップレベル `const val` |
 | `ui.app.AppRoute`, `AppTab`, `DetailEntrySnapshot`, `SearchEntrySnapshot` | `internal` + `NavKey` + `ImageVector` + `R` |
 | `ui.scroll.ScrollStateRegistry`, `ScrollPositionProbe` | Compose `foundation` `LazyListState`/`LazyGridState` |
-| `widget.IllustWidgetProvider` | Glance app widget |
+
+#### Known trap: split packages hide top-level declarations
+
+`shared` と `androidApp` が**同じパッケージ**を宣言すると、そのパッケージの
+トップレベル宣言は他方のモジュールから解決できない:
+
+- クラス・enum・`sealed interface` は **移動できる**（`UpdateModels`,
+  `BackgroundWork`, `AppSettings`, `FeatureFlag`, `SavedIllust` で実証、テスト緑）
+- トップレベル `fun` は移動できない（`isFeatureEnabled` で実証）→ enum のメソッドに
+  変換して回避した（`FeatureFlag.resolve(settings)`）
+- トップレベル `const val` も**分割パッケージでは解決されない**
+  （`STARTUP_LOGGED_IN_TOKEN` を `shared` に写して `androidApp` から削除したら
+  `UNRESOLVED_IMPORT`。ただし同名パッケージを丸ごと移動した `AppSettings` の
+  トップレベル `val` は問題なし）
+
+原則: **パッケージを丸ごと移す**。一部だけ移すと分割パッケージになり詰まる。
 
 Already moved to `shared` this session:
 
 - facades: `AppLogger`, `MonotonicClock`/`MainThreadChecker`, `Connectivity`,
-  `AppInfo`, `ImageCache`, `DeviceProfile`
+  `AppInfo`, `ImageCache`, `DeviceProfile`, `Telemetry`（`AndroidTelemetry` が
+  `GlitchTipTelemetry` へ委譲）
 - data: `AppSettings`, `FeatureFlag` enum (with `resolve()` as an enum method),
   `UpdateModels` (`UpdateInstallMethod`/`AppReleaseInfo`/`UpdateCheckState`),
   `BackgroundWork` + `AppUpdateEvent`
