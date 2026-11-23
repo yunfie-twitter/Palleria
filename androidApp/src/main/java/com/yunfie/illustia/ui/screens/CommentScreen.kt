@@ -62,6 +62,7 @@ import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.components.prefetchPixivThumbnail
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
+import com.yunfie.illustia.uiRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -97,8 +98,8 @@ fun CommentScreen(
     onOpenUser: (Long) -> Unit,
 ) {
     if (!show) return
-    val repository = remember(viewModel) { viewModel.uiRepository() }
     val context = LocalContext.current
+    val repository = remember(context) { context.uiRepository() }
     val store = remember(repository, id, type) { CommentStore(repository, id, type = type, context = context) }
     val state by store.state.collectAsStateWithLifecycle()
     val settings by viewModel.settingsState.collectAsStateWithLifecycle()

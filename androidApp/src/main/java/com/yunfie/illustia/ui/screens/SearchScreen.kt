@@ -45,6 +45,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -82,6 +83,7 @@ import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.smoothScrollToTop
 import com.yunfie.illustia.ui.scroll.ScrollStateKeys
 import com.yunfie.illustia.ui.scroll.ScrollStateRegistry
+import com.yunfie.illustia.uiRepository
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Icon
@@ -128,7 +130,8 @@ fun SearchScreen(
     LaunchedEffect(focusRequest) {
         if (focusRequest > 0) searchExpanded = true
     }
-    val repository = remember(viewModel) { viewModel.uiRepository() }
+    val context = LocalContext.current
+    val repository = remember(context) { context.uiRepository() }
     val suggestionStore = remember(repository) { SuggestionStore(repository) }
     val autocompleteSuggestions by suggestionStore.autoWords.collectAsStateWithLifecycle()
 

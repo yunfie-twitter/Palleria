@@ -88,6 +88,7 @@ import com.yunfie.illustia.ui.screens.profile.UserProfileErrorScreen
 import com.yunfie.illustia.ui.screens.profile.UserProfileSkeletonScreen
 import com.yunfie.illustia.ui.scroll.ScrollStateKeys
 import com.yunfie.illustia.ui.scroll.ScrollStateRegistry
+import com.yunfie.illustia.uiRepository
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -565,7 +566,7 @@ internal fun AppNavHost(
             entry(AppRoute.BookmarkTagSort) {
                 BookmarkTagSortScreen(
                     settings = appState.state.settings,
-                    repository = remember(viewModel) { viewModel.uiRepository() },
+                    repository = remember(context) { context.uiRepository() },
                     selectedTag = appState.state.bookmarkTag,
                     onBack = onPopRoute,
                     onSelect = { restrict, tag ->

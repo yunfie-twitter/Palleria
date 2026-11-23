@@ -107,6 +107,7 @@ import com.yunfie.illustia.ui.components.pinchToChangeColumns
 import com.yunfie.illustia.ui.components.profileGridContentPadding
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import com.yunfie.illustia.ui.components.rememberSkeletonShimmer
+import com.yunfie.illustia.uiRepository
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Card
@@ -145,7 +146,7 @@ fun WatchlistSeriesScreen(
     PredictiveBackGestureHandler(onBack = onBack)
     val context = LocalContext.current
     val activity = context as? Activity
-    val repository = remember(viewModel) { viewModel.uiRepository() }
+    val repository = remember(context) { context.uiRepository() }
     val store = remember(repository) { WatchlistStore(repository, context) }
     val state by store.state.collectAsStateWithLifecycle()
     val settings by viewModel.settingsState.collectAsStateWithLifecycle()

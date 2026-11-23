@@ -49,6 +49,7 @@ import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.smoothScrollToTop
 import com.yunfie.illustia.ui.scroll.ScrollStateKeys
 import com.yunfie.illustia.ui.scroll.ScrollStateRegistry
+import com.yunfie.illustia.uiRepository
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.DropdownEntry
@@ -84,8 +85,8 @@ fun BookmarkScreen(
 ) {
     val bookmarkSort = chrome.bookmarkSort
     var followingUserSort by rememberSaveable { mutableStateOf(FollowingUserSort.Newest) }
-    val repository = remember(viewModel) { viewModel.uiRepository() }
     val context = LocalContext.current
+    val repository = remember(context) { context.uiRepository() }
     val watchlistStore = remember(repository, context) { WatchlistStore(repository, context) }
     val watchlistState by watchlistStore.state.collectAsStateWithLifecycle()
     LaunchedEffect(viewModel, watchlistStore) {
