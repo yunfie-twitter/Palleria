@@ -7,28 +7,6 @@ import com.yunfie.illustia.platform.IncomingLink
 import java.net.URI
 import java.util.Locale
 
-sealed interface NativeIntentEvent {
-    data class Artwork(
-        val id: Long,
-    ) : NativeIntentEvent
-
-    data class User(
-        val id: Long,
-    ) : NativeIntentEvent
-
-    data class Tag(
-        val tag: String,
-    ) : NativeIntentEvent
-
-    data class Text(
-        val value: String,
-    ) : NativeIntentEvent
-
-    data class Image(
-        val uri: Uri,
-    ) : NativeIntentEvent
-}
-
 object NativeIntentRouter {
     private val WEB_PIXIV_HOSTS = setOf("pixiv.net", "www.pixiv.net")
     private val CUSTOM_PIXIV_SCHEMES = setOf("pixiv", "palleria")
@@ -83,7 +61,7 @@ object NativeIntentRouter {
         }
         if (intent.action == Intent.ACTION_SEND) {
             val imageUri = IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)
-            if (imageUri != null) return NativeIntentEvent.Image(imageUri)
+            if (imageUri != null) return NativeIntentEvent.Image(imageUri.toString())
             val text = intent.getStringExtra(Intent.EXTRA_TEXT)?.trim().orEmpty()
             if (text.isNotBlank()) {
                 parseText(text)?.let { return it }
@@ -111,7 +89,7 @@ object NativeIntentRouter {
             return normalizeProcessText(link.processText)?.let(NativeIntentEvent::Text)
         }
         if (link.action == IncomingLink.Action.SEND) {
-            link.sharedImageUri?.let { return NativeIntentEvent.Image(Uri.parse(it)) }
+            link.sharedImageUri?.let { return NativeIntentEvent.Image(it) }
             val text = link.sharedText?.trim().orEmpty()
             if (text.isNotBlank()) {
                 parseText(text)?.let { return it }
