@@ -141,7 +141,7 @@ class MainActivity : FragmentActivity() {
     }
 
     private val viewModel by viewModels<IllustiaViewModel> {
-        IllustiaViewModel.Factory(application)
+        IllustiaViewModelFactory(application)
     }
     private val dynamicHzController =
         com.yunfie.illustia.platform

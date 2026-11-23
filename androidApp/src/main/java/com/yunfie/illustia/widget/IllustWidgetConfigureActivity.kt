@@ -46,6 +46,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.GlitchTipTelemetry
 import com.yunfie.illustia.IllustiaApplication
 import com.yunfie.illustia.IllustiaViewModel
+import com.yunfie.illustia.IllustiaViewModelFactory
 import com.yunfie.illustia.R
 import com.yunfie.illustia.data.proxyPixivImageUrl
 import com.yunfie.illustia.models.Illust
@@ -87,7 +88,7 @@ class IllustWidgetConfigureActivity : FragmentActivity() {
     private val widgetImageMaxDimension = 960
 
     private val viewModel by viewModels<IllustiaViewModel> {
-        IllustiaViewModel.Factory(application)
+        IllustiaViewModelFactory(application)
     }
 
     private val widgetId: Int by lazy {

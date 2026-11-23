@@ -48,6 +48,8 @@ kotlin {
 
         androidMain.dependencies {
             implementation libs.ktor.client.okhttp
+            implementation libs.okhttp
+            implementation libs.lifecycle.viewmodel.ktx
         }
 
         commonTest.dependencies {
