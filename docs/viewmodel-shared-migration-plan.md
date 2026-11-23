@@ -398,20 +398,20 @@ next unblocked slice.
 - `DeviceProfile.supportsDynamicColor` を追加し `isDynamicColorAvailable` 依存を除去。
 - `StringProvider` の既定値を `ViewModelDeps` へ集約。
 - 起動時閲覧履歴の上限を `shared` の定数へ移設。
-- 残ブロッカーは **10**（per-symbol 計測）。
-- `IllustiaRepositoryApi`（44 メンバ）と `AppUpdateService` を抽出。ViewModel は具体型
-  `IllustiaRepository` / `AppUpdaterRepository` を参照しなくなった。
-- `uiRepository()` は UI 層の `Context.uiRepository()` 拡張へ移設。
-- APK 受け渡しは `File` ではなくパス文字列に統一（`installUpdate(apkPath)`）。
+- 残ブロッカーは **8**（per-symbol 計測）。
+- ViewModel から `Application` / `getApplication()` の直接参照を除去（`imageStore` の生成を
+  `ViewModelDeps` へ移設）。ViewModel は `android.app.Application` を import しなくなった。
+- `AppPaths` を `shared` へ。`cacheDir()` は `File` ではなくパス文字列を返し、
+  `File` 化は Android 側の呼び出し点で行う。
+- `DocumentIo`（export / import）を `shared` へ。`OutputStream` を受ける `write` だけは
+  `DocumentStreamIo` として Android 側に分離（ストリーミングを維持するため）。
 
-### 残存 10 件の内訳と判断
+### 残存 8 件の内訳と判断
 
 | 残り | 判断 |
 | --- | --- |
-| `ViewModelDeps` | ViewModel 連鎖の入口そのもの。`shared` へ移すには `Application` を追い出す大掛かりな分解が必要。 |
-| `AppPaths` | `clearAppCache` が実 `File` 一覧を要する。 |
-| `DocumentIo` | `write(uri) { OutputStream }` でストリーミング保存。`ByteArray` 化はメモリ退行。 |
-| `NativeImageStore` | MediaStore / SAF / DocumentFile そのもの。 |
+| `ViewModelDeps` | Android の `Application` を保持する生成側の実装。インターフェース化は次段階。 |
+| `DocumentStreamIo` | `OutputStream` ストリーミング境界。`ByteArray` 化はメモリ退行。 |
 | `AnimatedGifEncoder` / `UgoiraMp4Encoder` | `Bitmap` / `MediaCodec` / `OutputStream`。 |
 | `ResumableDownloader` | `.part` ファイルへの Range 再開ダウンロード。 |
 | `DummyAppIconSwitcher` | `PackageManager` でランチャーエイリアス切替。 |
