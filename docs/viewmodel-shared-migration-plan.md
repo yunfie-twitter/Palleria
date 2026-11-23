@@ -176,21 +176,20 @@ How the old semantics are preserved:
 
 **Still outstanding, measured from the tree (not estimated):**
 
-| Dependency | Remaining sites |
-|---|---|
-| `AndroidViewModel` / `viewModelScope` | 86 |
-| `getApplication<…>()` / `cacheDir` / `contentResolver` | 26 |
-| `ConnectivityManager` / `NetworkCapabilities` | 6 |
-| `WorkManager` | 3 |
-| `Intent` | 3 |
-| `Uri` | 3 |
-| `Coil` | 2 |
-| `PackageInfoCompat` | 1 |
-| Room (`SavedIllustEntity`) | 1 |
+| Dependency | Remaining sites | Note |
+|---|---|---|
+| `getApplication<…>()` / `contentResolver` | 19 | mostly Context passed to repos/workers |
+| `viewModelScope.launch` sites | 70 | **seam done** — now `deps.scope` |
+| `Intent` | 3 | `handleIncomingIntent` in AuthFeed |
+| `Uri` | 3 | export/import managed data |
+| `Coil` (`SingletonImageLoader`) | 2 | cache warm + cache clear |
+| `WorkManager` | 0 code | one comment mention |
+| `ConnectivityManager` / `NetworkCapabilities` | 0 | |
+| `PackageInfoCompat` | 0 | |
+| Room (`SavedIllustEntity`) | 1 | leaks into `IllustiaUiState.savedIllusts` |
 
-The `viewModelScope` count is the load-bearing one: it is the coroutine scope every
-module launches into, so extracting it (an injected `CoroutineScope`) is a prerequisite
-for everything else and cannot be done piecemeal.
+`viewModelScope` is no longer a blocker — the seam is in place and the type-level
+`AndroidViewModel` edge is gone (Step 5).
 
 ### Step 4 detail — the small facades (class 4)
 
@@ -203,16 +202,14 @@ mirroring the `PixivUrlPolicy.kt` split that already works.
 | `AppLogger` | `android.util.Log` | ✅ done |
 | `MonotonicClock` | `SystemClock.elapsedRealtime()` | ✅ done |
 | `MainThreadChecker` | `Looper.myLooper() == Looper.getMainLooper()` | ✅ done |
-| `Connectivity` | `ConnectivityManager` / `isNetworkMetered` | todo |
-| `AppInfo` | `PackageInfoCompat` / version lookup | todo |
-| `AppPaths` | `cacheDir` | todo |
-| `Connectivity` | `ConnectivityManager` / `NetworkCapabilities` / `isActiveNetworkMetered` |
-| `AppInfo` | `PackageManager.getPackageInfo` + `PackageInfoCompat` |
-| `AppPaths` | `cacheDir`, temp-file creation |
-| `ImagePrefetcher` | Coil `SingletonImageLoader` + cache clearing |
-| `DeviceProfile` | `PlatformCapabilities` low-RAM / debounce |
-| `IncomingLink` (data class) | `Intent` in `handleIncomingIntent` |
-| `String` URI | `android.net.Uri` in export/import |
+| `Connectivity` | `ConnectivityManager` / `NetworkCapabilities` / `isNetworkMetered` | ✅ done |
+| `AppInfo` | `PackageManager.getPackageInfo` + `PackageInfoCompat` | ✅ done |
+| `AppPaths` | `cacheDir` | ✅ done |
+| `BackgroundWork` | `WorkManager` (app-update job) | ✅ done |
+| `ImagePrefetcher` | Coil `SingletonImageLoader` + cache clearing | todo |
+| `DeviceProfile` | `PlatformCapabilities` low-RAM / debounce | todo |
+| `IncomingLink` (data class) | `Intent` in `handleIncomingIntent` | todo |
+| `String` URI | `android.net.Uri` in export/import | todo |
 
 ### Step 5 — The hard seams (classes 5–6)
 
