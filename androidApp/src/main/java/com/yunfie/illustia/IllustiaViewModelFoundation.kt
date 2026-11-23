@@ -105,7 +105,7 @@ private fun AppSettings.hasLiveWallpaperChangesComparedTo(other: AppSettings): B
 internal fun AppSettings.withHydratedRoomCollections(full: AppSettings): AppSettings =
     copy(
         refreshToken =
-            if (full.refreshToken.isNotBlank() && full.refreshToken != STARTUP_LOGGED_IN_TOKEN) {
+            if (full.isLoggedIn) {
                 full.refreshToken
             } else {
                 refreshToken
@@ -468,7 +468,7 @@ abstract class IllustiaViewModelFoundation(
             val page = repository.loadHome(kind, forceRefresh = forceRefresh)
             val currentSettings = _uiState.value.settings
             val settings =
-                if (currentSettings.refreshToken == STARTUP_LOGGED_IN_TOKEN) {
+                if (!currentSettings.isLoggedIn) {
                     repository.readFeedSettings()
                 } else {
                     currentSettings

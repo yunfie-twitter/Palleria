@@ -13,6 +13,9 @@ import com.yunfie.illustia.models.StoredAccount
 
 private const val DEFAULT_SEED_COLOR = 0xFF42A5F5L
 
+/** 起動直後に保存されるセッションのプレースホルダ。実トークンではない。 */
+const val STARTUP_TOKEN_PLACEHOLDER = "__startup_session_token__"
+
 val DEFAULT_NAVIGATION_ORDER = listOf("home", "search", "bookmarks", "ranking", "more")
 val DEFAULT_DETAIL_SECTION_ORDER = listOf("artist", "tags", "description", "related")
 
@@ -173,4 +176,13 @@ data class AppSettings(
 ) {
     val useHighQualityFeedImages: Boolean
         get() = highQualityImages && feedPreviewQuality != "low"
+
+    /**
+     * Pixiv の認証トークンが実際に設定されているか。
+     *
+     * 起動直後はプレースホルダ値が入っているだけなので、それを「ログイン済み」と
+     * 誤認しないようここで判定する。
+     */
+    val isLoggedIn: Boolean
+        get() = refreshToken.isNotBlank() && refreshToken != STARTUP_TOKEN_PLACEHOLDER
 }

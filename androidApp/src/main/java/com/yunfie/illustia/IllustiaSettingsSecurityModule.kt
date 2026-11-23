@@ -32,10 +32,7 @@ private const val MAX_TTS_PITCH = 2.0f
 private fun canRefreshProfileOnStartup(
     settings: com.yunfie.illustia.settings.AppSettings,
     isLocked: Boolean,
-): Boolean {
-    val hasValidToken = settings.refreshToken.isNotBlank() && settings.refreshToken != STARTUP_LOGGED_IN_TOKEN
-    return hasValidToken && !isLocked && !settings.privacyModeEnabled
-}
+): Boolean = settings.isLoggedIn && !isLocked && !settings.privacyModeEnabled
 
 /** Settings mutations, app/privacy locking, and calculator-backed unlock behavior. */
 @Suppress("LargeClass")
