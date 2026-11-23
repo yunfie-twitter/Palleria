@@ -50,5 +50,8 @@ class ScrollStateRegistry {
 
     companion object {
         const val MAX_CACHED = 16
+
+        /** アプリ全体で共有するスクロール状態。UI レイヤーのみが参照する。 */
+        val shared: ScrollStateRegistry by lazy { ScrollStateRegistry() }
     }
 }

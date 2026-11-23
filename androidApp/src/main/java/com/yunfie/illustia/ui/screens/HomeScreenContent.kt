@@ -119,7 +119,7 @@ internal fun FeedTabContent(
     val feedHighQuality = settings.useHighQualityFeedImages
     val showAiBadge = remember(settings.showAiBadge) { settings.showAiBadge }
     val mutedTagsSet = remember(settings.mutedTags) { settings.mutedTags.toHashSet() }
-    val gridState = viewModel.scrollStates.grid(ScrollStateKeys.HOME_FEED)
+    val gridState = ScrollStateRegistry.shared.grid(ScrollStateKeys.HOME_FEED)
     InstallHomeScrollProbe(viewModel, gridState)
 
     PrefetchIllustGridImages(
@@ -300,7 +300,7 @@ internal fun FollowingTabContent(
     val feedHighQuality = settings.useHighQualityFeedImages
     val showAiBadge = remember(settings.showAiBadge) { settings.showAiBadge }
     val mutedTagsSet = remember(settings.mutedTags) { settings.mutedTags.toHashSet() }
-    val gridState = viewModel.scrollStates.grid(ScrollStateKeys.HOME_TIMELINE)
+    val gridState = ScrollStateRegistry.shared.grid(ScrollStateKeys.HOME_TIMELINE)
     InstallHomeScrollProbe(viewModel, gridState)
 
     PrefetchIllustGridImages(

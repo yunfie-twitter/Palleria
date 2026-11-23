@@ -130,7 +130,7 @@ fun BookmarkScreen(
         0 -> {
             PrefetchIllustGridImages(
                 items = timelineItems,
-                gridState = viewModel.scrollStates.grid(ScrollStateKeys.BOOKMARK_TIMELINE),
+                gridState = ScrollStateRegistry.shared.grid(ScrollStateKeys.BOOKMARK_TIMELINE),
                 enabled = settings.prefetchImages,
                 highQualityImages = feedHighQuality,
                 keyPrefix = "timeline_",
@@ -140,7 +140,7 @@ fun BookmarkScreen(
         1 -> {
             PrefetchIllustGridImages(
                 items = sortedBookmarkItems,
-                gridState = viewModel.scrollStates.grid(ScrollStateKeys.BOOKMARK_MAIN),
+                gridState = ScrollStateRegistry.shared.grid(ScrollStateKeys.BOOKMARK_MAIN),
                 enabled = settings.prefetchImages,
                 highQualityImages = feedHighQuality,
             )
@@ -164,10 +164,10 @@ fun BookmarkScreen(
             if (tab == AppTab.Bookmarks) {
                 val targetState =
                     when (pagerState.currentPage) {
-                        0 -> viewModel.scrollStates.grid(ScrollStateKeys.BOOKMARK_TIMELINE)
-                        1 -> viewModel.scrollStates.grid(ScrollStateKeys.BOOKMARK_MAIN)
-                        2 -> viewModel.scrollStates.grid(ScrollStateKeys.BOOKMARK_WATCHLIST)
-                        3 -> viewModel.scrollStates.grid(ScrollStateKeys.BOOKMARK_FOLLOWING)
+                        0 -> ScrollStateRegistry.shared.grid(ScrollStateKeys.BOOKMARK_TIMELINE)
+                        1 -> ScrollStateRegistry.shared.grid(ScrollStateKeys.BOOKMARK_MAIN)
+                        2 -> ScrollStateRegistry.shared.grid(ScrollStateKeys.BOOKMARK_WATCHLIST)
+                        3 -> ScrollStateRegistry.shared.grid(ScrollStateKeys.BOOKMARK_FOLLOWING)
                         else -> null
                     }
                 targetState?.smoothScrollToTop(scrollBehavior)
@@ -198,10 +198,10 @@ fun BookmarkScreen(
                         coroutineScope.launch {
                             val targetState =
                                 when (pagerState.currentPage) {
-                                    0 -> viewModel.scrollStates.grid(ScrollStateKeys.BOOKMARK_TIMELINE)
-                                    1 -> viewModel.scrollStates.grid(ScrollStateKeys.BOOKMARK_MAIN)
-                                    2 -> viewModel.scrollStates.grid(ScrollStateKeys.BOOKMARK_WATCHLIST)
-                                    3 -> viewModel.scrollStates.grid(ScrollStateKeys.BOOKMARK_FOLLOWING)
+                                    0 -> ScrollStateRegistry.shared.grid(ScrollStateKeys.BOOKMARK_TIMELINE)
+                                    1 -> ScrollStateRegistry.shared.grid(ScrollStateKeys.BOOKMARK_MAIN)
+                                    2 -> ScrollStateRegistry.shared.grid(ScrollStateKeys.BOOKMARK_WATCHLIST)
+                                    3 -> ScrollStateRegistry.shared.grid(ScrollStateKeys.BOOKMARK_FOLLOWING)
                                     else -> null
                                 }
                             targetState?.smoothScrollToTop(scrollBehavior)
@@ -449,10 +449,10 @@ fun BookmarkScreen(
                                 coroutineScope.launch {
                                     val targetState =
                                         when (index) {
-                                            0 -> viewModel.scrollStates.grid(ScrollStateKeys.BOOKMARK_TIMELINE)
-                                            1 -> viewModel.scrollStates.grid(ScrollStateKeys.BOOKMARK_MAIN)
-                                            2 -> viewModel.scrollStates.grid(ScrollStateKeys.BOOKMARK_WATCHLIST)
-                                            3 -> viewModel.scrollStates.grid(ScrollStateKeys.BOOKMARK_FOLLOWING)
+                                            0 -> ScrollStateRegistry.shared.grid(ScrollStateKeys.BOOKMARK_TIMELINE)
+                                            1 -> ScrollStateRegistry.shared.grid(ScrollStateKeys.BOOKMARK_MAIN)
+                                            2 -> ScrollStateRegistry.shared.grid(ScrollStateKeys.BOOKMARK_WATCHLIST)
+                                            3 -> ScrollStateRegistry.shared.grid(ScrollStateKeys.BOOKMARK_FOLLOWING)
                                             else -> null
                                         }
                                     targetState?.smoothScrollToTop(scrollBehavior)
@@ -509,7 +509,7 @@ fun BookmarkScreen(
                             watchlistStore = watchlistStore,
                             onOpenWatchlistSeries = onOpenWatchlistSeries,
                             scrollBehavior = scrollBehavior,
-                            gridState = viewModel.scrollStates.grid(ScrollStateKeys.BOOKMARK_WATCHLIST),
+                            gridState = ScrollStateRegistry.shared.grid(ScrollStateKeys.BOOKMARK_WATCHLIST),
                             onColumnsChange = viewModel::updateVerticalColumnCount,
                         )
                     }

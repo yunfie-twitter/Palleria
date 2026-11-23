@@ -156,7 +156,7 @@ fun RankingScreen(
             if (tab == AppTab.Ranking) {
                 val currentMode = modes.getOrNull(pagerState.currentPage)
                 if (currentMode != null) {
-                    viewModel.scrollStates.grid(ScrollStateKeys.ranking(currentMode)).smoothScrollToTop(scrollBehavior)
+                    ScrollStateRegistry.shared.grid(ScrollStateKeys.ranking(currentMode)).smoothScrollToTop(scrollBehavior)
                 }
             }
         }
@@ -185,7 +185,7 @@ fun RankingScreen(
                         coroutineScope.launch {
                             val currentMode = modes.getOrNull(pagerState.currentPage)
                             if (currentMode != null) {
-                                viewModel.scrollStates.grid(ScrollStateKeys.ranking(currentMode)).smoothScrollToTop(scrollBehavior)
+                                ScrollStateRegistry.shared.grid(ScrollStateKeys.ranking(currentMode)).smoothScrollToTop(scrollBehavior)
                             }
                         }
                     },
@@ -317,7 +317,7 @@ private fun RankingGridContent(
     val isModePaginating = isPaginating
     val feedHighQuality = settings.useHighQualityFeedImages
     val showAiBadge = remember(settings.showAiBadge) { settings.showAiBadge }
-    val gridState = viewModel.scrollStates.grid(ScrollStateKeys.ranking(mode))
+    val gridState = ScrollStateRegistry.shared.grid(ScrollStateKeys.ranking(mode))
     PrefetchIllustGridImages(
         items = items,
         gridState = gridState,

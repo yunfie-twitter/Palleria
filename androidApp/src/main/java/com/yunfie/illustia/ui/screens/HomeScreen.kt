@@ -96,8 +96,8 @@ fun HomeScreen(
                 val currentTab = HomeTab.entries[pagerState.currentPage]
                 val gridState =
                     when (currentTab) {
-                        HomeTab.Feed -> viewModel.scrollStates.grid(ScrollStateKeys.HOME_FEED)
-                        HomeTab.Following -> viewModel.scrollStates.grid(ScrollStateKeys.HOME_TIMELINE)
+                        HomeTab.Feed -> ScrollStateRegistry.shared.grid(ScrollStateKeys.HOME_FEED)
+                        HomeTab.Following -> ScrollStateRegistry.shared.grid(ScrollStateKeys.HOME_TIMELINE)
                     }
                 gridState.smoothScrollToTop(scrollBehavior)
             }
@@ -148,8 +148,8 @@ fun HomeScreen(
                             val currentTab = HomeTab.entries[pagerState.currentPage]
                             val gridState =
                                 when (currentTab) {
-                                    HomeTab.Feed -> viewModel.scrollStates.grid(ScrollStateKeys.HOME_FEED)
-                                    HomeTab.Following -> viewModel.scrollStates.grid(ScrollStateKeys.HOME_TIMELINE)
+                                    HomeTab.Feed -> ScrollStateRegistry.shared.grid(ScrollStateKeys.HOME_FEED)
+                                    HomeTab.Following -> ScrollStateRegistry.shared.grid(ScrollStateKeys.HOME_TIMELINE)
                                 }
                             gridState.smoothScrollToTop(scrollBehavior)
                         }
@@ -219,8 +219,8 @@ fun HomeScreen(
                                 coroutineScope.launch {
                                     val gridState =
                                         when (selectedTab) {
-                                            HomeTab.Feed -> viewModel.scrollStates.grid(ScrollStateKeys.HOME_FEED)
-                                            HomeTab.Following -> viewModel.scrollStates.grid(ScrollStateKeys.HOME_TIMELINE)
+                                            HomeTab.Feed -> ScrollStateRegistry.shared.grid(ScrollStateKeys.HOME_FEED)
+                                            HomeTab.Following -> ScrollStateRegistry.shared.grid(ScrollStateKeys.HOME_TIMELINE)
                                         }
                                     gridState.smoothScrollToTop(scrollBehavior)
                                 }

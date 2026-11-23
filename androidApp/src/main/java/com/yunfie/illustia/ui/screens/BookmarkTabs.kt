@@ -391,7 +391,7 @@ internal fun BookmarkMainTab(
     chrome: BookmarkChromeState,
     scrollBehavior: ScrollBehavior,
 ) {
-    val gridState = viewModel.scrollStates.grid(ScrollStateKeys.BOOKMARK_MAIN)
+    val gridState = ScrollStateRegistry.shared.grid(ScrollStateKeys.BOOKMARK_MAIN)
     PrefetchIllustGridImages(
         items = bookmarkItems,
         gridState = gridState,
@@ -526,7 +526,7 @@ internal fun BookmarkTimelineTab(
     chrome: BookmarkChromeState,
     scrollBehavior: ScrollBehavior,
 ) {
-    val gridState = viewModel.scrollStates.grid(ScrollStateKeys.BOOKMARK_TIMELINE)
+    val gridState = ScrollStateRegistry.shared.grid(ScrollStateKeys.BOOKMARK_TIMELINE)
     PrefetchIllustGridImages(
         items = timelineItems,
         gridState = gridState,
@@ -661,7 +661,7 @@ internal fun BookmarkFollowingTab(
     chrome: BookmarkChromeState,
     scrollBehavior: ScrollBehavior? = null,
 ) {
-    val gridState = viewModel.scrollStates.grid(ScrollStateKeys.BOOKMARK_FOLLOWING)
+    val gridState = ScrollStateRegistry.shared.grid(ScrollStateKeys.BOOKMARK_FOLLOWING)
     val miuixPeekEnabled = settings.isFeatureEnabled(FeatureFlag.MiuixQuickPeek)
     val sortedUsers =
         remember(followingUsers, sort) {

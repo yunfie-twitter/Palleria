@@ -413,7 +413,7 @@ internal fun AppNavHost(
                                 ),
                             onRelatedSectionReady = { viewModel.markIllustDetailRelatedSectionReady(illust.id) },
                             onPageChanged = { viewModel.updateIllustDetailPage(illust.id, it) },
-                            listState = viewModel.scrollStates.list(ScrollStateKeys.illustDetail(illust.id)),
+                            listState = ScrollStateRegistry.shared.list(ScrollStateKeys.illustDetail(illust.id)),
                         )
                     } else {
                         if (backStack.lastOrNull() == route) {
@@ -724,8 +724,8 @@ internal fun AppNavHost(
                                 appState.state.settings.mutedUsers
                                     .contains(user.id),
                             onUnmuteUser = { viewModel.unmuteUser(user.id) },
-                            gridState = viewModel.scrollStates.grid(ScrollStateKeys.userProfile(user.id)),
-                            bookmarkGridState = viewModel.scrollStates.grid(ScrollStateKeys.userProfileBookmarks(user.id)),
+                            gridState = ScrollStateRegistry.shared.grid(ScrollStateKeys.userProfile(user.id)),
+                            bookmarkGridState = ScrollStateRegistry.shared.grid(ScrollStateKeys.userProfileBookmarks(user.id)),
                             onIllustLongClick = viewModel::onIllustLongPress,
                             onColumnsChange = viewModel::updateVerticalColumnCount,
                             showHeaderControls = true,

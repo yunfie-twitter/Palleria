@@ -88,7 +88,7 @@ internal fun BrowseArea(
         }
 
     LazyVerticalGrid(
-        state = viewModel.scrollStates.grid(ScrollStateKeys.SEARCH_BROWSE),
+        state = ScrollStateRegistry.shared.grid(ScrollStateKeys.SEARCH_BROWSE),
         columns = GridCells.Fixed(adaptiveProfileGridColumns()),
         modifier = Modifier.fillMaxSize(),
         contentPadding =
@@ -115,7 +115,7 @@ internal fun BrowseArea(
                                 detectTapGestures {
                                     performHaptic(AppHapticEffect.Click)
                                     coroutineScope.launch {
-                                        viewModel.scrollStates.grid(ScrollStateKeys.SEARCH_BROWSE).animateScrollToItem(0)
+                                        ScrollStateRegistry.shared.grid(ScrollStateKeys.SEARCH_BROWSE).animateScrollToItem(0)
                                     }
                                 }
                             },

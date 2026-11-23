@@ -215,7 +215,7 @@ abstract class IllustiaViewModelFoundation(
     }
 
     /** UI が所有するスクロール状態の置き場。ViewModel は値だけを参照する。 */
-    val scrollStates = ScrollStateRegistry()
+    val scrollStates: ScrollStateRegistry get() = ScrollStateRegistry.shared
 
     /**
      * ホームフィードのスクロール位置。UI が設置する。

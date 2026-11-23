@@ -274,12 +274,12 @@ fun SearchScreen(
                     val targetGrid =
                         if (isResultMode) {
                             if (state.searchSelectedTab == 1) {
-                                viewModel.scrollStates.grid(ScrollStateKeys.USER_SEARCH_RESULT)
+                                ScrollStateRegistry.shared.grid(ScrollStateKeys.USER_SEARCH_RESULT)
                             } else {
-                                viewModel.scrollStates.grid(ScrollStateKeys.SEARCH_RESULT)
+                                ScrollStateRegistry.shared.grid(ScrollStateKeys.SEARCH_RESULT)
                             }
                         } else {
-                            viewModel.scrollStates.grid(ScrollStateKeys.SEARCH_BROWSE)
+                            ScrollStateRegistry.shared.grid(ScrollStateKeys.SEARCH_BROWSE)
                         }
                     targetGrid.smoothScrollToTop(scrollBehavior)
                 }
@@ -300,7 +300,7 @@ fun SearchScreen(
             scrollFraction =
                 remember(viewModel) {
                     {
-                        val grid = viewModel.scrollStates.grid(ScrollStateKeys.SEARCH_BROWSE)
+                        val grid = ScrollStateRegistry.shared.grid(ScrollStateKeys.SEARCH_BROWSE)
                         if (grid.firstVisibleItemIndex > 0) {
                             1f
                         } else {

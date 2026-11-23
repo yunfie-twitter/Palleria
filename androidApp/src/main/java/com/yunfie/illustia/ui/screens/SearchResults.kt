@@ -77,9 +77,9 @@ internal fun SearchResultGrid(
     val isNovelResult = page == 0 && state.settings.searchWorkType.isNovel
     val gridState =
         if (page == 0) {
-            viewModel.scrollStates.grid(ScrollStateKeys.SEARCH_RESULT)
+            ScrollStateRegistry.shared.grid(ScrollStateKeys.SEARCH_RESULT)
         } else {
-            viewModel.scrollStates.grid(ScrollStateKeys.USER_SEARCH_RESULT)
+            ScrollStateRegistry.shared.grid(ScrollStateKeys.USER_SEARCH_RESULT)
         }
     val isPaginating = if (page == 0) state.isSearchPaginating else state.isUserSearchPaginating
     val miuixPeekEnabled = state.settings.isFeatureEnabled(FeatureFlag.MiuixQuickPeek)
