@@ -144,17 +144,47 @@ need the facades from Step 4; `ViewModelDeps` currently carries only what the ch
 actually consumed. That is the honest boundary — adding unused fields now would be
 speculative.
 
-### Step 4 — The small facades (class 4)
+### Step 4 — The small facades (class 4) — ✅ partially done
+
+Landed so far (`refactor(platform)`): `AppLogger`, `MonotonicClock`, `MainThreadChecker`,
+each with an interface + Android impl, carried on `ViewModelDeps` and exposed as
+`logger` / `clock` / `mainThread` on the foundation.
+
+That removed the last direct uses of `android.util.Log` (1), `android.os.SystemClock`
+(2) and `android.os.Looper` (1) from the ViewModel tree — all four are now 0.
+
+**Still outstanding, measured from the tree (not estimated):**
+
+| Dependency | Remaining sites |
+|---|---|
+| `AndroidViewModel` / `viewModelScope` | 86 |
+| `getApplication<…>()` / `cacheDir` / `contentResolver` | 26 |
+| `ConnectivityManager` / `NetworkCapabilities` | 6 |
+| `WorkManager` | 3 |
+| `Intent` | 3 |
+| `Uri` | 3 |
+| `Coil` | 2 |
+| `PackageInfoCompat` | 1 |
+| Room (`SavedIllustEntity`) | 1 |
+
+The `viewModelScope` count is the load-bearing one: it is the coroutine scope every
+module launches into, so extracting it (an injected `CoroutineScope`) is a prerequisite
+for everything else and cannot be done piecemeal.
+
+### Step 4 detail — the small facades (class 4)
 
 Each follows the existing `DynamicHzController` shape (interface + Default impl +
 injected), with the interface in `commonMain` and the Android impl in `androidMain` —
 mirroring the `PixivUrlPolicy.kt` split that already works.
 
-| Interface | Replaces |
-|---|---|
-| `Logger` | `android.util.Log` |
-| `MonotonicClock` | `SystemClock.elapsedRealtime()` |
-| `MainThreadChecker` | `Looper.myLooper() == Looper.getMainLooper()` |
+| Interface | Replaces | Status |
+|---|---|---|
+| `AppLogger` | `android.util.Log` | ✅ done |
+| `MonotonicClock` | `SystemClock.elapsedRealtime()` | ✅ done |
+| `MainThreadChecker` | `Looper.myLooper() == Looper.getMainLooper()` | ✅ done |
+| `Connectivity` | `ConnectivityManager` / `isNetworkMetered` | todo |
+| `AppInfo` | `PackageInfoCompat` / version lookup | todo |
+| `AppPaths` | `cacheDir` | todo |
 | `Connectivity` | `ConnectivityManager` / `NetworkCapabilities` / `isActiveNetworkMetered` |
 | `AppInfo` | `PackageManager.getPackageInfo` + `PackageInfoCompat` |
 | `AppPaths` | `cacheDir`, temp-file creation |
