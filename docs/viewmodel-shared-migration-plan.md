@@ -242,14 +242,25 @@ platform type swapped first):
 - `AppServices` — references `SavedIllust`-era models + `IllustiaRepository`
 - `StringProvider` — `Int` resource ids are Android-shaped
 
-ViewModel tree's remaining non-`shared` imports (**8** distinct, down from 25):
+ViewModel tree's remaining non-`shared` imports (**25** distinct, measured
+per-symbol — a coarse per-package check undercounts badly here, because a shared
+package does *not* make every symbol in it shared):
 
 | Import | Blocking on |
 |---|---|
-| `DummyAppIconSwitcher` | `PackageManager` alias switching（`context` を受ける） |
-| `settings.store.STARTUP_LOGGED_IN_TOKEN` | DataStore キーと同じパッケージのトップレベル `const val` |
-| `ui.app.AppRoute`, `AppTab`, `DetailEntrySnapshot`, `SearchEntrySnapshot` | `internal` + `NavKey` + `ImageVector` + `R` |
-| `ui.scroll.ScrollStateRegistry`, `ScrollPositionProbe` | Compose `foundation` `LazyListState`/`LazyGridState` |
+| `data.ManagedDataRepository` (6 files) | Room/DataStore-backed repo |
+| `data.IllustiaRepository`, `data.FeatureRepositories` | network + settings |
+| `data.AnimatedGifEncoder`, `data.UgoiraMp4Encoder`, `data.ResumableDownloader` | `Bitmap`/`MediaCodec`/`File` |
+| `data.isPixivRateLimited`, `pixivLoginCodeOrNull`, `proxyPixivImageUrl` (top-level `fun`s) | top-level functions |
+| `platform.ViewModelDeps`, `AppPaths`, `AppServices`, `DocumentIo`, `StringProvider`, `AndroidStringProvider` | 境界型 / `File` / `Int` リソース |
+| `settings.SettingsStore` | DataStore + Room |
+| `settings.isFeatureEnabled`, `isDynamicColorAvailable` | トップレベル `fun` |
+| `settings.AppHapticMode` | `R` リソース |
+| `settings.store.STARTUP_LOGGED_IN_TOKEN` | トップレベル `const val` |
+| `nativebridge.NativeImageStore` | `ContentResolver` / MediaStore |
+| `ui.app.AppRoute`, `ui.app.AppTab` | `NavKey` / `ImageVector` / `R` |
+| `updater.AppUpdaterRepository` | `PackageManager` / Shizuku |
+| `DummyAppIconSwitcher` | `PackageManager` |
 
 #### Known trap: split packages hide top-level declarations
 
@@ -278,6 +289,12 @@ Already moved to `shared` this session:
 - routing: `NativeIntentEvent`, `NativeIntentRouter` (pure), `IncomingLink`,
   plus a `commonMain` percent-decoder
 - pure logic: `CalculatorEngine`
+- snapshots: `DetailEntrySnapshot`, `SearchEntrySnapshot`
+- scroll: `ScrollPositionProbe` interface（拡張関数と `@Composable` は `androidApp`）
+- models: `SavedIllust`, `SavedIllustPage`
+
+`ScrollStateRegistry` は ViewModel から**切り離した**（`ScrollStateRegistry.shared`
+を UI が直接参照）。`compose.foundation` は `shared` に入れない。
 
 #### `AppPaths` stays in `androidApp` (deliberate)
 
