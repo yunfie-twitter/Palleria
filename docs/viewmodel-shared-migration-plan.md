@@ -398,15 +398,17 @@ next unblocked slice.
 - `DeviceProfile.supportsDynamicColor` を追加し `isDynamicColorAvailable` 依存を除去。
 - `StringProvider` の既定値を `ViewModelDeps` へ集約。
 - 起動時閲覧履歴の上限を `shared` の定数へ移設。
-- 残ブロッカーは **12**（per-symbol 計測）。
+- 残ブロッカーは **10**（per-symbol 計測）。
+- `IllustiaRepositoryApi`（44 メンバ）と `AppUpdateService` を抽出。ViewModel は具体型
+  `IllustiaRepository` / `AppUpdaterRepository` を参照しなくなった。
+- `uiRepository()` は UI 層の `Context.uiRepository()` 拡張へ移設。
+- APK 受け渡しは `File` ではなくパス文字列に統一（`installUpdate(apkPath)`）。
 
-### 残存 12 件の内訳と判断
+### 残存 10 件の内訳と判断
 
 | 残り | 判断 |
 | --- | --- |
 | `ViewModelDeps` | ViewModel 連鎖の入口そのもの。`shared` へ移すには `Application` を追い出す大掛かりな分解が必要。 |
-| `IllustiaRepository` | 約 100 箇所の実利用。インターフェース抽出は別規模の作業。 |
-| `AppUpdaterRepository` | 更新インストールで `File`/`PackageManager` に触れる。 |
 | `AppPaths` | `clearAppCache` が実 `File` 一覧を要する。 |
 | `DocumentIo` | `write(uri) { OutputStream }` でストリーミング保存。`ByteArray` 化はメモリ退行。 |
 | `NativeImageStore` | MediaStore / SAF / DocumentFile そのもの。 |
