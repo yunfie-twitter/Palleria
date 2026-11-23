@@ -405,12 +405,16 @@ next unblocked slice.
   `File` 化は Android 側の呼び出し点で行う。
 - `DocumentIo`（export / import）を `shared` へ。`OutputStream` を受ける `write` だけは
   `DocumentStreamIo` として Android 側に分離（ストリーミングを維持するため）。
+- `SettingsFacade` を `shared` へ抽出。ViewModel の `settingsStore` は具体型 `SettingsStore`
+  ではなくファサード型になった（保存作品ライブラリ・PIN/ロックコードの 14 操作）。
+  `getSavedIllust` は ViewModel が読む値（作品 ID）だけの射影
+  `getSavedIllustIllustId` に置換。`savedIllustDir()` はパス文字列を返す。
 
 ### 残存 8 件の内訳と判断
 
 | 残り | 判断 |
 | --- | --- |
-| `ViewModelDeps` | Android の `Application` を保持する生成側の実装。インターフェース化は次段階。 |
+| `ViewModelDeps` | Android の `Application` を保持する生成側。ViewModel は `imageStore` / `documentStreamIo` / `illustiaApplication` / `sharedHttpClient` をまだ直接使う。 |
 | `DocumentStreamIo` | `OutputStream` ストリーミング境界。`ByteArray` 化はメモリ退行。 |
 | `AnimatedGifEncoder` / `UgoiraMp4Encoder` | `Bitmap` / `MediaCodec` / `OutputStream`。 |
 | `ResumableDownloader` | `.part` ファイルへの Range 再開ダウンロード。 |
