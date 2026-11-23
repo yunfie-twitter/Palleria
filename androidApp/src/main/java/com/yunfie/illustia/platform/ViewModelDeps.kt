@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.ContentResolver
 import com.yunfie.illustia.IllustiaApplication
 import com.yunfie.illustia.data.IllustiaRepository
+import com.yunfie.illustia.nativebridge.NativeImageStore
 import com.yunfie.illustia.settings.SettingsStore
 import com.yunfie.illustia.updater.AppUpdateService
 import com.yunfie.illustia.updater.AppUpdaterRepository
@@ -40,6 +41,7 @@ class ViewModelDeps(
     val appUpdateService: AppUpdateService by lazy {
         AppUpdaterRepository(application, requireNotNull(illustiaApplication).sharedHttpClient)
     }
+    val imageStore: NativeImageStore by lazy { NativeImageStore(application.applicationContext) }
     val appServices: AppServices by lazy { AndroidAppServices(application) }
     val documentIo: DocumentIo by lazy { AndroidDocumentIo(application.contentResolver) }
     val illustiaApplication: IllustiaApplication? get() = application as? IllustiaApplication

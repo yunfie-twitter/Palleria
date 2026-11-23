@@ -1,6 +1,5 @@
 package com.yunfie.illustia
 
-import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.navigation3.runtime.NavKey
 import com.yunfie.illustia.data.IllustiaRepositoryApi
@@ -17,7 +16,6 @@ import com.yunfie.illustia.models.SearchTarget
 import com.yunfie.illustia.models.StoredAccount
 import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.models.UserProfile
-import com.yunfie.illustia.nativebridge.NativeImageStore
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.platform.AppInfo
 import com.yunfie.illustia.platform.AppLogger
@@ -129,14 +127,6 @@ abstract class IllustiaViewModelFoundation(
      */
     protected val viewModelScope: CoroutineScope = deps.scope
 
-    /** `AndroidViewModel` を継承しないため、Application はここから明示的に公開する。 */
-    protected val application get() = deps.application
-
-    protected fun <T> getApplication(): T {
-        @Suppress("UNCHECKED_CAST")
-        return deps.application as T
-    }
-
     protected val illustiaApplication = deps.illustiaApplication
     protected val logger: AppLogger get() = deps.logger
     protected val clock: MonotonicClock get() = deps.clock
@@ -159,7 +149,7 @@ abstract class IllustiaViewModelFoundation(
         illustiaApplication?.repository ?: deps.repository
     }
 
-    protected val imageStore by lazy { NativeImageStore(getApplication<Application>().applicationContext) }
+    protected val imageStore get() = deps.imageStore
     protected val downloadMutex = Mutex()
 
     // Wakeup for queued downloads: releasing a slot sends one permit and a parked
