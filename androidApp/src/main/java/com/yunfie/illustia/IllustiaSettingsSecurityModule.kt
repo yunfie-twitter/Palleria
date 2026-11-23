@@ -515,8 +515,7 @@ abstract class IllustiaSettingsSecurityModule(
 
     private fun refreshPrivacySensitiveWidgets() {
         viewModelScope.launch(Dispatchers.IO) {
-            val context = getApplication<Application>().applicationContext
-            IllustWidgetProvider.refreshAll(context)
+            appServices.refreshPrivacySensitiveWidgets()
             refreshRankingWidget()
         }
     }
@@ -872,8 +871,7 @@ abstract class IllustiaSettingsSecurityModule(
 
     fun updateWallpaperPlaylistEnabled(value: Boolean) {
         updateSettings { it.copy(wallpaperPlaylistEnabled = value) }
-        com.yunfie.illustia.wallpaper.WallpaperPlaylistScheduler
-            .setEnabled(getApplication(), value)
+        appServices.setWallpaperPlaylistEnabled(value)
     }
 
     fun updateLiveWallpaperSource(value: String) {

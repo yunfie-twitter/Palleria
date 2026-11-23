@@ -51,8 +51,7 @@ abstract class IllustiaLibraryNavigationModule(
     ) {
         val keepAlive =
             try {
-                com.yunfie.illustia.platform.ArtworkDownloadService
-                    .acquire(getApplication())
+                appServices.acquireArtworkDownloadService()
             } catch (expectedFailure: RuntimeException) {
                 GlitchTipTelemetry.recordException(expectedFailure, tag = "download_service_start")
                 _uiState.update { it.copy(message = str(R.string.error_save_failed)) }
@@ -114,8 +113,7 @@ abstract class IllustiaLibraryNavigationModule(
     ) {
         val keepAlive =
             try {
-                com.yunfie.illustia.platform.ArtworkDownloadService
-                    .acquire(getApplication())
+                appServices.acquireArtworkDownloadService()
             } catch (expectedFailure: RuntimeException) {
                 GlitchTipTelemetry.recordException(expectedFailure, tag = "download_service_start")
                 _uiState.update { it.copy(message = str(R.string.error_save_failed)) }

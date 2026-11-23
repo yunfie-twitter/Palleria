@@ -212,7 +212,8 @@ mirroring the `PixivUrlPolicy.kt` split that already works.
 | `IncomingLink` (data class) | `Intent` in `handleIncomingIntent` | ✅ done |
 | `ImageCache` | Coil `SingletonImageLoader` + cache clearing | ✅ done |
 | `DocumentIo` | `Uri` in export/import managed data | ✅ done |
-| `DeviceProfile` | `PlatformCapabilities` low-RAM / debounce | todo |
+| `DeviceProfile` | `PlatformCapabilities` low-RAM / debounce | ✅ done |
+| `SavedIllust` (model) | Room `SavedIllustEntity` in UI state | ✅ done |
 | `String` URI (save image) | `android.net.Uri` in `saveImageToDocument` | todo |
 
 ### Step 5 — The hard seams (classes 5–6)

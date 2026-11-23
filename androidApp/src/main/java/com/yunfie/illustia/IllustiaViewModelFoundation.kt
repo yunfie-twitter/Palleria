@@ -27,6 +27,7 @@ import com.yunfie.illustia.platform.AndroidStringProvider
 import com.yunfie.illustia.platform.AppInfo
 import com.yunfie.illustia.platform.AppLogger
 import com.yunfie.illustia.platform.AppPaths
+import com.yunfie.illustia.platform.AppServices
 import com.yunfie.illustia.platform.BackgroundWork
 import com.yunfie.illustia.platform.Connectivity
 import com.yunfie.illustia.platform.DeviceProfile
@@ -156,6 +157,7 @@ abstract class IllustiaViewModelFoundation(
     protected val imageCache: ImageCache get() = deps.imageCache
     protected val documentIo: DocumentIo get() = deps.documentIo
     protected val deviceProfile: DeviceProfile get() = deps.deviceProfile
+    protected val appServices: AppServices get() = deps.appServices
     protected val settingsStore by lazy {
         illustiaApplication?.settingsStore
             ?: SettingsStore(getApplication<Application>().applicationContext)

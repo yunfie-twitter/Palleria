@@ -31,6 +31,7 @@ class ViewModelDeps(
     val imageCache: ImageCache = AndroidImageCache(application),
     val deviceProfile: DeviceProfile = AndroidDeviceProfile(application),
 ) {
+    val appServices: AppServices by lazy { AndroidAppServices(application) }
     val documentIo: DocumentIo by lazy { AndroidDocumentIo(ManagedDataRepository(application.contentResolver)) }
     val illustiaApplication: IllustiaApplication? get() = application as? IllustiaApplication
 
