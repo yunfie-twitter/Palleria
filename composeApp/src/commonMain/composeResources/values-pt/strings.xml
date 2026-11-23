@@ -1,6 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="action_reset">Redefinir</string>
+    <string name="detail_comments">Comentários</string>
+    <string name="detail_comments_empty">Ainda não há comentários</string>
+    <string name="detail_copy_url">Copiar URL</string>
+    <string name="detail_illust_id">Ilust ID</string>
+    <string name="detail_image_load_failed">Não foi possível carregar a imagem</string>
+    <string name="detail_more">Mais</string>
+    <string name="detail_mute">Silenciar</string>
+    <string name="detail_mute_artist">Silenciar este artista</string>
+    <string name="detail_mute_work">Silenciar este trabalho</string>
+    <string name="detail_muted_artist">Artista silenciado</string>
+    <string name="detail_muted_work">Trabalho silenciado</string>
+    <string name="detail_muted_work_blur">Trabalhos contendo tags silenciadas ficam desfocados.</string>
+    <string name="detail_no_caption">Sem legenda</string>
+    <string name="detail_open_in_browser">Abrir no navegador</string>
+    <string name="detail_related">Trabalhos Relacionados</string>
+    <string name="detail_resolution">Resolução</string>
+    <string name="detail_save_all_pages">Salvar todas as páginas</string>
+    <string name="detail_save_this_page">Salvar esta página</string>
+    <string name="detail_section_settings_summary">Ordem das seções na página de detalhes</string>
+    <string name="detail_section_settings_title">Layout de Detalhes da Obra</string>
+    <string name="detail_series">Série</string>
+    <string name="detail_share">Compartilhar</string>
+    <string name="detail_show_comments">Mostrar comentários</string>
+    <string name="detail_tags_show_less">Mostrar menos</string>
+    <string name="detail_unfollow_confirm">Deixar de seguir %1$s?</string>
+    <string name="detail_unfollow_title">Deixar de seguir</string>
+    <string name="detail_unmute">Ativar som</string>
     <string name="feature_flags_reset">Redefinir sinalizadores</string>
     <string name="feature_flags_reset_confirm">Deseja redefinir todos os sinalizadores de recursos para seus estados padrão?</string>
     <string name="feature_flags_section_desc">Quando um sinalizador está ativado, o item de configuração correspondente é adicionado às telas de configurações normais.</string>
@@ -25,4 +52,8 @@
     <string name="flag_shorts_feed_title">Feed de Shorts de Ilustrações</string>
     <string name="flag_user_profile_bottom_sheet_desc">Adiciona a opção de abrir o perfil de usuário em painel inferior às Configurações Gerais</string>
     <string name="flag_user_profile_bottom_sheet_title">Painel Inferior do Perfil</string>
+<string name="detail_muted_artist_blur">As obras de %1$s estão desfocadas.</string>
+<string name="detail_muted_artist_blur_default">este artista</string>
+<string name="detail_save_image">Salvar imagem</string>
+<string name="detail_save_ugoira">Salve Ugoira</string>
 </resources>

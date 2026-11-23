@@ -155,40 +155,6 @@
     <string name="favorite_tags_works_not_found">No se encontraron obras para \"#%1$s\"</string>
 
     <!-- Illust detail screen -->
-    <string name="detail_save_image_title">Guardar imagen</string>
-    <string name="detail_save_image_confirm">Guarde esta imagen en la carpeta Palleria.</string>
-    <string name="detail_save_ugoira_title">Salva a Ugoira</string>
-    <string name="detail_save_ugoira_confirm">Guarde la imagen fija (portada) de esta ugoira en la carpeta Palleria.</string>
-    <string name="detail_unfollow_title">Dejar de seguir</string>
-    <string name="detail_unfollow_confirm">¿Dejar de seguir a %1$s?</string>
-    <string name="detail_open_in_browser">Abrir en el navegador</string>
-    <string name="detail_share">Compartir</string>
-    <string name="detail_save_image">Guardar imagen</string>
-    <string name="detail_save_this_page">Guardar esta página</string>
-    <string name="detail_save_ugoira">Salva a Ugoira</string>
-    <string name="detail_save_all_pages">Guardar todas las páginas</string>
-    <string name="detail_copy_url">Copiar URL</string>
-    <string name="detail_mute">Silenciar</string>
-    <string name="detail_mute_work">Silenciar este trabajo</string>
-    <string name="detail_mute_artist">Silenciar a este artista</string>
-    <string name="detail_more">Más</string>
-    <string name="detail_muted_artist">Artista silenciado</string>
-    <string name="detail_muted_artist_blur">Las obras de %1$s están borrosas.</string>
-    <string name="detail_muted_artist_blur_default">este artista</string>
-    <string name="detail_muted_work">Trabajo silenciado</string>
-    <string name="detail_muted_work_blur">Las obras que contienen etiquetas silenciadas aparecen borrosas.</string>
-    <string name="detail_unmute">Dejar de silenciar</string>
-    <string name="detail_image_load_failed">No se pudo cargar la imagen</string>
-    <string name="detail_no_caption">Sin título</string>
-    <string name="detail_comments">Comentarios</string>
-    <string name="detail_show_comments">Mostrar comentarios</string>
-    <string name="detail_comments_empty">Aún no hay comentarios</string>
-    <string name="detail_series">Serie</string>
-    <string name="detail_related">Trabajos relacionados</string>
-    <string name="detail_tags_show_more">Ver todos (%1$d más)</string>
-    <string name="detail_tags_show_less">Mostrar menos</string>
-    <string name="detail_illust_id">Ilustración de identificación</string>
-    <string name="detail_resolution">Resolución</string>
 
     <!-- Image viewer screen -->
     <string name="viewer_share_failed">No se pudo empezar a compartir.</string>
@@ -403,7 +369,6 @@
     <string name="offline_capacity_limit_desc">Deténgase cuando las obras guardadas alcancen el límite.</string>
     <string name="offline_library_title">Descargar lista</string>
     <string name="offline_library_empty">Aún no hay trabajos guardados.</string>
-    <string name="detail_save_offline">Agregado a la lista de guardados.</string>
     <string name="image_section_quality">Calidad</string>
     <string name="image_section_layout">Diseño</string>
     <string name="image_section_proxy">apoderado</string>
@@ -989,4 +954,10 @@
     <string name="desktop_open_new_tab">Abrir en una nueva pestaña del navegador</string>
     <string name="desktop_bookmark_private">Marcador privado</string>
     <string name="desktop_save_as">Guardar como</string>
+<string name="detail_save_image_confirm">Guarde esta imagen en la carpeta Palleria.</string>
+<string name="detail_save_image_title">Guardar imagen</string>
+<string name="detail_save_ugoira_confirm">Guarde la imagen fija (portada) de esta ugoira en la carpeta Palleria.</string>
+<string name="detail_save_ugoira_title">Salva a Ugoira</string>
+<string name="detail_tags_show_more">Ver todos (%1$d más)</string>
+<string name="detail_save_offline">Agregado a la lista de guardados.</string>
 </resources>

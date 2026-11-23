@@ -31,6 +31,12 @@ import com.yunfie.illustia.PermissionRationaleType
 import com.yunfie.illustia.R
 import com.yunfie.illustia.platform.ImageClipboardHelper
 import com.yunfie.illustia.platform.PlatformCapabilities
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.detail_mute_artist
+import com.yunfie.illustia.resources.detail_mute_work
+import com.yunfie.illustia.resources.detail_muted_artist_blur_default
+import com.yunfie.illustia.resources.detail_save_image
+import com.yunfie.illustia.resources.detail_save_ugoira
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.AppBottomSheet
@@ -63,6 +69,7 @@ import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
+import org.jetbrains.compose.resources.stringResource as resString
 
 @Composable
 internal fun AppOverlayHost(
@@ -211,11 +218,11 @@ internal fun AppOverlayHost(
                         colors = overlayActionButtonColors(),
                     ) {
                         Text(
-                            stringResource(
+                            resString(
                                 if (illust.type == "ugoira") {
-                                    R.string.detail_save_ugoira
+                                    Res.string.detail_save_ugoira
                                 } else {
-                                    R.string.detail_save_image
+                                    Res.string.detail_save_image
                                 },
                             ),
                         )
@@ -252,7 +259,7 @@ internal fun AppOverlayHost(
                         modifier = Modifier.fillMaxWidth(),
                         colors = overlayActionButtonColors(),
                     ) {
-                        Text(stringResource(R.string.detail_mute_work), color = MiuixTheme.colorScheme.error)
+                        Text(resString(Res.string.detail_mute_work), color = MiuixTheme.colorScheme.error)
                     }
                     Button(
                         onClick = {
@@ -262,7 +269,7 @@ internal fun AppOverlayHost(
                         modifier = Modifier.fillMaxWidth(),
                         colors = overlayActionButtonColors(),
                     ) {
-                        Text(stringResource(R.string.detail_mute_artist), color = MiuixTheme.colorScheme.error)
+                        Text(resString(Res.string.detail_mute_artist), color = MiuixTheme.colorScheme.error)
                     }
                 }
             }
@@ -354,7 +361,7 @@ internal fun AppOverlayHost(
             summary =
                 stringResource(
                     R.string.dialog_unbookmark_confirm,
-                    illust.title.ifBlank { stringResource(R.string.detail_muted_artist_blur_default) },
+                    illust.title.ifBlank { resString(Res.string.detail_muted_artist_blur_default) },
                 ),
             confirmText = stringResource(R.string.action_remove_bookmark),
             destructive = true,

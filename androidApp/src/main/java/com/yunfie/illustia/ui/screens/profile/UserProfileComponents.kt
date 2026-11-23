@@ -73,6 +73,12 @@ import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.models.UserProfile
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.detail_muted_artist
+import com.yunfie.illustia.resources.detail_muted_artist_blur
+import com.yunfie.illustia.resources.detail_muted_artist_blur_default
+import com.yunfie.illustia.resources.detail_share
+import com.yunfie.illustia.resources.detail_unmute
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.AvatarImage
@@ -117,6 +123,7 @@ import top.yukonga.miuix.kmp.squircle.squircleBorder
 import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.foundation.lazy.items as lazyListItems
+import org.jetbrains.compose.resources.stringResource as resString
 
 enum class UserWorkSortOrder {
     Newest,
@@ -373,7 +380,7 @@ internal fun UserProfileSmallTopAppBar(
     liquidGlassBackdrop: LayerBackdrop? = null,
 ) {
     val context = LocalContext.current
-    val shareLabel = stringResource(R.string.detail_share)
+    val shareLabel = resString(Res.string.detail_share)
     val shareFailedMessage = stringResource(R.string.error_share_failed)
     val sortLabel = stringResource(R.string.action_sort)
     val sortNewestLabel = stringResource(R.string.user_sort_newest)
@@ -805,7 +812,7 @@ private fun MutedUserPill() {
         Modifier.squircleSurface(MiuixTheme.colorScheme.error, 24.dp).padding(horizontal = 20.dp, vertical = 11.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Text(stringResource(R.string.detail_unmute), color = Color.White, fontWeight = FontWeight.Bold, style = MiuixTheme.textStyles.body2)
+        Text(resString(Res.string.detail_unmute), color = Color.White, fontWeight = FontWeight.Bold, style = MiuixTheme.textStyles.body2)
     }
 }
 
@@ -851,13 +858,13 @@ private fun EditUserPill() {
 private fun MutedUserContentNotice(onUnmuteUser: () -> Unit) {
     ElevatedPanel(contentPadding = PaddingValues(18.dp)) {
         Text(
-            stringResource(R.string.detail_muted_artist),
+            resString(Res.string.detail_muted_artist),
             color = MiuixTheme.colorScheme.onBackground,
             style = MiuixTheme.textStyles.title4,
             fontWeight = FontWeight.Black,
         )
         Text(
-            stringResource(R.string.detail_muted_artist_blur, stringResource(R.string.detail_muted_artist_blur_default)),
+            resString(Res.string.detail_muted_artist_blur, resString(Res.string.detail_muted_artist_blur_default)),
             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             style = MiuixTheme.textStyles.body2,
             lineHeight = 20.sp,
@@ -868,7 +875,7 @@ private fun MutedUserContentNotice(onUnmuteUser: () -> Unit) {
             modifier = Modifier.fillMaxWidth(),
             insideMargin = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
         ) {
-            Text(stringResource(R.string.detail_unmute), color = Color.White, fontWeight = FontWeight.Bold)
+            Text(resString(Res.string.detail_unmute), color = Color.White, fontWeight = FontWeight.Bold)
         }
     }
 }

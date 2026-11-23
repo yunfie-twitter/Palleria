@@ -194,41 +194,6 @@
     <string name="favorite_tags_works_not_found">Работы по тегу &quot;#%1$s&quot; не найдены</string>
 
     <!-- Illust detail screen -->
-    <string name="detail_save_image_title">Сохранить изображение</string>
-    <string name="detail_save_image_confirm">Сохранить это изображение в папку Palleria?</string>
-    <string name="detail_save_ugoira_title">Сохранить угоиру</string>
-    <string name="detail_save_ugoira_confirm">Сохранить кадр (обложку) этой угоиры в папку Palleria.</string>
-    <string name="detail_unfollow_title">Отписаться</string>
-    <string name="detail_unfollow_confirm">Отписаться от %1$s?</string>
-    <string name="detail_open_in_browser">Открыть в браузере</string>
-    <string name="detail_share">Поделиться</string>
-    <string name="detail_save_image">Сохранить изображение</string>
-    <string name="detail_save_this_page">Сохранить эту страницу</string>
-    <string name="detail_save_ugoira">Сохранить угоиру</string>
-    <string name="detail_save_all_pages">Сохранить все страницы</string>
-    <string name="detail_copy_url">Скопировать ссылку</string>
-    <string name="detail_mute">Скрыть</string>
-    <string name="detail_mute_work">Скрыть эту работу</string>
-    <string name="detail_mute_artist">Скрыть этого автора</string>
-    <string name="detail_more">Ещё</string>
-    <string name="detail_muted_artist">Скрытый автор</string>
-    <string name="detail_muted_artist_blur">Работы автора %1$s размыты.</string>
-    <string name="detail_muted_artist_blur_default">этого автора</string>
-    <string name="detail_muted_work">Скрытая работа</string>
-    <string name="detail_muted_work_blur">Работы со скрытыми тегами размыты.</string>
-    <string name="detail_unmute">Вернуть</string>
-    <string name="detail_image_load_failed">Не удалось загрузить изображение</string>
-    <string name="detail_no_caption">Описание отсутствует</string>
-    <string name="detail_comments">Комментарии</string>
-    <string name="detail_show_comments">Показать комментарии</string>
-    <string name="detail_comments_empty">Комментариев пока нет</string>
-    <string name="detail_series">Серия</string>
-    <string name="detail_related">Похожие иллюстрации</string>
-    <string name="detail_tags_show_more">Показать все (ещё %1$d)</string>
-    <string name="detail_tags_show_less">Свернуть</string>
-    <string name="detail_illust_id">ID иллюстрации</string>
-    <string name="detail_resolution">Разрешение</string>
-    <string name="detail_resolution_dimensions">%1$d × %2$d px</string>
 
     <!-- Image viewer screen -->
     <string name="viewer_share_failed">Не удалось поделиться.</string>
@@ -297,8 +262,6 @@
     <string name="card_customization_section_elements">Отображаемые элементы</string>
     <string name="card_customization_section_actions">Действия с карточкой</string>
     <string name="card_customization_section_related">Похожие работы</string>
-    <string name="detail_section_settings_title">Экран работы</string>
-    <string name="detail_section_settings_summary">Порядок секций на странице работы</string>
     <string name="download_settings_title">Загрузки и хранилище</string>
     <string name="download_settings_summary">Папка сохранения, дубликаты и формат</string>
     <string name="download_section_storage">Папки и хранилище</string>
@@ -460,7 +423,6 @@
     <string name="offline_capacity_limit_desc">Остановить сохранение при достижении лимита.</string>
     <string name="offline_library_title">Загруженные работы</string>
     <string name="offline_library_empty">Сохранённых работ пока нет.</string>
-    <string name="detail_save_offline">Добавлено в список сохранённых.</string>
     <string name="image_section_quality">Качество</string>
     <string name="image_section_layout">Сетка</string>
     <string name="image_section_proxy">Прокси</string>
@@ -1284,4 +1246,10 @@
         <item quantity="many">Показать %1$d элементов</item>
         <item quantity="other">Показать %1$d элементов</item>
     </plurals>
+<string name="detail_save_image_confirm">Сохранить это изображение в папку Palleria?</string>
+<string name="detail_save_image_title">Сохранить изображение</string>
+<string name="detail_save_ugoira_confirm">Сохранить кадр (обложку) этой угоиры в папку Palleria.</string>
+<string name="detail_save_ugoira_title">Сохранить угоиру</string>
+<string name="detail_tags_show_more">Показать все (ещё %1$d)</string>
+<string name="detail_save_offline">Добавлено в список сохранённых.</string>
 </resources>

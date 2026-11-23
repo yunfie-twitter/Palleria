@@ -1,4 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="action_reset">รีเซ็ต</string>
+    <string name="detail_comments">ความคิดเห็น</string>
+    <string name="detail_comments_empty">ยังไม่มีความคิดเห็น</string>
+    <string name="detail_copy_url">คัดลอก URL</string>
+    <string name="detail_illust_id">รหัสภาพประกอบ</string>
+    <string name="detail_image_load_failed">ไม่สามารถโหลดรูปภาพได้</string>
+    <string name="detail_more">เพิ่มเติม</string>
+    <string name="detail_mute">ปิดเสียง</string>
+    <string name="detail_mute_artist">ปิดเสียงศิลปินคนนี้</string>
+    <string name="detail_mute_work">ปิดเสียงงานนี้</string>
+    <string name="detail_muted_artist">ศิลปินใบ้</string>
+    <string name="detail_muted_work">ปิดเสียงการทำงาน</string>
+    <string name="detail_muted_work_blur">งานที่มีแท็กปิดเสียงจะถูกเบลอ</string>
+    <string name="detail_no_caption">ไม่มีคำอธิบายภาพ</string>
+    <string name="detail_open_in_browser">เปิดในเบราว์เซอร์</string>
+    <string name="detail_related">ผลงานที่เกี่ยวข้อง</string>
+    <string name="detail_resolution">ความละเอียด</string>
+    <string name="detail_save_all_pages">บันทึกหน้าทั้งหมด</string>
+    <string name="detail_save_this_page">บันทึกหน้านี้</string>
+    <string name="detail_series">ซีรีส์</string>
+    <string name="detail_share">แบ่งปัน</string>
+    <string name="detail_show_comments">แสดงความคิดเห็น</string>
+    <string name="detail_tags_show_less">แสดงน้อยลง</string>
+    <string name="detail_unfollow_confirm">เลิกติดตาม %1$s?</string>
+    <string name="detail_unfollow_title">เลิกติดตาม</string>
+    <string name="detail_unmute">เปิดเสียง</string>
+<string name="detail_muted_artist_blur">ผลงานของ %1$s ถูกเบลอ</string>
+<string name="detail_muted_artist_blur_default">ศิลปินคนนี้</string>
+<string name="detail_save_image">บันทึกภาพ</string>
+<string name="detail_save_ugoira">บันทึกอูโกอิรา</string>
 </resources>

@@ -20,11 +20,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.R
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.detail_open_in_browser
 import com.yunfie.illustia.ui.components.AppDialog
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import org.jetbrains.compose.resources.stringResource as resString
 
 /** The caller owns authentication and displays the API result through the app message UI. */
 @Composable
@@ -77,7 +80,7 @@ internal fun PixivReportDialog(
                     enabled = !submitting,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(stringResource(R.string.detail_open_in_browser))
+                    Text(resString(Res.string.detail_open_in_browser))
                 }
             }
             Row(

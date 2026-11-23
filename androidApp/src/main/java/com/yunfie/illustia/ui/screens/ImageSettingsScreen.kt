@@ -16,6 +16,8 @@ import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.detail_section_settings_summary
+import com.yunfie.illustia.resources.detail_section_settings_title
 import com.yunfie.illustia.resources.flag_ugoira_auto_play_desc
 import com.yunfie.illustia.resources.flag_ugoira_auto_play_title
 import com.yunfie.illustia.settings.AppSettings
@@ -222,8 +224,8 @@ fun ImageSettingsScreen(
                         )
                         DividerLine()
                         SettingLinkRow(
-                            title = stringResource(R.string.detail_section_settings_title),
-                            summary = stringResource(R.string.detail_section_settings_summary),
+                            title = resString(Res.string.detail_section_settings_title),
+                            summary = resString(Res.string.detail_section_settings_summary),
                             onClick = onOpenDetailSectionSettings,
                         )
                         if (!isDesktop) {

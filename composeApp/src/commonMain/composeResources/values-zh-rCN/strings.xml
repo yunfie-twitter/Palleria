@@ -1,5 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="detail_comments">评论</string>
+    <string name="detail_comments_empty">尚无评论</string>
+    <string name="detail_copy_url">复制 URL</string>
+    <string name="detail_illust_id">插图 ID</string>
+    <string name="detail_image_load_failed">无法加载图片</string>
+    <string name="detail_more">更多</string>
+    <string name="detail_mute">屏蔽</string>
+    <string name="detail_mute_artist">将此艺术家静音</string>
+    <string name="detail_mute_work">将此作品静音</string>
+    <string name="detail_muted_artist">静音艺术家</string>
+    <string name="detail_muted_work">静音工作</string>
+    <string name="detail_muted_work_blur">包含静音标签的作品模糊。</string>
+    <string name="detail_no_caption">无标题</string>
+    <string name="detail_open_in_browser">在浏览器中打开</string>
+    <string name="detail_related">相关作品</string>
+    <string name="detail_resolution">分辨率</string>
+    <string name="detail_save_all_pages">保存所有页面</string>
+    <string name="detail_save_this_page">保存此页</string>
+    <string name="detail_section_settings_summary">详情页面区块显示顺序</string>
+    <string name="detail_section_settings_title">作品详情布局设置</string>
+    <string name="detail_series">系列</string>
+    <string name="detail_share">分享</string>
+    <string name="detail_show_comments">显示评论</string>
+    <string name="detail_tags_show_less">收起</string>
+    <string name="detail_unfollow_confirm">取消关注 %1$s？</string>
+    <string name="detail_unfollow_title">取消关注</string>
+    <string name="detail_unmute">取消静音</string>
     <string name="feature_flags_reset">重置所有标志</string>
     <string name="feature_flags_reset_confirm">确定要将所有功能标志重置为默认值吗？</string>
     <string name="feature_flags_section_desc">开启标志后，对应的设置项将显示于常规设置中。</string>
@@ -24,4 +51,8 @@
     <string name="flag_shorts_feed_title">短篇插画动态</string>
     <string name="flag_user_profile_bottom_sheet_desc">在常规设置中启用以底部面板打开用户个人资料的选项</string>
     <string name="flag_user_profile_bottom_sheet_title">用户资料底部面板</string>
+<string name="detail_muted_artist_blur">%1$s 的作品模糊。</string>
+<string name="detail_muted_artist_blur_default">这位艺术家</string>
+<string name="detail_save_image">保存图像</string>
+<string name="detail_save_ugoira">保存动图</string>
 </resources>

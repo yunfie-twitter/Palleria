@@ -155,40 +155,6 @@
     <string name="favorite_tags_works_not_found">Keine Werke für „#%1$s“ gefunden</string>
 
     <!-- Illust detail screen -->
-    <string name="detail_save_image_title">Bild speichern</string>
-    <string name="detail_save_image_confirm">Speichern Sie dieses Bild im Palleria-Ordner.</string>
-    <string name="detail_save_ugoira_title">Rette Ugoira</string>
-    <string name="detail_save_ugoira_confirm">Speichern Sie diese Ugoira als GIF im Palleria-Ordner.</string>
-    <string name="detail_unfollow_title">Nicht mehr folgen</string>
-    <string name="detail_unfollow_confirm">%1$s nicht mehr folgen?</string>
-    <string name="detail_open_in_browser">Im Browser öffnen</string>
-    <string name="detail_share">Teilen</string>
-    <string name="detail_save_image">Bild speichern</string>
-    <string name="detail_save_this_page">Diese Seite speichern</string>
-    <string name="detail_save_ugoira">Rette Ugoira</string>
-    <string name="detail_save_all_pages">Alle Seiten speichern</string>
-    <string name="detail_copy_url">URL kopieren</string>
-    <string name="detail_mute">Stummschalten</string>
-    <string name="detail_mute_work">Schalten Sie dieses Werk stumm</string>
-    <string name="detail_mute_artist">Schalten Sie diesen Künstler stumm</string>
-    <string name="detail_more">Mehr</string>
-    <string name="detail_muted_artist">Gedämpfter Künstler</string>
-    <string name="detail_muted_artist_blur">Werke von %1$s sind unscharf.</string>
-    <string name="detail_muted_artist_blur_default">dieser Künstler</string>
-    <string name="detail_muted_work">Gedämpfte Arbeit</string>
-    <string name="detail_muted_work_blur">Werke, die stummgeschaltete Tags enthalten, werden unscharf.</string>
-    <string name="detail_unmute">Stummschaltung aufheben</string>
-    <string name="detail_image_load_failed">Bild konnte nicht geladen werden</string>
-    <string name="detail_no_caption">Keine Bildunterschrift</string>
-    <string name="detail_comments">Kommentare</string>
-    <string name="detail_show_comments">Kommentare anzeigen</string>
-    <string name="detail_comments_empty">Noch keine Kommentare</string>
-    <string name="detail_series">Serie</string>
-    <string name="detail_related">Verwandte Werke</string>
-    <string name="detail_tags_show_more">Alle anzeigen (noch %1$d)</string>
-    <string name="detail_tags_show_less">Weniger anzeigen</string>
-    <string name="detail_illust_id">Illust-ID</string>
-    <string name="detail_resolution">Auflösung</string>
 
     <!-- Image viewer screen -->
     <string name="viewer_share_failed">Die Freigabe konnte nicht gestartet werden.</string>
@@ -403,7 +369,6 @@
     <string name="offline_capacity_limit_desc">Stoppen Sie, wenn die gespeicherten Werke das Limit erreichen.</string>
     <string name="offline_library_title">Liste herunterladen</string>
     <string name="offline_library_empty">Noch keine gespeicherten Werke.</string>
-    <string name="detail_save_offline">Zur gespeicherten Liste hinzugefügt.</string>
     <string name="image_section_quality">Qualität</string>
     <string name="image_section_layout">Layout</string>
     <string name="image_section_proxy">Stellvertreter</string>
@@ -989,4 +954,10 @@
     <string name="desktop_open_new_tab">In neuem Browser-Tab öffnen</string>
     <string name="desktop_bookmark_private">Privates Lesezeichen</string>
     <string name="desktop_save_as">Speichern unter</string>
+<string name="detail_save_image_confirm">Speichern Sie dieses Bild im Palleria-Ordner.</string>
+<string name="detail_save_image_title">Bild speichern</string>
+<string name="detail_save_ugoira_confirm">Speichern Sie diese Ugoira als GIF im Palleria-Ordner.</string>
+<string name="detail_save_ugoira_title">Rette Ugoira</string>
+<string name="detail_tags_show_more">Alle anzeigen (noch %1$d)</string>
+<string name="detail_save_offline">Zur gespeicherten Liste hinzugefügt.</string>
 </resources>

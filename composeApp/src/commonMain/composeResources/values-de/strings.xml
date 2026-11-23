@@ -1,4 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="action_reset">Zurücksetzen</string>
+    <string name="detail_comments">Kommentare</string>
+    <string name="detail_comments_empty">Noch keine Kommentare</string>
+    <string name="detail_copy_url">URL kopieren</string>
+    <string name="detail_illust_id">Illust-ID</string>
+    <string name="detail_image_load_failed">Bild konnte nicht geladen werden</string>
+    <string name="detail_more">Mehr</string>
+    <string name="detail_mute">Stummschalten</string>
+    <string name="detail_mute_artist">Schalten Sie diesen Künstler stumm</string>
+    <string name="detail_mute_work">Schalten Sie dieses Werk stumm</string>
+    <string name="detail_muted_artist">Gedämpfter Künstler</string>
+    <string name="detail_muted_work">Gedämpfte Arbeit</string>
+    <string name="detail_muted_work_blur">Werke, die stummgeschaltete Tags enthalten, werden unscharf.</string>
+    <string name="detail_no_caption">Keine Bildunterschrift</string>
+    <string name="detail_open_in_browser">Im Browser öffnen</string>
+    <string name="detail_related">Verwandte Werke</string>
+    <string name="detail_resolution">Auflösung</string>
+    <string name="detail_save_all_pages">Alle Seiten speichern</string>
+    <string name="detail_save_this_page">Diese Seite speichern</string>
+    <string name="detail_series">Serie</string>
+    <string name="detail_share">Teilen</string>
+    <string name="detail_show_comments">Kommentare anzeigen</string>
+    <string name="detail_tags_show_less">Weniger anzeigen</string>
+    <string name="detail_unfollow_confirm">%1$s nicht mehr folgen?</string>
+    <string name="detail_unfollow_title">Nicht mehr folgen</string>
+    <string name="detail_unmute">Stummschaltung aufheben</string>
+<string name="detail_muted_artist_blur">Werke von %1$s sind unscharf.</string>
+<string name="detail_muted_artist_blur_default">dieser Künstler</string>
+<string name="detail_save_image">Bild speichern</string>
+<string name="detail_save_ugoira">Rette Ugoira</string>
 </resources>

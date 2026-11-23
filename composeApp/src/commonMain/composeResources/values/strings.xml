@@ -1,6 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="action_reset">リセット</string>
+    <string name="detail_comments">コメント</string>
+    <string name="detail_comments_empty">まだコメントはありません</string>
+    <string name="detail_copy_url">URLをコピー</string>
+    <string name="detail_illust_id">イラスト ID</string>
+    <string name="detail_image_load_failed">画像を読み込めませんでした</string>
+    <string name="detail_more">その他</string>
+    <string name="detail_mute">ミュート</string>
+    <string name="detail_mute_artist">作者をミュート</string>
+    <string name="detail_mute_work">この作品をミュート</string>
+    <string name="detail_muted_artist">ミュート中の作者です</string>
+    <string name="detail_muted_work">ミュート中の作品です</string>
+    <string name="detail_muted_work_blur">ミュート中のタグを含む作品をぼかしています。</string>
+    <string name="detail_no_caption">キャプションはありません</string>
+    <string name="detail_open_in_browser">ブラウザで開く</string>
+    <string name="detail_related">関連イラスト</string>
+    <string name="detail_resolution">解像度</string>
+    <string name="detail_resolution_dimensions">%1$d × %2$d px</string>
+    <string name="detail_save_all_pages">全ページを保存</string>
+    <string name="detail_save_this_page">このページを保存</string>
+    <string name="detail_section_settings_summary">詳細画面のセクション表示順</string>
+    <string name="detail_section_settings_title">作品詳細レイアウト設定</string>
+    <string name="detail_series">シリーズ</string>
+    <string name="detail_share">シェア</string>
+    <string name="detail_show_comments">コメントを表示</string>
+    <string name="detail_tags_show_less">折りたたむ</string>
+    <string name="detail_unfollow_confirm">%1$s さんのフォローを解除しますか？</string>
+    <string name="detail_unfollow_title">フォローを解除</string>
+    <string name="detail_unmute">ミュート解除</string>
     <string name="feature_flags_reset">フラグを初期化</string>
     <string name="feature_flags_reset_confirm">すべての機能フラグをデフォルト状態に戻しますか？</string>
     <string name="feature_flags_section_desc">フラグをONにすると、対応する設定項目が通常の設定画面に追加されます。</string>
@@ -91,4 +119,8 @@
     <string name="flag_velocity_landing_prefetch_title">着地予測プリフェッチ</string>
     <string name="flag_volume_key_page_turner_desc">端末の音量キーやBluetoothリモコンのキー操作でマンガ・小説のページめくりを行います</string>
     <string name="flag_volume_key_page_turner_title">音量キー/リモコン ページ送り</string>
+<string name="detail_muted_artist_blur">%1$s さんの作品をぼかしています。</string>
+<string name="detail_muted_artist_blur_default">この作者</string>
+<string name="detail_save_image">画像を保存</string>
+<string name="detail_save_ugoira">うごイラを保存</string>
 </resources>

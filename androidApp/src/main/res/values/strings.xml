@@ -194,41 +194,6 @@
     <string name="favorite_tags_works_not_found">「#%1$s」の作品が見つかりません</string>
 
     <!-- Illust detail screen -->
-    <string name="detail_save_image_title">画像を保存</string>
-    <string name="detail_save_image_confirm">この画像をPalleriaフォルダへ保存します。</string>
-    <string name="detail_save_ugoira_title">うごイラを保存</string>
-    <string name="detail_save_ugoira_confirm">このうごイラの静止画（カバー画像）をPalleriaフォルダへ保存します。</string>
-    <string name="detail_unfollow_title">フォローを解除</string>
-    <string name="detail_unfollow_confirm">%1$s さんのフォローを解除しますか？</string>
-    <string name="detail_open_in_browser">ブラウザで開く</string>
-    <string name="detail_share">シェア</string>
-    <string name="detail_save_image">画像を保存</string>
-    <string name="detail_save_this_page">このページを保存</string>
-    <string name="detail_save_ugoira">うごイラを保存</string>
-    <string name="detail_save_all_pages">全ページを保存</string>
-    <string name="detail_copy_url">URLをコピー</string>
-    <string name="detail_mute">ミュート</string>
-    <string name="detail_mute_work">この作品をミュート</string>
-    <string name="detail_mute_artist">作者をミュート</string>
-    <string name="detail_more">その他</string>
-    <string name="detail_muted_artist">ミュート中の作者です</string>
-    <string name="detail_muted_artist_blur">%1$s さんの作品をぼかしています。</string>
-    <string name="detail_muted_artist_blur_default">この作者</string>
-    <string name="detail_muted_work">ミュート中の作品です</string>
-    <string name="detail_muted_work_blur">ミュート中のタグを含む作品をぼかしています。</string>
-    <string name="detail_unmute">ミュート解除</string>
-    <string name="detail_image_load_failed">画像を読み込めませんでした</string>
-    <string name="detail_no_caption">キャプションはありません</string>
-    <string name="detail_comments">コメント</string>
-    <string name="detail_show_comments">コメントを表示</string>
-    <string name="detail_comments_empty">まだコメントはありません</string>
-    <string name="detail_series">シリーズ</string>
-    <string name="detail_related">関連イラスト</string>
-    <string name="detail_tags_show_more">さらに表示（残り %1$d 件）</string>
-    <string name="detail_tags_show_less">折りたたむ</string>
-    <string name="detail_illust_id">イラスト ID</string>
-    <string name="detail_resolution">解像度</string>
-    <string name="detail_resolution_dimensions">%1$d × %2$d px</string>
 
     <!-- Image viewer screen -->
     <string name="viewer_share_failed">共有を開始できませんでした。</string>
@@ -297,8 +262,6 @@
     <string name="card_customization_section_elements">表示項目</string>
     <string name="card_customization_section_actions">カード操作</string>
     <string name="card_customization_section_related">関連作品</string>
-    <string name="detail_section_settings_title">作品詳細レイアウト設定</string>
-    <string name="detail_section_settings_summary">詳細画面のセクション表示順</string>
     <string name="download_settings_title">ダウンロード・保存設定</string>
     <string name="download_settings_summary">保存先・重複動作・うごイラ形式</string>
     <string name="download_section_storage">保存先とフォルダ構成</string>
@@ -460,7 +423,6 @@
     <string name="offline_capacity_limit_desc">保存済み作品の合計サイズが上限に達すると停止します</string>
     <string name="offline_library_title">ダウンロード一覧</string>
     <string name="offline_library_empty">保存済みの作品はありません。</string>
-    <string name="detail_save_offline">保存済み一覧に追加しました。</string>
     <string name="image_section_quality">画質</string>
     <string name="image_section_layout">レイアウト</string>
     <string name="image_section_proxy">プロキシ</string>
@@ -1299,4 +1261,10 @@
     <string name="error_load_failed">データを読み込めませんでした。時間をおいて再度お試しください。</string>
     <string name="flag_novel_tts_audiobook_title">小説の音声読み上げ (TTS)</string>
     <string name="flag_command_palette_title">コマンドパレット</string>
+<string name="detail_save_image_confirm">この画像をPalleriaフォルダへ保存します。</string>
+<string name="detail_save_image_title">画像を保存</string>
+<string name="detail_save_ugoira_confirm">このうごイラの静止画（カバー画像）をPalleriaフォルダへ保存します。</string>
+<string name="detail_save_ugoira_title">うごイラを保存</string>
+<string name="detail_tags_show_more">さらに表示（残り %1$d 件）</string>
+<string name="detail_save_offline">保存済み一覧に追加しました。</string>
 </resources>

@@ -56,6 +56,16 @@ import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.detail_illust_id
+import com.yunfie.illustia.resources.detail_no_caption
+import com.yunfie.illustia.resources.detail_related
+import com.yunfie.illustia.resources.detail_resolution
+import com.yunfie.illustia.resources.detail_resolution_dimensions
+import com.yunfie.illustia.resources.detail_series
+import com.yunfie.illustia.resources.detail_show_comments
+import com.yunfie.illustia.resources.detail_tags_show_less
+import com.yunfie.illustia.resources.detail_unmute
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.ArtworkCardPreferences
 import com.yunfie.illustia.ui.components.AvatarImage
@@ -80,6 +90,7 @@ import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.icon.extended.Messages
 import top.yukonga.miuix.kmp.squircle.squircleBackground
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import org.jetbrains.compose.resources.stringResource as resString
 
 internal fun formatIllustDimensions(
     width: Int,
@@ -208,7 +219,7 @@ internal fun IllustDetailInfo(
                     val seriesTitle = illust.series?.title?.takeIf { it.isNotBlank() }
                     if (illust.series != null && onOpenSeries != null) {
                         Text(
-                            text = seriesTitle ?: stringResource(R.string.detail_series),
+                            text = seriesTitle ?: resString(Res.string.detail_series),
                             color = MiuixTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold,
                             style = MiuixTheme.textStyles.footnote1,
@@ -243,13 +254,13 @@ internal fun IllustDetailInfo(
                 Text(
                     text =
                         buildString {
-                            append(stringResource(R.string.detail_illust_id))
+                            append(resString(Res.string.detail_illust_id))
                             append(" ${illust.id}")
                             formatIllustDimensions(illust.width, illust.height)?.let { dimensions ->
                                 append("    ")
-                                append(stringResource(R.string.detail_resolution))
+                                append(resString(Res.string.detail_resolution))
                                 append("  ")
-                                append(stringResource(R.string.detail_resolution_dimensions, illust.width, illust.height))
+                                append(resString(Res.string.detail_resolution_dimensions, illust.width, illust.height))
                             }
                         },
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
@@ -346,7 +357,7 @@ internal fun IllustDetailInfo(
                                         TextButton(
                                             text =
                                                 if (tagsExpanded) {
-                                                    stringResource(R.string.detail_tags_show_less)
+                                                    resString(Res.string.detail_tags_show_less)
                                                 } else {
                                                     stringResource(
                                                         R.string.detail_tags_show_more,
@@ -371,7 +382,7 @@ internal fun IllustDetailInfo(
                                         SelectionContainer {
                                             if (illust.caption.isBlank()) {
                                                 Text(
-                                                    text = stringResource(R.string.detail_no_caption),
+                                                    text = resString(Res.string.detail_no_caption),
                                                     color = MiuixTheme.colorScheme.onBackground,
                                                     style = MiuixTheme.textStyles.body1,
                                                     lineHeight = 23.sp,
@@ -413,7 +424,7 @@ internal fun IllustDetailInfo(
                             ) {
                                 Spacer(Modifier.height(8.dp))
                                 Text(
-                                    text = stringResource(R.string.detail_related),
+                                    text = resString(Res.string.detail_related),
                                     color = MiuixTheme.colorScheme.onBackground,
                                     style = MiuixTheme.textStyles.title4,
                                     fontWeight = FontWeight.Bold,
@@ -442,7 +453,7 @@ private fun CommentEntryButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val commentsLabel = stringResource(R.string.detail_show_comments)
+    val commentsLabel = resString(Res.string.detail_show_comments)
     Button(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
@@ -502,7 +513,7 @@ internal fun DetailMutedUserPill(modifier: Modifier = Modifier) {
         contentAlignment = Alignment.Center,
     ) {
         Text(
-            text = stringResource(R.string.detail_unmute),
+            text = resString(Res.string.detail_unmute),
             color = Color.White,
             fontWeight = FontWeight.Bold,
             style = MiuixTheme.textStyles.body2,

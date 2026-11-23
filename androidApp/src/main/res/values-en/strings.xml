@@ -158,41 +158,6 @@
     <string name="favorite_tags_works_not_found">No works found for &quot;#%1$s&quot;</string>
 
     <!-- Illust detail screen -->
-    <string name="detail_save_image_title">Save Image</string>
-    <string name="detail_save_image_confirm">Save this image to the Palleria folder.</string>
-    <string name="detail_save_ugoira_title">Save Ugoira</string>
-    <string name="detail_save_ugoira_confirm">Save this ugoira\'s cover image (still frame) to the Palleria folder.</string>
-    <string name="detail_unfollow_title">Unfollow</string>
-    <string name="detail_unfollow_confirm">Unfollow %1$s?</string>
-    <string name="detail_open_in_browser">Open in Browser</string>
-    <string name="detail_share">Share</string>
-    <string name="detail_save_image">Save Image</string>
-    <string name="detail_save_this_page">Save This Page</string>
-    <string name="detail_save_ugoira">Save Ugoira</string>
-    <string name="detail_save_all_pages">Save All Pages</string>
-    <string name="detail_copy_url">Copy URL</string>
-    <string name="detail_mute">Mute</string>
-    <string name="detail_mute_work">Mute This Work</string>
-    <string name="detail_mute_artist">Mute This Artist</string>
-    <string name="detail_more">More</string>
-    <string name="detail_muted_artist">Muted Artist</string>
-    <string name="detail_muted_artist_blur">Works by %1$s are blurred.</string>
-    <string name="detail_muted_artist_blur_default">this artist</string>
-    <string name="detail_muted_work">Muted Work</string>
-    <string name="detail_muted_work_blur">Works containing muted tags are blurred.</string>
-    <string name="detail_unmute">Unmute</string>
-    <string name="detail_image_load_failed">Couldn\'t load the image</string>
-    <string name="detail_no_caption">No caption</string>
-    <string name="detail_comments">Comments</string>
-    <string name="detail_show_comments">Show Comments</string>
-    <string name="detail_comments_empty">No comments yet</string>
-    <string name="detail_series">Series</string>
-    <string name="detail_related">Related Works</string>
-    <string name="detail_tags_show_more">Show all (%1$d more)</string>
-    <string name="detail_tags_show_less">Show less</string>
-    <string name="detail_illust_id">Illust ID</string>
-    <string name="detail_resolution">Resolution</string>
-    <string name="detail_resolution_dimensions">%1$d × %2$d px</string>
 
     <!-- Image viewer screen -->
     <string name="viewer_share_failed">Could not start sharing.</string>
@@ -261,8 +226,6 @@
     <string name="card_customization_section_elements">Visible Elements</string>
     <string name="card_customization_section_actions">Card Actions</string>
     <string name="card_customization_section_related">Related Works</string>
-    <string name="detail_section_settings_title">Artwork Detail Layout</string>
-    <string name="detail_section_settings_summary">Section order on artwork detail page</string>
     <string name="download_settings_title">Download &amp; Storage Settings</string>
     <string name="download_settings_summary">Save directory, duplicates, and format</string>
     <string name="download_section_storage">Storage &amp; Folders</string>
@@ -427,7 +390,6 @@
     <string name="offline_capacity_limit_desc">Stop when saved works reach the limit.</string>
     <string name="offline_library_title">Download list</string>
     <string name="offline_library_empty">No saved works yet.</string>
-    <string name="detail_save_offline">Added to saved list.</string>
     <string name="image_section_quality">Quality</string>
     <string name="image_section_layout">Layout</string>
     <string name="image_section_proxy">Proxy</string>
@@ -1224,4 +1186,10 @@
     <string name="image_save_write_failed">Failed to write the file.</string>
     <string name="error_request_failed">The request could not be completed. Please try again later.</string>
     <string name="error_load_failed">Could not load data. Please try again later.</string>
+<string name="detail_save_image_confirm">Save this image to the Palleria folder.</string>
+<string name="detail_save_image_title">Save Image</string>
+<string name="detail_save_ugoira_confirm">Save this ugoira\'s cover image (still frame) to the Palleria folder.</string>
+<string name="detail_save_ugoira_title">Save Ugoira</string>
+<string name="detail_tags_show_more">Show all (%1$d more)</string>
+<string name="detail_save_offline">Added to saved list.</string>
 </resources>

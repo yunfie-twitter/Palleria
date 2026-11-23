@@ -79,6 +79,15 @@ import com.yunfie.illustia.models.pixiv.UgoiraPlayback
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
 import com.yunfie.illustia.platform.PlatformCapabilities
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.detail_muted_artist
+import com.yunfie.illustia.resources.detail_muted_artist_blur
+import com.yunfie.illustia.resources.detail_muted_artist_blur_default
+import com.yunfie.illustia.resources.detail_muted_work
+import com.yunfie.illustia.resources.detail_muted_work_blur
+import com.yunfie.illustia.resources.detail_related
+import com.yunfie.illustia.resources.detail_unfollow_confirm
+import com.yunfie.illustia.resources.detail_unfollow_title
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.AvatarImage
 import com.yunfie.illustia.ui.components.BookmarkHeartButton
@@ -119,6 +128,7 @@ import top.yukonga.miuix.kmp.icon.extended.Show
 import top.yukonga.miuix.kmp.icon.extended.Theme
 import top.yukonga.miuix.kmp.menu.WindowIconDropdownMenu
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import org.jetbrains.compose.resources.stringResource as resString
 
 /** Bottom padding for the two-pane info column so its last row clears the floating bookmark button. */
 private val TwoPaneFabBottomPadding = 152.dp
@@ -290,8 +300,8 @@ fun IllustDetailScreen(
     if (showUnfollowConfirm) {
         MiuixConfirmDialog(
             show = true,
-            title = stringResource(R.string.detail_unfollow_title),
-            summary = stringResource(R.string.detail_unfollow_confirm, illust.artistName),
+            title = resString(Res.string.detail_unfollow_title),
+            summary = resString(Res.string.detail_unfollow_confirm, illust.artistName),
             confirmText = stringResource(R.string.action_unfollow),
             destructive = true,
             onConfirm = {
@@ -335,18 +345,18 @@ fun IllustDetailScreen(
 
     val mutedArtworkTitle =
         if (isArtistMuted) {
-            stringResource(R.string.detail_muted_artist)
+            resString(Res.string.detail_muted_artist)
         } else {
-            stringResource(R.string.detail_muted_work)
+            resString(Res.string.detail_muted_work)
         }
     val mutedArtworkSummary =
         if (isArtistMuted) {
-            stringResource(
-                R.string.detail_muted_artist_blur,
-                illust.artistName.ifBlank { stringResource(R.string.detail_muted_artist_blur_default) },
+            resString(
+                Res.string.detail_muted_artist_blur,
+                illust.artistName.ifBlank { resString(Res.string.detail_muted_artist_blur_default) },
             )
         } else {
-            stringResource(R.string.detail_muted_work_blur)
+            resString(Res.string.detail_muted_work_blur)
         }
     val detailHeaderContent: @Composable (Boolean, Modifier) -> Unit = { expanded, modifier ->
         DetailHeaderSlot(
@@ -560,7 +570,7 @@ fun IllustDetailScreen(
                                             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                                 Spacer(Modifier.height(8.dp))
                                                 Text(
-                                                    text = stringResource(R.string.detail_related),
+                                                    text = resString(Res.string.detail_related),
                                                     color = MiuixTheme.colorScheme.onBackground,
                                                     style = MiuixTheme.textStyles.title4,
                                                     fontWeight = FontWeight.Bold,

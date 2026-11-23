@@ -1,5 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="detail_comments">댓글</string>
+    <string name="detail_comments_empty">아직 댓글이 없습니다</string>
+    <string name="detail_copy_url">URL 복사</string>
+    <string name="detail_illust_id">일러스트 ID</string>
+    <string name="detail_image_load_failed">이미지를 불러오지 못했습니다</string>
+    <string name="detail_more">더 보기</string>
+    <string name="detail_mute">뮤트</string>
+    <string name="detail_mute_artist">이 작가 뮤트</string>
+    <string name="detail_mute_work">이 작품 뮤트</string>
+    <string name="detail_muted_artist">뮤트한 작가</string>
+    <string name="detail_muted_work">뮤트한 작품</string>
+    <string name="detail_muted_work_blur">뮤트한 태그가 포함된 작품은 흐리게 표시됩니다.</string>
+    <string name="detail_no_caption">캡션 없음</string>
+    <string name="detail_open_in_browser">브라우저에서 열기</string>
+    <string name="detail_related">관련 작품</string>
+    <string name="detail_resolution">해상도</string>
+    <string name="detail_save_all_pages">모든 페이지 저장</string>
+    <string name="detail_save_this_page">이 페이지 저장</string>
+    <string name="detail_series">시리즈</string>
+    <string name="detail_share">공유</string>
+    <string name="detail_show_comments">댓글 보기</string>
+    <string name="detail_tags_show_less">접기</string>
+    <string name="detail_unfollow_confirm">%1$s 님을 팔로우 해제할까요?</string>
+    <string name="detail_unfollow_title">팔로우 해제</string>
+    <string name="detail_unmute">뮤트 해제</string>
     <string name="flag_bookmark_haptic_burst_desc">북마크와 좋아요 시 경쾌한 햅틱 피드백과 화려한 파티클 버스트 애니메이션을 실행합니다</string>
     <string name="flag_bookmark_haptic_burst_title">북마크 및 좋아요 햅틱 버스트</string>
     <string name="flag_byte_range_resume_desc">다운로드 중단 시 기존 바이트부터 재개(HTTP Range)하여 데이터와 시간을 절약합니다</string>
@@ -32,4 +57,8 @@
     <string name="flag_user_profile_edit_title">프로필 편집</string>
     <string name="flag_velocity_landing_prefetch_desc">스크롤 속도로 정지 위치를 추정하여 통과 중인 항목 대신 착지지점 주변을 미리 불러옵니다</string>
     <string name="flag_velocity_landing_prefetch_title">착지 예측 프리페치</string>
+<string name="detail_muted_artist_blur">%1$s 님의 작품이 흐리게 표시됩니다.</string>
+<string name="detail_muted_artist_blur_default">이 작가</string>
+<string name="detail_save_image">이미지 저장</string>
+<string name="detail_save_ugoira">우고이라 저장</string>
 </resources>

@@ -14,6 +14,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.detail_section_settings_title
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.DEFAULT_DETAIL_SECTION_ORDER
 import com.yunfie.illustia.ui.components.DividerLine
@@ -31,6 +33,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.ChevronForward
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import org.jetbrains.compose.resources.stringResource as resString
 
 @Composable
 fun DetailSectionSettingsScreen(
@@ -46,8 +49,8 @@ fun DetailSectionSettingsScreen(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
             TopAppBar(
-                title = stringResource(R.string.detail_section_settings_title),
-                largeTitle = stringResource(R.string.detail_section_settings_title),
+                title = resString(Res.string.detail_section_settings_title),
+                largeTitle = resString(Res.string.detail_section_settings_title),
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     HeaderIcon(MiuixIcons.Back, onClick = onBack)

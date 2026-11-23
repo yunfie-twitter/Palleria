@@ -1,4 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="action_reset">Réinitialiser</string>
+    <string name="detail_comments">Commentaires</string>
+    <string name="detail_comments_empty">Pas encore de commentaires</string>
+    <string name="detail_copy_url">Copier l\'URL</string>
+    <string name="detail_illust_id">ID d\'illusion</string>
+    <string name="detail_image_load_failed">Impossible de charger l\'image</string>
+    <string name="detail_more">Plus</string>
+    <string name="detail_mute">Masquer</string>
+    <string name="detail_mute_artist">Mettre cet artiste en sourdine</string>
+    <string name="detail_mute_work">Mettre ce travail en sourdine</string>
+    <string name="detail_muted_artist">Artiste en sourdine</string>
+    <string name="detail_muted_work">Travail en sourdine</string>
+    <string name="detail_muted_work_blur">Les œuvres contenant des balises muettes sont floues.</string>
+    <string name="detail_no_caption">Pas de légende</string>
+    <string name="detail_open_in_browser">Ouvrir dans le navigateur</string>
+    <string name="detail_related">Travaux connexes</string>
+    <string name="detail_resolution">Résolution</string>
+    <string name="detail_save_all_pages">Enregistrer toutes les pages</string>
+    <string name="detail_save_this_page">Enregistrer cette page</string>
+    <string name="detail_series">Série</string>
+    <string name="detail_share">Partager</string>
+    <string name="detail_show_comments">Afficher les commentaires</string>
+    <string name="detail_tags_show_less">Afficher moins</string>
+    <string name="detail_unfollow_confirm">Ne plus suivre %1$s ?</string>
+    <string name="detail_unfollow_title">Ne plus suivre</string>
+    <string name="detail_unmute">Activer le son</string>
+<string name="detail_muted_artist_blur">Les œuvres de %1$s sont floues.</string>
+<string name="detail_muted_artist_blur_default">cet artiste</string>
+<string name="detail_save_image">Enregistrer l\'image</string>
+<string name="detail_save_ugoira">Enregistrer Ugoira</string>
 </resources>

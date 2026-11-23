@@ -1,6 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="action_reset">Reset</string>
+    <string name="detail_comments">Comments</string>
+    <string name="detail_comments_empty">No comments yet</string>
+    <string name="detail_copy_url">Copy URL</string>
+    <string name="detail_illust_id">Illust ID</string>
+    <string name="detail_image_load_failed">Couldn\'t load the image</string>
+    <string name="detail_more">More</string>
+    <string name="detail_mute">Mute</string>
+    <string name="detail_mute_artist">Mute This Artist</string>
+    <string name="detail_mute_work">Mute This Work</string>
+    <string name="detail_muted_artist">Muted Artist</string>
+    <string name="detail_muted_work">Muted Work</string>
+    <string name="detail_muted_work_blur">Works containing muted tags are blurred.</string>
+    <string name="detail_no_caption">No caption</string>
+    <string name="detail_open_in_browser">Open in Browser</string>
+    <string name="detail_related">Related Works</string>
+    <string name="detail_resolution">Resolution</string>
+    <string name="detail_resolution_dimensions">%1$d × %2$d px</string>
+    <string name="detail_save_all_pages">Save All Pages</string>
+    <string name="detail_save_this_page">Save This Page</string>
+    <string name="detail_section_settings_summary">Section order on artwork detail page</string>
+    <string name="detail_section_settings_title">Artwork Detail Layout</string>
+    <string name="detail_series">Series</string>
+    <string name="detail_share">Share</string>
+    <string name="detail_show_comments">Show Comments</string>
+    <string name="detail_tags_show_less">Show less</string>
+    <string name="detail_unfollow_confirm">Unfollow %1$s?</string>
+    <string name="detail_unfollow_title">Unfollow</string>
+    <string name="detail_unmute">Unmute</string>
     <string name="flag_bookmark_haptic_burst_desc">Trigger rich clicky haptics and sparkling particle burst animations on bookmark and like actions</string>
     <string name="flag_bookmark_haptic_burst_title">Bookmark &amp; Like Haptic Burst</string>
     <string name="flag_byte_range_resume_desc">Resumes interrupted downloads from existing bytes via HTTP Range headers to save data and time</string>
@@ -59,4 +87,8 @@
     <string name="flag_velocity_landing_prefetch_title">Velocity Landing Prefetch</string>
     <string name="flag_volume_key_page_turner_desc">Use volume hardware keys or Bluetooth remote controllers to turn pages in manga and novel readers</string>
     <string name="flag_volume_key_page_turner_title">Volume Key / Remote Page Turner</string>
+<string name="detail_muted_artist_blur">Works by %1$s are blurred.</string>
+<string name="detail_muted_artist_blur_default">this artist</string>
+<string name="detail_save_image">Save Image</string>
+<string name="detail_save_ugoira">Save Ugoira</string>
 </resources>

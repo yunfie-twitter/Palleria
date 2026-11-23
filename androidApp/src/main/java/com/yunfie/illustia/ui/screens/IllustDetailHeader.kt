@@ -56,6 +56,19 @@ import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.pixiv.UgoiraPlayback
 import com.yunfie.illustia.platform.ImageClipboardHelper
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.detail_copy_url
+import com.yunfie.illustia.resources.detail_image_load_failed
+import com.yunfie.illustia.resources.detail_more
+import com.yunfie.illustia.resources.detail_mute
+import com.yunfie.illustia.resources.detail_mute_artist
+import com.yunfie.illustia.resources.detail_mute_work
+import com.yunfie.illustia.resources.detail_open_in_browser
+import com.yunfie.illustia.resources.detail_save_all_pages
+import com.yunfie.illustia.resources.detail_save_image
+import com.yunfie.illustia.resources.detail_save_this_page
+import com.yunfie.illustia.resources.detail_save_ugoira
+import com.yunfie.illustia.resources.detail_share
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.HeaderOverlayIcon
 import com.yunfie.illustia.ui.components.LiquidGlassIconButton
@@ -93,6 +106,7 @@ import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import org.jetbrains.compose.resources.stringResource as resString
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -137,21 +151,21 @@ internal fun IllustDetailHeader(
     val haptic = LocalHapticFeedback.current
     val hapticMode = LocalAppHapticMode.current
     val clipboard = remember(context) { context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager }
-    val openInBrowserLabel = stringResource(R.string.detail_open_in_browser)
-    val shareLabel = stringResource(R.string.detail_share)
+    val openInBrowserLabel = resString(Res.string.detail_open_in_browser)
+    val shareLabel = resString(Res.string.detail_share)
     val isUgoira = illust.type == "ugoira"
     val saveActionLabel =
         if (isUgoira) {
-            stringResource(R.string.detail_save_ugoira)
+            resString(Res.string.detail_save_ugoira)
         } else {
-            stringResource(R.string.detail_save_image)
+            resString(Res.string.detail_save_image)
         }
-    val saveAllPagesLabel = stringResource(R.string.detail_save_all_pages)
-    val saveThisPageLabel = stringResource(R.string.detail_save_this_page)
-    val copyUrlLabel = stringResource(R.string.detail_copy_url)
-    val muteLabel = stringResource(R.string.detail_mute)
-    val muteWorkLabel = stringResource(R.string.detail_mute_work)
-    val muteArtistLabel = stringResource(R.string.detail_mute_artist)
+    val saveAllPagesLabel = resString(Res.string.detail_save_all_pages)
+    val saveThisPageLabel = resString(Res.string.detail_save_this_page)
+    val copyUrlLabel = resString(Res.string.detail_copy_url)
+    val muteLabel = resString(Res.string.detail_mute)
+    val muteWorkLabel = resString(Res.string.detail_mute_work)
+    val muteArtistLabel = resString(Res.string.detail_mute_artist)
     val reportProblemLabel = stringResource(R.string.action_report_problem)
     var showReportDialog by remember(illust.id) { mutableStateOf(false) }
     if (showReportDialog) {
@@ -163,7 +177,7 @@ internal fun IllustDetailHeader(
             onMessage = onMessage,
         )
     }
-    val moreLabel = stringResource(R.string.detail_more)
+    val moreLabel = resString(Res.string.detail_more)
     val copyImageLabel = stringResource(R.string.action_copy_image)
     val copiedImageMessage = stringResource(R.string.copied_image_to_clipboard)
     val copyImageFailedMessage = stringResource(R.string.copy_image_failed)
@@ -721,7 +735,7 @@ private fun HeroImageRetry(
             modifier = Modifier.size(26.dp),
         )
         Text(
-            text = stringResource(R.string.detail_image_load_failed),
+            text = resString(Res.string.detail_image_load_failed),
             color = Color.White,
             style = MiuixTheme.textStyles.footnote1,
             fontWeight = FontWeight.Bold,

@@ -68,6 +68,9 @@ import com.yunfie.illustia.R
 import com.yunfie.illustia.data.pixiv.IllustSeriesStore
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.pixiv.Illusts
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.detail_series
+import com.yunfie.illustia.resources.detail_share
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.AvatarImage
 import com.yunfie.illustia.ui.components.CenteredErrorState
@@ -110,6 +113,7 @@ import top.yukonga.miuix.kmp.overlay.OverlayCascadingListPopup
 import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.foundation.lazy.grid.items as gridItems
+import org.jetbrains.compose.resources.stringResource as resString
 
 @Suppress("MatchingDeclarationName")
 enum class IllustSeriesSortOrder {
@@ -428,7 +432,7 @@ fun IllustSeriesScreen(
         }
 
         SeriesSmallTopAppBar(
-            title = detailTitle.ifBlank { stringResource(R.string.detail_series) },
+            title = detailTitle.ifBlank { resString(Res.string.detail_series) },
             coverUrl = coverUrl,
             seriesId = seriesId,
             sortOrder = sortOrder,
@@ -583,7 +587,7 @@ private fun SeriesProfileInfo(
 
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
-                text = detailTitle.ifBlank { stringResource(R.string.detail_series) },
+                text = detailTitle.ifBlank { resString(Res.string.detail_series) },
                 color = MiuixTheme.colorScheme.onBackground,
                 style = MiuixTheme.textStyles.title2,
                 fontWeight = FontWeight.Black,
@@ -636,7 +640,7 @@ private fun SeriesSmallTopAppBar(
     val context = LocalContext.current
     var showMoreMenu by remember { mutableStateOf(false) }
     val reloadLabel = stringResource(R.string.action_reload)
-    val shareLabel = stringResource(R.string.detail_share)
+    val shareLabel = resString(Res.string.detail_share)
     val shareFailedMessage = stringResource(R.string.error_share_failed)
     val sortLabel = stringResource(R.string.search_sort_order)
     val sortNewestLabel = stringResource(R.string.sort_date_desc)

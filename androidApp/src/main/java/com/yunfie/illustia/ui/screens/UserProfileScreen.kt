@@ -35,6 +35,9 @@ import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.models.UserProfile
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.detail_unfollow_confirm
+import com.yunfie.illustia.resources.detail_unfollow_title
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isDynamicColorAvailable
@@ -54,6 +57,7 @@ import com.yunfie.illustia.ui.screens.profile.rememberUserWorks
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import org.jetbrains.compose.resources.stringResource as resString
 
 @Composable
 fun UserProfileScreen(
@@ -197,8 +201,8 @@ fun UserProfileScreen(
     if (showUnfollowConfirm) {
         MiuixConfirmDialog(
             show = true,
-            title = stringResource(R.string.detail_unfollow_title),
-            summary = stringResource(R.string.detail_unfollow_confirm, user.name.ifBlank { "@${user.account}" }),
+            title = resString(Res.string.detail_unfollow_title),
+            summary = resString(Res.string.detail_unfollow_confirm, user.name.ifBlank { "@${user.account}" }),
             confirmText = stringResource(R.string.action_unfollow),
             destructive = true,
             onConfirm = {

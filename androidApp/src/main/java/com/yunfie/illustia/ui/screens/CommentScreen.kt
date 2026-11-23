@@ -40,6 +40,8 @@ import com.yunfie.illustia.data.pixiv.CommentStore
 import com.yunfie.illustia.data.proxyPixivImageUrl
 import com.yunfie.illustia.models.pixiv.Comment
 import com.yunfie.illustia.models.pixiv.PixivStamp
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.detail_comments
 import com.yunfie.illustia.ui.components.AVATAR_IMAGE_MAX_DECODE_DIMENSION_PX
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
@@ -79,6 +81,7 @@ import top.yukonga.miuix.kmp.icon.extended.Send
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 import top.yukonga.miuix.kmp.window.WindowBottomSheet
+import org.jetbrains.compose.resources.stringResource as resString
 
 /** 開いた直後に表示されるコメント行のアバターを先に温める件数。 */
 private const val COMMENT_AVATAR_PREFETCH_LIMIT = 8
@@ -171,7 +174,7 @@ fun CommentScreen(
     WindowBottomSheet(
         show = true,
         modifier = Modifier.scrollEndHaptic(),
-        title = stringResource(R.string.detail_comments),
+        title = resString(Res.string.detail_comments),
         startAction = {
             IconButton(onClick = onDismiss) {
                 Icon(imageVector = MiuixIcons.Close, contentDescription = stringResource(R.string.action_close))
@@ -282,7 +285,7 @@ fun CommentScreen(
                         TextField(
                             value = commentText,
                             onValueChange = { commentText = it },
-                            label = stringResource(R.string.detail_comments),
+                            label = resString(Res.string.detail_comments),
                             modifier = Modifier.weight(1f),
                             singleLine = true,
                         )

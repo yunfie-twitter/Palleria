@@ -35,6 +35,8 @@ import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.detail_comments
 import com.yunfie.illustia.ui.app.AppTab
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.PixivImage
@@ -52,6 +54,7 @@ import top.yukonga.miuix.kmp.icon.extended.Favorites
 import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
 import top.yukonga.miuix.kmp.icon.extended.Messages
 import top.yukonga.miuix.kmp.icon.extended.Share
+import org.jetbrains.compose.resources.stringResource as resString
 
 @Composable
 fun ShortsFeedScreen(
@@ -237,7 +240,7 @@ fun ShortsFeedScreen(
                         ) {
                             Icon(
                                 imageVector = MiuixIcons.Messages,
-                                contentDescription = stringResource(R.string.detail_comments),
+                                contentDescription = resString(Res.string.detail_comments),
                                 tint = Color.White,
                                 modifier = Modifier.size(38.dp),
                             )

@@ -1,5 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="detail_comments">評論</string>
+    <string name="detail_comments_empty">尚無評論</string>
+    <string name="detail_copy_url">複製 URL</string>
+    <string name="detail_illust_id">插圖 ID</string>
+    <string name="detail_image_load_failed">無法載入圖片</string>
+    <string name="detail_more">更多</string>
+    <string name="detail_mute">屏蔽</string>
+    <string name="detail_mute_artist">將此藝術家靜音</string>
+    <string name="detail_mute_work">將此作品靜音</string>
+    <string name="detail_muted_artist">靜音藝術家</string>
+    <string name="detail_muted_work">靜音工作</string>
+    <string name="detail_muted_work_blur">包含靜音標籤的作品模糊。</string>
+    <string name="detail_no_caption">無標題</string>
+    <string name="detail_open_in_browser">在瀏覽器中開啟</string>
+    <string name="detail_related">相關作品</string>
+    <string name="detail_resolution">分辨率</string>
+    <string name="detail_save_all_pages">儲存所有頁面</string>
+    <string name="detail_save_this_page">儲存此頁</string>
+    <string name="detail_section_settings_summary">詳情頁面區塊顯示順序</string>
+    <string name="detail_section_settings_title">作品詳情版面配置設定</string>
+    <string name="detail_series">系列</string>
+    <string name="detail_share">分享</string>
+    <string name="detail_show_comments">顯示評論</string>
+    <string name="detail_tags_show_less">收合</string>
+    <string name="detail_unfollow_confirm">取消追蹤 %1$s？</string>
+    <string name="detail_unfollow_title">取消關注</string>
+    <string name="detail_unmute">取消靜音</string>
     <string name="feature_flags_reset">重設所有旗標</string>
     <string name="feature_flags_reset_confirm">確定要將所有功能旗標重設為預設值嗎？</string>
     <string name="feature_flags_section_desc">開啟旗標後，對應的設定項目將顯示於一般設定中。</string>
@@ -24,4 +51,8 @@
     <string name="flag_shorts_feed_title">短篇插畫動態</string>
     <string name="flag_user_profile_bottom_sheet_desc">在一般設定中啟用以底部面板開啟使用者個人資料的項目</string>
     <string name="flag_user_profile_bottom_sheet_title">使用者資料底部面板</string>
+<string name="detail_muted_artist_blur">%1$s 的作品模糊。</string>
+<string name="detail_muted_artist_blur_default">這位藝術家</string>
+<string name="detail_save_image">儲存圖像</string>
+<string name="detail_save_ugoira">儲存動圖</string>
 </resources>

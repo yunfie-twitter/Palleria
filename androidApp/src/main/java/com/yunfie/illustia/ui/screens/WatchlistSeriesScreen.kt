@@ -80,6 +80,8 @@ import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.data.pixiv.WatchlistStore
 import com.yunfie.illustia.models.pixiv.MangaSeriesModel
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.detail_share
 import com.yunfie.illustia.settings.isDynamicColorAvailable
 import com.yunfie.illustia.settings.resolvePageBackgroundColor
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
@@ -125,6 +127,7 @@ import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import androidx.compose.foundation.lazy.grid.items as gridItems
+import org.jetbrains.compose.resources.stringResource as resString
 
 @Suppress("MatchingDeclarationName")
 enum class WatchlistSortOrder {
@@ -610,7 +613,7 @@ private fun WatchlistSmallTopAppBar(
     val context = LocalContext.current
     var showMoreMenu by remember { mutableStateOf(false) }
     val reloadLabel = stringResource(R.string.action_reload)
-    val shareLabel = stringResource(R.string.detail_share)
+    val shareLabel = resString(Res.string.detail_share)
     val shareFailedMessage = stringResource(R.string.error_share_failed)
     val watchlistTitle = stringResource(R.string.watchlist_series_title)
     val sortLabel = stringResource(R.string.search_sort_order)

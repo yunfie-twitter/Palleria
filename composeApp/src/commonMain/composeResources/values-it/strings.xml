@@ -1,4 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="action_reset">Ripristina</string>
+    <string name="detail_comments">Commenti</string>
+    <string name="detail_comments_empty">Nessun commento ancora</string>
+    <string name="detail_copy_url">Copia l\'URL</string>
+    <string name="detail_illust_id">ID illustrazione</string>
+    <string name="detail_image_load_failed">Impossibile caricare l\'immagine</string>
+    <string name="detail_more">Di più</string>
+    <string name="detail_mute">Silenzia</string>
+    <string name="detail_mute_artist">Disattiva questo artista</string>
+    <string name="detail_mute_work">Disattiva questo lavoro</string>
+    <string name="detail_muted_artist">Artista disattivato</string>
+    <string name="detail_muted_work">Lavoro disattivato</string>
+    <string name="detail_muted_work_blur">Le opere contenenti tag disattivati vengono sfocate.</string>
+    <string name="detail_no_caption">Nessuna didascalia</string>
+    <string name="detail_open_in_browser">Apri nel browser</string>
+    <string name="detail_related">Lavori correlati</string>
+    <string name="detail_resolution">Risoluzione</string>
+    <string name="detail_save_all_pages">Salva tutte le pagine</string>
+    <string name="detail_save_this_page">Salva questa pagina</string>
+    <string name="detail_series">Serie</string>
+    <string name="detail_share">Condividi</string>
+    <string name="detail_show_comments">Mostra commenti</string>
+    <string name="detail_tags_show_less">Mostra meno</string>
+    <string name="detail_unfollow_confirm">Smetti di seguire %1$s?</string>
+    <string name="detail_unfollow_title">Smetti di seguire</string>
+    <string name="detail_unmute">Riattiva</string>
+<string name="detail_muted_artist_blur">Le opere di %1$s sono sfocate.</string>
+<string name="detail_muted_artist_blur_default">questo artista</string>
+<string name="detail_save_image">Salva immagine</string>
+<string name="detail_save_ugoira">Salva Ugoira</string>
 </resources>
