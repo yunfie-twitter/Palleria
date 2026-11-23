@@ -19,7 +19,6 @@ import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.nativebridge.NativeImageStore
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
-import com.yunfie.illustia.platform.AndroidStringProvider
 import com.yunfie.illustia.platform.AppInfo
 import com.yunfie.illustia.platform.AppLogger
 import com.yunfie.illustia.platform.AppPaths
@@ -123,7 +122,7 @@ internal fun AppSettings.withHydratedRoomCollections(full: AppSettings): AppSett
 @Suppress("LargeClass", "TooManyFunctions")
 abstract class IllustiaViewModelFoundation(
     protected val deps: ViewModelDeps,
-    protected val strings: StringProvider = AndroidStringProvider(deps.application),
+    protected val strings: StringProvider = deps.strings,
 ) : ViewModel() {
     /**
      * ViewModel の生存期間に紐づくコルーチンスコープ。生成側（ファクトリ）が渡す。
