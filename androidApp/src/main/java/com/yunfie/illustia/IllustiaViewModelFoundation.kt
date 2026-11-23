@@ -29,11 +29,11 @@ import com.yunfie.illustia.platform.AppLogger
 import com.yunfie.illustia.platform.AppPaths
 import com.yunfie.illustia.platform.BackgroundWork
 import com.yunfie.illustia.platform.Connectivity
+import com.yunfie.illustia.platform.DeviceProfile
 import com.yunfie.illustia.platform.DocumentIo
 import com.yunfie.illustia.platform.ImageCache
 import com.yunfie.illustia.platform.MainThreadChecker
 import com.yunfie.illustia.platform.MonotonicClock
-import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.platform.StringProvider
 import com.yunfie.illustia.platform.ViewModelDeps
 import com.yunfie.illustia.settings.AppSettings
@@ -155,6 +155,7 @@ abstract class IllustiaViewModelFoundation(
     protected val backgroundWork: BackgroundWork get() = deps.backgroundWork
     protected val imageCache: ImageCache get() = deps.imageCache
     protected val documentIo: DocumentIo get() = deps.documentIo
+    protected val deviceProfile: DeviceProfile get() = deps.deviceProfile
     protected val settingsStore by lazy {
         illustiaApplication?.settingsStore
             ?: SettingsStore(getApplication<Application>().applicationContext)
@@ -567,9 +568,7 @@ abstract class IllustiaViewModelFoundation(
             merged.addAll(shownIds)
             merged.addAll(previous.seenFeedIllusts)
             val maxLimit =
-                if (com.yunfie.illustia.platform.PlatformCapabilities
-                        .isLowRamDevice(getApplication())
-                ) {
+                if (deviceProfile.isLowRamDevice) {
                     600
                 } else {
                     MAX_SEEN_FEED_ILLUSTS
@@ -712,7 +711,7 @@ abstract class IllustiaViewModelFoundation(
     }
 
     protected suspend fun persistSettingsUpdates() {
-        val debounceMs = PlatformCapabilities.recommendedDataStoreDebounceMs(getApplication<Application>())
+        val debounceMs = deviceProfile.dataStoreDebounceMs
         while (true) {
             var request = settingsPersistenceRequests.receive()
             val baseSettings = request.baseSettings
