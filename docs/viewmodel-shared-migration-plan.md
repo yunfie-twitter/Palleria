@@ -214,6 +214,7 @@ mirroring the `PixivUrlPolicy.kt` split that already works.
 | `DocumentIo` | `Uri` in export/import managed data | ✅ done |
 | `DeviceProfile` | `PlatformCapabilities` low-RAM / debounce | ✅ done |
 | `SavedIllust` (model) | Room `SavedIllustEntity` in UI state | ✅ done |
+| `AppServices` | wallpaper scheduler / widget refresh / download service acquire | ✅ done |
 | `String` URI (save image) | `android.net.Uri` in `saveImageToDocument` | todo |
 
 ### Step 5 — The hard seams (classes 5–6)

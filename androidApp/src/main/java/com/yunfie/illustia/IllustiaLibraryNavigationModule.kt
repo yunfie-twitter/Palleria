@@ -109,7 +109,7 @@ abstract class IllustiaLibraryNavigationModule(
 
     fun saveImageToDocument(
         url: String,
-        uri: android.net.Uri,
+        uri: String,
     ) {
         val keepAlive =
             try {
@@ -130,8 +130,7 @@ abstract class IllustiaLibraryNavigationModule(
                             .build()
                     downloadClient.newCall(request).execute().use { response ->
                         check(response.isSuccessful) { "HTTP ${response.code}" }
-                        getApplication<Application>().contentResolver.openOutputStream(uri, "wt").use { output ->
-                            checkNotNull(output)
+                        documentIo.write(uri) { output ->
                             response.body.byteStream().use { it.copyTo(output) }
                         }
                     }

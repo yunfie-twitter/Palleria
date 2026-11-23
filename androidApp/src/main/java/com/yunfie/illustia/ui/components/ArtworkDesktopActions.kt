@@ -68,7 +68,7 @@ internal fun rememberArtworkDesktopActions(viewModel: IllustiaViewModel): Artwor
         rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("image/*")) { uri ->
             val url = pendingUrl
             pendingUrl = null
-            if (uri != null && url != null) viewModel.saveImageToDocument(url, uri)
+            if (uri != null && url != null) viewModel.saveImageToDocument(url, uri.toString())
         }
     return remember(viewModel, launcher) {
         ArtworkDesktopActions(

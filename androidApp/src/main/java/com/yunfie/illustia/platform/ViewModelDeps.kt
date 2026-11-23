@@ -32,7 +32,7 @@ class ViewModelDeps(
     val deviceProfile: DeviceProfile = AndroidDeviceProfile(application),
 ) {
     val appServices: AppServices by lazy { AndroidAppServices(application) }
-    val documentIo: DocumentIo by lazy { AndroidDocumentIo(ManagedDataRepository(application.contentResolver)) }
+    val documentIo: DocumentIo by lazy { AndroidDocumentIo(application.contentResolver) }
     val illustiaApplication: IllustiaApplication? get() = application as? IllustiaApplication
 
     val contentResolver: ContentResolver get() = application.contentResolver

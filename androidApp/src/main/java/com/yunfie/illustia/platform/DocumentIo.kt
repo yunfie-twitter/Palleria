@@ -20,4 +20,10 @@ interface DocumentIo {
         uri: String,
         current: AppSettings,
     ): AppSettings
+
+    /** 指定 URI の出力ストリームへ書き込む。 */
+    fun write(
+        uri: String,
+        block: (java.io.OutputStream) -> Unit,
+    )
 }
