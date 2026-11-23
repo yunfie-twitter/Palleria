@@ -3,7 +3,7 @@ package com.yunfie.illustia.platform
 /**
  * ViewModel 層が必要とする画像キャッシュ操作の境界。
  *
- * Coil (`SingletonImageLoader`) への直接依存をここに閉じ込める。
+ * 画像ローダ（Coil / SingletonImageLoader）への直接依存をここに閉じ込める。
  */
 interface ImageCache {
     /** 指定 URL の画像を先読みキューに積む。 */
