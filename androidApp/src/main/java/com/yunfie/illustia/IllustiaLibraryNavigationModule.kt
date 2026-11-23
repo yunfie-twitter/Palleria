@@ -623,7 +623,6 @@ abstract class IllustiaLibraryNavigationModule(
     fun clearAppCache() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val appContext = getApplication<Application>().applicationContext
                 runCatching {
                     imageCache.clear()
                 }

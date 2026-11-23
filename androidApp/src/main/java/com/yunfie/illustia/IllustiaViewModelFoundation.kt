@@ -28,6 +28,7 @@ import com.yunfie.illustia.platform.AppInfo
 import com.yunfie.illustia.platform.AppLogger
 import com.yunfie.illustia.platform.AppPaths
 import com.yunfie.illustia.platform.AppServices
+import com.yunfie.illustia.platform.AppUpdateEvent
 import com.yunfie.illustia.platform.BackgroundWork
 import com.yunfie.illustia.platform.Connectivity
 import com.yunfie.illustia.platform.DeviceProfile
@@ -48,7 +49,6 @@ import com.yunfie.illustia.ui.app.SearchEntrySnapshot
 import com.yunfie.illustia.ui.scroll.ScrollPositionProbe
 import com.yunfie.illustia.ui.scroll.ScrollStateRegistry
 import com.yunfie.illustia.updater.AppReleaseInfo
-import com.yunfie.illustia.updater.AppUpdateDownloadWorker
 import com.yunfie.illustia.updater.AppUpdaterRepository
 import com.yunfie.illustia.updater.UpdateCheckState
 import com.yunfie.illustia.updater.UpdateInstallMethod
@@ -417,32 +417,9 @@ abstract class IllustiaViewModelFoundation(
 
     protected fun observeAppUpdateDownloadWorkerProgress() {
         viewModelScope.launch {
-            backgroundWork.appUpdateWorkInfos().collect { workInfos ->
-                val workInfo = workInfos.firstOrNull() ?: return@collect
-                if (workInfo.state == androidx.work.WorkInfo.State.RUNNING) {
-                    val progress = workInfo.progress.getFloat(AppUpdateDownloadWorker.KEY_PROGRESS, -1f)
-                    val downloaded = workInfo.progress.getLong(AppUpdateDownloadWorker.KEY_DOWNLOADED_BYTES, 0L)
-                    val total = workInfo.progress.getLong(AppUpdateDownloadWorker.KEY_TOTAL_BYTES, 0L)
-                    val currentState = _updateCheckState.value
-                    if (
-                        progress >= 0f &&
-                        currentState !is UpdateCheckState.Downloading &&
-                        canApplyDownloadProgress(currentState)
-                    ) {
-                        _updateCheckState.value =
-                            UpdateCheckState.Downloading(
-                                progress = progress,
-                                downloadedBytes = downloaded,
-                                totalBytes = total,
-                            )
-                    }
-                }
-            }
-        }
-        viewModelScope.launch {
-            AppUpdateDownloadWorker.progressFlow.collect { event ->
+            backgroundWork.appUpdateProgress().collect { event ->
                 when (event) {
-                    is AppUpdateDownloadWorker.DownloadProgressEvent.Progress -> {
+                    is AppUpdateEvent.Progress -> {
                         if (canApplyDownloadProgress(_updateCheckState.value)) {
                             _updateCheckState.value =
                                 UpdateCheckState.Downloading(
@@ -453,15 +430,15 @@ abstract class IllustiaViewModelFoundation(
                         }
                     }
 
-                    is AppUpdateDownloadWorker.DownloadProgressEvent.Completed -> {
+                    is AppUpdateEvent.Completed -> {
                         _updateCheckState.value =
                             UpdateCheckState.ReadyToInstall(
-                                apkFile = event.file,
+                                apkFile = java.io.File(event.apkPath),
                                 release = event.release,
                             )
                     }
 
-                    is AppUpdateDownloadWorker.DownloadProgressEvent.Failed -> {
+                    is AppUpdateEvent.Failed -> {
                         if (canApplyDownloadProgress(_updateCheckState.value)) {
                             _updateCheckState.value = UpdateCheckState.Error(event.error, event.release)
                             _uiState.update { it.copy(message = str(R.string.update_download_failed)) }
@@ -1087,7 +1064,7 @@ abstract class IllustiaViewModelFoundation(
     fun downloadUpdate(release: AppReleaseInfo) {
         if (_updateCheckState.value is UpdateCheckState.Downloading) return
         _updateCheckState.value = UpdateCheckState.Downloading(0f, 0L, release.apkSize)
-        AppUpdateDownloadWorker.start(getApplication(), release)
+        backgroundWork.startAppUpdateDownload(release)
         _uiState.update { it.copy(message = str(R.string.update_notification_downloaded_desc)) } // Using a placeholder for started download
     }
 
@@ -1133,43 +1110,34 @@ abstract class IllustiaViewModelFoundation(
 
     fun cancelDownloadUpdate() {
         appUpdaterRepository.cancelDownload()
-        AppUpdateDownloadWorker.cancel(getApplication())
+        backgroundWork.cancelAppUpdateWork()
         _updateCheckState.value = UpdateCheckState.Idle
     }
 
     fun updateCheckUpdatesInBackground(enabled: Boolean) {
         updateSettings { it.copy(checkUpdatesInBackground = enabled) }
-        val context = getApplication<Application>().applicationContext
         if (enabled && (_uiState.value.settings.notifyNewVersion || _uiState.value.settings.autoDownloadUpdates)) {
-            com.yunfie.illustia.updater.AppUpdateScheduler
-                .schedulePeriodicCheck(context)
+            backgroundWork.schedulePeriodicUpdateCheck()
         } else {
-            com.yunfie.illustia.updater.AppUpdateScheduler
-                .cancelPeriodicCheck(context)
+            backgroundWork.cancelPeriodicUpdateCheck()
         }
     }
 
     fun updateNotifyNewVersion(enabled: Boolean) {
         updateSettings { it.copy(notifyNewVersion = enabled) }
-        val context = getApplication<Application>().applicationContext
         if (_uiState.value.settings.checkUpdatesInBackground && (enabled || _uiState.value.settings.autoDownloadUpdates)) {
-            com.yunfie.illustia.updater.AppUpdateScheduler
-                .schedulePeriodicCheck(context)
+            backgroundWork.schedulePeriodicUpdateCheck()
         } else {
-            com.yunfie.illustia.updater.AppUpdateScheduler
-                .cancelPeriodicCheck(context)
+            backgroundWork.cancelPeriodicUpdateCheck()
         }
     }
 
     fun updateAutoDownloadUpdates(enabled: Boolean) {
         updateSettings { it.copy(autoDownloadUpdates = enabled) }
-        val context = getApplication<Application>().applicationContext
         if (_uiState.value.settings.checkUpdatesInBackground && (enabled || _uiState.value.settings.notifyNewVersion)) {
-            com.yunfie.illustia.updater.AppUpdateScheduler
-                .schedulePeriodicCheck(context)
+            backgroundWork.schedulePeriodicUpdateCheck()
         } else {
-            com.yunfie.illustia.updater.AppUpdateScheduler
-                .cancelPeriodicCheck(context)
+            backgroundWork.cancelPeriodicUpdateCheck()
         }
     }
 
