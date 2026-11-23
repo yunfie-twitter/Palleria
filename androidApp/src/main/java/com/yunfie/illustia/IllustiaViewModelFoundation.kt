@@ -155,11 +155,11 @@ abstract class IllustiaViewModelFoundation(
     protected val appServices: AppServices get() = deps.appServices
     protected val settingsStore by lazy {
         illustiaApplication?.settingsStore
-            ?: SettingsStore(getApplication<Application>().applicationContext)
+            ?: deps.settings
     }
 
     protected val repository by lazy {
-        illustiaApplication?.repository ?: IllustiaRepository(settingsStore)
+        illustiaApplication?.repository ?: deps.repository
     }
 
     fun uiRepository(): IllustiaRepository = repository
@@ -244,8 +244,7 @@ abstract class IllustiaViewModelFoundation(
         }
     protected val illustDetailRelatedSectionsReady: MutableSet<Long> = mutableSetOf()
     protected val downloadClient: OkHttpClient by lazy {
-        (getApplication<Application>() as IllustiaApplication)
-            .sharedHttpClient
+        deps.sharedHttpClient
             .newBuilder()
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)

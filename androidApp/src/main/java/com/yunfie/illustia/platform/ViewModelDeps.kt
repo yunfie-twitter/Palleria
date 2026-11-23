@@ -3,8 +3,10 @@ package com.yunfie.illustia.platform
 import android.app.Application
 import android.content.ContentResolver
 import com.yunfie.illustia.IllustiaApplication
-import com.yunfie.illustia.data.ManagedDataRepository
+import com.yunfie.illustia.data.IllustiaRepository
+import com.yunfie.illustia.settings.SettingsStore
 import kotlinx.coroutines.CoroutineScope
+import okhttp3.OkHttpClient
 
 /**
  * ViewModel 連鎖が実際に必要とする環境依存の入口。
@@ -35,6 +37,11 @@ class ViewModelDeps(
     val appServices: AppServices by lazy { AndroidAppServices(application) }
     val documentIo: DocumentIo by lazy { AndroidDocumentIo(application.contentResolver) }
     val illustiaApplication: IllustiaApplication? get() = application as? IllustiaApplication
+
+    /** `IllustiaApplication` の共有インスタンス。サービスロケータの downcast をここに集約する。 */
+    val settings: SettingsStore get() = requireNotNull(illustiaApplication).settingsStore
+    val repository: IllustiaRepository get() = requireNotNull(illustiaApplication).repository
+    val sharedHttpClient: OkHttpClient get() = requireNotNull(illustiaApplication).sharedHttpClient
 
     val contentResolver: ContentResolver get() = application.contentResolver
 }
