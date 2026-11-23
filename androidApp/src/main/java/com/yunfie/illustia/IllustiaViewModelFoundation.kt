@@ -3,7 +3,6 @@ package com.yunfie.illustia
 import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.navigation3.runtime.NavKey
-import com.yunfie.illustia.data.FeatureRepositories
 import com.yunfie.illustia.data.IllustiaRepository
 import com.yunfie.illustia.data.PixivApiException
 import com.yunfie.illustia.data.isPixivRateLimited
@@ -158,10 +157,10 @@ abstract class IllustiaViewModelFoundation(
         illustiaApplication?.settingsStore
             ?: SettingsStore(getApplication<Application>().applicationContext)
     }
+
     protected val repository by lazy {
         illustiaApplication?.repository ?: IllustiaRepository(settingsStore)
     }
-    internal val featureRepositories by lazy { FeatureRepositories(repository) }
 
     fun uiRepository(): IllustiaRepository = repository
 
