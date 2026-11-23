@@ -12,4 +12,7 @@ class AndroidDeviceProfile(
 
     override val dataStoreDebounceMs: Long
         get() = PlatformCapabilities.recommendedDataStoreDebounceMs(appContext)
+
+    override val supportsDynamicColor: Boolean
+        get() = PlatformCapabilities.supportsDynamicColor()
 }

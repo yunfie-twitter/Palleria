@@ -12,4 +12,7 @@ interface DeviceProfile {
 
     /** 設定永続化のデバウンス間隔（ミリ秒）。 */
     val dataStoreDebounceMs: Long
+
+    /** 端末が Material You の動的カラーに対応しているか。 */
+    val supportsDynamicColor: Boolean
 }

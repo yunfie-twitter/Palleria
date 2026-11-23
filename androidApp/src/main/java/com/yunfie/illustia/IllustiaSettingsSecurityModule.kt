@@ -13,7 +13,6 @@ import com.yunfie.illustia.platform.ViewModelDeps
 import com.yunfie.illustia.settings.AppHapticMode
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.SettingsStore
-import com.yunfie.illustia.settings.isDynamicColorAvailable
 import com.yunfie.illustia.ui.screens.CalculatorEngine
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -52,7 +51,7 @@ abstract class IllustiaSettingsSecurityModule(
         viewModelScope.launch(Dispatchers.IO) {
             val fullSettings = repository.readSettings(SettingsStore.STARTUP_VIEW_HISTORY_LIMIT)
             val normalizedFullSettings =
-                if (fullSettings.useDynamicColor && !isDynamicColorAvailable()) {
+                if (fullSettings.useDynamicColor && !deviceProfile.supportsDynamicColor) {
                     fullSettings.copy(useDynamicColor = false)
                 } else {
                     fullSettings
@@ -138,7 +137,7 @@ abstract class IllustiaSettingsSecurityModule(
 
     fun updateUseDynamicColor(value: Boolean) {
         updateSettings {
-            it.copy(useDynamicColor = value && isDynamicColorAvailable())
+            it.copy(useDynamicColor = value && deviceProfile.supportsDynamicColor)
         }
     }
 

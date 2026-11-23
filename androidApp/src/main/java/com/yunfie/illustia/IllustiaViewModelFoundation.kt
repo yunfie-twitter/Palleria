@@ -38,7 +38,6 @@ import com.yunfie.illustia.platform.Telemetry
 import com.yunfie.illustia.platform.ViewModelDeps
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.SettingsStore
-import com.yunfie.illustia.settings.isDynamicColorAvailable
 import com.yunfie.illustia.ui.app.AppRoute
 import com.yunfie.illustia.ui.app.AppTab
 import com.yunfie.illustia.ui.app.DetailEntrySnapshot
@@ -359,7 +358,7 @@ abstract class IllustiaViewModelFoundation(
         viewModelScope.launch(Dispatchers.IO) {
             val startupSettings = repository.readStartupSettings()
             val normalizedStartupSettings =
-                if (startupSettings.useDynamicColor && !isDynamicColorAvailable()) {
+                if (startupSettings.useDynamicColor && !deviceProfile.supportsDynamicColor) {
                     startupSettings.copy(useDynamicColor = false)
                 } else {
                     startupSettings
