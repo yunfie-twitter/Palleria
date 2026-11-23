@@ -43,8 +43,9 @@ class ViewModelDeps(
     }
     val imageStore: GallerySaver by lazy { NativeImageStore(application.applicationContext) }
     val appIconSwitcher: AppIconSwitcher by lazy { AndroidAppIconSwitcher(application) }
+    val downloadService: DownloadService by lazy { AndroidDownloadService(sharedHttpClient) }
     val appServices: AppServices by lazy { AndroidAppServices(application) }
-    private val documentIoImpl: AndroidDocumentIo by lazy { AndroidDocumentIo(application.contentResolver) }
+    private val documentIoImpl: AndroidDocumentIo by lazy { AndroidDocumentIo(application.contentResolver, sharedHttpClient) }
     val documentIo: DocumentIo get() = documentIoImpl
     val documentStreamIo: DocumentStreamIo get() = documentIoImpl
     val illustiaApplication: IllustiaApplication? get() = application as? IllustiaApplication

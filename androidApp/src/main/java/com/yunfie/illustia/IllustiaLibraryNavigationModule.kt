@@ -1,7 +1,6 @@
 package com.yunfie.illustia
 
 import com.yunfie.illustia.data.AnimatedGifEncoder
-import com.yunfie.illustia.data.ResumableDownloader
 import com.yunfie.illustia.data.UgoiraMp4Encoder
 import com.yunfie.illustia.data.proxyPixivImageUrl
 import com.yunfie.illustia.models.Illust
@@ -21,7 +20,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.withLock
-import okhttp3.Request
 import java.io.File
 import java.io.FileOutputStream
 
@@ -118,18 +116,11 @@ abstract class IllustiaLibraryNavigationModule(
         viewModelScope
             .launch(Dispatchers.IO) {
                 try {
-                    val request =
-                        Request
-                            .Builder()
-                            .url(proxyPixivImageUrl(url, _uiState.value.settings.pixivImageProxyBaseUrl))
-                            .header("Referer", "https://www.pixiv.net/")
-                            .build()
-                    downloadClient.newCall(request).execute().use { response ->
-                        check(response.isSuccessful) { "HTTP ${response.code}" }
-                        documentStreamIo.write(uri) { output ->
-                            response.body.byteStream().use { it.copyTo(output) }
-                        }
-                    }
+                    documentStreamIo.downloadToUri(
+                        url = proxyPixivImageUrl(url, _uiState.value.settings.pixivImageProxyBaseUrl),
+                        headers = mapOf("Referer" to "https://www.pixiv.net/"),
+                        uri = uri,
+                    )
                 } catch (expectedFailure: Exception) {
                     if (isCancellation(expectedFailure)) throw expectedFailure
                     telemetry.recordException(expectedFailure, tag = "download_document")
@@ -236,10 +227,9 @@ abstract class IllustiaLibraryNavigationModule(
                         "User-Agent" to "PixivAndroidApp/6.184.0 (Android 14; Palleria)",
                     )
                 val result =
-                    ResumableDownloader.downloadToPartFile(
-                        client = downloadClient,
+                    downloadService.downloadToPartFile(
                         url = requestUrl,
-                        partFile = partFile,
+                        partPath = partFile.absolutePath,
                         resumeEnabled = resumeEnabled,
                         headers = headers,
                     )
@@ -507,10 +497,9 @@ abstract class IllustiaLibraryNavigationModule(
                 "User-Agent" to "PixivAndroidApp/6.184.0 (Android 14; Palleria)",
             )
         val result =
-            ResumableDownloader.downloadToPartFile(
-                client = downloadClient,
+            downloadService.downloadToPartFile(
                 url = requestUrl,
-                partFile = partFile,
+                partPath = partFile.absolutePath,
                 resumeEnabled = resumeEnabled,
                 headers = headers,
             )

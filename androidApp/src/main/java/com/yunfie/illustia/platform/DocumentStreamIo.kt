@@ -14,4 +14,15 @@ interface DocumentStreamIo {
         uri: String,
         block: (OutputStream) -> Unit,
     )
+
+    /**
+     * [url] を取得し、そのボディを [uri] へストリーミングで書き出す。
+     *
+     * @throws IllegalStateException レスポンスが成功しなかった場合。
+     */
+    fun downloadToUri(
+        url: String,
+        headers: Map<String, String>,
+        uri: String,
+    )
 }

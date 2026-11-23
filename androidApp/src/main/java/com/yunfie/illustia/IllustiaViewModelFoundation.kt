@@ -28,6 +28,7 @@ import com.yunfie.illustia.platform.Connectivity
 import com.yunfie.illustia.platform.DeviceProfile
 import com.yunfie.illustia.platform.DocumentIo
 import com.yunfie.illustia.platform.DocumentStreamIo
+import com.yunfie.illustia.platform.DownloadService
 import com.yunfie.illustia.platform.GallerySaver
 import com.yunfie.illustia.platform.ImageCache
 import com.yunfie.illustia.platform.MainThreadChecker
@@ -146,6 +147,7 @@ abstract class IllustiaViewModelFoundation(
     protected val telemetry: Telemetry get() = deps.telemetry
     protected val appServices: AppServices get() = deps.appServices
     protected val appIconSwitcher: AppIconSwitcher get() = deps.appIconSwitcher
+    protected val downloadService: DownloadService get() = deps.downloadService
     protected val settingsStore: SettingsFacade by lazy {
         illustiaApplication?.settingsStore
             ?: deps.settings
@@ -234,14 +236,6 @@ abstract class IllustiaViewModelFoundation(
             override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Long, Int>?): Boolean = size > MAX_CACHED_GRID_STATES
         }
     protected val illustDetailRelatedSectionsReady: MutableSet<Long> = mutableSetOf()
-    protected val downloadClient: OkHttpClient by lazy {
-        deps.sharedHttpClient
-            .newBuilder()
-            .readTimeout(30, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
-            .callTimeout(60, TimeUnit.SECONDS)
-            .build()
-    }
     internal val appStateStore = AppStateStore()
     internal val _uiState: AppStateStore = appStateStore
     val uiState: StateFlow<IllustiaUiState> = appStateStore.state
