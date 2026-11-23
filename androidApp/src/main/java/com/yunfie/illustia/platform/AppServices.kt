@@ -14,6 +14,9 @@ interface AppServices {
     /** プライバシー状態を反映するためウィジェットを再描画する。 */
     fun refreshPrivacySensitiveWidgets()
 
+    /** ランキングウィジェットを再描画する。 */
+    suspend fun refreshRankingWidget()
+
     /**
      * 作品保存の間、フォアグラウンドサービスを維持する。
      * 返り値の `close()` で解放する。

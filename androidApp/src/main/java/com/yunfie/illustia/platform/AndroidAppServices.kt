@@ -17,5 +17,9 @@ class AndroidAppServices(
         RankingWidgetProvider.refreshAll(appContext)
     }
 
+    override suspend fun refreshRankingWidget() {
+        RankingWidgetProvider.refreshAllSuspend(appContext)
+    }
+
     override fun acquireArtworkDownloadService(): AutoCloseable = ArtworkDownloadService.acquire(appContext)
 }

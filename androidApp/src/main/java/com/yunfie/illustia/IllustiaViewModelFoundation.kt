@@ -52,7 +52,6 @@ import com.yunfie.illustia.updater.AppReleaseInfo
 import com.yunfie.illustia.updater.AppUpdaterRepository
 import com.yunfie.illustia.updater.UpdateCheckState
 import com.yunfie.illustia.updater.UpdateInstallMethod
-import com.yunfie.illustia.widget.RankingWidgetProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -573,7 +572,6 @@ abstract class IllustiaViewModelFoundation(
     protected fun warmSmartCache(items: List<Illust>) {
         val settings = _uiState.value.settings
         if (!settings.smartCacheEnabled) return
-        val context = getApplication<Application>().applicationContext
         if (settings.smartCacheWifiOnly) {
             if (!connectivity.isWifiConnected()) return
         }
@@ -636,8 +634,7 @@ abstract class IllustiaViewModelFoundation(
 
     protected suspend fun refreshRankingWidget() {
         runCatching {
-            val context = getApplication<Application>().applicationContext
-            RankingWidgetProvider.refreshAllSuspend(context)
+            appServices.refreshRankingWidget()
         }
     }
 
