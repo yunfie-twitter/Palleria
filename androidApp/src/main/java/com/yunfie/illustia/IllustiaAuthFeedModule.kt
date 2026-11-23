@@ -1,6 +1,5 @@
 package com.yunfie.illustia
 
-import com.yunfie.illustia.GlitchTipTelemetry
 import com.yunfie.illustia.data.ManagedDataRepository
 import com.yunfie.illustia.data.pixivLoginCodeOrNull
 import com.yunfie.illustia.models.HomeFeedKind
