@@ -79,7 +79,7 @@ abstract class IllustiaDetailProfileModule(
         detailExtrasJob =
             viewModelScope.launch(Dispatchers.IO) {
                 try {
-                    GlitchTipTelemetry.traceAsync("illust.detail.load", "illust.detail") {
+                    telemetry.traceAsync("illust.detail.load", "illust.detail") {
                         // 履歴やプロフィールのカードは詳細情報が欠けている場合があるため、
                         // artistId の有無にかかわらず詳細を取得する。404 もここで検出でき、
                         // 取得に失敗したときは catch 側で selectedIllustError を設定する。
@@ -119,7 +119,7 @@ abstract class IllustiaDetailProfileModule(
                     val error = expectedFailure
                     if (isCancellation(error)) throw error
                     if (handleAuthExpired(error)) return@launch
-                    GlitchTipTelemetry.recordException(error, tag = "illust_detail", extras = mapOf("illustId" to illust.id))
+                    telemetry.recordException(error, tag = "illust_detail", extras = mapOf("illustId" to illust.id))
                     val errorMessage = illustOpenErrorMessage(error)
                     _uiState.update {
                         if (it.selectedIllust?.id == illust.id) {
@@ -160,7 +160,7 @@ abstract class IllustiaDetailProfileModule(
         detailExtrasJob =
             viewModelScope.launch(Dispatchers.IO) {
                 try {
-                    GlitchTipTelemetry.traceAsync("illust.detail.load", "illust.detail") {
+                    telemetry.traceAsync("illust.detail.load", "illust.detail") {
                         val illust = repository.illustDetail(illustId)
                         withContext(Dispatchers.Main) {
                             openIllust(illust)
@@ -170,7 +170,7 @@ abstract class IllustiaDetailProfileModule(
                     val error = expectedFailure
                     if (isCancellation(error)) throw error
                     if (handleAuthExpired(error)) return@launch
-                    GlitchTipTelemetry.recordException(error, tag = "illust_detail", extras = mapOf("illustId" to illustId))
+                    telemetry.recordException(error, tag = "illust_detail", extras = mapOf("illustId" to illustId))
                     withContext(Dispatchers.Main) {
                         _uiState.update {
                             it.copy(
@@ -669,7 +669,7 @@ abstract class IllustiaDetailProfileModule(
                 if (!isCurrentProfileRequest(session)) return@launch
                 _uiState.update { it.copy(isSelectedUserIllustsPaginating = false) }
                 if (handleAuthExpired(error)) return@launch
-                GlitchTipTelemetry.recordException(error, tag = "user_illusts_load")
+                telemetry.recordException(error, tag = "user_illusts_load")
                 val errorMsg = profileFailureMessage(error, str(R.string.error_load_artist_failed))
                 _uiState.update { state ->
                     if (nextUrl == null && state.selectedUserIllusts.isEmpty()) {

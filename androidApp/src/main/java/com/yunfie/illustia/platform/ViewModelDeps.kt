@@ -30,6 +30,7 @@ class ViewModelDeps(
     val backgroundWork: BackgroundWork = AndroidBackgroundWork(application),
     val imageCache: ImageCache = AndroidImageCache(application),
     val deviceProfile: DeviceProfile = AndroidDeviceProfile(application),
+    val telemetry: Telemetry = AndroidTelemetry,
 ) {
     val appServices: AppServices by lazy { AndroidAppServices(application) }
     val documentIo: DocumentIo by lazy { AndroidDocumentIo(application.contentResolver) }

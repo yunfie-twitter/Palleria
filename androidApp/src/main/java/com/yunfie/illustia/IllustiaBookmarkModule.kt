@@ -209,7 +209,7 @@ abstract class IllustiaBookmarkModule(
                 if (!isCurrentProfileRequest(session)) return@launch
                 _uiState.update { it.copy(isSelectedUserBookmarksPaginating = false) }
                 if (handleAuthExpired(error)) return@launch
-                GlitchTipTelemetry.recordException(error, tag = "user_bookmarks_load")
+                telemetry.recordException(error, tag = "user_bookmarks_load")
                 val errorMsg = profileFailureMessage(error)
                 _uiState.update { state ->
                     if (nextUrl == null && state.selectedUserBookmarks.isEmpty()) {
@@ -359,7 +359,7 @@ abstract class IllustiaBookmarkModule(
             }
             try {
                 val page =
-                    GlitchTipTelemetry.traceAsync("bookmarks.refresh", "bookmarks") {
+                    telemetry.traceAsync("bookmarks.refresh", "bookmarks") {
                         repository.bookmarks(userId, restrict, forceRefresh = forceRefresh, tag = tag)
                     }
                 if (generation != bookmarkRefreshGeneration.get()) return@launch
@@ -376,7 +376,7 @@ abstract class IllustiaBookmarkModule(
                 if (isCancellation(error)) throw error
                 if (generation != bookmarkRefreshGeneration.get()) return@launch
                 if (handleAuthExpired(error)) return@launch
-                GlitchTipTelemetry.recordException(error, tag = "bookmarks_refresh")
+                telemetry.recordException(error, tag = "bookmarks_refresh")
                 _uiState.update {
                     it.copy(
                         isBookmarkRefreshing = false,
@@ -516,7 +516,7 @@ abstract class IllustiaBookmarkModule(
             _uiState.update { it.copy(isBookmarkPaginating = true) }
             try {
                 val page =
-                    GlitchTipTelemetry.traceAsync("bookmarks.load_more", "bookmarks") {
+                    telemetry.traceAsync("bookmarks.load_more", "bookmarks") {
                         repository.nextPage(nextUrl)
                     }
                 if (generation != bookmarkRefreshGeneration.get()) return@launch
@@ -532,7 +532,7 @@ abstract class IllustiaBookmarkModule(
                 if (isCancellation(error)) throw error
                 if (generation != bookmarkRefreshGeneration.get()) return@launch
                 if (handleAuthExpired(error)) return@launch
-                GlitchTipTelemetry.recordException(error, tag = "bookmarks_load_more")
+                telemetry.recordException(error, tag = "bookmarks_load_more")
                 _uiState.update {
                     it.copy(
                         isBookmarkPaginating = false,

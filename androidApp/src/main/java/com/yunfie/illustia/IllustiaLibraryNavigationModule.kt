@@ -52,7 +52,7 @@ abstract class IllustiaLibraryNavigationModule(
             try {
                 appServices.acquireArtworkDownloadService()
             } catch (expectedFailure: RuntimeException) {
-                GlitchTipTelemetry.recordException(expectedFailure, tag = "download_service_start")
+                telemetry.recordException(expectedFailure, tag = "download_service_start")
                 _uiState.update { it.copy(message = str(R.string.error_save_failed)) }
                 return
             }
@@ -72,7 +72,7 @@ abstract class IllustiaLibraryNavigationModule(
                     acquiredSlot = true
                     updateDownloadQueueStatus(queueId, DownloadQueueStatus.Downloading)
                     _uiState.update { it.copy(loadState = LoadState.Loading, message = null) }
-                    GlitchTipTelemetry.traceAsync("download.artwork", "download") {
+                    telemetry.traceAsync("download.artwork", "download") {
                         val currentIllust = resolveDownloadIllust(filename)
                         val targetName = buildDownloadPath(filename, currentIllust)
                         val checkUrl = resolveCheckUrl(url, currentIllust)
@@ -96,7 +96,7 @@ abstract class IllustiaLibraryNavigationModule(
                     }
                     terminalStatus = DownloadQueueStatus.Failed
                     if (handleAuthExpired(error)) return@launch
-                    GlitchTipTelemetry.recordException(error, tag = "download_image")
+                    telemetry.recordException(error, tag = "download_image")
                     _uiState.update { it.copy(loadState = LoadState.Error(cleanErrorMessage(error, str(R.string.error_save_failed)))) }
                 } finally {
                     terminalStatus?.let { updateDownloadQueueStatus(queueId, it) }
@@ -114,7 +114,7 @@ abstract class IllustiaLibraryNavigationModule(
             try {
                 appServices.acquireArtworkDownloadService()
             } catch (expectedFailure: RuntimeException) {
-                GlitchTipTelemetry.recordException(expectedFailure, tag = "download_service_start")
+                telemetry.recordException(expectedFailure, tag = "download_service_start")
                 _uiState.update { it.copy(message = str(R.string.error_save_failed)) }
                 return
             }
@@ -135,7 +135,7 @@ abstract class IllustiaLibraryNavigationModule(
                     }
                 } catch (expectedFailure: Exception) {
                     if (isCancellation(expectedFailure)) throw expectedFailure
-                    GlitchTipTelemetry.recordException(expectedFailure, tag = "download_document")
+                    telemetry.recordException(expectedFailure, tag = "download_document")
                     _uiState.update { it.copy(message = str(R.string.error_save_failed)) }
                 }
             }.invokeOnCompletion { keepAlive.close() }
@@ -564,7 +564,7 @@ abstract class IllustiaLibraryNavigationModule(
         cacheDir: File,
         clearOld: Boolean = false,
     ) {
-        GlitchTipTelemetry.trace("ugoira.convert.gif", "ugoira.convert") {
+        telemetry.trace("ugoira.convert.gif", "ugoira.convert") {
             val tempGif = File.createTempFile("ugoira_${illustId}_", ".gif", cacheDir)
             try {
                 tempGif.outputStream().buffered().use { output ->
@@ -592,7 +592,7 @@ abstract class IllustiaLibraryNavigationModule(
         cacheDir: File,
         clearOld: Boolean = false,
     ) {
-        GlitchTipTelemetry.trace("ugoira.convert.mp4", "ugoira.convert") {
+        telemetry.trace("ugoira.convert.mp4", "ugoira.convert") {
             val tempMp4 = File.createTempFile("ugoira_${illustId}_", ".mp4", cacheDir)
             try {
                 UgoiraMp4Encoder.encode(frames, tempMp4)

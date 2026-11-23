@@ -35,6 +35,7 @@ import com.yunfie.illustia.platform.ImageCache
 import com.yunfie.illustia.platform.MainThreadChecker
 import com.yunfie.illustia.platform.MonotonicClock
 import com.yunfie.illustia.platform.StringProvider
+import com.yunfie.illustia.platform.Telemetry
 import com.yunfie.illustia.platform.ViewModelDeps
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.SettingsStore
@@ -154,6 +155,7 @@ abstract class IllustiaViewModelFoundation(
     protected val imageCache: ImageCache get() = deps.imageCache
     protected val documentIo: DocumentIo get() = deps.documentIo
     protected val deviceProfile: DeviceProfile get() = deps.deviceProfile
+    protected val telemetry: Telemetry get() = deps.telemetry
     protected val appServices: AppServices get() = deps.appServices
     protected val settingsStore by lazy {
         illustiaApplication?.settingsStore
@@ -468,7 +470,7 @@ abstract class IllustiaViewModelFoundation(
         forceRefresh: Boolean = false,
         deferIncomingIfScrolled: Boolean = false,
     ) {
-        GlitchTipTelemetry.traceAsync("feed.home.load", "feed.home") {
+        telemetry.traceAsync("feed.home.load", "feed.home") {
             val generation = repository.accountGeneration
             val page = repository.loadHome(kind, forceRefresh = forceRefresh)
             val currentSettings = _uiState.value.settings
@@ -728,7 +730,7 @@ abstract class IllustiaViewModelFoundation(
                         throw error
                     }
                     if (handleAuthExpired(error)) return@launch
-                    GlitchTipTelemetry.recordException(error, tag = "viewmodel_run_loading")
+                    telemetry.recordException(error, tag = "viewmodel_run_loading")
                     _uiState.update {
                         it.copy(loadState = LoadState.Error(loadFailureMessage(it, error)))
                     }
