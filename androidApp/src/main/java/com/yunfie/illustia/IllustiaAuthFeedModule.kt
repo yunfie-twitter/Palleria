@@ -1,6 +1,5 @@
 package com.yunfie.illustia
 
-import com.yunfie.illustia.data.ManagedDataRepository
 import com.yunfie.illustia.data.pixivLoginCodeOrNull
 import com.yunfie.illustia.models.HomeFeedKind
 import com.yunfie.illustia.models.Illust
@@ -32,8 +31,7 @@ private const val STARTUP_HOME_BACKGROUND_REFRESH_DELAY_MS = 1200L
 @Suppress("LargeClass", "TooManyFunctions")
 abstract class IllustiaAuthFeedModule(
     deps: ViewModelDeps,
-    managedDataRepository: ManagedDataRepository,
-) : IllustiaSettingsSecurityModule(deps, managedDataRepository) {
+) : IllustiaSettingsSecurityModule(deps) {
     private val pendingNovelBookmarkIds = mutableSetOf<Long>()
 
     abstract fun openIllust(illustId: Long)

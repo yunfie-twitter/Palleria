@@ -1,6 +1,5 @@
 package com.yunfie.illustia
 
-import com.yunfie.illustia.data.ManagedDataRepository
 import com.yunfie.illustia.data.proxyPixivImageUrl
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
@@ -29,8 +28,7 @@ import java.net.HttpURLConnection
 @Suppress("LargeClass")
 abstract class IllustiaDetailProfileModule(
     deps: ViewModelDeps,
-    managedDataRepository: ManagedDataRepository,
-) : IllustiaAuthFeedModule(deps, managedDataRepository) {
+) : IllustiaAuthFeedModule(deps) {
     fun openIllust(illust: Illust) {
         captureProfileReturnDetail()
         recordViewHistory(illust)

@@ -1,7 +1,6 @@
 package com.yunfie.illustia
 
 import com.yunfie.illustia.data.AnimatedGifEncoder
-import com.yunfie.illustia.data.ManagedDataRepository
 import com.yunfie.illustia.data.ResumableDownloader
 import com.yunfie.illustia.data.UgoiraMp4Encoder
 import com.yunfie.illustia.data.proxyPixivImageUrl
@@ -38,8 +37,7 @@ private data class StorageSizeSample(
 @Suppress("LargeClass")
 abstract class IllustiaLibraryNavigationModule(
     deps: ViewModelDeps,
-    managedDataRepository: ManagedDataRepository,
-) : IllustiaBookmarkModule(deps, managedDataRepository) {
+) : IllustiaBookmarkModule(deps) {
     private val storageSizeLock = Any()
     private var cachedStorageBytes: StorageSizeSample? = null
 

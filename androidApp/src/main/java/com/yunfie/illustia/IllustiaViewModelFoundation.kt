@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModel
 import androidx.navigation3.runtime.NavKey
 import com.yunfie.illustia.data.FeatureRepositories
 import com.yunfie.illustia.data.IllustiaRepository
-import com.yunfie.illustia.data.ManagedDataRepository
 import com.yunfie.illustia.data.PixivApiException
 import com.yunfie.illustia.data.isPixivRateLimited
 import com.yunfie.illustia.data.proxyPixivImageUrl
@@ -126,7 +125,6 @@ internal fun AppSettings.withHydratedRoomCollections(full: AppSettings): AppSett
 @Suppress("LargeClass", "TooManyFunctions")
 abstract class IllustiaViewModelFoundation(
     protected val deps: ViewModelDeps,
-    protected val managedDataRepository: ManagedDataRepository = ManagedDataRepository(deps.contentResolver),
     protected val strings: StringProvider = AndroidStringProvider(deps.application),
 ) : ViewModel() {
     /**

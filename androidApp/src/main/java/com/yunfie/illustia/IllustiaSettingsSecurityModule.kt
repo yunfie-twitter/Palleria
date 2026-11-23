@@ -1,7 +1,6 @@
 package com.yunfie.illustia
 
 import com.yunfie.illustia.DummyAppIconSwitcher
-import com.yunfie.illustia.data.ManagedDataRepository
 import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.SearchAgeRestriction
 import com.yunfie.illustia.models.SearchBookmarkFilter
@@ -41,8 +40,7 @@ private fun canRefreshProfileOnStartup(
 @Suppress("LargeClass")
 abstract class IllustiaSettingsSecurityModule(
     deps: ViewModelDeps,
-    managedDataRepository: ManagedDataRepository,
-) : IllustiaViewModelFoundation(deps, managedDataRepository) {
+) : IllustiaViewModelFoundation(deps) {
     abstract fun refreshHome(forceRefresh: Boolean = false)
 
     abstract fun submitSearch(

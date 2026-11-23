@@ -1,6 +1,5 @@
 package com.yunfie.illustia
 
-import com.yunfie.illustia.data.ManagedDataRepository
 import com.yunfie.illustia.platform.ViewModelDeps
 
 /**
@@ -11,5 +10,4 @@ import com.yunfie.illustia.platform.ViewModelDeps
  */
 open class IllustiaViewModelCore(
     deps: ViewModelDeps,
-    managedDataRepository: ManagedDataRepository = ManagedDataRepository(deps.contentResolver),
-) : IllustiaLibraryNavigationModule(deps, managedDataRepository)
+) : IllustiaLibraryNavigationModule(deps)

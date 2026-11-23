@@ -1,6 +1,5 @@
 package com.yunfie.illustia
 
-import com.yunfie.illustia.data.ManagedDataRepository
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.Restrict
@@ -24,8 +23,7 @@ private const val MAX_SEARCH_LOAD_MORE_PAGES = 20
 @Suppress("LargeClass")
 abstract class IllustiaBookmarkModule(
     deps: ViewModelDeps,
-    managedDataRepository: ManagedDataRepository,
-) : IllustiaDetailProfileModule(deps, managedDataRepository) {
+) : IllustiaDetailProfileModule(deps) {
     private val bookmarkRefreshGeneration = AtomicLong()
 
     abstract fun saveImage(
