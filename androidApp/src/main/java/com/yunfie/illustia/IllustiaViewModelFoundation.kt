@@ -5,9 +5,7 @@ import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import androidx.core.content.pm.PackageInfoCompat
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import androidx.navigation3.runtime.NavKey
 import androidx.work.WorkManager
 import coil3.SingletonImageLoader
@@ -129,28 +127,26 @@ internal fun AppSettings.withHydratedRoomCollections(full: AppSettings): AppSett
         seenFeedIllusts = if (full.seenFeedIllusts.isNotEmpty()) full.seenFeedIllusts else seenFeedIllusts,
     )
 
-/**
- * `androidx.lifecycle.viewModelScope` を、クラス内で同名プロパティに覆い隠された後でも
- * 参照するためのエイリアス。既定スコープの初期化にだけ使う。
- */
-private fun ViewModel.asViewModelScope(): CoroutineScope = viewModelScope
-
 /** Shared state, lifecycle, persistence, and cross-feature helpers for ViewModel modules. */
-@Suppress("LargeClass")
+@Suppress("LargeClass", "TooManyFunctions")
 abstract class IllustiaViewModelFoundation(
     protected val deps: ViewModelDeps,
     protected val managedDataRepository: ManagedDataRepository = ManagedDataRepository(deps.contentResolver),
     protected val strings: StringProvider = AndroidStringProvider(deps.application),
-) : AndroidViewModel(deps.application) {
+) : ViewModel() {
     /**
-     * ViewModel の生存期間に紐づくコルーチンスコープ。
-     *
-     * `viewModelScope` 拡張プロパティと同じ名前で宣言して覆い隠すことで、
-     * 各モジュールの 70 箇所ある `viewModelScope.launch { }` を一切変えずに、
-     * 将来 `shared` 側から独自スコープを差し込めるようにする。
-     * 既定値は従来どおり ViewModel スコープ（= 破棄時にキャンセルされる）。
+     * ViewModel の生存期間に紐づくコルーチンスコープ。生成側（ファクトリ）が渡す。
+     * 各モジュールの 70 箇所ある `viewModelScope.launch { }` はこのプロパティを指す。
      */
-    protected val viewModelScope: CoroutineScope = this.asViewModelScope()
+    protected val viewModelScope: CoroutineScope = deps.scope
+
+    /** `AndroidViewModel` を継承しないため、Application はここから明示的に公開する。 */
+    protected val application get() = deps.application
+
+    protected fun <T> getApplication(): T {
+        @Suppress("UNCHECKED_CAST")
+        return deps.application as T
+    }
 
     protected val illustiaApplication = deps.illustiaApplication
     protected val logger: AppLogger get() = deps.logger

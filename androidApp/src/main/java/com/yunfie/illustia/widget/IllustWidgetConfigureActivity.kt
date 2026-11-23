@@ -87,7 +87,7 @@ class IllustWidgetConfigureActivity : FragmentActivity() {
     private val widgetImageMaxDimension = 960
 
     private val viewModel by viewModels<IllustiaViewModel> {
-        ViewModelProvider.AndroidViewModelFactory.getInstance(application)
+        IllustiaViewModel.Factory(application)
     }
 
     private val widgetId: Int by lazy {
