@@ -518,17 +518,15 @@ abstract class IllustiaLibraryNavigationModule(
             val illust = resolveDownloadIllust(filename)
             val embedMeta = _uiState.value.settings.embedMetadata
             val saved =
-                partFile.inputStream().buffered().use { stream ->
-                    imageStore.save(
-                        input = stream,
-                        name = filename,
-                        sourceUrl = requestUrl,
-                        responseMimeType = result.contentType,
-                        clearOld = clearOld,
-                        illust = illust,
-                        embedMetadata = embedMeta,
-                    )
-                }
+                imageStore.saveFromFile(
+                    sourcePath = partFile.absolutePath,
+                    name = filename,
+                    sourceUrl = requestUrl,
+                    responseMimeType = result.contentType,
+                    clearOld = clearOld,
+                    illust = illust,
+                    embedMetadata = embedMeta,
+                )
             if (!saved) {
                 throw java.io.IOException(str(StringKey.ErrorSaveFailed))
             }
@@ -567,15 +565,13 @@ abstract class IllustiaLibraryNavigationModule(
                 tempGif.outputStream().buffered().use { output ->
                     AnimatedGifEncoder.encode(frames, output)
                 }
-                tempGif.inputStream().buffered().use { input ->
-                    imageStore.save(
-                        input = input,
-                        name = filename,
-                        sourceUrl = "https://www.pixiv.net/artworks/$illustId.gif",
-                        responseMimeType = "image/gif",
-                        clearOld = clearOld,
-                    )
-                }
+                imageStore.saveFromFile(
+                    sourcePath = tempGif.absolutePath,
+                    name = filename,
+                    sourceUrl = "https://www.pixiv.net/artworks/$illustId.gif",
+                    responseMimeType = "image/gif",
+                    clearOld = clearOld,
+                )
             } finally {
                 tempGif.delete()
             }
@@ -593,15 +589,13 @@ abstract class IllustiaLibraryNavigationModule(
             val tempMp4 = File.createTempFile("ugoira_${illustId}_", ".mp4", cacheDir)
             try {
                 UgoiraMp4Encoder.encode(frames, tempMp4)
-                tempMp4.inputStream().buffered().use { input ->
-                    imageStore.save(
-                        input = input,
-                        name = filename,
-                        sourceUrl = "https://www.pixiv.net/artworks/$illustId.mp4",
-                        responseMimeType = "video/mp4",
-                        clearOld = clearOld,
-                    )
-                }
+                imageStore.saveFromFile(
+                    sourcePath = tempMp4.absolutePath,
+                    name = filename,
+                    sourceUrl = "https://www.pixiv.net/artworks/$illustId.mp4",
+                    responseMimeType = "video/mp4",
+                    clearOld = clearOld,
+                )
             } finally {
                 tempMp4.delete()
             }

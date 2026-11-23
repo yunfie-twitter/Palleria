@@ -13,6 +13,7 @@ import androidx.documentfile.provider.DocumentFile
 import com.yunfie.illustia.R
 import com.yunfie.illustia.data.ImageMetadataWriter
 import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.platform.GallerySaver
 import com.yunfie.illustia.platform.PlatformCapabilities
 import java.io.File
 import java.io.InputStream
@@ -20,9 +21,10 @@ import java.util.ArrayDeque
 import java.util.Collections
 import java.util.Locale
 
+@Suppress("TooManyFunctions")
 class NativeImageStore(
     private val context: Context,
-) {
+) : GallerySaver {
     private val preferences = context.getSharedPreferences("illustia", Context.MODE_PRIVATE)
     private val flutterPreferences = context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
     private val savingNames = Collections.synchronizedSet(mutableSetOf<String>())
@@ -52,9 +54,30 @@ class NativeImageStore(
         }
     }
 
-    fun exists(
+    override fun saveFromFile(
+        sourcePath: String,
         name: String,
-        sourceUrl: String = "",
+        sourceUrl: String,
+        responseMimeType: String?,
+        clearOld: Boolean,
+        illust: Illust?,
+        embedMetadata: Boolean,
+    ): Boolean =
+        File(sourcePath).inputStream().buffered().use { stream ->
+            save(
+                input = stream,
+                name = name,
+                sourceUrl = sourceUrl,
+                responseMimeType = responseMimeType,
+                clearOld = clearOld,
+                illust = illust,
+                embedMetadata = embedMetadata,
+            )
+        }
+
+    override fun exists(
+        name: String,
+        sourceUrl: String,
     ): Boolean {
         val displayName = if (sourceUrl.isBlank()) name else name.withImageExtension(sourceUrl, null)
         val hasDirectMatch = checkExists(displayName)

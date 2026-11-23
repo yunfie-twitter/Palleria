@@ -27,6 +27,7 @@ import com.yunfie.illustia.platform.Connectivity
 import com.yunfie.illustia.platform.DeviceProfile
 import com.yunfie.illustia.platform.DocumentIo
 import com.yunfie.illustia.platform.DocumentStreamIo
+import com.yunfie.illustia.platform.GallerySaver
 import com.yunfie.illustia.platform.ImageCache
 import com.yunfie.illustia.platform.MainThreadChecker
 import com.yunfie.illustia.platform.MonotonicClock
@@ -152,7 +153,7 @@ abstract class IllustiaViewModelFoundation(
         illustiaApplication?.repository ?: deps.repository
     }
 
-    protected val imageStore get() = deps.imageStore
+    protected val imageStore: GallerySaver get() = deps.imageStore
     protected val downloadMutex = Mutex()
 
     // Wakeup for queued downloads: releasing a slot sends one permit and a parked
