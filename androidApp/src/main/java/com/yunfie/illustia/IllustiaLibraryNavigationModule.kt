@@ -546,7 +546,7 @@ abstract class IllustiaLibraryNavigationModule(
         if (playback.frames.isEmpty()) {
             throw IllegalStateException(str(StringKey.UgoiraLoadFailed))
         }
-        val cacheDir = appPaths.cacheDir()
+        val cacheDir = File(appPaths.cacheDir())
         if (_uiState.value.settings.ugoiraSaveFormat == "gif") {
             saveUgoiraAsGif(illust.id, playback.frames, filename, cacheDir, clearOld)
         } else {
@@ -623,7 +623,7 @@ abstract class IllustiaLibraryNavigationModule(
                     imageCache.clear()
                 }
 
-                val cacheRoot = appPaths.cacheDir()
+                val cacheRoot = File(appPaths.cacheDir())
                 cacheRoot.listFiles()?.forEach { file ->
                     when {
                         file.name == "image_cache" ||
