@@ -3,7 +3,6 @@ package com.yunfie.illustia
 import android.app.Application
 import android.content.Intent
 import android.net.Uri
-import androidx.lifecycle.viewModelScope
 import com.yunfie.illustia.GlitchTipTelemetry
 import com.yunfie.illustia.data.FollowDeltaSyncManager
 import com.yunfie.illustia.data.ManagedDataRepository

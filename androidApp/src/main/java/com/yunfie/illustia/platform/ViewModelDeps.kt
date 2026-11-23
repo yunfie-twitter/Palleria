@@ -10,6 +10,10 @@ import com.yunfie.illustia.IllustiaApplication
  * 実際に使っていたのは「Application インスタンス」「ContentResolver」の 2 点だった。
  * Android 依存（ログ・時刻・スレッド判定）もここに集約し、ViewModel 本体から
  * `android.util.Log` / `android.os.SystemClock` / `android.os.Looper` を追い出す。
+ *
+ * コルーチンスコープは構築順の都合（AndroidViewModel の生成後にしか得られない）で
+ * ここには置かず、[com.yunfie.illustia.IllustiaViewModelFoundation] 側で
+ * `viewModelScope` を同名プロパティとして公開する。
  */
 class ViewModelDeps(
     val application: Application,

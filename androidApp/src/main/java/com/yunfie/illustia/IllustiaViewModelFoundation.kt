@@ -6,6 +6,7 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import androidx.core.content.pm.PackageInfoCompat
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation3.runtime.NavKey
 import androidx.work.WorkManager
@@ -55,6 +56,7 @@ import com.yunfie.illustia.updater.AppUpdaterRepository
 import com.yunfie.illustia.updater.UpdateCheckState
 import com.yunfie.illustia.updater.UpdateInstallMethod
 import com.yunfie.illustia.widget.RankingWidgetProvider
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -127,6 +129,12 @@ internal fun AppSettings.withHydratedRoomCollections(full: AppSettings): AppSett
         seenFeedIllusts = if (full.seenFeedIllusts.isNotEmpty()) full.seenFeedIllusts else seenFeedIllusts,
     )
 
+/**
+ * `androidx.lifecycle.viewModelScope` を、クラス内で同名プロパティに覆い隠された後でも
+ * 参照するためのエイリアス。既定スコープの初期化にだけ使う。
+ */
+private fun ViewModel.asViewModelScope(): CoroutineScope = viewModelScope
+
 /** Shared state, lifecycle, persistence, and cross-feature helpers for ViewModel modules. */
 @Suppress("LargeClass")
 abstract class IllustiaViewModelFoundation(
@@ -134,6 +142,16 @@ abstract class IllustiaViewModelFoundation(
     protected val managedDataRepository: ManagedDataRepository = ManagedDataRepository(deps.contentResolver),
     protected val strings: StringProvider = AndroidStringProvider(deps.application),
 ) : AndroidViewModel(deps.application) {
+    /**
+     * ViewModel の生存期間に紐づくコルーチンスコープ。
+     *
+     * `viewModelScope` 拡張プロパティと同じ名前で宣言して覆い隠すことで、
+     * 各モジュールの 70 箇所ある `viewModelScope.launch { }` を一切変えずに、
+     * 将来 `shared` 側から独自スコープを差し込めるようにする。
+     * 既定値は従来どおり ViewModel スコープ（= 破棄時にキャンセルされる）。
+     */
+    protected val viewModelScope: CoroutineScope = this.asViewModelScope()
+
     protected val illustiaApplication = deps.illustiaApplication
     protected val logger: AppLogger get() = deps.logger
     protected val clock: MonotonicClock get() = deps.clock

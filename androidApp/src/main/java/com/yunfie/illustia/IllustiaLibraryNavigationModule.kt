@@ -2,7 +2,6 @@ package com.yunfie.illustia
 
 import android.app.Application
 import android.net.ConnectivityManager
-import androidx.lifecycle.viewModelScope
 import coil3.SingletonImageLoader
 import com.yunfie.illustia.GlitchTipTelemetry
 import com.yunfie.illustia.data.AnimatedGifEncoder

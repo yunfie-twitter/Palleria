@@ -1,6 +1,5 @@
 package com.yunfie.illustia
 
-import androidx.lifecycle.viewModelScope
 import com.yunfie.illustia.GlitchTipTelemetry
 import com.yunfie.illustia.data.BookmarkToggleScheduler
 import com.yunfie.illustia.data.ManagedDataRepository
