@@ -4,7 +4,6 @@ import android.app.Application
 import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.navigation3.runtime.NavKey
-import androidx.work.WorkManager
 import coil3.SingletonImageLoader
 import coil3.network.httpHeaders
 import coil3.request.ImageRequest
@@ -31,6 +30,7 @@ import com.yunfie.illustia.platform.AndroidStringProvider
 import com.yunfie.illustia.platform.AppInfo
 import com.yunfie.illustia.platform.AppLogger
 import com.yunfie.illustia.platform.AppPaths
+import com.yunfie.illustia.platform.BackgroundWork
 import com.yunfie.illustia.platform.Connectivity
 import com.yunfie.illustia.platform.MainThreadChecker
 import com.yunfie.illustia.platform.MonotonicClock
@@ -154,6 +154,7 @@ abstract class IllustiaViewModelFoundation(
     protected val connectivity: Connectivity get() = deps.connectivity
     protected val appPaths: AppPaths get() = deps.appPaths
     protected val appInfo: AppInfo get() = deps.appInfo
+    protected val backgroundWork: BackgroundWork get() = deps.backgroundWork
     protected val settingsStore by lazy {
         illustiaApplication?.settingsStore
             ?: SettingsStore(getApplication<Application>().applicationContext)
@@ -412,9 +413,8 @@ abstract class IllustiaViewModelFoundation(
         state !is UpdateCheckState.ReadyToInstall && state !is UpdateCheckState.Installing
 
     protected fun observeAppUpdateDownloadWorkerProgress() {
-        val workManager = WorkManager.getInstance(getApplication())
         viewModelScope.launch {
-            workManager.getWorkInfosForUniqueWorkFlow(AppUpdateDownloadWorker.WORK_NAME).collect { workInfos ->
+            backgroundWork.appUpdateWorkInfos().collect { workInfos ->
                 val workInfo = workInfos.firstOrNull() ?: return@collect
                 if (workInfo.state == androidx.work.WorkInfo.State.RUNNING) {
                     val progress = workInfo.progress.getFloat(AppUpdateDownloadWorker.KEY_PROGRESS, -1f)
@@ -1102,9 +1102,7 @@ abstract class IllustiaViewModelFoundation(
             _updateCheckState.value = UpdateCheckState.Installing
             val method = UpdateInstallMethod.fromValue(_uiState.value.settings.updateInstallMethod)
             if (method == UpdateInstallMethod.SHIZUKU) {
-                WorkManager
-                    .getInstance(getApplication())
-                    .cancelUniqueWork(com.yunfie.illustia.updater.AppUpdateDownloadWorker.WORK_NAME)
+                backgroundWork.cancelAppUpdateWork()
             }
             appUpdaterRepository
                 .installApk(apkFile, method)
