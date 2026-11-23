@@ -114,7 +114,7 @@ abstract class IllustiaLibraryNavigationModule(
         viewModelScope
             .launch(Dispatchers.IO) {
                 try {
-                    documentStreamIo.downloadToUri(
+                    documentIo.downloadToUri(
                         url = proxyPixivImageUrl(url, _uiState.value.settings.pixivImageProxyBaseUrl),
                         headers = mapOf("Referer" to "https://www.pixiv.net/"),
                         uri = uri,

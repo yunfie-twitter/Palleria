@@ -27,7 +27,6 @@ import com.yunfie.illustia.platform.BackgroundWork
 import com.yunfie.illustia.platform.Connectivity
 import com.yunfie.illustia.platform.DeviceProfile
 import com.yunfie.illustia.platform.DocumentIo
-import com.yunfie.illustia.platform.DocumentStreamIo
 import com.yunfie.illustia.platform.DownloadService
 import com.yunfie.illustia.platform.GallerySaver
 import com.yunfie.illustia.platform.ImageCache
@@ -143,7 +142,6 @@ abstract class IllustiaViewModelFoundation(
     protected val backgroundWork: BackgroundWork get() = deps.backgroundWork
     protected val imageCache: ImageCache get() = deps.imageCache
     protected val documentIo: DocumentIo get() = deps.documentIo
-    protected val documentStreamIo: DocumentStreamIo get() = deps.documentStreamIo
     protected val deviceProfile: DeviceProfile get() = deps.deviceProfile
     protected val telemetry: Telemetry get() = deps.telemetry
     protected val appServices: AppServices get() = deps.appServices
