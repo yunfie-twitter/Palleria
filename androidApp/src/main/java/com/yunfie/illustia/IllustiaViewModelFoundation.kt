@@ -36,7 +36,6 @@ import com.yunfie.illustia.platform.StringProvider
 import com.yunfie.illustia.platform.Telemetry
 import com.yunfie.illustia.platform.ViewModelDeps
 import com.yunfie.illustia.settings.AppSettings
-import com.yunfie.illustia.settings.SettingsStore
 import com.yunfie.illustia.ui.app.AppRoute
 import com.yunfie.illustia.ui.app.AppTab
 import com.yunfie.illustia.ui.app.DetailEntrySnapshot
