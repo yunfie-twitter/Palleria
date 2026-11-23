@@ -1,7 +1,5 @@
 package com.yunfie.illustia
 
-import com.yunfie.illustia.data.AnimatedGifEncoder
-import com.yunfie.illustia.data.UgoiraMp4Encoder
 import com.yunfie.illustia.data.proxyPixivImageUrl
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
@@ -551,9 +549,7 @@ abstract class IllustiaLibraryNavigationModule(
         telemetry.trace("ugoira.convert.gif", "ugoira.convert") {
             val tempGif = File.createTempFile("ugoira_${illustId}_", ".gif", cacheDir)
             try {
-                tempGif.outputStream().buffered().use { output ->
-                    AnimatedGifEncoder.encode(frames, output)
-                }
+                mediaEncoder.encodeGif(frames, tempGif.absolutePath)
                 imageStore.saveFromFile(
                     sourcePath = tempGif.absolutePath,
                     name = filename,
@@ -577,7 +573,7 @@ abstract class IllustiaLibraryNavigationModule(
         telemetry.trace("ugoira.convert.mp4", "ugoira.convert") {
             val tempMp4 = File.createTempFile("ugoira_${illustId}_", ".mp4", cacheDir)
             try {
-                UgoiraMp4Encoder.encode(frames, tempMp4)
+                mediaEncoder.encodeMp4(frames, tempMp4.absolutePath)
                 imageStore.saveFromFile(
                     sourcePath = tempMp4.absolutePath,
                     name = filename,

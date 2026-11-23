@@ -32,6 +32,7 @@ import com.yunfie.illustia.platform.DownloadService
 import com.yunfie.illustia.platform.GallerySaver
 import com.yunfie.illustia.platform.ImageCache
 import com.yunfie.illustia.platform.MainThreadChecker
+import com.yunfie.illustia.platform.MediaEncoder
 import com.yunfie.illustia.platform.MonotonicClock
 import com.yunfie.illustia.platform.StringKey
 import com.yunfie.illustia.platform.StringProvider
@@ -148,6 +149,7 @@ abstract class IllustiaViewModelFoundation(
     protected val appServices: AppServices get() = deps.appServices
     protected val appIconSwitcher: AppIconSwitcher get() = deps.appIconSwitcher
     protected val downloadService: DownloadService get() = deps.downloadService
+    protected val mediaEncoder: MediaEncoder get() = deps.mediaEncoder
     protected val settingsStore: SettingsFacade by lazy {
         illustiaApplication?.settingsStore
             ?: deps.settings
