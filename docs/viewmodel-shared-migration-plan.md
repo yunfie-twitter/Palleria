@@ -248,10 +248,10 @@ package does *not* make every symbol in it shared):
 
 | Import | Blocking on |
 |---|---|
-| `data.ManagedDataRepository` (6 files) | Room/DataStore-backed repo |
+| `data.ManagedDataRepository` | **除去済み** — ViewModel から未使用だったコンストラクタ配線を削除 |
 | `data.IllustiaRepository`, `data.FeatureRepositories` | network + settings |
 | `data.AnimatedGifEncoder`, `data.UgoiraMp4Encoder`, `data.ResumableDownloader` | `Bitmap`/`MediaCodec`/`File` |
-| `data.isPixivRateLimited`, `pixivLoginCodeOrNull`, `proxyPixivImageUrl` (top-level `fun`s) | top-level functions |
+| `data.isPixivRateLimited`, `pixivLoginCodeOrNull`, `proxyPixivImageUrl` | **すでに `shared` にあり解決済み**（スクリプトが未解決と誤判定していただけ） |
 | `platform.ViewModelDeps`, `AppPaths`, `AppServices`, `DocumentIo`, `StringProvider`, `AndroidStringProvider` | 境界型 / `File` / `Int` リソース |
 | `settings.SettingsStore` | DataStore + Room |
 | `settings.isFeatureEnabled`, `isDynamicColorAvailable` | トップレベル `fun` |
@@ -268,15 +268,21 @@ package does *not* make every symbol in it shared):
 トップレベル宣言は他方のモジュールから解決できない:
 
 - クラス・enum・`sealed interface` は **移動できる**（`UpdateModels`,
-  `BackgroundWork`, `AppSettings`, `FeatureFlag`, `SavedIllust` で実証、テスト緑）
-- トップレベル `fun` は移動できない（`isFeatureEnabled` で実証）→ enum のメソッドに
-  変換して回避した（`FeatureFlag.resolve(settings)`）
-- トップレベル `const val` も**分割パッケージでは解決されない**
+  `BackgroundWork`, `AppSettings`, `FeatureFlag`, `SavedIllust`,
+  `DetailEntrySnapshot`, `ScrollPositionProbe` で実証、テスト緑）
+- トップレベル `fun` も **移動できる**（`proxyPixivImageUrl`,
+  `isPixivRateLimited`, `pixivLoginCodeOrNull` はすでに `shared` にあり、
+  `androidApp` の unit test から普通に解決される）
+- トップレベル `const val` は**分割パッケージでは解決されない**
   （`STARTUP_LOGGED_IN_TOKEN` を `shared` に写して `androidApp` から削除したら
-  `UNRESOLVED_IMPORT`。ただし同名パッケージを丸ごと移動した `AppSettings` の
-  トップレベル `val` は問題なし）
+  `UNRESOLVED_IMPORT`）
 
-原則: **パッケージを丸ごと移す**。一部だけ移すと分割パッケージになり詰まる。
+`isFeatureEnabled` が以前テストから見えなかったのは、`FeatureFlagKt` と
+`SettingsStore` などが**同一ファイル/同一パッケージで併存**していたため。
+enum のメソッド化（`FeatureFlag.resolve`）は今も妥当な整理だが、
+「トップレベル関数は移せない」という一般則ではなかった。
+
+原則: **パッケージを丸ごと移す**。ただしクラス/関数単位の移動は実際に機能する。
 
 Already moved to `shared` this session:
 
