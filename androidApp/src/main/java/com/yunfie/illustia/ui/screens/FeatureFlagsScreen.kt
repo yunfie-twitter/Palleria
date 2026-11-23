@@ -24,7 +24,9 @@ import com.yunfie.illustia.resources.feature_flags_section_desc
 import com.yunfie.illustia.resources.feature_flags_title
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.FeatureFlag
+import com.yunfie.illustia.settings.descRes
 import com.yunfie.illustia.settings.isFeatureEnabled
+import com.yunfie.illustia.settings.titleRes
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -102,8 +104,8 @@ fun FeatureFlagsScreen(
                         val flags = FeatureFlag.entries
                         flags.forEachIndexed { index, flag ->
                             SettingSwitchRow(
-                                title = stringResource(flag.titleRes),
-                                summary = stringResource(flag.descRes),
+                                title = resString(flag.titleRes),
+                                summary = resString(flag.descRes),
                                 checked = settings.isFeatureEnabled(flag),
                                 onCheckedChange = { enabled ->
                                     viewModel.updateFeatureFlag(flag, enabled)

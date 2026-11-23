@@ -15,6 +15,9 @@ import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.platform.PlatformCapabilities
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.flag_ugoira_auto_play_desc
+import com.yunfie.illustia.resources.flag_ugoira_auto_play_title
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
@@ -30,6 +33,7 @@ import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import org.jetbrains.compose.resources.stringResource as resString
 
 @Composable
 fun ImageSettingsScreen(
@@ -246,10 +250,10 @@ fun ImageSettingsScreen(
                         )
                         DividerLine()
                         SettingSwitchRow(
-                            title = stringResource(R.string.flag_ugoira_auto_play_title),
+                            title = resString(Res.string.flag_ugoira_auto_play_title),
                             checked = settings.ugoiraAutoPlay,
                             onCheckedChange = viewModel::updateUgoiraAutoPlay,
-                            summary = stringResource(R.string.flag_ugoira_auto_play_desc),
+                            summary = resString(Res.string.flag_ugoira_auto_play_desc),
                         )
                     }
                 }

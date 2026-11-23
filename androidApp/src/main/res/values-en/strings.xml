@@ -1021,16 +1021,8 @@
     <string name="update_check_background_desc">Periodically check for new versions in the background every 12 hours</string>
     <string name="update_auto_download">Auto-download updates</string>
     <string name="update_auto_download_desc">Automatically download updates in the background (auto-installs if Shizuku is enabled)</string>
-    <string name="flag_embed_metadata_title">Embed Image EXIF / Metadata</string>
-    <string name="flag_embed_metadata_desc">Automatically embed artwork ID, artist, title, and Pixiv URL metadata into saved image files</string>
-    <string name="flag_custom_download_path_title">Flexible Custom Save Path</string>
-    <string name="flag_custom_download_path_desc">Enable dynamic subfolder organization based on artist, tags, and artwork ID placeholders</string>
     <string name="ambient_light_viewer_title">Ambient Light Viewer Mode</string>
     <string name="ambient_light_viewer_desc">Render dynamic ambient blurred backlight matching artwork colors in the image viewer</string>
-    <string name="flag_volume_key_page_turner_title">Volume Key / Remote Page Turner</string>
-    <string name="flag_volume_key_page_turner_desc">Use volume hardware keys or Bluetooth remote controllers to turn pages in manga and novel readers</string>
-    <string name="flag_novel_tts_audiobook_title">Novel Text-to-Speech (TTS)</string>
-    <string name="flag_novel_tts_audiobook_desc">Enable Text-to-Speech audiobook playback with background listening in Pixiv novel reader</string>
     <string name="tts_play">Read Aloud</string>
     <string name="tts_pause">Pause</string>
     <string name="tts_stop">Stop</string>
@@ -1075,8 +1067,6 @@
     <string name="setting_image_viewer_swipe_to_dismiss_desc">Pull down full-screen image to close viewer</string>
 
     <!-- Quick Peek Feature Flag & Setting -->
-    <string name="flag_quick_peek_title">Quick Peek preview</string>
-    <string name="flag_quick_peek_desc">Enables quick preview overlay when long-pressing artwork cards</string>
     <string name="setting_quick_peek_title">Long-press Quick Peek</string>
     <string name="setting_quick_peek_desc">Show floating preview when long-pressing artwork cards</string>
 
@@ -1101,14 +1091,6 @@
     <string name="desktop_open_new_tab">Open in a new browser tab</string>
     <string name="desktop_bookmark_private">Private bookmark</string>
     <string name="desktop_save_as">Save as</string>
-    <string name="flag_top_scroll_blur_title">Top scroll blur</string>
-    <string name="flag_top_scroll_blur_desc">Blur scrolled content behind the top header. A translucent background is used on Android versions below 12.</string>
-    <string name="flag_navigation_icons_only_title">Icon-only navigation bar</string>
-    <string name="flag_navigation_icons_only_desc">Hide labels in the standard bottom navigation bar. Floating navigation already uses icons only.</string>
-    <string name="flag_fast_scroll_rendering_title">Reduce rendering during fast scrolling</string>
-    <string name="flag_fast_scroll_rendering_desc">Temporarily reduce blur, shadows and grid animations while scrolling quickly.</string>
-    <string name="flag_command_palette_title">Command palette</string>
-    <string name="flag_command_palette_desc">Press Ctrl + K to search, navigate and change the theme.</string>
     <string name="command_palette_hint">Type a command or search query</string>
     <string name="command_palette_search">Search for “%1$s”</string>
     <string name="command_palette_home">Go to Home</string>
@@ -1159,11 +1141,7 @@
     <string name="command_palette_ugoira_autoplay_enabled">Ugoira autoplay enabled</string>
     <string name="command_palette_ugoira_autoplay_disabled">Ugoira autoplay disabled</string>
 
-    <string name="flag_ugoira_auto_play_title">Auto-play Ugoira</string>
-    <string name="flag_ugoira_auto_play_desc">Automatically plays animation when viewing Ugoira artworks.</string>
 
-    <string name="flag_user_profile_edit_title">Edit Profile</string>
-    <string name="flag_user_profile_edit_desc">Show edit button (pencil icon) on own profile page and allow editing profile (POST /v1/user/profile/edit)</string>
     <string name="user_profile_edit_title">Edit Profile</string>
     <string name="user_profile_edit_user_name">Nickname</string>
     <string name="user_profile_edit_comment">Bio</string>
@@ -1181,42 +1159,6 @@
     <string name="comment_stamp_select">Stamps</string>
     <string name="comment_stamp_empty">No stamps available</string>
 
-    <string name="flag_offline_stale_cache_title">Offline Cache (Stale-While-Revalidate)</string>
-    <string name="flag_offline_stale_cache_desc">Keep displaying cached feeds during network loss or errors with an offline status chip</string>
-    <string name="flag_bookmark_haptic_burst_title">Bookmark &amp; Like Haptic Burst</string>
-    <string name="flag_bookmark_haptic_burst_desc">Trigger rich clicky haptics and sparkling particle burst animations on bookmark and like actions</string>
-    <string name="flag_image_blur_preview_title">Blurred Image Preview</string>
-    <string name="flag_image_blur_preview_desc">Display a blurred low-resolution placeholder while loading and smoothly crossfade into the full image</string>
-    <string name="flag_task_snapshot_blur_title">Stealth Task Snapshot Blur</string>
-    <string name="flag_task_snapshot_blur_desc">Blurs app thumbnail in recent apps switcher to protect sensitive artwork and privacy</string>
-    <string name="flag_disable_adaptive_refresh_rate_title">Disable Adaptive Refresh Rate Control</string>
-    <string name="flag_disable_adaptive_refresh_rate_desc">Disables high refresh rate requests from the app and lets the device choose the display refresh rate</string>
-    <string name="flag_courtesy_audio_fade_title">Courtesy Audio Fade on Headset Disconnect</string>
-    <string name="flag_courtesy_audio_fade_desc">Exponentially fades out audio over 100ms on headset disconnect before pausing to prevent noise leakage</string>
-    <string name="flag_tracking_url_cleaner_title">Silent Tracking URL Cleaner</string>
-    <string name="flag_tracking_url_cleaner_desc">Automatically strips tracking query parameters (utm, s, etc.) when pasting Pixiv URLs</string>
-    <string name="flag_smart_download_naming_title">Smart Download Filename</string>
-    <string name="flag_smart_download_naming_desc">Automatically names saved files as \'[Artist] Title_p0\' for neat photo gallery organization</string>
-    <string name="flag_privacy_exif_stripper_title">Privacy Exif Stripper on Share</string>
-    <string name="flag_privacy_exif_stripper_desc">Strips GPS coordinates and device metadata before sharing images to prevent privacy leaks</string>
-    <string name="flag_ugoira_power_save_title">Ugoira Power Save &amp; Delay</string>
-    <string name="flag_ugoira_power_save_desc">Stops animations completely when off-screen and skips decoding during rapid scroll-throughs</string>
-    <string name="flag_manga_adaptive_preload_title">Adaptive Manga Preload</string>
-    <string name="flag_manga_adaptive_preload_desc">Detects page-turning direction patterns (e.g. reverse reading) and reverses prefetch queue accordingly</string>
-    <string name="flag_velocity_landing_prefetch_title">Velocity Landing Prefetch</string>
-    <string name="flag_velocity_landing_prefetch_desc">Predicts scroll stop position from flick velocity and prefetches target images instead of transient ones</string>
-    <string name="flag_byte_range_resume_title">Stealth Download Resume</string>
-    <string name="flag_byte_range_resume_desc">Resumes interrupted downloads from existing bytes via HTTP Range headers to save data and time</string>
-    <string name="flag_predns_socket_warming_title">Pre-DNS &amp; Socket Warming</string>
-    <string name="flag_predns_socket_warming_desc">Pre-resolves DNS and warms TCP/TLS socket pools in background behind splash to eliminate initial loading latency</string>
-    <string name="flag_delta_etag_sync_title">Delta ETag Sync</string>
-    <string name="flag_delta_etag_sync_desc">Uses ETags and delta caching during following sync to fetch only new artworks without duplicate downloads, enabling instant offline-ready access</string>
-    <string name="flag_shared_element_transitions_title">Shared element transitions</string>
-    <string name="flag_shared_element_transitions_desc">Animates an artwork card thumbnail into the detail image, in both directions. Moving between related artworks keeps the existing transition</string>
-    <string name="flag_progressive_image_quality_title">Dynamic image quality (progressive)</string>
-    <string name="flag_progressive_image_quality_desc">Shows the next-lower quality tier while the selected quality loads on detail and full-screen images.</string>
-    <string name="flag_miuix_quick_peek_title">Miuix-style QuickPeek</string>
-    <string name="flag_miuix_quick_peek_desc">Rebuilds the long-press preview as a bottom sheet that follows the Miuix guidelines. Long-pressing a user in Following or search results also shows a user version of the preview.</string>
     <string name="quick_peek_show_profile">Open profile</string>
     <string name="quick_peek_follow">Follow</string>
     <string name="quick_peek_unfollow">Following</string>

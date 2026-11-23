@@ -21,6 +21,9 @@ import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.nativebridge.NativeImageStore
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.flag_embed_metadata_desc
+import com.yunfie.illustia.resources.flag_embed_metadata_title
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
@@ -36,6 +39,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import org.jetbrains.compose.resources.stringResource as resString
 
 @Composable
 fun DownloadSettingsScreen(
@@ -142,10 +146,10 @@ fun DownloadSettingsScreen(
                         )
                         DividerLine()
                         SettingSwitchRow(
-                            title = stringResource(R.string.flag_embed_metadata_title),
+                            title = resString(Res.string.flag_embed_metadata_title),
                             checked = settings.embedMetadata,
                             onCheckedChange = viewModel::updateEmbedMetadata,
-                            summary = stringResource(R.string.flag_embed_metadata_desc),
+                            summary = resString(Res.string.flag_embed_metadata_desc),
                         )
                     }
                 }

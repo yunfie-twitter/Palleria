@@ -1059,32 +1059,8 @@
     <string name="update_check_background_desc">Проверять обновления каждые 12 часов в фоновом режиме</string>
     <string name="update_auto_download">Автоскачивание обновлений</string>
     <string name="update_auto_download_desc">Автоматически скачивать обновления в фоновом режиме</string>
-    <string name="flag_amoled_theme_title">Тема AMOLED (абсолютно чёрная)</string>
-    <string name="flag_amoled_theme_desc">Добавляет переключатель глубокой чёрной темы AMOLED в настройки внешнего вида</string>
-    <string name="flag_user_profile_bottom_sheet_title">Профиль пользователя в шторке</string>
-    <string name="flag_user_profile_bottom_sheet_desc">Открывать краткий профиль пользователя в нижней шторке</string>
-    <string name="flag_custom_app_icon_title">Смена иконки приложения</string>
-    <string name="flag_custom_app_icon_desc">Добавляет возможность выбора дизайна иконки приложения</string>
-    <string name="flag_navigation_customization_title">Настройка навигации</string>
-    <string name="flag_navigation_customization_desc">Настройка порядка, видимости вкладок и стиля нижней панели</string>
-    <string name="flag_shorts_feed_title">Короткая вертикальная лента Shorts</string>
-    <string name="flag_shorts_feed_desc">Добавляет полноэкранную ленту вертикальной прокрутки для работ</string>
-    <string name="flag_hide_home_novel_button_title">Скрыть кнопку новелл на главной</string>
-    <string name="flag_hide_home_novel_button_desc">Добавляет параметр для скрытия кнопки новелл в верхней шапке</string>
-    <string name="flag_card_customization_title">Настройка карточек работ</string>
-    <string name="flag_card_customization_desc">Настройка отображаемых элементов карточки (автор, теги, оценки) и двойного нажатия</string>
-    <string name="flag_artwork_dynamic_theme_title">Динамическая тема от работы</string>
-    <string name="flag_artwork_dynamic_theme_desc">Извлекать акцентные цвета интерфейса из просматриваемого изображения</string>
-    <string name="flag_embed_metadata_title">Запись EXIF-метаданных при сохранении</string>
-    <string name="flag_embed_metadata_desc">Вшивать ID, автора, название и ссылку в файлы скачиваемых изображений</string>
-    <string name="flag_custom_download_path_title">Гибкие пути сохранения</string>
-    <string name="flag_custom_download_path_desc">Сортировка сохранённых файлов по папкам с шаблонами ([Artist], [Title], [ID])</string>
     <string name="ambient_light_viewer_title">Эффект фонового подсвета (Ambient Light)</string>
     <string name="ambient_light_viewer_desc">Подсветка фона мягким размытым свечением цвета просматриваемой работы</string>
-    <string name="flag_volume_key_page_turner_title">Перелистывание клавишами громкости</string>
-    <string name="flag_volume_key_page_turner_desc">Перелистывание страниц кнопками громкости или Bluetooth-пультами в манге и новеллах</string>
-    <string name="flag_novel_tts_audiobook_title">Озвучивание новелл (TTS)</string>
-    <string name="flag_novel_tts_audiobook_desc">Включает озвучивание текста новелл голосом в фоновом режиме</string>
     <string name="tts_play">Озвучить</string>
     <string name="tts_pause">Пауза</string>
     <string name="tts_stop">Стоп</string>
@@ -1094,8 +1070,6 @@
     <string name="tts_channel_description">Управление воспроизведением озвучки новелл</string>
     <string name="tts_next_paragraph">Следующий абзац</string>
     <string name="tts_prev_paragraph">Предыдущий абзац</string>
-    <string name="flag_detail_section_order_title">Порядок секций подробной информации</string>
-    <string name="flag_detail_section_order_desc">Добавляет возможность изменения порядка отображения секций на экране подробной информации работы</string>
     <string name="update_auto_download_wifi_only">Автоскачивание только по Wi-Fi</string>
     <string name="update_auto_download_wifi_only_desc">Не скачивать обновления при использовании мобильной сети</string>
     <string name="update_download_progress_title">Загрузка обновления: %1$s</string>
@@ -1160,8 +1134,6 @@
     <string name="setting_image_viewer_swipe_to_dismiss_desc">Стягивать изображение вниз для закрытия полноэкранного просмотра</string>
 
     <!-- Quick Peek Feature Flag & Setting -->
-    <string name="flag_quick_peek_title">Быстрый просмотр (Quick Peek)</string>
-    <string name="flag_quick_peek_desc">Включает всплывающий просмотр при долгом удерживании карточки</string>
     <string name="setting_quick_peek_title">Просмотр при долгом нажатии</string>
     <string name="setting_quick_peek_desc">Показывать всплывающую карточку при долгом нажатии</string>
 
@@ -1185,27 +1157,15 @@
     <string name="tts_dictionary_delete_confirm">Удалить настройку произношения для этого слова?</string>
 
     <!-- Grid Pinch to Zoom Feature Flag & Setting -->
-    <string name="flag_grid_pinch_to_zoom_title">Масштабирование сетки щипком</string>
-    <string name="flag_grid_pinch_to_zoom_desc">Плавное изменение количества колонок двухпальцевым жестом (щипком)</string>
     <string name="setting_grid_pinch_to_zoom_title">Изменение колонок щипком</string>
     <string name="setting_grid_pinch_to_zoom_desc">Изменение количества колонок сетки от 1 до 4 жестом сжатия/разведения</string>
 
     <!-- Quick Peek Shared Element Transition Feature Flag & Setting -->
-    <string name="flag_quick_peek_shared_element_transition_title">Анимация элементов QuickPeek</string>
-    <string name="flag_quick_peek_shared_element_transition_desc">Плавный переход от карточки к всплывающему просмотру QuickPeek</string>
     <string name="setting_quick_peek_shared_element_transition_title">Переход от места нажатия</string>
     <string name="setting_quick_peek_shared_element_transition_desc">Анимация расширения из карточки при быстром предпросмотре</string>
     <string name="desktop_open_new_tab">Открыть в новой вкладке браузера</string>
     <string name="desktop_bookmark_private">Приватная закладка</string>
     <string name="desktop_save_as">Сохранить как</string>
-    <string name="flag_top_scroll_blur_title">Размытие верхней шапки</string>
-    <string name="flag_top_scroll_blur_desc">Эффект размытия контента под верхней панелью при прокрутке</string>
-    <string name="flag_navigation_icons_only_title">Панель навигации без подписей</string>
-    <string name="flag_navigation_icons_only_desc">Скрывать текстовые подписи у иконок нижней панели навигации</string>
-    <string name="flag_fast_scroll_rendering_title">Оптимизация быстрой прокрутки</string>
-    <string name="flag_fast_scroll_rendering_desc">Временно отключать сложные эффекты и размытие при быстрой прокрутке</string>
-    <string name="flag_command_palette_title">Командная палитра (Ctrl+K)</string>
-    <string name="flag_command_palette_desc">Открытие быстрых команд и поиска по сочетанию Ctrl + K</string>
     <string name="command_palette_hint">Введите команду или поисковый запрос</string>
     <string name="command_palette_search">Искать «%1$s»</string>
     <string name="command_palette_home">Перейти на Главный экран</string>
@@ -1256,11 +1216,7 @@
     <string name="command_palette_ugoira_autoplay_enabled">Автовоспроизведение угоиры включено</string>
     <string name="command_palette_ugoira_autoplay_disabled">Автовоспроизведение угоиры выключено</string>
 
-    <string name="flag_ugoira_auto_play_title">Автопроигрывание угоиры</string>
-    <string name="flag_ugoira_auto_play_desc">Автоматически запускать анимацию при открытии работ угоиры</string>
 
-    <string name="flag_user_profile_edit_title">Редактирование профиля</string>
-    <string name="flag_user_profile_edit_desc">Отображать кнопку редактирования профиля</string>
     <string name="user_profile_edit_title">Редактирование профиля</string>
     <string name="user_profile_edit_user_name">Никнейм</string>
     <string name="user_profile_edit_comment">О себе</string>
@@ -1278,46 +1234,6 @@
     <string name="comment_stamp_select">Стикеры</string>
     <string name="comment_stamp_empty">Стикеры недоступны</string>
 
-    <string name="flag_offline_stale_cache_title">Офлайн-кэширование (Stale-While-Revalidate)</string>
-    <string name="flag_offline_stale_cache_desc">Отображать кэш ленты с индикатором при потере сети</string>
-    <string name="flag_bookmark_haptic_burst_title">Вибрация и анимация закладок</string>
-    <string name="flag_bookmark_haptic_burst_desc">Тактильный отклик и анимация частичек при добавлении в закладки</string>
-    <string name="flag_image_blur_preview_title">Размытый предпросмотр изображений</string>
-    <string name="flag_image_blur_preview_desc">Показывать размытый эскиз до полной загрузки высокого качества</string>
-    <string name="flag_task_snapshot_blur_title">Скрытие миниатюры приложения</string>
-    <string name="flag_task_snapshot_blur_desc">Размывать экраны приложения в списке недавних задач для защиты приватности</string>
-    <string name="flag_disable_adaptive_refresh_rate_title">Отключить контроль частоты обновления</string>
-    <string name="flag_disable_adaptive_refresh_rate_desc">Разрешить устройству самостоятельно управлять частотой экрана</string>
-    <string name="flag_courtesy_audio_fade_title">Плавное затухание звука при отключении наушников</string>
-    <string name="flag_courtesy_audio_fade_desc">Плавное снижение громкости перед паузой при выключении наушников</string>
-    <string name="flag_tracking_url_cleaner_title">Очистка отслеживающих параметров из ссылок</string>
-    <string name="flag_tracking_url_cleaner_desc">Автоматически удалять UTM-метки и трекеры из ссылок Pixiv при вставке</string>
-    <string name="flag_smart_download_naming_title">Умное именование файлов</string>
-    <string name="flag_smart_download_naming_desc">Автоматически формировать имена файлов по шаблону «[Автор] Название_p0»</string>
-    <string name="flag_privacy_exif_stripper_title">Удаление EXIF при передаче</string>
-    <string name="flag_privacy_exif_stripper_desc">Автоматическая очистка геолокации и метаданных устройства при отправке изображений</string>
-    <string name="flag_ugoira_power_save_title">Энергосбережение угоиры</string>
-    <string name="flag_ugoira_power_save_desc">Полная остановка анимации за пределами экрана для снижения нагрузки на процессор</string>
-    <string name="flag_manga_adaptive_preload_title">Адаптивная предзагрузка манги</string>
-    <string name="flag_manga_adaptive_preload_desc">Автоопределение направления чтения и упреждающая загрузка страниц без задержек</string>
-    <string name="flag_velocity_landing_prefetch_title">Предсказание прокрутки</string>
-    <string name="flag_velocity_landing_prefetch_desc">Предварительная загрузка изображений в предполагаемой точке остановки прокрутки</string>
-    <string name="flag_byte_range_resume_title">Докачка файлов (HTTP Range)</string>
-    <string name="flag_byte_range_resume_desc">Возобновление скачивания с места разрыва соединения для экономии трафика</string>
-    <string name="flag_predns_socket_warming_title">Предварительный DNS и прогрев сокетов</string>
-    <string name="flag_predns_socket_warming_desc">Упреждающее разрешение DNS и поддержание пула соединений при запуске приложения</string>
-    <string name="flag_delta_etag_sync_title">Синхронизация ETag (дельта-обновления)</string>
-    <string name="flag_delta_etag_sync_desc">Загрузка только новых работ в ленте с использованием заголовков ETag</string>
-    <string name="flag_shared_element_transitions_title">Плавный переход между элементами</string>
-    <string name="flag_shared_element_transitions_desc">Анимация плавного расширения карточки в полноэкранное изображение</string>
-    <string name="flag_liquid_glass_buttons_title">Кнопки в стиле Liquid Glass</string>
-    <string name="flag_liquid_glass_buttons_desc">Стилизация кнопок «Назад» и «Меню» под прозрачное стекло (Liquid Glass)</string>
-    <string name="flag_liquid_glass_follow_button_title">Кнопка подписки Liquid Glass</string>
-    <string name="flag_liquid_glass_follow_button_desc">Стилизация кнопки подписки под полупрозрачное стекло (Liquid Glass)</string>
-    <string name="flag_progressive_image_quality_title">Динамическое качество (прогрессивный показ)</string>
-    <string name="flag_progressive_image_quality_desc">Показ быстрого эскиза пониженного качества до полной загрузки оригинала</string>
-    <string name="flag_miuix_quick_peek_title">QuickPeek в стиле MiUIX</string>
-    <string name="flag_miuix_quick_peek_desc">Всплывающий предпросмотр в стиле интерфейса MiUIX с поддержкой карточек авторов</string>
     <string name="quick_peek_show_profile">Открыть профиль</string>
     <string name="quick_peek_follow">Подписаться</string>
     <string name="quick_peek_unfollow">Вы подписаны</string>

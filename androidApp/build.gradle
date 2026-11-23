@@ -313,5 +313,3 @@ dependencies {
     androidTestImplementation platform(libs.compose.bom)
     androidTestImplementation "androidx.compose.ui:ui-test-junit4"
 }
-
-
