@@ -17,6 +17,7 @@ import com.yunfie.illustia.models.StoredAccount
 import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
+import com.yunfie.illustia.platform.AppIconSwitcher
 import com.yunfie.illustia.platform.AppInfo
 import com.yunfie.illustia.platform.AppLogger
 import com.yunfie.illustia.platform.AppPaths
@@ -144,6 +145,7 @@ abstract class IllustiaViewModelFoundation(
     protected val deviceProfile: DeviceProfile get() = deps.deviceProfile
     protected val telemetry: Telemetry get() = deps.telemetry
     protected val appServices: AppServices get() = deps.appServices
+    protected val appIconSwitcher: AppIconSwitcher get() = deps.appIconSwitcher
     protected val settingsStore: SettingsFacade by lazy {
         illustiaApplication?.settingsStore
             ?: deps.settings

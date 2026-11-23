@@ -358,7 +358,7 @@ class MainActivity : FragmentActivity() {
                 settings.dummyIconVariant,
             ) {
                 if (!settingsLoaded) return@LaunchedEffect
-                viewModel.applyDummyIconSettings(this@MainActivity)
+                viewModel.applyDummyIconSettings()
             }
 
             LaunchedEffect(

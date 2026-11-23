@@ -1,6 +1,5 @@
 package com.yunfie.illustia
 
-import com.yunfie.illustia.DummyAppIconSwitcher
 import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.SearchAgeRestriction
 import com.yunfie.illustia.models.SearchBookmarkFilter
@@ -260,9 +259,9 @@ abstract class IllustiaSettingsSecurityModule(
 
     suspend fun verifyCurrentUnlockCode(code: String): Boolean = settingsStore.verifyUnlockCode(code)
 
-    fun applyDummyIconSettings(context: android.content.Context) {
+    fun applyDummyIconSettings() {
         val settings = _uiState.value.settings
-        applyDummyAppIcon(context, settings.privacyModeEnabled, settings.appIconVariant)
+        applyDummyAppIcon(settings.privacyModeEnabled, settings.appIconVariant)
     }
 
     suspend fun changeUnlockCode(
@@ -277,12 +276,11 @@ abstract class IllustiaSettingsSecurityModule(
     }
 
     fun applyDummyAppIcon(
-        context: android.content.Context,
         enabled: Boolean,
         appIconVariant: String = _uiState.value.settings.appIconVariant,
     ) {
         viewModelScope.launch(Dispatchers.IO) {
-            DummyAppIconSwitcher.apply(context, enabled, appIconVariant)
+            appIconSwitcher.apply(enabled, appIconVariant)
         }
     }
 
