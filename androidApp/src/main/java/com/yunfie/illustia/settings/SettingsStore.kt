@@ -13,6 +13,7 @@ import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.yunfie.illustia.data.computeAccountKey
 import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.models.SavedIllust
 import com.yunfie.illustia.models.StoredAccount
 import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.settings.db.IllustiaDatabase
@@ -383,9 +384,9 @@ class SettingsStore internal constructor(
             cachedStartupSettings = null
         }
 
-    suspend fun getSavedIllusts() =
+    suspend fun getSavedIllusts(): List<SavedIllust> =
         withContext(Dispatchers.IO) {
-            dao.getSavedIllusts()
+            dao.getSavedIllusts().map(SavedIllustEntity::toSavedIllust)
         }
 
     suspend fun getSavedIllust(illustId: Long): SavedIllustWithPages? =
@@ -394,13 +395,14 @@ class SettingsStore internal constructor(
         }
 
     suspend fun saveSavedIllust(
-        illust: SavedIllustEntity,
+        illust: SavedIllust,
         pages: List<SavedIllustPageEntity>,
     ) = withContext(Dispatchers.IO) {
+        val entity = illust.toSavedIllustEntity()
         database.runInTransaction {
             dao.deleteSavedIllustPages(illust.illustId)
             dao.deleteSavedIllust(illust.illustId)
-            dao.upsertSavedIllust(illust)
+            dao.upsertSavedIllust(entity)
             dao.upsertSavedIllustPages(pages)
         }
     }
@@ -609,3 +611,33 @@ class SettingsStore internal constructor(
         const val STARTUP_VIEW_HISTORY_LIMIT = 16
     }
 }
+
+private fun SavedIllustEntity.toSavedIllust(): SavedIllust =
+    SavedIllust(
+        illustId = illustId,
+        title = title.orEmpty(),
+        artistName = artistName.orEmpty(),
+        artistId = artistId,
+        thumbUrl = thumbUrl.orEmpty(),
+        localCoverPath = localCoverPath,
+        localPagePathsJson = localPagePathsJson.orEmpty(),
+        pageCount = pageCount,
+        savedAt = savedAt,
+        saveGroup = saveGroup.orEmpty(),
+        xRestrict = xRestrict,
+    )
+
+private fun SavedIllust.toSavedIllustEntity(): SavedIllustEntity =
+    SavedIllustEntity().apply {
+        illustId = this@toSavedIllustEntity.illustId
+        title = this@toSavedIllustEntity.title
+        artistName = this@toSavedIllustEntity.artistName
+        artistId = this@toSavedIllustEntity.artistId
+        thumbUrl = this@toSavedIllustEntity.thumbUrl
+        localCoverPath = this@toSavedIllustEntity.localCoverPath
+        localPagePathsJson = this@toSavedIllustEntity.localPagePathsJson
+        pageCount = this@toSavedIllustEntity.pageCount
+        savedAt = this@toSavedIllustEntity.savedAt
+        saveGroup = this@toSavedIllustEntity.saveGroup
+        xRestrict = this@toSavedIllustEntity.xRestrict
+    }

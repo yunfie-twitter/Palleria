@@ -6,13 +6,13 @@ import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.NovelPreview
 import com.yunfie.illustia.models.NovelTextContent
+import com.yunfie.illustia.models.SavedIllust
 import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.models.pixiv.BookmarkTag
 import com.yunfie.illustia.models.pixiv.Comment
 import com.yunfie.illustia.models.pixiv.PixivNotification
 import com.yunfie.illustia.settings.AppSettings
-import com.yunfie.illustia.settings.db.SavedIllustEntity
 
 @Immutable
 data class IllustiaUiState(
@@ -96,7 +96,7 @@ data class IllustiaUiState(
     val relatedIllusts: List<Illust> = emptyList(),
     /** 関連作品の取得が一度でも完了したか。空リストが「取得中」か「0件」かの区別に使う。 */
     val relatedIllustsLoaded: Boolean = false,
-    val savedIllusts: List<SavedIllustEntity> = emptyList(),
+    val savedIllusts: List<SavedIllust> = emptyList(),
     val selectedSavedIllustId: Long? = null,
     val selectedUserId: Long? = null,
     val selectedUser: UserProfile? = null,

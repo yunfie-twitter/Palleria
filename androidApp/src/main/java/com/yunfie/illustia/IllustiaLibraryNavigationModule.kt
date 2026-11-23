@@ -10,13 +10,13 @@ import com.yunfie.illustia.data.proxyPixivImageUrl
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.Restrict
+import com.yunfie.illustia.models.SavedIllust
 import com.yunfie.illustia.models.StoredAccount
 import com.yunfie.illustia.models.pixiv.UgoiraPlaybackFrame
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
 import com.yunfie.illustia.platform.ViewModelDeps
 import com.yunfie.illustia.settings.FeatureFlag
-import com.yunfie.illustia.settings.db.SavedIllustEntity
 import com.yunfie.illustia.settings.db.SavedIllustPageEntity
 import com.yunfie.illustia.settings.isFeatureEnabled
 import kotlinx.coroutines.Dispatchers
@@ -269,19 +269,19 @@ abstract class IllustiaLibraryNavigationModule(
                         },
                     )
                 settingsStore.saveSavedIllust(
-                    SavedIllustEntity().apply {
-                        illustId = targetIllust.id
-                        title = targetIllust.title
-                        artistName = targetIllust.artistName
-                        artistId = targetIllust.artistId
-                        thumbUrl = targetIllust.thumbnailUrl
-                        localCoverPath = file.absolutePath
-                        localPagePathsJson = "[\"${file.absolutePath.replace("\\", "\\\\")}\"]"
-                        pageCount = 1
-                        savedAt = System.currentTimeMillis()
-                        saveGroup = targetIllust.artistName
-                        xRestrict = if (targetIllust.isR18) 1 else 0
-                    },
+                    SavedIllust(
+                        illustId = targetIllust.id,
+                        title = targetIllust.title,
+                        artistName = targetIllust.artistName,
+                        artistId = targetIllust.artistId,
+                        thumbUrl = targetIllust.thumbnailUrl,
+                        localCoverPath = file.absolutePath,
+                        localPagePathsJson = "[\"${file.absolutePath.replace("\\", "\\\\")}\"]",
+                        pageCount = 1,
+                        savedAt = System.currentTimeMillis(),
+                        saveGroup = targetIllust.artistName,
+                        xRestrict = if (targetIllust.isR18) 1 else 0,
+                    ),
                     pages,
                 )
                 loadSavedLibrary()

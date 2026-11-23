@@ -19,7 +19,7 @@ import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
-import com.yunfie.illustia.settings.db.SavedIllustEntity
+import com.yunfie.illustia.models.SavedIllust
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.IllustGrid
@@ -51,7 +51,7 @@ fun OfflineLibraryScreen(
     // 保存作品全件の変換とフィルタはスクロール中も毎回走るため、保存一覧か設定が変わったときだけ計算する。
     val savedIllusts =
         remember(state.savedIllusts, state.settings) {
-            state.savedIllusts.map(SavedIllustEntity::toIllust).visibleWithSettings(state.settings)
+            state.savedIllusts.map(SavedIllust::toIllust).visibleWithSettings(state.settings)
         }
     val gridState = rememberLazyGridState()
     val coroutineScope = rememberCoroutineScope()
@@ -102,8 +102,8 @@ fun OfflineLibraryScreen(
     }
 }
 
-private fun SavedIllustEntity.toIllust(): Illust {
-    val previewUrl = localCoverPath?.takeIf { it.isNotBlank() } ?: thumbUrl.orEmpty()
+private fun SavedIllust.toIllust(): Illust {
+    val previewUrl = localCoverPath?.takeIf { it.isNotBlank() } ?: thumbUrl
     return Illust(
         id = illustId,
         title = title.orEmpty(),
