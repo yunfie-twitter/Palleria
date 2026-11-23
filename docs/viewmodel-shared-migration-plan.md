@@ -256,14 +256,18 @@ move or be facaded before the ViewModel classes can leave `androidApp`:
 
 #### Known trap: same-package symbols across the module boundary
 
-`AppSettings` and the `FeatureFlag` enum can be moved to `shared` and `androidApp`
-main sources compile fine. But **unit tests cannot resolve top-level functions
-from `shared` that live in a package `androidApp` also declares**
-(`com.yunfie.illustia.settings`). Verified: `AppSettings` (a class) resolves from
-the test classpath, while `isFeatureEnabled` (top-level in `FeatureFlagKt`)
-does not, even with `testImplementation project(":shared")` and after
-`:androidApp:clean`. Do not split `settings` types across the boundary
-piecemeal — move the whole package, or keep it in `androidApp`.
+**Classes, enums and `sealed interface`s move fine** — `UpdateModels.kt`
+(`UpdateInstallMethod`, `AppReleaseInfo`, `UpdateCheckState`) and
+`BackgroundWork.kt` (`BackgroundWork`, `AppUpdateEvent`) were moved to `shared`
+with the full unit-test suite green.
+
+**Top-level functions do not.** Unit tests cannot resolve a top-level function
+from `shared` that lives in a package `androidApp` also declares
+(`com.yunfie.illustia.settings`): `AppSettings` (a class) resolves from the test
+classpath, while `isFeatureEnabled` (top-level in `FeatureFlagKt`) does not —
+even with `testImplementation project(":shared")` and after `:androidApp:clean`.
+So: move data types freely; move whole packages if they contain top-level
+functions, or keep those in `androidApp`.
 
 ### Step 5 — The hard seams (classes 5–6)
 

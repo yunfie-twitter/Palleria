@@ -430,7 +430,7 @@ abstract class IllustiaViewModelFoundation(
                     is AppUpdateEvent.Completed -> {
                         _updateCheckState.value =
                             UpdateCheckState.ReadyToInstall(
-                                apkFile = java.io.File(event.apkPath),
+                                apkPath = event.apkPath,
                                 release = event.release,
                             )
                     }

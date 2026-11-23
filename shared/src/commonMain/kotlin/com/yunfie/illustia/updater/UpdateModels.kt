@@ -1,7 +1,6 @@
 package com.yunfie.illustia.updater
 
 import kotlinx.serialization.Serializable
-import java.io.File
 
 @Serializable
 enum class UpdateInstallMethod(
@@ -52,7 +51,7 @@ sealed interface UpdateCheckState {
     ) : UpdateCheckState
 
     data class ReadyToInstall(
-        val apkFile: File,
+        val apkPath: String,
         val release: AppReleaseInfo,
     ) : UpdateCheckState
 
