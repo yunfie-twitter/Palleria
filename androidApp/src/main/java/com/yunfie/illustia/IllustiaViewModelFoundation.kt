@@ -35,6 +35,7 @@ import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.platform.AndroidStringProvider
 import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.platform.StringProvider
+import com.yunfie.illustia.platform.ViewModelDeps
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.SettingsStore
 import com.yunfie.illustia.settings.isDynamicColorAvailable
@@ -127,11 +128,11 @@ internal fun AppSettings.withHydratedRoomCollections(full: AppSettings): AppSett
 /** Shared state, lifecycle, persistence, and cross-feature helpers for ViewModel modules. */
 @Suppress("LargeClass")
 abstract class IllustiaViewModelFoundation(
-    app: Application,
-    protected val managedDataRepository: ManagedDataRepository = ManagedDataRepository(app.contentResolver),
-    protected val strings: StringProvider = AndroidStringProvider(app),
-) : AndroidViewModel(app) {
-    protected val illustiaApplication = app as? IllustiaApplication
+    deps: ViewModelDeps,
+    protected val managedDataRepository: ManagedDataRepository = ManagedDataRepository(deps.contentResolver),
+    protected val strings: StringProvider = AndroidStringProvider(deps.application),
+) : AndroidViewModel(deps.application) {
+    protected val illustiaApplication = deps.illustiaApplication
     protected val settingsStore by lazy {
         illustiaApplication?.settingsStore
             ?: SettingsStore(getApplication<Application>().applicationContext)

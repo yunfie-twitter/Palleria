@@ -1,6 +1,5 @@
 package com.yunfie.illustia
 
-import android.app.Application
 import androidx.lifecycle.viewModelScope
 import com.yunfie.illustia.GlitchTipTelemetry
 import com.yunfie.illustia.data.BookmarkToggleScheduler
@@ -10,6 +9,7 @@ import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.SearchWorkType
 import com.yunfie.illustia.models.pixiv.BookmarkTag
+import com.yunfie.illustia.platform.ViewModelDeps
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -27,9 +27,9 @@ private const val MAX_SEARCH_LOAD_MORE_PAGES = 20
 /** Pagination for search/profile collections plus bookmark and recommendation behavior. */
 @Suppress("LargeClass")
 abstract class IllustiaBookmarkModule(
-    app: Application,
+    deps: ViewModelDeps,
     managedDataRepository: ManagedDataRepository,
-) : IllustiaDetailProfileModule(app, managedDataRepository) {
+) : IllustiaDetailProfileModule(deps, managedDataRepository) {
     private val bookmarkRefreshGeneration = AtomicLong()
 
     abstract fun saveImage(

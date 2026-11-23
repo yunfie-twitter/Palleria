@@ -14,6 +14,7 @@ import com.yunfie.illustia.models.pixiv.AccountEditResult
 import com.yunfie.illustia.models.pixiv.Comment
 import com.yunfie.illustia.models.pixiv.UgoiraPlayback
 import com.yunfie.illustia.models.pixiv.UserProfileEdit
+import com.yunfie.illustia.platform.ViewModelDeps
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
 import kotlinx.coroutines.Dispatchers
@@ -31,9 +32,9 @@ import java.net.HttpURLConnection
 /** Illustration detail, image viewer, user profile, follow, and mute interactions. */
 @Suppress("LargeClass")
 abstract class IllustiaDetailProfileModule(
-    app: Application,
+    deps: ViewModelDeps,
     managedDataRepository: ManagedDataRepository,
-) : IllustiaAuthFeedModule(app, managedDataRepository) {
+) : IllustiaAuthFeedModule(deps, managedDataRepository) {
     fun openIllust(illust: Illust) {
         captureProfileReturnDetail()
         recordViewHistory(illust)

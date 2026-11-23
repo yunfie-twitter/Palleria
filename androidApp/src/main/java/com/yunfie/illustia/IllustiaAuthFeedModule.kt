@@ -16,6 +16,7 @@ import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.SearchWorkType
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
+import com.yunfie.illustia.platform.ViewModelDeps
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.app.SearchEntrySnapshot
@@ -35,9 +36,9 @@ private const val STARTUP_HOME_BACKGROUND_REFRESH_DELAY_MS = 1200L
 /** Authentication, native intents, search, feeds, timelines, and managed-data transfer. */
 @Suppress("LargeClass", "TooManyFunctions")
 abstract class IllustiaAuthFeedModule(
-    app: Application,
+    deps: ViewModelDeps,
     managedDataRepository: ManagedDataRepository,
-) : IllustiaSettingsSecurityModule(app, managedDataRepository) {
+) : IllustiaSettingsSecurityModule(deps, managedDataRepository) {
     private val pendingNovelBookmarkIds = mutableSetOf<Long>()
 
     abstract fun openIllust(illustId: Long)

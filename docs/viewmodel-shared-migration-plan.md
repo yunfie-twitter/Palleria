@@ -108,31 +108,41 @@ Landed in `refactor(scroll)`:
 
 The ViewModel keeps the primitives it genuinely needs (e.g. `illustDetailPage(id): Int`).
 
-### Step 3 — Replace `Application` with `ViewModelDeps`
+### Step 3 — Replace `Application` with `ViewModelDeps` — ✅ done (first slice)
 
-All seven constructors take exactly `app: Application`. Replace with one data class:
+Measured before the change: the `app: Application` parameter was pure passthrough down
+all seven constructors. Nothing below `IllustiaViewModelFoundation` read it; every real
+use was `getApplication()` inherited from `AndroidViewModel`. So the parameter was
+carrying exactly four things:
+
+1. `AndroidViewModel(app)` superclass argument
+2. `ManagedDataRepository(app.contentResolver)`
+3. `AndroidStringProvider(app)`
+4. `app as? IllustiaApplication`
+
+Landed in `refactor(deps)`:
 
 ```kotlin
-// shared/commonMain
-class ViewModelDeps(
-    val strings: StringProvider,
-    val logger: Logger,
-    val clock: MonotonicClock,
-    val mainThread: MainThreadChecker,
-    val connectivity: Connectivity,
-    val appInfo: AppInfo,
-    val paths: AppPaths,
-    val backgroundWork: BackgroundWork,
-    val images: ImagePrefetcher,
-    val device: DeviceProfile,
-    val settings: SettingsStoreFacade,
-    val repositories: FeatureRepositories,
-    val scope: CoroutineScope,
-)
+// androidApp/src/main/java/com/yunfie/illustia/platform
+class ViewModelDeps(val application: Application) {
+    val illustiaApplication: IllustiaApplication? get() = application as? IllustiaApplication
+    val contentResolver get() = application.contentResolver
+}
 ```
 
-The Android side constructs it once in the Application/DI graph. Because all seven
-ctrs are uniform and positional, this is one mechanical edit per file.
+`IllustiaViewModel` keeps the `Application` constructor (required by
+`AndroidViewModelFactory`, which `MainActivity` uses) and converts immediately:
+`IllustiaViewModelCore(ViewModelDeps(app))`. All six remaining classes take
+`deps: ViewModelDeps` and forward it.
+
+Verified: `app: Application` now appears in exactly one place in the whole tree —
+`IllustiaViewModel`'s constructor.
+
+**Not yet done:** the full dependency set in the original sketch (`Logger`, `Clock`,
+`Connectivity`, `AppPaths`, `BackgroundWork`, …). Those are dependency classes 4–6 and
+need the facades from Step 4; `ViewModelDeps` currently carries only what the chain
+actually consumed. That is the honest boundary — adding unused fields now would be
+speculative.
 
 ### Step 4 — The small facades (class 4)
 
