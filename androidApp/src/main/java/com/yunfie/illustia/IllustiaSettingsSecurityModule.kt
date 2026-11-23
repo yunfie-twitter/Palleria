@@ -14,7 +14,6 @@ import com.yunfie.illustia.settings.AppHapticMode
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.SettingsStore
 import com.yunfie.illustia.settings.isDynamicColorAvailable
-import com.yunfie.illustia.settings.store.STARTUP_LOGGED_IN_TOKEN
 import com.yunfie.illustia.ui.screens.CalculatorEngine
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay

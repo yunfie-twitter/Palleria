@@ -39,7 +39,6 @@ import com.yunfie.illustia.platform.ViewModelDeps
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.SettingsStore
 import com.yunfie.illustia.settings.isDynamicColorAvailable
-import com.yunfie.illustia.settings.store.STARTUP_LOGGED_IN_TOKEN
 import com.yunfie.illustia.ui.app.AppRoute
 import com.yunfie.illustia.ui.app.AppTab
 import com.yunfie.illustia.ui.app.DetailEntrySnapshot
