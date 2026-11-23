@@ -1,8 +1,6 @@
 package com.yunfie.illustia
 
-import android.app.Application
 import com.yunfie.illustia.GlitchTipTelemetry
-import com.yunfie.illustia.data.FollowDeltaSyncManager
 import com.yunfie.illustia.data.ManagedDataRepository
 import com.yunfie.illustia.data.pixivLoginCodeOrNull
 import com.yunfie.illustia.models.HomeFeedKind
@@ -1088,8 +1086,7 @@ abstract class IllustiaAuthFeedModule(
                 if (currentSettings.isFeatureEnabled(FeatureFlag.DeltaEtagSync)) {
                     val token = currentSettings.refreshToken
                     if (token.isNotBlank()) {
-                        FollowDeltaSyncManager.recordSnapshotAndPrewarmDelta(
-                            context = getApplication<Application>().applicationContext,
+                        appServices.recordFollowDeltaSnapshot(
                             token = token,
                             freshItems = page.items,
                             proxyBaseUrl = currentSettings.pixivImageProxyBaseUrl,

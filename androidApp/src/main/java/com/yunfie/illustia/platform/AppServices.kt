@@ -17,6 +17,34 @@ interface AppServices {
     /** ランキングウィジェットを再描画する。 */
     suspend fun refreshRankingWidget()
 
+    /** ライブ壁紙へ設定変更を通知する。 */
+    fun notifyLiveWallpaperSettingsChanged()
+
+    /** アカウント情報をアプリ全体へ同期する。 */
+    fun reconcileAccounts(accounts: List<com.yunfie.illustia.models.StoredAccount>)
+
+    /**
+     * ブックマーク切り替えの遅延送信をワークキューへ積む。
+     * @return 積めたら true。
+     */
+    fun enqueueBookmarkToggle(
+        illustId: Long,
+        bookmarked: Boolean,
+        restrict: com.yunfie.illustia.models.Restrict,
+        followRestrict: com.yunfie.illustia.models.Restrict,
+        bookmarkUserId: Long,
+        artistId: Long,
+        tags: List<String>,
+        bookmarkTags: List<String>,
+    ): Boolean
+
+    /** フォロー差分同期のスナップショットを保存し、ETag を温める。 */
+    suspend fun recordFollowDeltaSnapshot(
+        token: String,
+        freshItems: List<com.yunfie.illustia.models.Illust>,
+        proxyBaseUrl: String,
+    )
+
     /**
      * 作品保存の間、フォアグラウンドサービスを維持する。
      * 返り値の `close()` で解放する。

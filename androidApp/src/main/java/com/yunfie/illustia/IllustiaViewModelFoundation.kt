@@ -1,10 +1,8 @@
 package com.yunfie.illustia
 
 import android.app.Application
-import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.navigation3.runtime.NavKey
-import com.yunfie.illustia.account.PalleriaAccount
 import com.yunfie.illustia.data.FeatureRepositories
 import com.yunfie.illustia.data.IllustiaRepository
 import com.yunfie.illustia.data.ManagedDataRepository
@@ -704,13 +702,9 @@ abstract class IllustiaViewModelFoundation(
 
             try {
                 repository.saveSettings(request.settings, baseSettings)
-                PalleriaAccount.reconcile(getApplication(), request.settings.accounts)
+                appServices.reconcileAccounts(request.settings.accounts)
                 if (notifyLiveWallpaper) {
-                    val application = getApplication<Application>()
-                    application.sendBroadcast(
-                        Intent(com.yunfie.illustia.wallpaper.PalleriaLiveWallpaperService.ACTION_SETTINGS_CHANGED)
-                            .setPackage(application.packageName),
-                    )
+                    appServices.notifyLiveWallpaperSettingsChanged()
                 }
             } catch (expectedFailure: Exception) {
                 val error = expectedFailure

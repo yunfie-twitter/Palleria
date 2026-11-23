@@ -1,7 +1,6 @@
 package com.yunfie.illustia
 
 import com.yunfie.illustia.GlitchTipTelemetry
-import com.yunfie.illustia.data.BookmarkToggleScheduler
 import com.yunfie.illustia.data.ManagedDataRepository
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
@@ -729,19 +728,16 @@ abstract class IllustiaBookmarkModule(
             )
         updateIllustEverywhere(optimistic)
         val enqueued =
-            runCatching {
-                BookmarkToggleScheduler.enqueue(
-                    context = getApplication(),
-                    illustId = illust.id,
-                    bookmarked = bookmarked,
-                    restrict = restrict,
-                    followRestrict = settings.followRestrict,
-                    bookmarkUserId = settings.bookmarkUserId ?: 0L,
-                    artistId = illust.artistId,
-                    tags = illust.tags.take(3),
-                    bookmarkTags = bookmarkTags.take(10),
-                )
-            }.isSuccess
+            appServices.enqueueBookmarkToggle(
+                illustId = illust.id,
+                bookmarked = bookmarked,
+                restrict = restrict,
+                followRestrict = settings.followRestrict,
+                bookmarkUserId = settings.bookmarkUserId ?: 0L,
+                artistId = illust.artistId,
+                tags = illust.tags.take(3),
+                bookmarkTags = bookmarkTags.take(10),
+            )
         if (!enqueued) {
             updateIllustEverywhere(illust)
             _uiState.update { it.copy(message = str(R.string.error_bookmark_failed)) }
