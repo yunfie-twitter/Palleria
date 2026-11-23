@@ -390,5 +390,8 @@ next unblocked slice.
   を UI が参照する形に変更（`compose.foundation` を `shared` に入れないため）。
 - `AppHapticMode` を `shared` へ（トップレベル関数 `effectiveAppHapticMode` ごと移動し
   unit test 緑 → 分割パッケージでもトップレベル関数は移設可能と確定）。
-- 残ブロッカーは **22**（per-symbol 計測）。最大の壁は `str(R.string.*)` 82 箇所で、
-  `Int` リソース ID を中立キーへ置き換える独立リファクタが必要。
+- `StringKey`（52 キー）を導入し、`StringProvider` を `StringKey` ベースに変更。
+  ViewModel の `R.string.*` 76 箇所を `StringKey.*` へ置換、`R` への参照は 0 件。
+- `AppServices` インターフェースを `shared` へ。
+- 残ブロッカーは **17**（per-symbol 計測）。最大の壁は `str(R.string.*)` 82 箇所だったが、
+  `StringKey` enum + `StringProvider` の `StringKey` 化で**解消済み**。
