@@ -62,26 +62,26 @@ private const val HTTP_NOT_FOUND = 404
 private const val HTTP_GONE = 410
 private const val TRENDING_TAGS_CACHE_KEY = "trending_tags"
 
-@Suppress("LargeClass")
+@Suppress("LargeClass", "TooManyFunctions")
 class IllustiaRepository(
     private val settingsStore: SettingsStore,
-) {
+) : IllustiaRepositoryApi {
     @Volatile
     private var session: PixivSession? = null
     private val sessionMutex = Mutex()
     private val homeSnapshot = HomeFeedSnapshot(settingsStore.homeCacheDirectory())
     private val accountRevision = AtomicLong()
     private val credentialsRevision = AtomicLong()
-    internal val accountGeneration: Long get() = accountRevision.get()
+    override val accountGeneration: Long get() = accountRevision.get()
 
-    internal suspend fun readHomeSnapshot(kind: HomeFeedKind): PageResult<Illust>? {
+    override suspend fun readHomeSnapshot(kind: HomeFeedKind): PageResult<Illust>? {
         val accountHash = settingsStore.readStartupAccountHash()
         val snapshot = if (accountHash.isNotBlank()) homeSnapshot.readWithAccountHash(kind, accountHash) else null
         val filters = cachedSettings ?: settingsStore.readFeedSettings()
         return snapshot?.let { it.copy(items = it.items.visibleWithSettings(filters)) }
     }
 
-    internal suspend fun readFeedSettings(): AppSettings = settingsStore.readFeedSettings()
+    override suspend fun readFeedSettings(): AppSettings = settingsStore.readFeedSettings()
 
     @Volatile
     private var cachedSettings: AppSettings? = null
@@ -193,7 +193,7 @@ class IllustiaRepository(
         }
     }
 
-    suspend fun readSettings(viewHistoryLimit: Int? = null): AppSettings {
+    override suspend fun readSettings(viewHistoryLimit: Int?): AppSettings {
         val settings =
             settingsCacheMutex.withLock {
                 cachedSettings?.takeIf { cachedSettingsRevision == credentialsRevision.get() } ?: run {
@@ -213,7 +213,7 @@ class IllustiaRepository(
         return settings
     }
 
-    suspend fun readFullViewHistory(): List<Illust> {
+    override suspend fun readFullViewHistory(): List<Illust> {
         val fullHistory = settingsStore.readFullViewHistory()
         settingsCacheMutex.withLock {
             cachedSettings = cachedSettings?.copy(viewHistory = fullHistory)
@@ -221,22 +221,22 @@ class IllustiaRepository(
         return fullHistory
     }
 
-    suspend fun readStartupSettings(): AppSettings = settingsStore.readStartup()
+    override suspend fun readStartupSettings(): AppSettings = settingsStore.readStartup()
 
     internal suspend fun readStartupMaintenanceSettings() = settingsStore.readStartupMaintenanceSettings()
 
     internal suspend fun readAccountsForStartupMaintenance() = settingsStore.readAccountsForStartupMaintenance()
 
-    suspend fun saveSettings(
+    override suspend fun saveSettings(
         settings: AppSettings,
-        baseSettings: AppSettings? = null,
+        baseSettings: AppSettings?,
     ) {
         val written = settingsStore.write(settings, baseSettings)
         settingsCacheMutex.withLock { cachedSettings = written }
         ensureApiClient(NetworkMode.fromCode(written.pixivNetworkMode))
     }
 
-    suspend fun login(refreshToken: String): PixivSession =
+    override suspend fun login(refreshToken: String): PixivSession =
         sessionMutex.withLock {
             accountRevision.incrementAndGet()
             homeSnapshot.clear()
@@ -251,7 +251,7 @@ class IllustiaRepository(
         return nextSession
     }
 
-    suspend fun loginWithAuthorizationCode(
+    override suspend fun loginWithAuthorizationCode(
         code: String,
         codeVerifier: String,
     ): PixivSession =
@@ -272,7 +272,7 @@ class IllustiaRepository(
         cachedSettings = null
     }
 
-    suspend fun logout() =
+    override suspend fun logout() =
         sessionMutex.withLock {
             accountRevision.incrementAndGet()
             homeSnapshot.clear()
@@ -285,25 +285,25 @@ class IllustiaRepository(
                     .also { ensureApiClient(NetworkMode.fromCode(it.pixivNetworkMode)) }
         }
 
-    suspend fun loadRanking(
+    override suspend fun loadRanking(
         mode: String,
-        forceRefresh: Boolean = false,
+        forceRefresh: Boolean,
     ): PageResult<Illust> =
         withApiCache("ranking:$mode", CACHE_TTL_STANDARD_MILLIS, forceRefresh) {
             withSessionRetry { session -> apiClient.ranking(session, mode) }
         }
 
-    suspend fun followingIllusts(
+    override suspend fun followingIllusts(
         restrict: Restrict,
-        forceRefresh: Boolean = false,
+        forceRefresh: Boolean,
     ): PageResult<Illust> =
         withApiCache("following:$restrict", CACHE_TTL_MEDIUM_MILLIS, forceRefresh) {
             withSessionRetry { session -> apiClient.following(session, restrict) }
         }
 
-    suspend fun loadHome(
+    override suspend fun loadHome(
         kind: HomeFeedKind,
-        forceRefresh: Boolean = false,
+        forceRefresh: Boolean,
     ): PageResult<Illust> {
         val generation = accountGeneration
         return withApiCache("home_feed:$generation:${kind.name}", CACHE_TTL_SHORT_MILLIS, forceRefresh) {
@@ -324,31 +324,31 @@ class IllustiaRepository(
         }
     }
 
-    suspend fun loadNovels(forceRefresh: Boolean = false): PageResult<NovelPreview> =
+    override suspend fun loadNovels(forceRefresh: Boolean): PageResult<NovelPreview> =
         withApiCache("novels:recommended", CACHE_TTL_STANDARD_MILLIS, forceRefresh) {
             withSessionRetry { session -> apiClient.recommendedNovels(session) }
         }
 
-    suspend fun nextNovelPage(nextUrl: String): PageResult<NovelPreview> =
+    override suspend fun nextNovelPage(nextUrl: String): PageResult<NovelPreview> =
         withSessionRetry { session -> apiClient.nextNovelPage(session, nextUrl) }
 
-    suspend fun loadNovelText(
+    override suspend fun loadNovelText(
         novelId: Long,
-        forceRefresh: Boolean = false,
+        forceRefresh: Boolean,
     ): NovelTextContent =
         withApiCache("novel_text:$novelId", CACHE_TTL_HOUR_MILLIS, forceRefresh) {
             withSessionRetry { session -> apiClient.novelText(session, novelId) }
         }
 
-    suspend fun search(
+    override suspend fun search(
         word: String,
         sort: SearchSort,
         target: SearchTarget,
         duration: SearchDuration,
         bookmarkFilter: SearchBookmarkFilter,
         includeR18: Boolean,
-        type: String? = null,
-        forceRefresh: Boolean = false,
+        type: String?,
+        forceRefresh: Boolean,
     ): PageResult<Illust> =
         withApiCache("search:$word:$sort:$target:$duration:$bookmarkFilter:$includeR18:$type", CACHE_TTL_MEDIUM_MILLIS, forceRefresh) {
             withSessionRetry { session ->
@@ -356,14 +356,14 @@ class IllustiaRepository(
             }
         }
 
-    suspend fun searchNovels(
+    override suspend fun searchNovels(
         word: String,
         sort: SearchSort,
         target: SearchTarget,
         duration: SearchDuration,
         bookmarkFilter: SearchBookmarkFilter,
         includeR18: Boolean,
-        forceRefresh: Boolean = false,
+        forceRefresh: Boolean,
     ): PageResult<NovelPreview> =
         withApiCache("search_novels:$word:$sort:$target:$duration:$bookmarkFilter:$includeR18", CACHE_TTL_MEDIUM_MILLIS, forceRefresh) {
             withSessionRetry { session ->
@@ -371,26 +371,26 @@ class IllustiaRepository(
             }
         }
 
-    suspend fun searchUsers(
+    override suspend fun searchUsers(
         word: String,
-        forceRefresh: Boolean = false,
+        forceRefresh: Boolean,
     ): PageResult<UserPreview> =
         withApiCache("search_users:$word", CACHE_TTL_MEDIUM_MILLIS, forceRefresh) {
             withSessionRetry { session -> apiClient.searchUsers(session, word) }
         }
 
-    suspend fun trendingTags(forceRefresh: Boolean = false): List<String> =
+    override suspend fun trendingTags(forceRefresh: Boolean): List<String> =
         withApiCache(TRENDING_TAGS_CACHE_KEY, CACHE_TTL_LONG_MILLIS, forceRefresh) {
             withSessionRetry { session -> apiClient.trendingTags(session) }
         }
 
     // True when the last trendingTags() call was answered by the stale offline fallback, so its
     // result must not be recorded as a freshly fetched cache entry.
-    internal fun trendingTagsServedStale(): Boolean = wasServedStale(TRENDING_TAGS_CACHE_KEY)
+    override fun trendingTagsServedStale(): Boolean = wasServedStale(TRENDING_TAGS_CACHE_KEY)
 
-    suspend fun popularPreview(
+    override suspend fun popularPreview(
         word: String,
-        forceRefresh: Boolean = false,
+        forceRefresh: Boolean,
     ): PageResult<Illust> =
         withApiCache("popular_preview:$word", CACHE_TTL_STANDARD_MILLIS, forceRefresh) {
             withSessionRetry { session -> apiClient.popularPreview(session, word) }
@@ -428,10 +428,10 @@ class IllustiaRepository(
     suspend fun nextIllustSeriesPage(nextUrl: String): IllustSeriesWithIdModel =
         withSessionRetry { session -> apiClient.nextIllustSeriesPage(session, nextUrl) }
 
-    suspend fun illustComments(
+    override suspend fun illustComments(
         illustId: Long,
-        offset: Int? = null,
-        forceRefresh: Boolean = false,
+        offset: Int?,
+        forceRefresh: Boolean,
     ): CommentResponse =
         withApiCache("comments:illust:$illustId:${offset ?: 0}", CACHE_TTL_SHORT_MILLIS, forceRefresh) {
             withSessionRetry { session -> apiClient.illustComments(session, illustId, offset) }
@@ -449,9 +449,9 @@ class IllustiaRepository(
             withSessionRetry { session -> apiClient.illustCommentReplies(session, commentId, offset) }
         }
 
-    suspend fun novelComments(
+    override suspend fun novelComments(
         novelId: Long,
-        forceRefresh: Boolean = false,
+        forceRefresh: Boolean,
     ): CommentResponse =
         withApiCache("comments:novel:$novelId", CACHE_TTL_SHORT_MILLIS, forceRefresh) {
             withSessionRetry { session -> apiClient.novelComments(session, novelId) }
@@ -524,9 +524,9 @@ class IllustiaRepository(
         apiCache.remove("illust_series:$seriesId")
     }
 
-    suspend fun followingUsers(
+    override suspend fun followingUsers(
         restrict: Restrict,
-        forceRefresh: Boolean = false,
+        forceRefresh: Boolean,
     ): PageResult<UserPreview> =
         withApiCache("following_users:$restrict", CACHE_TTL_MEDIUM_MILLIS, forceRefresh) {
             withSessionRetry { session ->
@@ -537,9 +537,9 @@ class IllustiaRepository(
             }
         }
 
-    suspend fun userDetail(
+    override suspend fun userDetail(
         userId: Long,
-        forceRefresh: Boolean = false,
+        forceRefresh: Boolean,
     ): UserProfile =
         withApiCache("user_detail:$userId", CACHE_TTL_SERIES_MILLIS, forceRefresh) {
             withSessionRetry { session -> apiClient.userDetail(session, userId) }
@@ -561,18 +561,19 @@ class IllustiaRepository(
         return PixivWebSocketClient(createPixivHttpClient(apiClientMode), url, { accessToken }, headers)
     }
 
-    suspend fun currentUserProfile(): CurrentUserProfile = withSessionRetry { session -> apiClient.currentUserProfile(session) }
+    override suspend fun currentUserProfile(): CurrentUserProfile = withSessionRetry { session -> apiClient.currentUserProfile(session) }
 
-    suspend fun relatedUsers(userId: Long): RelatedUsersResult = withSessionRetry { session -> apiClient.relatedUsers(session, userId) }
+    override suspend fun relatedUsers(userId: Long): RelatedUsersResult =
+        withSessionRetry { session -> apiClient.relatedUsers(session, userId) }
 
-    suspend fun nextRelatedUsersPage(nextUrl: String): RelatedUsersResult =
+    override suspend fun nextRelatedUsersPage(nextUrl: String): RelatedUsersResult =
         withSessionRetry { session -> apiClient.nextRelatedUsersPage(session, nextUrl) }
 
     suspend fun setUserWorkspace(workspace: UserWorkspace) {
         withSessionRetry { session -> apiClient.setUserWorkspace(session, workspace) }
     }
 
-    suspend fun setUserProfile(profile: UserProfileEdit): AccountEditResult =
+    override suspend fun setUserProfile(profile: UserProfileEdit): AccountEditResult =
         withSessionRetry { session -> apiClient.setUserProfile(session, profile) }
 
     suspend fun trendingTagDetails(): List<TrendingTag> = withSessionRetry { session -> apiClient.trendingTagDetails(session) }
@@ -582,30 +583,30 @@ class IllustiaRepository(
     suspend fun nextSpotlightPage(nextUrl: String): SpotlightResult =
         withSessionRetry { session -> apiClient.nextSpotlightPage(session, nextUrl) }
 
-    suspend fun reportIllust(
+    override suspend fun reportIllust(
         illustId: Long,
-        problemType: String? = null,
-        message: String? = null,
+        problemType: String?,
+        message: String?,
     ) {
         withSessionRetry { session -> apiClient.reportIllust(session, illustId, problemType, message) }
     }
 
-    suspend fun reportUser(
+    override suspend fun reportUser(
         userId: Long,
-        problemType: String? = null,
-        message: String? = null,
+        problemType: String?,
+        message: String?,
     ) {
         withSessionRetry { session -> apiClient.reportUser(session, userId, problemType, message) }
     }
 
-    suspend fun addNovelBookmark(
+    override suspend fun addNovelBookmark(
         novelId: Long,
         restrict: Restrict,
     ) {
         withSessionRetry { session -> apiClient.addNovelBookmark(session, novelId, restrict) }
     }
 
-    suspend fun removeNovelBookmark(novelId: Long) {
+    override suspend fun removeNovelBookmark(novelId: Long) {
         withSessionRetry { session -> apiClient.removeNovelBookmark(session, novelId) }
     }
 
@@ -620,49 +621,50 @@ class IllustiaRepository(
         withSessionRetry { session -> apiClient.removeNovelMarker(session, novelId) }
     }
 
-    suspend fun notifications(): NotificationListResult = withSessionRetry { session -> apiClient.notifications(session) }
+    override suspend fun notifications(): NotificationListResult = withSessionRetry { session -> apiClient.notifications(session) }
 
-    suspend fun notificationViewMore(notificationId: Long): NotificationListResult =
+    override suspend fun notificationViewMore(notificationId: Long): NotificationListResult =
         withSessionRetry { session -> apiClient.notificationViewMore(session, notificationId) }
 
-    suspend fun nextNotificationPage(nextUrl: String): NotificationListResult =
+    override suspend fun nextNotificationPage(nextUrl: String): NotificationListResult =
         withSessionRetry { session -> apiClient.nextNotificationPage(session, nextUrl) }
 
     suspend fun stamps(): List<PixivStamp> = withSessionRetry { session -> apiClient.stamps(session) }
 
-    suspend fun userIllusts(userId: Long): PageResult<Illust> = withSessionRetry { session -> apiClient.userIllusts(session, userId) }
+    override suspend fun userIllusts(userId: Long): PageResult<Illust> =
+        withSessionRetry { session -> apiClient.userIllusts(session, userId) }
 
-    suspend fun illustDetail(
+    override suspend fun illustDetail(
         illustId: Long,
-        forceRefresh: Boolean = false,
+        forceRefresh: Boolean,
     ): Illust =
         withApiCache("illust_detail:$illustId", CACHE_TTL_SERIES_MILLIS, forceRefresh) {
             withSessionRetry { session -> apiClient.illustDetail(session, illustId) }
         }
 
-    suspend fun ugoiraMetadata(
+    override suspend fun ugoiraMetadata(
         illustId: Long,
-        forceRefresh: Boolean = false,
+        forceRefresh: Boolean,
     ): UgoiraMetadataResponse =
         withApiCache("ugoira_meta:$illustId", CACHE_TTL_LONG_MILLIS, forceRefresh) {
             withSessionRetry { session -> apiClient.ugoiraMetadata(session, illustId) }
         }
 
-    suspend fun prepareUgoira(
+    override suspend fun prepareUgoira(
         url: String,
         cacheDir: String,
         frames: List<UgoiraFrame>,
     ): UgoiraPlayback = UgoiraCache.prepare(ktorClient, defaultSigner(), url, cacheDir, frames)
 
-    suspend fun relatedIllusts(
+    override suspend fun relatedIllusts(
         illustId: Long,
-        forceRefresh: Boolean = false,
+        forceRefresh: Boolean,
     ): PageResult<Illust> =
         withApiCache("related_illusts:$illustId", CACHE_TTL_STANDARD_MILLIS, forceRefresh) {
             withSessionRetry { session -> apiClient.relatedIllusts(session, illustId) }
         }
 
-    suspend fun followUser(
+    override suspend fun followUser(
         userId: Long,
         restrict: Restrict,
     ) {
@@ -675,7 +677,7 @@ class IllustiaRepository(
         apiCache.remove("user_follow_detail:$userId")
     }
 
-    suspend fun unfollowUser(userId: Long) {
+    override suspend fun unfollowUser(userId: Long) {
         withSessionRetry { session -> apiClient.unfollowUser(session, userId) }
         apiCache.removeByPrefix("following:")
         apiCache.removeByPrefix("following_users:")
@@ -683,27 +685,28 @@ class IllustiaRepository(
         apiCache.remove("user_follow_detail:$userId")
     }
 
-    suspend fun bookmarks(
+    override suspend fun bookmarks(
         userId: Long,
         restrict: Restrict,
-        forceRefresh: Boolean = false,
-        tag: String? = null,
+        forceRefresh: Boolean,
+        tag: String?,
     ): PageResult<Illust> =
         withApiCache("bookmarks:$userId:$restrict:$tag", CACHE_TTL_MEDIUM_MILLIS, forceRefresh) {
             withSessionRetry { session -> apiClient.bookmarks(session, userId, restrict, tag) }
         }
 
-    suspend fun illustBookmarkTags(
+    override suspend fun illustBookmarkTags(
         userId: Long,
         restrict: Restrict,
     ): List<BookmarkTag> = withSessionRetry { session -> apiClient.illustBookmarkTags(session, userId, restrict) }
 
-    suspend fun nextPage(nextUrl: String): PageResult<Illust> = withSessionRetry { session -> apiClient.nextIllustPage(session, nextUrl) }
+    override suspend fun nextPage(nextUrl: String): PageResult<Illust> =
+        withSessionRetry { session -> apiClient.nextIllustPage(session, nextUrl) }
 
-    suspend fun nextUserSearchPage(nextUrl: String): PageResult<UserPreview> =
+    override suspend fun nextUserSearchPage(nextUrl: String): PageResult<UserPreview> =
         withSessionRetry { session -> apiClient.nextUserPreviewPage(session, nextUrl) }
 
-    suspend fun toggleBookmark(
+    override suspend fun toggleBookmark(
         illust: Illust,
         restrict: Restrict,
     ): Illust {
