@@ -393,5 +393,5 @@ next unblocked slice.
 - `StringKey`（52 キー）を導入し、`StringProvider` を `StringKey` ベースに変更。
   ViewModel の `R.string.*` 76 箇所を `StringKey.*` へ置換、`R` への参照は 0 件。
 - `AppServices` インターフェースを `shared` へ。
-- 残ブロッカーは **17**（per-symbol 計測）。最大の壁は `str(R.string.*)` 82 箇所だったが、
-  `StringKey` enum + `StringProvider` の `StringKey` 化で**解消済み**。
+- `AppSettings.isLoggedIn` を追加し、`STARTUP_LOGGED_IN_TOKEN` の直接参照を ViewModel から除去。
+- 残ブロッカーは **16**（per-symbol 計測）。
