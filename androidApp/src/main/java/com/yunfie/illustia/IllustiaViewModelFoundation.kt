@@ -46,7 +46,6 @@ import com.yunfie.illustia.ui.app.AppTab
 import com.yunfie.illustia.ui.app.DetailEntrySnapshot
 import com.yunfie.illustia.ui.app.SearchEntrySnapshot
 import com.yunfie.illustia.ui.scroll.ScrollPositionProbe
-import com.yunfie.illustia.ui.scroll.ScrollStateRegistry
 import com.yunfie.illustia.updater.AppReleaseInfo
 import com.yunfie.illustia.updater.AppUpdaterRepository
 import com.yunfie.illustia.updater.UpdateCheckState
@@ -213,9 +212,6 @@ abstract class IllustiaViewModelFoundation(
         const val MAX_SEEN_FEED_ILLUSTS = 2_000
         const val MAX_CACHED_GRID_STATES = 16
     }
-
-    /** UI が所有するスクロール状態の置き場。ViewModel は値だけを参照する。 */
-    val scrollStates: ScrollStateRegistry get() = ScrollStateRegistry.shared
 
     /**
      * ホームフィードのスクロール位置。UI が設置する。

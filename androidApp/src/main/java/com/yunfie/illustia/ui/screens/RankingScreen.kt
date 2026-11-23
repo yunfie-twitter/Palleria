@@ -222,7 +222,7 @@ fun RankingScreen(
                                     } else {
                                         performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Click)
                                         coroutineScope.launch {
-                                            viewModel.scrollStates
+                                            ScrollStateRegistry.shared
                                                 .grid(ScrollStateKeys.ranking(targetMode))
                                                 .smoothScrollToTop(scrollBehavior)
                                         }
