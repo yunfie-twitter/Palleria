@@ -14,6 +14,7 @@ import androidx.security.crypto.MasterKey
 import com.yunfie.illustia.data.computeAccountKey
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.SavedIllust
+import com.yunfie.illustia.models.SavedIllustPage
 import com.yunfie.illustia.models.StoredAccount
 import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.settings.db.IllustiaDatabase
@@ -396,14 +397,23 @@ class SettingsStore internal constructor(
 
     suspend fun saveSavedIllust(
         illust: SavedIllust,
-        pages: List<SavedIllustPageEntity>,
+        pages: List<SavedIllustPage>,
     ) = withContext(Dispatchers.IO) {
         val entity = illust.toSavedIllustEntity()
+        val pageEntities =
+            pages.map { page ->
+                SavedIllustPageEntity().apply {
+                    illustId = page.illustId
+                    pageIndex = page.pageIndex
+                    localPath = page.localPath
+                    sourceUrl = page.sourceUrl
+                }
+            }
         database.runInTransaction {
             dao.deleteSavedIllustPages(illust.illustId)
             dao.deleteSavedIllust(illust.illustId)
             dao.upsertSavedIllust(entity)
-            dao.upsertSavedIllustPages(pages)
+            dao.upsertSavedIllustPages(pageEntities)
         }
     }
 

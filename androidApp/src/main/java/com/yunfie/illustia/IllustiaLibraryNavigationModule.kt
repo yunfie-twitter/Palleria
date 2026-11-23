@@ -10,13 +10,13 @@ import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.SavedIllust
+import com.yunfie.illustia.models.SavedIllustPage
 import com.yunfie.illustia.models.StoredAccount
 import com.yunfie.illustia.models.pixiv.UgoiraPlaybackFrame
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
 import com.yunfie.illustia.platform.ViewModelDeps
 import com.yunfie.illustia.settings.FeatureFlag
-import com.yunfie.illustia.settings.db.SavedIllustPageEntity
 import com.yunfie.illustia.settings.isFeatureEnabled
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
@@ -257,12 +257,12 @@ abstract class IllustiaLibraryNavigationModule(
                 partFile.delete()
                 val pages =
                     listOf(
-                        SavedIllustPageEntity().apply {
-                            illustId = targetIllust.id
-                            pageIndex = 0
-                            localPath = file.absolutePath
-                            sourceUrl = requestUrl
-                        },
+                        SavedIllustPage(
+                            illustId = targetIllust.id,
+                            pageIndex = 0,
+                            localPath = file.absolutePath,
+                            sourceUrl = requestUrl,
+                        ),
                     )
                 settingsStore.saveSavedIllust(
                     SavedIllust(
