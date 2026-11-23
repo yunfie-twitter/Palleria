@@ -23,6 +23,9 @@ class ViewModelDeps(
     val logger: AppLogger = AndroidAppLogger(),
     val clock: MonotonicClock = AndroidMonotonicClock(),
     val mainThread: MainThreadChecker = AndroidMainThreadChecker(),
+    val connectivity: Connectivity = AndroidConnectivity(application),
+    val appPaths: AppPaths = AndroidAppPaths(application),
+    val appInfo: AppInfo = AndroidAppInfo(application),
 ) {
     val illustiaApplication: IllustiaApplication? get() = application as? IllustiaApplication
 

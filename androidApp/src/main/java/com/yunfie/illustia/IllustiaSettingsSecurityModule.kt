@@ -3,7 +3,6 @@ package com.yunfie.illustia
 import android.app.Application
 import com.yunfie.illustia.DummyAppIconSwitcher
 import com.yunfie.illustia.data.ManagedDataRepository
-import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.SearchAgeRestriction
 import com.yunfie.illustia.models.SearchBookmarkFilter
@@ -21,7 +20,6 @@ import com.yunfie.illustia.ui.screens.CalculatorEngine
 import com.yunfie.illustia.widget.IllustWidgetProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

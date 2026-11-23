@@ -1,7 +1,6 @@
 package com.yunfie.illustia
 
 import android.app.Application
-import android.net.ConnectivityManager
 import coil3.SingletonImageLoader
 import com.yunfie.illustia.GlitchTipTelemetry
 import com.yunfie.illustia.data.AnimatedGifEncoder
@@ -22,7 +21,6 @@ import com.yunfie.illustia.settings.db.SavedIllustEntity
 import com.yunfie.illustia.settings.db.SavedIllustPageEntity
 import com.yunfie.illustia.settings.isFeatureEnabled
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -229,7 +227,7 @@ abstract class IllustiaLibraryNavigationModule(
         viewModelScope.launch(Dispatchers.IO) {
             var savedFile: File? = null
             try {
-                if (_uiState.value.settings.offlineWifiOnly && getApplication<Application>().applicationContext.isNetworkMetered()) {
+                if (_uiState.value.settings.offlineWifiOnly && connectivity.isMetered()) {
                     _uiState.update { it.copy(message = str(R.string.offline_wifi_only_desc)) }
                     return@launch
                 }
@@ -356,11 +354,6 @@ abstract class IllustiaLibraryNavigationModule(
 
     fun updateOfflineStorageLimitBytes(value: Long) {
         updateSettings { it.copy(offlineStorageLimitBytes = value) }
-    }
-
-    private fun android.content.Context.isNetworkMetered(): Boolean {
-        val cm = getSystemService(ConnectivityManager::class.java)
-        return runCatching { cm?.isActiveNetworkMetered ?: false }.getOrDefault(false)
     }
 
     private suspend fun acquireDownloadSlot() {
@@ -497,7 +490,7 @@ abstract class IllustiaLibraryNavigationModule(
             ?: _uiState.value.selectedIllust
             ?: _uiState.value.imageViewerIllust
 
-    private fun getDownloadPartsDir(): File = File(getApplication<Application>().cacheDir, "download_parts").apply { mkdirs() }
+    private fun getDownloadPartsDir(): File = File(appPaths.cacheDir(), "download_parts").apply { mkdirs() }
 
     private fun resolveDownloadPartFile(
         filename: String,
@@ -561,7 +554,7 @@ abstract class IllustiaLibraryNavigationModule(
         if (playback.frames.isEmpty()) {
             throw IllegalStateException(str(R.string.ugoira_load_failed))
         }
-        val cacheDir = getApplication<Application>().cacheDir
+        val cacheDir = appPaths.cacheDir()
         if (_uiState.value.settings.ugoiraSaveFormat == "gif") {
             saveUgoiraAsGif(illust.id, playback.frames, filename, cacheDir, clearOld)
         } else {
@@ -641,7 +634,7 @@ abstract class IllustiaLibraryNavigationModule(
                     imageLoader.memoryCache?.clear()
                 }
 
-                val cacheRoot = appContext.cacheDir
+                val cacheRoot = appPaths.cacheDir()
                 cacheRoot.listFiles()?.forEach { file ->
                     when {
                         file.name == "image_cache" ||

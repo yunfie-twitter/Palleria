@@ -2,9 +2,6 @@ package com.yunfie.illustia
 
 import android.app.Application
 import android.content.Intent
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
-import androidx.core.content.pm.PackageInfoCompat
 import androidx.lifecycle.ViewModel
 import androidx.navigation3.runtime.NavKey
 import androidx.work.WorkManager
@@ -31,7 +28,10 @@ import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.nativebridge.NativeImageStore
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.platform.AndroidStringProvider
+import com.yunfie.illustia.platform.AppInfo
 import com.yunfie.illustia.platform.AppLogger
+import com.yunfie.illustia.platform.AppPaths
+import com.yunfie.illustia.platform.Connectivity
 import com.yunfie.illustia.platform.MainThreadChecker
 import com.yunfie.illustia.platform.MonotonicClock
 import com.yunfie.illustia.platform.PlatformCapabilities
@@ -65,7 +65,6 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -152,6 +151,9 @@ abstract class IllustiaViewModelFoundation(
     protected val logger: AppLogger get() = deps.logger
     protected val clock: MonotonicClock get() = deps.clock
     protected val mainThread: MainThreadChecker get() = deps.mainThread
+    protected val connectivity: Connectivity get() = deps.connectivity
+    protected val appPaths: AppPaths get() = deps.appPaths
+    protected val appInfo: AppInfo get() = deps.appInfo
     protected val settingsStore by lazy {
         illustiaApplication?.settingsStore
             ?: SettingsStore(getApplication<Application>().applicationContext)
@@ -384,14 +386,7 @@ abstract class IllustiaViewModelFoundation(
             viewModelScope.launch(Dispatchers.IO) {
                 kotlinx.coroutines.delay(STARTUP_VERSION_WORK_DELAY_MS)
                 val currentVersionCode =
-                    runCatching {
-                        val pInfo =
-                            getApplication<Application>().packageManager.getPackageInfo(
-                                getApplication<Application>().packageName,
-                                0,
-                            )
-                        PackageInfoCompat.getLongVersionCode(pInfo).toInt()
-                    }.getOrDefault(133)
+                    appInfo.versionCode() ?: 133
                 val lastSeenVersionCode = normalizedStartupSettings.lastSeenAppVersionCode
                 val isUpdated = lastSeenVersionCode in 1 until currentVersionCode
                 if (isUpdated) {
@@ -602,9 +597,7 @@ abstract class IllustiaViewModelFoundation(
         if (!settings.smartCacheEnabled) return
         val context = getApplication<Application>().applicationContext
         if (settings.smartCacheWifiOnly) {
-            val connectivity = context.getSystemService(ConnectivityManager::class.java)
-            val capabilities = connectivity.getNetworkCapabilities(connectivity.activeNetwork)
-            if (capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) != true) return
+            if (!connectivity.isWifiConnected()) return
         }
         val loader = SingletonImageLoader.get(context)
         val proxyBaseUrl = settings.pixivImageProxyBaseUrl
@@ -876,11 +869,7 @@ abstract class IllustiaViewModelFoundation(
         return false
     }
 
-    protected fun isOffline(): Boolean {
-        val context = getApplication<Application>().applicationContext
-        val connectivity = context.getSystemService(ConnectivityManager::class.java) ?: return false
-        return connectivity.activeNetwork == null
-    }
+    protected fun isOffline(): Boolean = connectivity.isOffline()
 
     protected fun loadFailureMessage(
         state: IllustiaUiState,

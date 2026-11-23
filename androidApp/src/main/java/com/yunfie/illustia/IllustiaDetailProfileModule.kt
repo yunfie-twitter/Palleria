@@ -1,6 +1,5 @@
 package com.yunfie.illustia
 
-import android.app.Application
 import com.yunfie.illustia.GlitchTipTelemetry
 import com.yunfie.illustia.data.ManagedDataRepository
 import com.yunfie.illustia.data.proxyPixivImageUrl
@@ -376,7 +375,7 @@ abstract class IllustiaDetailProfileModule(
                     throw IllegalStateException("Ugoira zip URL is missing.")
                 }
             val requestUrl = proxyPixivImageUrl(zipUrl, _uiState.value.settings.pixivImageProxyBaseUrl)
-            val cacheRoot = File(getApplication<Application>().cacheDir, "ugoira/$illustId")
+            val cacheRoot = File(appPaths.cacheDir(), "ugoira/$illustId")
             repository.prepareUgoira(
                 url = requestUrl,
                 cacheDir = cacheRoot.absolutePath,
