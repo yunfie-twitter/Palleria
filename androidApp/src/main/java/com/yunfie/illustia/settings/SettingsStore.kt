@@ -99,9 +99,10 @@ internal fun hasNewCredentialValues(
     return hasRefreshTokenUpdate || hasDiscordTokenUpdate || hasAccountTokenUpdate
 }
 
+@Suppress("TooManyFunctions")
 class SettingsStore internal constructor(
     context: Context,
-) {
+) : SettingsFacade {
     private val appContext = context.applicationContext
     private val legacyPreferences by lazy { appContext.getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE) }
     private val encryptedPreferences by lazy { Companion.createEncryptedPreferences(appContext) }
@@ -385,7 +386,7 @@ class SettingsStore internal constructor(
             cachedStartupSettings = null
         }
 
-    suspend fun getSavedIllusts(): List<SavedIllust> =
+    override suspend fun getSavedIllusts(): List<SavedIllust> =
         withContext(Dispatchers.IO) {
             dao.getSavedIllusts().map(SavedIllustEntity::toSavedIllust)
         }
@@ -395,7 +396,12 @@ class SettingsStore internal constructor(
             dao.getSavedIllust(illustId)
         }
 
-    suspend fun saveSavedIllust(
+    override suspend fun getSavedIllustIllustId(illustId: Long): Long? =
+        withContext(Dispatchers.IO) {
+            dao.getSavedIllust(illustId)?.illust?.illustId
+        }
+
+    override suspend fun saveSavedIllust(
         illust: SavedIllust,
         pages: List<SavedIllustPage>,
     ) = withContext(Dispatchers.IO) {
@@ -417,7 +423,7 @@ class SettingsStore internal constructor(
         }
     }
 
-    suspend fun deleteSavedIllust(illustId: Long) =
+    override suspend fun deleteSavedIllust(illustId: Long) =
         withContext(Dispatchers.IO) {
             database.runInTransaction {
                 dao.deleteSavedIllustPages(illustId)
@@ -425,14 +431,14 @@ class SettingsStore internal constructor(
             }
         }
 
-    suspend fun savePinHash(pin: String) {
+    override suspend fun savePinHash(pin: String) {
         savePinHashImpl(sensitivePreferences, pin)
         legacyPreferences.edit().putBoolean(KEY_STARTUP_HAS_PIN, true).apply()
     }
 
-    suspend fun verifyPin(pin: String): Boolean = verifyPinHashImpl(sensitivePreferences, pin)
+    override suspend fun verifyPin(pin: String): Boolean = verifyPinHashImpl(sensitivePreferences, pin)
 
-    fun hasPinSet(): Boolean {
+    override fun hasPinSet(): Boolean {
         if (legacyPreferences.contains(KEY_STARTUP_HAS_PIN)) {
             return legacyPreferences.getBoolean(KEY_STARTUP_HAS_PIN, false)
         }
@@ -441,31 +447,31 @@ class SettingsStore internal constructor(
         return hasPin
     }
 
-    fun clearPinHash() {
+    override fun clearPinHash() {
         clearPinHashImpl(sensitivePreferences)
         legacyPreferences.edit().putBoolean(KEY_STARTUP_HAS_PIN, false).apply()
     }
 
-    suspend fun saveUnlockCodeHash(code: String) {
+    override suspend fun saveUnlockCodeHash(code: String) {
         saveUnlockCodeHashImpl(sensitivePreferences, code)
     }
 
-    suspend fun verifyUnlockCode(code: String): Boolean = verifyUnlockCodeHashImpl(sensitivePreferences, code)
+    override suspend fun verifyUnlockCode(code: String): Boolean = verifyUnlockCodeHashImpl(sensitivePreferences, code)
 
-    fun hasUnlockCodeSet(): Boolean = hasUnlockCodeSetImpl(sensitivePreferences)
+    override fun hasUnlockCodeSet(): Boolean = hasUnlockCodeSetImpl(sensitivePreferences)
 
     fun clearUnlockCodeHash() {
         clearUnlockCodeHashImpl(sensitivePreferences)
     }
 
-    fun isValidUnlockCode(code: String): Boolean = isValidUnlockCodeImpl(code)
+    override fun isValidUnlockCode(code: String): Boolean = isValidUnlockCodeImpl(code)
 
-    suspend fun getSavedIllustStorageBytes(): Long =
+    override suspend fun getSavedIllustStorageBytes(): Long =
         withContext(Dispatchers.IO) {
-            savedIllustStorageBytesImpl(savedIllustDir())
+            savedIllustStorageBytesImpl(File(savedIllustDir()))
         }
 
-    fun savedIllustDir(): File = File(appContext.filesDir, "saved_illusts")
+    override fun savedIllustDir(): String = File(appContext.filesDir, "saved_illusts").absolutePath
 
     internal suspend fun ensureMigrated() {
         if (migrationCompleted) return

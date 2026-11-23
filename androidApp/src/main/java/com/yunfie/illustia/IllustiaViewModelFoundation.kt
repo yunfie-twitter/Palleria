@@ -35,6 +35,7 @@ import com.yunfie.illustia.platform.StringProvider
 import com.yunfie.illustia.platform.Telemetry
 import com.yunfie.illustia.platform.ViewModelDeps
 import com.yunfie.illustia.settings.AppSettings
+import com.yunfie.illustia.settings.SettingsFacade
 import com.yunfie.illustia.ui.app.AppRoute
 import com.yunfie.illustia.ui.app.AppTab
 import com.yunfie.illustia.ui.app.DetailEntrySnapshot
@@ -142,7 +143,7 @@ abstract class IllustiaViewModelFoundation(
     protected val deviceProfile: DeviceProfile get() = deps.deviceProfile
     protected val telemetry: Telemetry get() = deps.telemetry
     protected val appServices: AppServices get() = deps.appServices
-    protected val settingsStore by lazy {
+    protected val settingsStore: SettingsFacade by lazy {
         illustiaApplication?.settingsStore
             ?: deps.settings
     }

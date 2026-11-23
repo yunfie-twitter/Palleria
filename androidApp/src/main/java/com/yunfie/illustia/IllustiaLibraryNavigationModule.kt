@@ -323,8 +323,8 @@ abstract class IllustiaLibraryNavigationModule(
 
     fun openSavedIllustViewer(illustId: Long) {
         viewModelScope.launch(Dispatchers.IO) {
-            val saved = settingsStore.getSavedIllust(illustId) ?: return@launch
-            _uiState.update { it.copy(selectedSavedIllustId = saved.illust.illustId) }
+            val savedId = settingsStore.getSavedIllustIllustId(illustId) ?: return@launch
+            _uiState.update { it.copy(selectedSavedIllustId = savedId) }
             _navigationRequests.tryEmit(IllustiaNavigationRequest.SavedIllustViewer)
         }
     }
@@ -463,7 +463,7 @@ abstract class IllustiaLibraryNavigationModule(
         responseMimeType: String?,
         input: java.io.InputStream,
     ): File {
-        val dir = settingsStore.savedIllustDir()
+        val dir = File(settingsStore.savedIllustDir())
         dir.mkdirs()
         val target = File(dir, filename.withImageExtension(sourceUrl, responseMimeType))
         try {

@@ -53,7 +53,7 @@ class WallpaperPlaylistReceiver : BroadcastReceiver() {
             try {
                 val store = SettingsStore(context.applicationContext)
                 if (!store.read().wallpaperPlaylistEnabled) return@launch
-                val image = store.savedIllustDir().randomWallpaperFile() ?: return@launch
+                val image = File(store.savedIllustDir()).randomWallpaperFile() ?: return@launch
                 BitmapFactory.decodeFile(image.absolutePath)?.let { bitmap ->
                     try {
                         WallpaperManager.getInstance(context).setBitmap(bitmap)
