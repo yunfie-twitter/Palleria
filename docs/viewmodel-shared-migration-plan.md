@@ -178,16 +178,15 @@ How the old semantics are preserved:
 
 | Dependency | Remaining sites | Note |
 |---|---|---|
-| `getApplication<…>()` / `contentResolver` | 16 | mostly Context passed to repos/workers |
+| `getApplication<…>()` / `contentResolver` | 12 | mostly Context passed to repos/workers |
 | `viewModelScope.launch` sites | 70 | **seam done** — now `deps.scope` |
 | `Intent` | 1 | outbound wallpaper broadcast in the foundation |
 | `Uri` | 0 | `DocumentIo` facade |
 | `Coil` (`SingletonImageLoader`) | 0 | `ImageCache` facade |
 | `Room` (`SavedIllustEntity`) | 0 | `SavedIllust` model + `SettingsStore` mapping |
-| `WorkManager` | 0 code | one comment mention |
+| `WorkManager` / `WorkInfo` | 0 | `BackgroundWork` returns domain `AppUpdateEvent` |
 | `ConnectivityManager` / `NetworkCapabilities` | 0 | |
 | `PackageInfoCompat` | 0 | |
-| Room (`SavedIllustEntity`) | 1 | leaks into `IllustiaUiState.savedIllusts` |
 
 The inbound `Intent` edge is gone: `handleIncomingIntent` now takes the Android-free
 `IncomingLink`, and `Intent.toIncomingLink()` lives outside the ViewModel tree.

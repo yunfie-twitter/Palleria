@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.Flow
 /**
  * ViewModel 層が必要とするバックグラウンド実行の境界。
  *
- * 汎用の WorkManager API ではなく、アプリ更新という 1 ジョブに絞った最小の窓口。
+ * 汎用のバックグラウンド実行 API ではなく、アプリ更新という 1 ジョブに絞った最小の窓口。
  * `WorkInfo` / `Data` はここから外へ出さず、ドメインイベントへ変換して渡す。
  */
 interface BackgroundWork {
