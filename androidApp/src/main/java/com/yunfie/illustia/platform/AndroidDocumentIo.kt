@@ -8,7 +8,8 @@ import com.yunfie.illustia.settings.AppSettings
 class AndroidDocumentIo(
     private val contentResolver: ContentResolver,
     private val repository: ManagedDataRepository = ManagedDataRepository(contentResolver),
-) : DocumentIo {
+) : DocumentIo,
+    DocumentStreamIo {
     override fun export(
         uri: String,
         settings: AppSettings,

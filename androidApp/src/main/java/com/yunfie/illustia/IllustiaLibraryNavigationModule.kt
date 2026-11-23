@@ -126,7 +126,7 @@ abstract class IllustiaLibraryNavigationModule(
                             .build()
                     downloadClient.newCall(request).execute().use { response ->
                         check(response.isSuccessful) { "HTTP ${response.code}" }
-                        documentIo.write(uri) { output ->
+                        documentStreamIo.write(uri) { output ->
                             response.body.byteStream().use { it.copyTo(output) }
                         }
                     }

@@ -43,7 +43,9 @@ class ViewModelDeps(
     }
     val imageStore: NativeImageStore by lazy { NativeImageStore(application.applicationContext) }
     val appServices: AppServices by lazy { AndroidAppServices(application) }
-    val documentIo: DocumentIo by lazy { AndroidDocumentIo(application.contentResolver) }
+    private val documentIoImpl: AndroidDocumentIo by lazy { AndroidDocumentIo(application.contentResolver) }
+    val documentIo: DocumentIo get() = documentIoImpl
+    val documentStreamIo: DocumentStreamIo get() = documentIoImpl
     val illustiaApplication: IllustiaApplication? get() = application as? IllustiaApplication
 
     /** `IllustiaApplication` の共有インスタンス。サービスロケータの downcast をここに集約する。 */
