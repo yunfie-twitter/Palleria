@@ -71,25 +71,30 @@ the string migration and the ViewModel move the *same* change: keys already in
 Zero behaviour change. Fully mechanical. Do this first because it touches every file
 and shrinks the rest of the diff.
 
-### Step 2 — Lift the Compose scroll states out of the ViewModel
+### Step 2 — Lift the Compose scroll states out of the ViewModel — ✅ done
 
-The ViewModel currently owns `LazyGridState` for nine grids plus five LRU caches of
+The ViewModel used to own `LazyGridState` for nine grids plus five LRU caches of
 scroll states (23 references in `IllustiaViewModelFoundation`, 6 in
-`IllustiaSettingsSecurityModule`). This is UI state in the wrong layer, and it is the
-only reason the ViewModel tree needs `compose.foundation`.
+`IllustiaSettingsSecurityModule`). That was UI state in the wrong layer, and it was
+the only reason the ViewModel tree needed `compose.foundation`.
 
-Add a UI-side `ScrollStateRegistry`, keyed by a stable id:
+Landed in `refactor(scroll)`:
 
-```kotlin
-// composeApp or androidApp UI layer
-@Composable
-fun rememberIllustGridState(key: String): LazyGridState
-```
+- `ui/scroll/ScrollStateRegistry` — UI-owned LRU cache of `LazyGridState` /
+  `LazyListState`, keyed by `ScrollStateKeys` (fixed tab keys + `userProfile(id)`,
+  `illustDetail(id)`, `ranking(mode)`).
+- `ui/scroll/ScrollPositionProbe` — the minimal read-only view the ViewModel needs
+  (`isScrolledAwayFromStart()`), installed by `InstallHomeScrollProbe` via
+  `DisposableEffect`.
+- The home-feed deferral decision now reads `homeScrollProbe` instead of
+  `homeFeedGridState.firstVisibleItemIndex` / `…ScrollOffset` / `isScrollInProgress`.
+- The keyed accessors (`userProfileGridState`, `illustDetailListState`,
+  `rankingGridState`, …) were removed from the ViewModel; call sites query the
+  registry directly.
+- Verified: no `LazyGridState`, `LazyListState` or `compose.foundation` reference
+  remains in `IllustiaViewModel*.kt` / `Illustia*Module.kt`.
 
-The ViewModel keeps only primitives it genuinely needs (e.g. `illustDetailPage(id): Int`).
-After this, the ViewModel tree has no `compose.foundation` dependency.
-
-This is worth doing even if the move is abandoned — it fixes a real layering problem.
+The ViewModel keeps the primitives it genuinely needs (e.g. `illustDetailPage(id): Int`).
 
 ### Step 3 — Replace `Application` with `ViewModelDeps`
 
@@ -203,3 +208,6 @@ genuine layering defect and cuts the ViewModel's hardest dependency; Step 1 is t
 better first *structural* change because it overlaps with the in-flight string migration.
 
 Suggested order: **Step 2 → Step 1 → Step 3**, each as its own PR.
+
+Step 2 has landed. Step 1 (`StringProvider` for the 69 ViewModel-layer `str()` sites) is
+the next unblocked slice.
