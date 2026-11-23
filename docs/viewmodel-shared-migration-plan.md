@@ -242,32 +242,34 @@ platform type swapped first):
 - `AppServices` — references `SavedIllust`-era models + `IllustiaRepository`
 - `StringProvider` — `Int` resource ids are Android-shaped
 
-ViewModel tree's remaining non-`shared` imports (25 distinct), i.e. what must
-move or be facaded before the ViewModel classes can leave `androidApp`:
+ViewModel tree's remaining non-`shared` imports (**11** distinct, down from 25):
 
-| Cluster | Imports | Blocking on |
-|---|---|---|
-| `settings` | `AppSettings`, `FeatureFlag`, `isFeatureEnabled`, `SettingsStore`, `STARTUP_LOGGED_IN_TOKEN`, `AppHapticMode`, `isDynamicColorAvailable` | DataStore + Room + `Context` |
-| `nativebridge` | `NativeIntentEvent`, `NativeIntentRouter`, `NativeImageStore` | `Intent`/`Uri`, bitmap store |
-| `updater` | `AppReleaseInfo`, `AppUpdaterRepository`, `UpdateCheckState`, `UpdateInstallMethod` | `PackageManager`, WorkManager |
-| `ui.app` / `ui.scroll` / `ui.screens` | `AppRoute`, `AppTab`, `SearchEntrySnapshot`, `DetailEntrySnapshot`, `ScrollStateRegistry`, `ScrollPositionProbe`, `CalculatorEngine` | Compose / UI |
-| root | `GlitchTipTelemetry`, `DummyAppIconSwitcher` | SDK init |
-| other | `SavedIllustPageEntity`, `IllustWidgetProvider` | Room / Glance |
+| Import | Blocking on |
+|---|---|
+| `GlitchTipTelemetry` | Sentry SDK + `Context` |
+| `DummyAppIconSwitcher` | `PackageManager` alias switching |
+| `settings.db.SavedIllustPageEntity` | Room entity |
+| `settings.store.STARTUP_LOGGED_IN_TOKEN` | DataStore key constant (top-level `val`) |
+| `ui.app.AppRoute`, `AppTab`, `DetailEntrySnapshot`, `SearchEntrySnapshot` | `internal` + `NavKey` + `ImageVector` + `R` |
+| `ui.scroll.ScrollStateRegistry`, `ScrollPositionProbe` | Compose `foundation` `LazyListState`/`LazyGridState` |
+| `widget.IllustWidgetProvider` | Glance app widget |
 
-#### Known trap: same-package symbols across the module boundary
+Already moved to `shared` this session:
 
-**Classes, enums and `sealed interface`s move fine** — `UpdateModels.kt`
-(`UpdateInstallMethod`, `AppReleaseInfo`, `UpdateCheckState`) and
-`BackgroundWork.kt` (`BackgroundWork`, `AppUpdateEvent`) were moved to `shared`
-with the full unit-test suite green.
+- facades: `AppLogger`, `MonotonicClock`/`MainThreadChecker`, `Connectivity`,
+  `AppInfo`, `ImageCache`, `DeviceProfile`
+- data: `AppSettings`, `FeatureFlag` enum (with `resolve()` as an enum method),
+  `UpdateModels` (`UpdateInstallMethod`/`AppReleaseInfo`/`UpdateCheckState`),
+  `BackgroundWork` + `AppUpdateEvent`
+- routing: `NativeIntentEvent`, `NativeIntentRouter` (pure), `IncomingLink`,
+  plus a `commonMain` percent-decoder
+- pure logic: `CalculatorEngine`
 
-**Top-level functions do not.** Unit tests cannot resolve a top-level function
-from `shared` that lives in a package `androidApp` also declares
-(`com.yunfie.illustia.settings`): `AppSettings` (a class) resolves from the test
-classpath, while `isFeatureEnabled` (top-level in `FeatureFlagKt`) does not —
-even with `testImplementation project(":shared")` and after `:androidApp:clean`.
-So: move data types freely; move whole packages if they contain top-level
-functions, or keep those in `androidApp`.
+#### `AppPaths` stays in `androidApp` (deliberate)
+
+`clearAppCache()` needs `cacheDir.listFiles()` and the ugoira path feeds
+`File.createTempFile`. Returning a `String` would push `File` construction into
+the ViewModel — worse than the status quo. Keep the `File`-returning facade.
 
 ### Step 5 — The hard seams (classes 5–6)
 
