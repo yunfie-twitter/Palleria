@@ -378,3 +378,17 @@ Suggested order: **Step 2 → Step 1 → Step 3**, each as its own PR.
 
 Steps 1 and 2 have landed. Step 3 (`ViewModelDeps` in place of `Application`) is the
 next unblocked slice.
+
+### 進捗メモ（最新）
+
+- `ViewModelDeps` に `settings` / `repository` / `sharedHttpClient` を追加し、
+  `getApplication<Application>() as IllustiaApplication` の downcast を
+  `ViewModelDeps` 内の 1 箇所へ集約。ViewModel 側の downcast は 0 件。
+- 未使用だった配線を削除: `ManagedDataRepository`（継承チェーン全体）、
+  `featureRepositories`。
+- `ScrollStateRegistry` を ViewModel から切り離し、`ScrollStateRegistry.shared`
+  を UI が参照する形に変更（`compose.foundation` を `shared` に入れないため）。
+- `AppHapticMode` を `shared` へ（トップレベル関数 `effectiveAppHapticMode` ごと移動し
+  unit test 緑 → 分割パッケージでもトップレベル関数は移設可能と確定）。
+- 残ブロッカーは **22**（per-symbol 計測）。最大の壁は `str(R.string.*)` 82 箇所で、
+  `Int` リソース ID を中立キーへ置き換える独立リファクタが必要。
