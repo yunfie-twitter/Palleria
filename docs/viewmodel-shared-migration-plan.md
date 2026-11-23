@@ -218,6 +218,53 @@ mirroring the `PixivUrlPolicy.kt` split that already works.
 | `AppServices` (拡張) | live-wallpaper broadcast / account reconcile / bookmark enqueue / follow-delta snapshot | ✅ done |
 | `String` URI (save image) | `android.net.Uri` in `saveImageToDocument` | ✅ done |
 
+### Step 6 — The actual move into `shared`
+
+`shared` is **already** a Kotlin Multiplatform module (`kotlin.multiplatform` +
+`android.kmp.library`, `commonMain` / `androidMain`, compiles via
+`:shared:compileAndroidMain` and `:shared:compileKotlinMetadata`).
+
+Platform-neutral facades already living in `shared/src/commonMain/.../platform/`:
+
+- `AppLogger` (+ `NoopAppLogger`)
+- `MonotonicClock`, `MainThreadChecker`
+- `Connectivity`
+- `AppInfo`
+- `ImageCache`
+- `DeviceProfile`
+
+Still in `androidApp` (interfaces are neutral but not yet moved, or need a
+platform type swapped first):
+
+- `AppPaths` — returns `java.io.File`; needs okio `Path` (okio not yet declared)
+- `DocumentIo` — takes `java.io.OutputStream`
+- `BackgroundWork` — references `AppReleaseInfo` (updater package)
+- `AppServices` — references `SavedIllust`-era models + `IllustiaRepository`
+- `StringProvider` — `Int` resource ids are Android-shaped
+
+ViewModel tree's remaining non-`shared` imports (25 distinct), i.e. what must
+move or be facaded before the ViewModel classes can leave `androidApp`:
+
+| Cluster | Imports | Blocking on |
+|---|---|---|
+| `settings` | `AppSettings`, `FeatureFlag`, `isFeatureEnabled`, `SettingsStore`, `STARTUP_LOGGED_IN_TOKEN`, `AppHapticMode`, `isDynamicColorAvailable` | DataStore + Room + `Context` |
+| `nativebridge` | `NativeIntentEvent`, `NativeIntentRouter`, `NativeImageStore` | `Intent`/`Uri`, bitmap store |
+| `updater` | `AppReleaseInfo`, `AppUpdaterRepository`, `UpdateCheckState`, `UpdateInstallMethod` | `PackageManager`, WorkManager |
+| `ui.app` / `ui.scroll` / `ui.screens` | `AppRoute`, `AppTab`, `SearchEntrySnapshot`, `DetailEntrySnapshot`, `ScrollStateRegistry`, `ScrollPositionProbe`, `CalculatorEngine` | Compose / UI |
+| root | `GlitchTipTelemetry`, `DummyAppIconSwitcher` | SDK init |
+| other | `SavedIllustPageEntity`, `IllustWidgetProvider` | Room / Glance |
+
+#### Known trap: same-package symbols across the module boundary
+
+`AppSettings` and the `FeatureFlag` enum can be moved to `shared` and `androidApp`
+main sources compile fine. But **unit tests cannot resolve top-level functions
+from `shared` that live in a package `androidApp` also declares**
+(`com.yunfie.illustia.settings`). Verified: `AppSettings` (a class) resolves from
+the test classpath, while `isFeatureEnabled` (top-level in `FeatureFlagKt`)
+does not, even with `testImplementation project(":shared")` and after
+`:androidApp:clean`. Do not split `settings` types across the boundary
+piecemeal — move the whole package, or keep it in `androidApp`.
+
 ### Step 5 — The hard seams (classes 5–6)
 
 **`BackgroundWork`** — no KMP WorkManager exists. Interface only:

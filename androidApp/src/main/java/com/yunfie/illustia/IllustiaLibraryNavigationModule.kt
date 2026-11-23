@@ -1,6 +1,5 @@
 package com.yunfie.illustia
 
-import android.app.Application
 import com.yunfie.illustia.GlitchTipTelemetry
 import com.yunfie.illustia.data.AnimatedGifEncoder
 import com.yunfie.illustia.data.ManagedDataRepository

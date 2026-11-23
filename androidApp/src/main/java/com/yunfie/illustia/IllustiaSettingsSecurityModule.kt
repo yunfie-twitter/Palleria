@@ -1,6 +1,5 @@
 package com.yunfie.illustia
 
-import android.app.Application
 import com.yunfie.illustia.DummyAppIconSwitcher
 import com.yunfie.illustia.data.ManagedDataRepository
 import com.yunfie.illustia.models.Restrict
