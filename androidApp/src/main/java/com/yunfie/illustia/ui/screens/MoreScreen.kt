@@ -39,6 +39,7 @@ import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.ui.app.AppTab
+import com.yunfie.illustia.ui.app.LocalTabUiState
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.MainNavigationContentPadding
 import com.yunfie.illustia.ui.components.PixivImage
@@ -89,8 +90,9 @@ fun MoreScreen(
     val performHaptic = rememberHapticFeedbackAction()
 
     val scrollBehavior = MiuixScrollBehavior()
+    val tabUiState = LocalTabUiState.current
     LaunchedEffect(viewModel) {
-        viewModel.tabScrollToTopRequests.collect { tab ->
+        tabUiState.scrollToTopRequests.collect { tab ->
             if (tab == AppTab.More) {
                 listState.smoothScrollToTop(scrollBehavior)
             }

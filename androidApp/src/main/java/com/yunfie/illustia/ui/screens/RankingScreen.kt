@@ -55,6 +55,7 @@ import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.app.AppTab
+import com.yunfie.illustia.ui.app.LocalTabUiState
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.CenteredErrorState
@@ -151,8 +152,9 @@ fun RankingScreen(
     val scheme = MiuixTheme.colorScheme
     val scrollBehavior = MiuixScrollBehavior()
 
+    val tabUiState = LocalTabUiState.current
     LaunchedEffect(viewModel) {
-        viewModel.tabScrollToTopRequests.collect { tab ->
+        tabUiState.scrollToTopRequests.collect { tab ->
             if (tab == AppTab.Ranking) {
                 val currentMode = modes.getOrNull(pagerState.currentPage)
                 if (currentMode != null) {

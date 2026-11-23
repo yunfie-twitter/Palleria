@@ -1,7 +1,6 @@
 package com.yunfie.illustia
 
 import androidx.lifecycle.ViewModel
-import androidx.navigation3.runtime.NavKey
 import com.yunfie.illustia.data.IllustiaRepositoryApi
 import com.yunfie.illustia.data.PixivApiException
 import com.yunfie.illustia.data.isPixivRateLimited
@@ -39,8 +38,6 @@ import com.yunfie.illustia.platform.Telemetry
 import com.yunfie.illustia.platform.ViewModelDeps
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.SettingsFacade
-import com.yunfie.illustia.ui.app.AppRoute
-import com.yunfie.illustia.ui.app.AppTab
 import com.yunfie.illustia.ui.app.DetailEntrySnapshot
 import com.yunfie.illustia.ui.app.SearchEntrySnapshot
 import com.yunfie.illustia.ui.scroll.ScrollPositionProbe
@@ -210,8 +207,6 @@ abstract class IllustiaViewModelFoundation(
      */
     @Volatile
     var homeScrollProbe: ScrollPositionProbe = ScrollPositionProbe.Never
-    internal var activeTab: AppTab? = null
-    internal val navigationBackStack = androidx.compose.runtime.mutableStateListOf<NavKey>(AppRoute.Main)
     internal val detailSnapshots = androidx.compose.runtime.mutableStateMapOf<Long, DetailEntrySnapshot>()
     internal val searchSnapshots = androidx.compose.runtime.mutableStateMapOf<String, SearchEntrySnapshot>()
     internal val selectedWatchlistSeriesIds = androidx.compose.runtime.mutableStateListOf<Long>()
@@ -301,7 +296,6 @@ abstract class IllustiaViewModelFoundation(
     @Suppress("VariableNaming")
     protected val _userNavigationRequests = MutableSharedFlow<Long>(extraBufferCapacity = 16)
     val userNavigationRequests: SharedFlow<Long> = _userNavigationRequests
-    internal val tabScrollToTopRequests = MutableSharedFlow<AppTab>(extraBufferCapacity = 16)
     val appUpdaterRepository: AppUpdateService get() = deps.appUpdateService
 
     @Suppress("VariableNaming")

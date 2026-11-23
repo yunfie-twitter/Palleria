@@ -78,6 +78,7 @@ internal val LocalUseNavigationRail = androidx.compose.runtime.staticComposition
 @Composable
 internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val tabUiState = remember { TabUiState() }
     val settings = state.settings
     val startupScreen = state.settings.startupScreen
     val tabs = remember(settings.shortsFeedEnabled, settings.navigationOrder) { mainTabs(settings) }
@@ -87,7 +88,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         }
     val initialTab =
         remember(startupScreen, tabs, rootVisibleTabs) {
-            viewModel.activeTab?.takeIf { it in rootVisibleTabs }
+            tabUiState.activeTab?.takeIf { it in rootVisibleTabs }
                 ?: startupTabFor(startupScreen, tabs).takeIf { it in rootVisibleTabs }
                 ?: rootVisibleTabs.firstOrNull()
                 ?: tabs.first()
@@ -98,7 +99,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     var showTokenLogin by remember { mutableStateOf(false) }
     val selectedWatchlistSeriesIds = viewModel.selectedWatchlistSeriesIds
     var selectedCommentTarget by remember { mutableStateOf<Pair<Long, CommentArtworkType>?>(null) }
-    val backStack = viewModel.navigationBackStack
+    val backStack = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateListOf<NavKey>(AppRoute.Main) }
     val detailSnapshots = viewModel.detailSnapshots
     val searchSnapshots = viewModel.searchSnapshots
     val pagerState =
@@ -365,7 +366,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     LaunchedEffect(pagerState.settledPage, tabs) {
         val tab = tabs.getOrNull(pagerState.settledPage) ?: tabs.firstOrNull() ?: initialTab
         selectedTab = tab
-        viewModel.activeTab = tab
+        tabUiState.activeTab = tab
     }
 
     LaunchedEffect(tabs, rootVisibleTabs) {
@@ -380,12 +381,12 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                 ?: return@LaunchedEffect
         val targetIndex = tabs.indexOf(targetTab).coerceAtLeast(0)
         selectedTab = targetTab
-        viewModel.activeTab = targetTab
+        tabUiState.activeTab = targetTab
         if (pagerState.currentPage != targetIndex) pagerState.scrollToPage(targetIndex)
     }
 
     LaunchedEffect(selectedTab) {
-        viewModel.activeTab = selectedTab
+        tabUiState.activeTab = selectedTab
         if (previousTab == AppTab.Search && selectedTab != AppTab.Search) {
             viewModel.clearSearchResults()
         }
@@ -803,6 +804,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
             null
         }
     CompositionLocalProvider(
+        LocalTabUiState provides tabUiState,
         LocalFastScrolling provides fastScrollingState,
         com.yunfie.illustia.ui.components.LocalArtworkDesktopActions provides desktopActions,
         LocalPixivImageProxyBaseUrl provides state.settings.pixivImageProxyBaseUrl,
@@ -876,7 +878,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                     onSearchTag = ::searchFromDetail,
                     onTabSelected = { index, tab ->
                         if (selectedTab == tab && pagerState.currentPage == index) {
-                            viewModel.tabScrollToTopRequests.tryEmit(tab)
+                            tabUiState.requestScrollToTop(tab)
                         } else {
                             selectedTab = tab
                             coroutineScope.launch {
@@ -894,7 +896,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                             selectedWatchlistSeriesIds.clear()
                         }
                         if (wasOnMain && selectedTab == tab && pagerState.currentPage == pageIndex) {
-                            viewModel.tabScrollToTopRequests.tryEmit(tab)
+                            tabUiState.requestScrollToTop(tab)
                         } else {
                             selectedTab = tab
                             coroutineScope.launch {

@@ -30,6 +30,7 @@ import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.app.AppTab
+import com.yunfie.illustia.ui.app.LocalTabUiState
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.ScrollBlurScaffold
 import com.yunfie.illustia.ui.components.onTopBarTap
@@ -90,8 +91,9 @@ fun HomeScreen(
         viewModel.updateHomeSelectedTab(pagerState.settledPage)
     }
 
+    val tabUiState = LocalTabUiState.current
     LaunchedEffect(viewModel) {
-        viewModel.tabScrollToTopRequests.collect { tab ->
+        tabUiState.scrollToTopRequests.collect { tab ->
             if (tab == AppTab.Home) {
                 val currentTab = HomeTab.entries[pagerState.currentPage]
                 val gridState =

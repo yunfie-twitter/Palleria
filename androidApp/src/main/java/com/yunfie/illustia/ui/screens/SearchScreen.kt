@@ -72,6 +72,7 @@ import com.yunfie.illustia.searchUiState
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.app.AppTab
+import com.yunfie.illustia.ui.app.LocalTabUiState
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.IllustGridSkeleton
@@ -270,9 +271,10 @@ fun SearchScreen(
     val scheme = MiuixTheme.colorScheme
     val performHaptic = rememberHapticFeedbackAction()
     val scrollBehavior = MiuixScrollBehavior()
+    val tabUiState = LocalTabUiState.current
     LaunchedEffect(viewModel, isResultRoute, isResultMode, state.searchSelectedTab) {
         if (!isResultRoute) {
-            viewModel.tabScrollToTopRequests.collect { tab ->
+            tabUiState.scrollToTopRequests.collect { tab ->
                 if (tab == AppTab.Search) {
                     val targetGrid =
                         if (isResultMode) {

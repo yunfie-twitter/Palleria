@@ -38,6 +38,7 @@ import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.detail_comments
 import com.yunfie.illustia.ui.app.AppTab
+import com.yunfie.illustia.ui.app.LocalTabUiState
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.RequestErrorState
@@ -77,8 +78,9 @@ fun ShortsFeedScreen(
             pageCount = { items.size },
         )
 
+    val tabUiState = LocalTabUiState.current
     LaunchedEffect(viewModel) {
-        viewModel.tabScrollToTopRequests.collect { tab ->
+        tabUiState.scrollToTopRequests.collect { tab ->
             if (tab == AppTab.ShortsFeed) {
                 if (pagerState.currentPage > 0) {
                     pagerState.animateScrollToPage(0)
