@@ -678,7 +678,7 @@ abstract class IllustiaSettingsSecurityModule(
         val cooldownSec = cooldownTable.firstOrNull { count >= it.first }?.second ?: 0L
         val cooldownUntil =
             if (cooldownSec > 0L) {
-                android.os.SystemClock.elapsedRealtime() + cooldownSec * 1000L
+                clock.elapsedRealtimeMillis() + cooldownSec * 1000L
             } else {
                 0L
             }
@@ -735,7 +735,7 @@ abstract class IllustiaSettingsSecurityModule(
     fun cooldownRemainingSeconds(): Long {
         val until = _uiState.value.settings.appLockCooldownUntil
         if (until == 0L) return 0L
-        return ((until - android.os.SystemClock.elapsedRealtime()) / 1000L).coerceAtLeast(0L)
+        return ((until - clock.elapsedRealtimeMillis()) / 1000L).coerceAtLeast(0L)
     }
 
     fun updateFollowOnLike(value: Boolean) {

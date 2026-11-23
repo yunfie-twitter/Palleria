@@ -1,7 +1,6 @@
 package com.yunfie.illustia
 
 import android.app.Application
-import android.util.Log
 import androidx.lifecycle.viewModelScope
 import com.yunfie.illustia.GlitchTipTelemetry
 import com.yunfie.illustia.data.ManagedDataRepository
@@ -274,7 +273,7 @@ abstract class IllustiaDetailProfileModule(
                 }
             } catch (expectedFailure: Exception) {
                 if (isCancellation(expectedFailure)) throw expectedFailure
-                Log.w("IllustiaViewModel", "Failed to lazily refresh illustration detail", expectedFailure)
+                logger.warn("IllustiaViewModel", "Failed to lazily refresh illustration detail", expectedFailure)
             }
         }
     }

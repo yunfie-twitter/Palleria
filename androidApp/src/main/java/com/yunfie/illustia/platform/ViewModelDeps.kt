@@ -8,10 +8,14 @@ import com.yunfie.illustia.IllustiaApplication
  *
  * これまで各モジュールは `Application` をそのまま受け取って次の親へ渡していただけで、
  * 実際に使っていたのは「Application インスタンス」「ContentResolver」の 2 点だった。
- * ここにまとめて渡すことで、Android に依存する範囲をこのファイルだけに閉じ込める。
+ * Android 依存（ログ・時刻・スレッド判定）もここに集約し、ViewModel 本体から
+ * `android.util.Log` / `android.os.SystemClock` / `android.os.Looper` を追い出す。
  */
 class ViewModelDeps(
     val application: Application,
+    val logger: AppLogger = AndroidAppLogger(),
+    val clock: MonotonicClock = AndroidMonotonicClock(),
+    val mainThread: MainThreadChecker = AndroidMainThreadChecker(),
 ) {
     val illustiaApplication: IllustiaApplication? get() = application as? IllustiaApplication
 

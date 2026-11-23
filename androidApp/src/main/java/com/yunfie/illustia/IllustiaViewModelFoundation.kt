@@ -4,7 +4,6 @@ import android.app.Application
 import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
-import android.os.Looper
 import androidx.core.content.pm.PackageInfoCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -33,6 +32,9 @@ import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.nativebridge.NativeImageStore
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.platform.AndroidStringProvider
+import com.yunfie.illustia.platform.AppLogger
+import com.yunfie.illustia.platform.MainThreadChecker
+import com.yunfie.illustia.platform.MonotonicClock
 import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.platform.StringProvider
 import com.yunfie.illustia.platform.ViewModelDeps
@@ -128,11 +130,14 @@ internal fun AppSettings.withHydratedRoomCollections(full: AppSettings): AppSett
 /** Shared state, lifecycle, persistence, and cross-feature helpers for ViewModel modules. */
 @Suppress("LargeClass")
 abstract class IllustiaViewModelFoundation(
-    deps: ViewModelDeps,
+    protected val deps: ViewModelDeps,
     protected val managedDataRepository: ManagedDataRepository = ManagedDataRepository(deps.contentResolver),
     protected val strings: StringProvider = AndroidStringProvider(deps.application),
 ) : AndroidViewModel(deps.application) {
     protected val illustiaApplication = deps.illustiaApplication
+    protected val logger: AppLogger get() = deps.logger
+    protected val clock: MonotonicClock get() = deps.clock
+    protected val mainThread: MainThreadChecker get() = deps.mainThread
     protected val settingsStore by lazy {
         illustiaApplication?.settingsStore
             ?: SettingsStore(getApplication<Application>().applicationContext)
@@ -288,7 +293,7 @@ abstract class IllustiaViewModelFoundation(
 
     protected fun requestDetailNavigation(illustId: Long) {
         val navigator = detailNavigator
-        if (navigator != null && Looper.myLooper() == Looper.getMainLooper()) {
+        if (navigator != null && mainThread.isMainThread()) {
             navigator(illustId)
         } else {
             _detailNavigationRequests.trySend(illustId)
