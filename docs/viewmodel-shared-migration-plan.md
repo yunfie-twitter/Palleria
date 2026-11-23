@@ -394,4 +394,8 @@ next unblocked slice.
   ViewModel の `R.string.*` 76 箇所を `StringKey.*` へ置換、`R` への参照は 0 件。
 - `AppServices` インターフェースを `shared` へ。
 - `AppSettings.isLoggedIn` を追加し、`STARTUP_LOGGED_IN_TOKEN` の直接参照を ViewModel から除去。
-- 残ブロッカーは **16**（per-symbol 計測）。
+- `isFeatureEnabled` を `FeatureFlag.resolve(settings)` に置換（拡張関数依存を除去）。
+- `DeviceProfile.supportsDynamicColor` を追加し `isDynamicColorAvailable` 依存を除去。
+- `StringProvider` の既定値を `ViewModelDeps` へ集約。
+- 起動時閲覧履歴の上限を `shared` の定数へ移設。
+- 残ブロッカーは **12**（per-symbol 計測）。
