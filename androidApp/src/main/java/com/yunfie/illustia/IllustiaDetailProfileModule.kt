@@ -9,6 +9,7 @@ import com.yunfie.illustia.models.pixiv.AccountEditResult
 import com.yunfie.illustia.models.pixiv.Comment
 import com.yunfie.illustia.models.pixiv.UgoiraPlayback
 import com.yunfie.illustia.models.pixiv.UserProfileEdit
+import com.yunfie.illustia.platform.StringKey
 import com.yunfie.illustia.platform.ViewModelDeps
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
@@ -183,9 +184,9 @@ abstract class IllustiaDetailProfileModule(
 
     private fun illustOpenErrorMessage(error: Throwable): String =
         if (error.findPixivApiException()?.statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
-            str(R.string.error_illust_not_found)
+            str(StringKey.ErrorIllustNotFound)
         } else {
-            cleanErrorMessage(error, str(R.string.error_load_detail_failed))
+            cleanErrorMessage(error, str(StringKey.ErrorLoadDetailFailed))
         }
 
     suspend fun getIllustPreviewUrl(illustId: Long): String? =
@@ -234,7 +235,7 @@ abstract class IllustiaDetailProfileModule(
                     _uiState.update {
                         if (it.selectedIllust?.id == illustId) {
                             it.copy(
-                                message = cleanErrorMessage(error, str(R.string.error_load_detail_failed)),
+                                message = cleanErrorMessage(error, str(StringKey.ErrorLoadDetailFailed)),
                                 relatedIllustsLoaded = true,
                             )
                         } else {
@@ -526,7 +527,7 @@ abstract class IllustiaDetailProfileModule(
                 if (isCancellation(expectedFailure)) throw expectedFailure
                 if (handleAuthExpired(expectedFailure)) return@launch
                 if (cachedUserId == null || cachedUserId <= 0L) {
-                    val message = loadFailureMessage(_uiState.value, expectedFailure, str(R.string.error_load_artist_failed))
+                    val message = loadFailureMessage(_uiState.value, expectedFailure, str(StringKey.ErrorLoadArtistFailed))
                     _uiState.update { it.copy(message = message) }
                 }
             }
@@ -575,7 +576,7 @@ abstract class IllustiaDetailProfileModule(
         forceRefresh: Boolean,
     ) {
         if (userId <= 0L) {
-            _uiState.update { it.copy(message = str(R.string.error_load_artist_failed)) }
+            _uiState.update { it.copy(message = str(StringKey.ErrorLoadArtistFailed)) }
             return
         }
         closeUserPageJob?.cancel()
@@ -617,7 +618,7 @@ abstract class IllustiaDetailProfileModule(
                 if (!isCurrentProfileRequest(session)) return@launch
                 if (handleAuthExpired(error)) return@launch
                 userProfileRequests.close()
-                val message = profileFailureMessage(error, str(R.string.error_load_artist_failed))
+                val message = profileFailureMessage(error, str(StringKey.ErrorLoadArtistFailed))
                 _uiState.update {
                     it.copy(
                         selectedUserError = message,
@@ -667,7 +668,7 @@ abstract class IllustiaDetailProfileModule(
                 _uiState.update { it.copy(isSelectedUserIllustsPaginating = false) }
                 if (handleAuthExpired(error)) return@launch
                 telemetry.recordException(error, tag = "user_illusts_load")
-                val errorMsg = profileFailureMessage(error, str(R.string.error_load_artist_failed))
+                val errorMsg = profileFailureMessage(error, str(StringKey.ErrorLoadArtistFailed))
                 _uiState.update { state ->
                     if (nextUrl == null && state.selectedUserIllusts.isEmpty()) {
                         state.copy(selectedUserIllustsError = errorMsg)
@@ -804,13 +805,13 @@ abstract class IllustiaDetailProfileModule(
             try {
                 repository.reportIllust(illustId, problemType, message)
                 withContext(Dispatchers.Main) {
-                    _uiState.update { it.copy(message = str(R.string.msg_report_submitted)) }
+                    _uiState.update { it.copy(message = str(StringKey.MsgReportSubmitted)) }
                     onComplete?.invoke(true)
                 }
             } catch (expectedFailure: Exception) {
                 if (isCancellation(expectedFailure)) throw expectedFailure
                 withContext(Dispatchers.Main) {
-                    _uiState.update { it.copy(message = cleanErrorMessage(expectedFailure, str(R.string.msg_report_failed))) }
+                    _uiState.update { it.copy(message = cleanErrorMessage(expectedFailure, str(StringKey.MsgReportFailed))) }
                     onComplete?.invoke(false)
                 }
             }
@@ -827,13 +828,13 @@ abstract class IllustiaDetailProfileModule(
             try {
                 repository.reportUser(userId, problemType, message)
                 withContext(Dispatchers.Main) {
-                    _uiState.update { it.copy(message = str(R.string.msg_report_submitted)) }
+                    _uiState.update { it.copy(message = str(StringKey.MsgReportSubmitted)) }
                     onComplete?.invoke(true)
                 }
             } catch (expectedFailure: Exception) {
                 if (isCancellation(expectedFailure)) throw expectedFailure
                 withContext(Dispatchers.Main) {
-                    _uiState.update { it.copy(message = cleanErrorMessage(expectedFailure, str(R.string.msg_report_failed))) }
+                    _uiState.update { it.copy(message = cleanErrorMessage(expectedFailure, str(StringKey.MsgReportFailed))) }
                     onComplete?.invoke(false)
                 }
             }

@@ -4,6 +4,7 @@ import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.SearchWorkType
+import com.yunfie.illustia.platform.StringKey
 import com.yunfie.illustia.platform.ViewModelDeps
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -290,7 +291,7 @@ abstract class IllustiaBookmarkModule(
         if (handleAuthExpired(error)) return
         _uiState.update { state ->
             if (state.selectedRelatedUsersUserId != userId) return@update state
-            val message = cleanErrorMessage(error, str(R.string.error_related_users_load_failed))
+            val message = cleanErrorMessage(error, str(StringKey.ErrorRelatedUsersLoadFailed))
             state.copy(
                 selectedRelatedUsers = emptyList(),
                 selectedRelatedUsersNextUrl = null,
@@ -327,7 +328,7 @@ abstract class IllustiaBookmarkModule(
                     _uiState.update { state ->
                         state.copy(
                             selectedRelatedUsersPaginating = false,
-                            message = cleanErrorMessage(error, str(R.string.error_related_users_load_failed)),
+                            message = cleanErrorMessage(error, str(StringKey.ErrorRelatedUsersLoadFailed)),
                         )
                     }
                 }
@@ -340,7 +341,7 @@ abstract class IllustiaBookmarkModule(
         val userId = requestState.settings.bookmarkUserId
         if (userId == null) {
             _uiState.update {
-                it.copy(loadState = LoadState.Error(str(R.string.error_pixiv_user_id_not_set)))
+                it.copy(loadState = LoadState.Error(str(StringKey.ErrorPixivUserIdNotSet)))
             }
             return
         }
@@ -452,7 +453,7 @@ abstract class IllustiaBookmarkModule(
                             current.copy(
                                 recommendedTagsLoading = false,
                                 recommendedTagsError =
-                                    current.recommendedTagsError ?: str(R.string.offline_no_cache),
+                                    current.recommendedTagsError ?: str(StringKey.OfflineNoCache),
                             )
                         }
                         return@onSuccess
@@ -485,7 +486,7 @@ abstract class IllustiaBookmarkModule(
         _uiState.update {
             it.copy(
                 recommendedTagsLoading = false,
-                recommendedTagsError = str(R.string.offline_no_cache),
+                recommendedTagsError = str(StringKey.OfflineNoCache),
             )
         }
     }
@@ -561,7 +562,7 @@ abstract class IllustiaBookmarkModule(
     fun openBookmarkTagPicker(illust: Illust) {
         val settings = _uiState.value.settings
         if (settings.refreshToken.isBlank()) {
-            _uiState.update { it.copy(message = str(R.string.error_bookmark_failed)) }
+            _uiState.update { it.copy(message = str(StringKey.ErrorBookmarkFailed)) }
             return
         }
         val restrict =
@@ -690,7 +691,7 @@ abstract class IllustiaBookmarkModule(
     ) {
         val settings = _uiState.value.settings
         if (settings.refreshToken.isBlank()) {
-            _uiState.update { it.copy(message = str(R.string.error_bookmark_failed)) }
+            _uiState.update { it.copy(message = str(StringKey.ErrorBookmarkFailed)) }
             return
         }
         val selectedRestrict =
@@ -707,7 +708,7 @@ abstract class IllustiaBookmarkModule(
     ) {
         val settings = _uiState.value.settings
         if (settings.refreshToken.isBlank()) {
-            _uiState.update { it.copy(message = str(R.string.error_bookmark_failed)) }
+            _uiState.update { it.copy(message = str(StringKey.ErrorBookmarkFailed)) }
             return
         }
         // 見た目はタップした瞬間に反転する。通信は WorkManager の永続ジョブに載せるので、
@@ -737,7 +738,7 @@ abstract class IllustiaBookmarkModule(
             )
         if (!enqueued) {
             updateIllustEverywhere(illust)
-            _uiState.update { it.copy(message = str(R.string.error_bookmark_failed)) }
+            _uiState.update { it.copy(message = str(StringKey.ErrorBookmarkFailed)) }
         }
     }
 }

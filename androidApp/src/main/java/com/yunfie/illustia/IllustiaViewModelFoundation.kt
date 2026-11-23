@@ -32,6 +32,7 @@ import com.yunfie.illustia.platform.DocumentIo
 import com.yunfie.illustia.platform.ImageCache
 import com.yunfie.illustia.platform.MainThreadChecker
 import com.yunfie.illustia.platform.MonotonicClock
+import com.yunfie.illustia.platform.StringKey
 import com.yunfie.illustia.platform.StringProvider
 import com.yunfie.illustia.platform.Telemetry
 import com.yunfie.illustia.platform.ViewModelDeps
@@ -280,12 +281,12 @@ abstract class IllustiaViewModelFoundation(
     val calculatorState: StateFlow<CalculatorUiState> = _calculatorState.asStateFlow()
     protected val deferredStartupDataStarted = AtomicBoolean(false)
 
-    protected fun str(resId: Int): String = strings.get(resId)
+    protected fun str(key: StringKey): String = strings.get(key)
 
     protected fun str(
-        resId: Int,
+        key: StringKey,
         vararg args: Any,
-    ): String = strings.get(resId, *args)
+    ): String = strings.get(key, *args)
 
     protected val _navigationRequests = MutableSharedFlow<IllustiaNavigationRequest>(extraBufferCapacity = 16)
     val navigationRequests: SharedFlow<IllustiaNavigationRequest> = _navigationRequests
@@ -390,7 +391,7 @@ abstract class IllustiaViewModelFoundation(
                 val postUpdateMsg =
                     if (isUpdated) {
                         val currentVersionName = appUpdaterRepository.getCurrentVersionName()
-                        str(R.string.post_update_notice, currentVersionName)
+                        str(StringKey.PostUpdateNotice, currentVersionName)
                     } else {
                         null
                     }
@@ -432,7 +433,7 @@ abstract class IllustiaViewModelFoundation(
                     is AppUpdateEvent.Failed -> {
                         if (canApplyDownloadProgress(_updateCheckState.value)) {
                             _updateCheckState.value = UpdateCheckState.Error(event.error, event.release)
-                            _uiState.update { it.copy(message = str(R.string.update_download_failed)) }
+                            _uiState.update { it.copy(message = str(StringKey.UpdateDownloadFailed)) }
                         }
                     }
 
@@ -764,15 +765,15 @@ abstract class IllustiaViewModelFoundation(
 
     protected fun cleanErrorMessage(
         e: Throwable,
-        fallback: String = str(R.string.error_generic),
+        fallback: String = str(StringKey.ErrorGeneric),
     ): String {
         val message = e.message
         return when {
             message.isNullOrBlank() || message.contains("CancellationException") -> fallback
 
-            e.isPixivRateLimited() -> str(R.string.error_rate_limited)
+            e.isPixivRateLimited() -> str(StringKey.ErrorRateLimited)
 
-            e.isTimeoutFailure() -> str(R.string.error_timeout)
+            e.isTimeoutFailure() -> str(StringKey.ErrorTimeout)
 
             // Never surface raw API payloads such as "Pixiv API error 500: {...}". They are
             // meaningless to users, so map the status to a message that explains what happened.
@@ -791,10 +792,10 @@ abstract class IllustiaViewModelFoundation(
         fallback: String,
     ): String =
         when (e.findPixivApiException()?.statusCode) {
-            HTTP_BAD_REQUEST -> str(R.string.error_bad_request)
-            HTTP_FORBIDDEN -> str(R.string.error_forbidden)
-            HTTP_NOT_FOUND -> str(R.string.error_not_found)
-            in HTTP_SERVER_ERROR_RANGE -> str(R.string.error_server_error)
+            HTTP_BAD_REQUEST -> str(StringKey.ErrorBadRequest)
+            HTTP_FORBIDDEN -> str(StringKey.ErrorForbidden)
+            HTTP_NOT_FOUND -> str(StringKey.ErrorNotFound)
+            in HTTP_SERVER_ERROR_RANGE -> str(StringKey.ErrorServerError)
             else -> fallback
         }
 
@@ -830,21 +831,21 @@ abstract class IllustiaViewModelFoundation(
     protected fun loadFailureMessage(
         state: IllustiaUiState,
         error: Throwable,
-        fallback: String = str(R.string.error_generic),
+        fallback: String = str(StringKey.ErrorGeneric),
     ): String {
         if (!error.isNetworkFailure()) {
             return cleanErrorMessage(error, fallback)
         }
         return if (state.hasCachedContent()) {
-            str(R.string.offline_cache_displayed)
+            str(StringKey.OfflineCacheDisplayed)
         } else {
-            str(R.string.offline_no_cache)
+            str(StringKey.OfflineNoCache)
         }
     }
 
     protected fun profileFailureMessage(
         error: Throwable,
-        fallback: String = str(R.string.error_load_artist_failed),
+        fallback: String = str(StringKey.ErrorLoadArtistFailed),
     ): String {
         if (error.isNetworkFailure()) {
             return fallback
@@ -1040,7 +1041,7 @@ abstract class IllustiaViewModelFoundation(
                 }.onFailure { error ->
                     _updateCheckState.value = UpdateCheckState.Error(error.message ?: "Failed to check for updates")
                     if (!silent) {
-                        _uiState.update { it.copy(message = str(R.string.update_check_failed)) }
+                        _uiState.update { it.copy(message = str(StringKey.UpdateCheckFailed)) }
                     }
                 }
         }
@@ -1050,7 +1051,7 @@ abstract class IllustiaViewModelFoundation(
         if (_updateCheckState.value is UpdateCheckState.Downloading) return
         _updateCheckState.value = UpdateCheckState.Downloading(0f, 0L, release.apkSize)
         backgroundWork.startAppUpdateDownload(release)
-        _uiState.update { it.copy(message = str(R.string.update_notification_downloaded_desc)) } // Using a placeholder for started download
+        _uiState.update { it.copy(message = str(StringKey.UpdateNotificationDownloadedDesc)) } // Using a placeholder for started download
     }
 
     fun installUpdate(apkFile: File) {
@@ -1069,7 +1070,7 @@ abstract class IllustiaViewModelFoundation(
                     _updateCheckState.value = UpdateCheckState.Idle
                 }.onFailure { error ->
                     _updateCheckState.value = UpdateCheckState.Error(error.message ?: "Installation failed")
-                    _uiState.update { it.copy(message = str(R.string.update_install_failed, error.message.orEmpty())) }
+                    _uiState.update { it.copy(message = str(StringKey.UpdateInstallFailed, error.message.orEmpty())) }
                 }
         }
     }

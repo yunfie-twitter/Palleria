@@ -8,6 +8,7 @@ import com.yunfie.illustia.models.SearchDuration
 import com.yunfie.illustia.models.SearchSort
 import com.yunfie.illustia.models.SearchTarget
 import com.yunfie.illustia.models.SearchWorkType
+import com.yunfie.illustia.platform.StringKey
 import com.yunfie.illustia.platform.ViewModelDeps
 import com.yunfie.illustia.settings.AppHapticMode
 import com.yunfie.illustia.settings.FeatureFlag
@@ -717,7 +718,7 @@ abstract class IllustiaSettingsSecurityModule(
                 IllustiaUiState(
                     settings = nextSettings,
                     settingsLoaded = true,
-                    message = str(R.string.msg_logged_out),
+                    message = str(StringKey.MsgLoggedOut),
                 )
             }
             refreshRankingWidget()

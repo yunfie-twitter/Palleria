@@ -10,6 +10,7 @@ import com.yunfie.illustia.models.SearchWorkType
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
 import com.yunfie.illustia.platform.IncomingLink
+import com.yunfie.illustia.platform.StringKey
 import com.yunfie.illustia.platform.ViewModelDeps
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
@@ -106,13 +107,13 @@ abstract class IllustiaAuthFeedModule(
                     _uiState.update {
                         it.copy(
                             webLoginRequest = null,
-                            message = str(R.string.app_lock_recovery_account_mismatch),
+                            message = str(StringKey.AppLockRecoveryAccountMismatch),
                         )
                     }
                     return@runLoading
                 }
             }
-            applyLoggedInSession(session.accessToken.isNotBlank(), str(R.string.msg_web_login_complete))
+            applyLoggedInSession(session.accessToken.isNotBlank(), str(StringKey.MsgWebLoginComplete))
             loadHomeInternal(_uiState.value.homeKind)
             if (wasRecovery) {
                 disableAppLock()
@@ -129,7 +130,7 @@ abstract class IllustiaAuthFeedModule(
                 IllustiaUiState(
                     settings = nextSettings,
                     settingsLoaded = true,
-                    message = str(R.string.msg_logged_out),
+                    message = str(StringKey.MsgLoggedOut),
                 )
             }
             refreshRankingWidget()
@@ -358,7 +359,7 @@ abstract class IllustiaAuthFeedModule(
                     it.copy(
                         message =
                             str(
-                                if (shouldBookmark) R.string.msg_bookmark_added else R.string.msg_bookmark_removed,
+                                if (shouldBookmark) StringKey.MsgBookmarkAdded else StringKey.MsgBookmarkRemoved,
                             ),
                     )
                 }
@@ -367,7 +368,7 @@ abstract class IllustiaAuthFeedModule(
                 _uiState.update {
                     it
                         .withNovelBookmark(novel.id, !shouldBookmark)
-                        .copy(message = str(R.string.error_bookmark_failed))
+                        .copy(message = str(StringKey.ErrorBookmarkFailed))
                 }
                 if (handleAuthExpired(expectedFailure)) return@launch
                 telemetry.recordException(expectedFailure, tag = "novel_bookmark_toggle")
@@ -403,7 +404,7 @@ abstract class IllustiaAuthFeedModule(
                 _uiState.update {
                     if (it.selectedNovel?.id == novel.id) {
                         it.copy(
-                            centeredError = cleanErrorMessage(error, str(R.string.error_novel_load_failed)),
+                            centeredError = cleanErrorMessage(error, str(StringKey.ErrorNovelLoadFailed)),
                         )
                     } else {
                         it
@@ -973,7 +974,7 @@ abstract class IllustiaAuthFeedModule(
 
             is NativeIntentEvent.Image -> {
                 _uiState.update {
-                    it.copy(message = str(R.string.msg_shared_image_received))
+                    it.copy(message = str(StringKey.MsgSharedImageReceived))
                 }
             }
         }
@@ -1016,7 +1017,7 @@ abstract class IllustiaAuthFeedModule(
 
     fun clearFavoriteTags() {
         updateSettings { it.copy(favoriteTags = emptyList()) }
-        _uiState.update { it.copy(message = str(R.string.msg_watchlist_tags_deleted)) }
+        _uiState.update { it.copy(message = str(StringKey.MsgWatchlistTagsDeleted)) }
     }
 
     fun clearMuteData() {
@@ -1027,7 +1028,7 @@ abstract class IllustiaAuthFeedModule(
                 mutedTags = emptyList(),
             )
         }
-        _uiState.update { it.copy(message = str(R.string.msg_mute_data_deleted)) }
+        _uiState.update { it.copy(message = str(StringKey.MsgMuteDataDeleted)) }
     }
 
     fun toggleFavoriteTag(rawTag: String) {
@@ -1042,9 +1043,9 @@ abstract class IllustiaAuthFeedModule(
                     if (tag in
                         current
                     ) {
-                        str(R.string.msg_watchlist_tag_removed, tag)
+                        str(StringKey.MsgWatchlistTagRemoved, tag)
                     } else {
-                        str(R.string.msg_watchlist_tag_added, tag)
+                        str(StringKey.MsgWatchlistTagAdded, tag)
                     },
             )
         }
@@ -1373,10 +1374,10 @@ abstract class IllustiaAuthFeedModule(
             runCatching {
                 documentIo.export(uri, settings)
             }.onSuccess {
-                _uiState.update { it.copy(message = str(R.string.msg_data_exported)) }
+                _uiState.update { it.copy(message = str(StringKey.MsgDataExported)) }
             }.onFailure { expectedFailure ->
                 if (isCancellation(expectedFailure)) throw expectedFailure
-                _uiState.update { it.copy(centeredError = str(R.string.error_data_export_failed)) }
+                _uiState.update { it.copy(centeredError = str(StringKey.ErrorDataExportFailed)) }
             }
         }
     }
@@ -1389,10 +1390,10 @@ abstract class IllustiaAuthFeedModule(
                 repository.saveSettings(imported, current)
                 imported
             }.onSuccess { imported ->
-                _uiState.update { it.withSettings(imported).copy(message = str(R.string.msg_data_imported)) }
+                _uiState.update { it.withSettings(imported).copy(message = str(StringKey.MsgDataImported)) }
             }.onFailure { expectedFailure ->
                 if (isCancellation(expectedFailure)) throw expectedFailure
-                _uiState.update { it.copy(centeredError = str(R.string.error_data_import_failed)) }
+                _uiState.update { it.copy(centeredError = str(StringKey.ErrorDataImportFailed)) }
             }
         }
     }

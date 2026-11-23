@@ -13,6 +13,7 @@ import com.yunfie.illustia.models.StoredAccount
 import com.yunfie.illustia.models.pixiv.UgoiraPlaybackFrame
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
+import com.yunfie.illustia.platform.StringKey
 import com.yunfie.illustia.platform.ViewModelDeps
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
@@ -50,7 +51,7 @@ abstract class IllustiaLibraryNavigationModule(
                 appServices.acquireArtworkDownloadService()
             } catch (expectedFailure: RuntimeException) {
                 telemetry.recordException(expectedFailure, tag = "download_service_start")
-                _uiState.update { it.copy(message = str(R.string.error_save_failed)) }
+                _uiState.update { it.copy(message = str(StringKey.ErrorSaveFailed)) }
                 return
             }
         val queueId = System.nanoTime()
@@ -58,7 +59,7 @@ abstract class IllustiaLibraryNavigationModule(
         val queueTitle = queuedIllust?.title?.takeIf { it.isNotBlank() } ?: filename
         val queueSubtitle =
             queuedIllust?.artistName?.takeIf { it.isNotBlank() }
-                ?: str(R.string.download_queue_waiting)
+                ?: str(StringKey.DownloadQueueWaiting)
         val saveJob =
             viewModelScope.launch(Dispatchers.IO) {
                 enqueueDownloadQueue(queueId, queueTitle, queueSubtitle, DownloadQueueStatus.Waiting)
@@ -78,7 +79,7 @@ abstract class IllustiaLibraryNavigationModule(
                                 ?: run {
                                     terminalStatus = DownloadQueueStatus.Skipped
                                     _uiState.update {
-                                        it.copy(loadState = LoadState.Loaded, message = str(R.string.msg_save_skipped_duplicate))
+                                        it.copy(loadState = LoadState.Loaded, message = str(StringKey.MsgSaveSkippedDuplicate))
                                     }
                                     return@traceAsync
                                 }
@@ -94,7 +95,7 @@ abstract class IllustiaLibraryNavigationModule(
                     terminalStatus = DownloadQueueStatus.Failed
                     if (handleAuthExpired(error)) return@launch
                     telemetry.recordException(error, tag = "download_image")
-                    _uiState.update { it.copy(loadState = LoadState.Error(cleanErrorMessage(error, str(R.string.error_save_failed)))) }
+                    _uiState.update { it.copy(loadState = LoadState.Error(cleanErrorMessage(error, str(StringKey.ErrorSaveFailed)))) }
                 } finally {
                     terminalStatus?.let { updateDownloadQueueStatus(queueId, it) }
                     if (acquiredSlot) kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) { releaseDownloadSlot() }
@@ -112,7 +113,7 @@ abstract class IllustiaLibraryNavigationModule(
                 appServices.acquireArtworkDownloadService()
             } catch (expectedFailure: RuntimeException) {
                 telemetry.recordException(expectedFailure, tag = "download_service_start")
-                _uiState.update { it.copy(message = str(R.string.error_save_failed)) }
+                _uiState.update { it.copy(message = str(StringKey.ErrorSaveFailed)) }
                 return
             }
         viewModelScope
@@ -133,7 +134,7 @@ abstract class IllustiaLibraryNavigationModule(
                 } catch (expectedFailure: Exception) {
                     if (isCancellation(expectedFailure)) throw expectedFailure
                     telemetry.recordException(expectedFailure, tag = "download_document")
-                    _uiState.update { it.copy(message = str(R.string.error_save_failed)) }
+                    _uiState.update { it.copy(message = str(StringKey.ErrorSaveFailed)) }
                 }
             }.invokeOnCompletion { keepAlive.close() }
     }
@@ -201,13 +202,13 @@ abstract class IllustiaLibraryNavigationModule(
     ) {
         val targets = urls.filter { it.isNotBlank() }
         if (targets.isEmpty()) {
-            _uiState.update { it.copy(message = str(R.string.msg_no_saveable_images)) }
+            _uiState.update { it.copy(message = str(StringKey.MsgNoSaveableImages)) }
             return
         }
         targets.forEachIndexed { index, url ->
             saveImage(url, "${filenamePrefix}_p$index")
         }
-        _uiState.update { it.copy(message = str(R.string.msg_save_started, targets.size)) }
+        _uiState.update { it.copy(message = str(StringKey.MsgSaveStarted, targets.size)) }
     }
 
     fun saveOfflineImage(
@@ -220,12 +221,12 @@ abstract class IllustiaLibraryNavigationModule(
             var savedFile: File? = null
             try {
                 if (_uiState.value.settings.offlineWifiOnly && connectivity.isMetered()) {
-                    _uiState.update { it.copy(message = str(R.string.offline_wifi_only_desc)) }
+                    _uiState.update { it.copy(message = str(StringKey.OfflineWifiOnlyDesc)) }
                     return@launch
                 }
                 val requestUrl = proxyPixivImageUrl(url, _uiState.value.settings.pixivImageProxyBaseUrl)
                 if (savedIllustStorageBytesAtLeast(_uiState.value.settings.offlineStorageLimitBytes)) {
-                    _uiState.update { it.copy(message = str(R.string.offline_capacity_limit_desc)) }
+                    _uiState.update { it.copy(message = str(StringKey.OfflineCapacityLimitDesc)) }
                     return@launch
                 }
                 val resumeEnabled = _uiState.value.settings.isFeatureEnabled(FeatureFlag.ByteRangeResume)
@@ -278,7 +279,7 @@ abstract class IllustiaLibraryNavigationModule(
                     pages,
                 )
                 loadSavedLibrary()
-                _uiState.update { it.copy(message = str(R.string.detail_save_offline)) }
+                _uiState.update { it.copy(message = str(StringKey.DetailSaveOffline)) }
             } catch (expectedFailure: Exception) {
                 val e = expectedFailure
                 try {
@@ -286,7 +287,7 @@ abstract class IllustiaLibraryNavigationModule(
                 } catch (_: Throwable) {
                 }
                 if (isCancellation(e)) throw e
-                _uiState.update { it.copy(message = cleanErrorMessage(e, str(R.string.error_save_failed))) }
+                _uiState.update { it.copy(message = cleanErrorMessage(e, str(StringKey.ErrorSaveFailed))) }
             }
         }
     }
@@ -307,7 +308,7 @@ abstract class IllustiaLibraryNavigationModule(
                         it.status == DownloadQueueStatus.Waiting ||
                             it.status == DownloadQueueStatus.Downloading
                     },
-                message = str(R.string.msg_download_history_cleared),
+                message = str(StringKey.MsgDownloadHistoryCleared),
             )
         }
     }
@@ -530,7 +531,7 @@ abstract class IllustiaLibraryNavigationModule(
                     )
                 }
             if (!saved) {
-                throw java.io.IOException(str(R.string.error_save_failed))
+                throw java.io.IOException(str(StringKey.ErrorSaveFailed))
             }
         } finally {
             partFile.delete()
@@ -544,7 +545,7 @@ abstract class IllustiaLibraryNavigationModule(
     ) {
         val playback = loadUgoiraPlayback(illust.id)
         if (playback.frames.isEmpty()) {
-            throw IllegalStateException(str(R.string.ugoira_load_failed))
+            throw IllegalStateException(str(StringKey.UgoiraLoadFailed))
         }
         val cacheDir = appPaths.cacheDir()
         if (_uiState.value.settings.ugoiraSaveFormat == "gif") {
@@ -640,13 +641,13 @@ abstract class IllustiaLibraryNavigationModule(
                         }
                     }
                 }
-                _uiState.update { it.copy(message = str(R.string.msg_cache_deleted), loadState = LoadState.Loaded) }
+                _uiState.update { it.copy(message = str(StringKey.MsgCacheDeleted), loadState = LoadState.Loaded) }
             } catch (expectedFailure: Exception) {
                 val error = expectedFailure
                 if (isCancellation(error)) {
                     throw error
                 }
-                _uiState.update { it.copy(loadState = LoadState.Error(cleanErrorMessage(error, str(R.string.error_cache_delete_failed)))) }
+                _uiState.update { it.copy(loadState = LoadState.Error(cleanErrorMessage(error, str(StringKey.ErrorCacheDeleteFailed)))) }
             }
         }
     }
@@ -754,12 +755,12 @@ abstract class IllustiaLibraryNavigationModule(
                             notificationsError =
                                 cleanErrorMessage(
                                     error,
-                                    str(R.string.error_notifications_load_failed),
+                                    str(StringKey.ErrorNotificationsLoadFailed),
                                 ),
                             message =
                                 cleanErrorMessage(
                                     error,
-                                    str(R.string.error_notifications_load_failed),
+                                    str(StringKey.ErrorNotificationsLoadFailed),
                                 ),
                         )
                     }
@@ -791,12 +792,12 @@ abstract class IllustiaLibraryNavigationModule(
                             notificationsError =
                                 cleanErrorMessage(
                                     error,
-                                    str(R.string.error_notifications_load_failed),
+                                    str(StringKey.ErrorNotificationsLoadFailed),
                                 ),
                             message =
                                 cleanErrorMessage(
                                     error,
-                                    str(R.string.error_notifications_load_failed),
+                                    str(StringKey.ErrorNotificationsLoadFailed),
                                 ),
                         )
                     }
@@ -815,7 +816,7 @@ abstract class IllustiaLibraryNavigationModule(
                 }.onFailure { expectedFailure ->
                     val error = expectedFailure
                     if (isCancellation(error)) throw error
-                    showMessage(cleanErrorMessage(error, str(R.string.error_notification_open_failed)))
+                    showMessage(cleanErrorMessage(error, str(StringKey.ErrorNotificationOpenFailed)))
                 }
         }
     }
@@ -825,7 +826,7 @@ abstract class IllustiaLibraryNavigationModule(
             is NativeIntentEvent.Artwork -> openIllust(event.id)
             is NativeIntentEvent.User -> openUserPage(event.id)
             is NativeIntentEvent.Tag -> submitSearch(event.tag)
-            else -> showMessage(str(R.string.notifications_target_unsupported))
+            else -> showMessage(str(StringKey.NotificationsTargetUnsupported))
         }
     }
 
