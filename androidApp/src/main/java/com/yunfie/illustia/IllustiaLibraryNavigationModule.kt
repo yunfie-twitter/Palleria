@@ -772,12 +772,12 @@ abstract class IllustiaLibraryNavigationModule(
                             notificationsError =
                                 cleanErrorMessage(
                                     error,
-                                    getApplication<Application>().getString(R.string.error_notifications_load_failed),
+                                    str(R.string.error_notifications_load_failed),
                                 ),
                             message =
                                 cleanErrorMessage(
                                     error,
-                                    getApplication<Application>().getString(R.string.error_notifications_load_failed),
+                                    str(R.string.error_notifications_load_failed),
                                 ),
                         )
                     }
@@ -809,12 +809,12 @@ abstract class IllustiaLibraryNavigationModule(
                             notificationsError =
                                 cleanErrorMessage(
                                     error,
-                                    getApplication<Application>().getString(R.string.error_notifications_load_failed),
+                                    str(R.string.error_notifications_load_failed),
                                 ),
                             message =
                                 cleanErrorMessage(
                                     error,
-                                    getApplication<Application>().getString(R.string.error_notifications_load_failed),
+                                    str(R.string.error_notifications_load_failed),
                                 ),
                         )
                     }
@@ -833,7 +833,7 @@ abstract class IllustiaLibraryNavigationModule(
                 }.onFailure { expectedFailure ->
                     val error = expectedFailure
                     if (isCancellation(error)) throw error
-                    showMessage(cleanErrorMessage(error, getApplication<Application>().getString(R.string.error_notification_open_failed)))
+                    showMessage(cleanErrorMessage(error, str(R.string.error_notification_open_failed)))
                 }
         }
     }

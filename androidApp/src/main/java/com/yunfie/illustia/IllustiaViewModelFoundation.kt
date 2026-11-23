@@ -32,7 +32,9 @@ import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.nativebridge.NativeImageStore
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
+import com.yunfie.illustia.platform.AndroidStringProvider
 import com.yunfie.illustia.platform.PlatformCapabilities
+import com.yunfie.illustia.platform.StringProvider
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.SettingsStore
 import com.yunfie.illustia.settings.isDynamicColorAvailable
@@ -127,6 +129,7 @@ internal fun AppSettings.withHydratedRoomCollections(full: AppSettings): AppSett
 abstract class IllustiaViewModelFoundation(
     app: Application,
     protected val managedDataRepository: ManagedDataRepository = ManagedDataRepository(app.contentResolver),
+    protected val strings: StringProvider = AndroidStringProvider(app),
 ) : AndroidViewModel(app) {
     protected val illustiaApplication = app as? IllustiaApplication
     protected val settingsStore by lazy {
@@ -260,12 +263,12 @@ abstract class IllustiaViewModelFoundation(
     val calculatorState: StateFlow<CalculatorUiState> = _calculatorState.asStateFlow()
     protected val deferredStartupDataStarted = AtomicBoolean(false)
 
-    protected fun str(resId: Int): String = getApplication<Application>().getString(resId)
+    protected fun str(resId: Int): String = strings.get(resId)
 
     protected fun str(
         resId: Int,
         vararg args: Any,
-    ): String = getApplication<Application>().getString(resId, *args)
+    ): String = strings.get(resId, *args)
 
     protected val _navigationRequests = MutableSharedFlow<IllustiaNavigationRequest>(extraBufferCapacity = 16)
     val navigationRequests: SharedFlow<IllustiaNavigationRequest> = _navigationRequests

@@ -53,23 +53,35 @@ correction that should happen regardless of KMP.
 
 ## Ordered steps
 
-### Step 1 — Extract `str()` into an injected `StringProvider` (69 sites)
+### Step 1 — Extract `str()` into an injected `StringProvider` (69 sites) — ✅ done
 
 ```kotlin
-// shared/commonMain
+// androidApp/src/main/java/com/yunfie/illustia/platform
 interface StringProvider {
-    fun get(key: StringResKey, vararg args: Any): String
+    fun get(resId: Int): String
+    fun get(resId: Int, vararg args: Any): String
 }
+class AndroidStringProvider(private val context: Context) : StringProvider
 ```
 
-`StringResKey` is an enum-or-inline-class over the resource name, generated from the
-same `strings.xml` that is currently being migrated to Compose Resources. This makes
-the string migration and the ViewModel move the *same* change: keys already in
-`composeResources` get a `StringResKey` entry for free, and the Android
-`actual` resolves them via `getString` until each call site moves to composition scope.
+`IllustiaViewModelFoundation` now takes `strings: StringProvider` as a constructor
+parameter (defaulting to `AndroidStringProvider(app)`), and its two `str()` overloads
+delegate to it. A `shared` implementation can be injected instead.
 
-Zero behaviour change. Fully mechanical. Do this first because it touches every file
-and shrinks the rest of the diff.
+Verified: `getString(` no longer appears anywhere in `IllustiaViewModel*.kt` or
+`Illustia*Module.kt`. All 54 `str()` sites and the 5 direct
+`getApplication<Application>().getString(...)` calls in
+`IllustiaLibraryNavigationModule` now route through the provider.
+
+The 52 `R.string` keys those ViewModel sites reference were also migrated into
+`composeApp/src/commonMain/composeResources/values*/strings.xml` (all 14 locales),
+so the string data — not just the call seam — is now available outside `androidApp`.
+
+Remaining `getApplication()` uses in the ViewModel tree are for `cacheDir`,
+`contentResolver`, `applicationContext` and `isNetworkMetered` — those belong to
+dependency classes 4 and 6, not Step 1.
+
+Zero behaviour change. Fully mechanical.
 
 ### Step 2 — Lift the Compose scroll states out of the ViewModel — ✅ done
 
@@ -209,5 +221,5 @@ better first *structural* change because it overlaps with the in-flight string m
 
 Suggested order: **Step 2 → Step 1 → Step 3**, each as its own PR.
 
-Step 2 has landed. Step 1 (`StringProvider` for the 69 ViewModel-layer `str()` sites) is
-the next unblocked slice.
+Steps 1 and 2 have landed. Step 3 (`ViewModelDeps` in place of `Application`) is the
+next unblocked slice.
