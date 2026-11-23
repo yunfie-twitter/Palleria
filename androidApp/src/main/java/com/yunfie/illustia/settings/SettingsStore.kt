@@ -618,7 +618,7 @@ class SettingsStore internal constructor(
         private const val KEY_IMAGE_CACHE_SIZE_MB = "startup_image_cache_size_mb"
         private const val KEY_STARTUP_PRIVACY_MODE = "startup_privacy_mode_enabled"
         private const val DUMMY_LAUNCHER_ALIAS = "com.yunfie.illustia.MainActivityDummy"
-        const val STARTUP_VIEW_HISTORY_LIMIT = 16
+        const val STARTUP_VIEW_HISTORY_LIMIT = com.yunfie.illustia.settings.STARTUP_VIEW_HISTORY_LIMIT
     }
 }
 

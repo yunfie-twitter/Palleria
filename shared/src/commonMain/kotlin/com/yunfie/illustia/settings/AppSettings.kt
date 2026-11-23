@@ -16,6 +16,9 @@ private const val DEFAULT_SEED_COLOR = 0xFF42A5F5L
 /** 起動直後に保存されるセッションのプレースホルダ。実トークンではない。 */
 const val STARTUP_TOKEN_PLACEHOLDER = "__startup_session_token__"
 
+/** 起動時に読み込む閲覧履歴の件数上限（残りは必要時に遅延読込する）。 */
+const val STARTUP_VIEW_HISTORY_LIMIT = 16
+
 val DEFAULT_NAVIGATION_ORDER = listOf("home", "search", "bookmarks", "ranking", "more")
 val DEFAULT_DETAIL_SECTION_ORDER = listOf("artist", "tags", "description", "related")
 
