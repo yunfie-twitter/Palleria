@@ -10,7 +10,7 @@ import com.yunfie.illustia.models.pixiv.Comment
 import com.yunfie.illustia.models.pixiv.UgoiraPlayback
 import com.yunfie.illustia.models.pixiv.UserProfileEdit
 import com.yunfie.illustia.platform.StringKey
-import com.yunfie.illustia.platform.ViewModelDeps
+import com.yunfie.illustia.platform.ViewModelDepsApi
 import com.yunfie.illustia.settings.FeatureFlag
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -27,7 +27,7 @@ import java.net.HttpURLConnection
 /** Illustration detail, image viewer, user profile, follow, and mute interactions. */
 @Suppress("LargeClass")
 abstract class IllustiaDetailProfileModule(
-    deps: ViewModelDeps,
+    deps: ViewModelDepsApi,
 ) : IllustiaAuthFeedModule(deps) {
     fun openIllust(illust: Illust) {
         captureProfileReturnDetail()

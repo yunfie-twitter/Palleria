@@ -3,9 +3,9 @@ package com.yunfie.illustia.platform
 import android.app.Application
 import android.content.ContentResolver
 import com.yunfie.illustia.IllustiaApplication
-import com.yunfie.illustia.data.IllustiaRepository
+import com.yunfie.illustia.data.IllustiaRepositoryApi
 import com.yunfie.illustia.nativebridge.NativeImageStore
-import com.yunfie.illustia.settings.SettingsStore
+import com.yunfie.illustia.settings.SettingsFacade
 import com.yunfie.illustia.updater.AppUpdateService
 import com.yunfie.illustia.updater.AppUpdaterRepository
 import kotlinx.coroutines.CoroutineScope
@@ -25,36 +25,39 @@ import okhttp3.OkHttpClient
  */
 class ViewModelDeps(
     val application: Application,
-    val scope: CoroutineScope,
-    val logger: AppLogger = AndroidAppLogger(),
-    val clock: MonotonicClock = AndroidMonotonicClock(),
-    val mainThread: MainThreadChecker = AndroidMainThreadChecker(),
-    val connectivity: Connectivity = AndroidConnectivity(application),
-    val appPaths: AppPaths = AndroidAppPaths(application),
-    val appInfo: AppInfo = AndroidAppInfo(application),
-    val backgroundWork: BackgroundWork = AndroidBackgroundWork(application),
-    val imageCache: ImageCache = AndroidImageCache(application),
-    val deviceProfile: DeviceProfile = AndroidDeviceProfile(application),
-    val telemetry: Telemetry = AndroidTelemetry,
-    val strings: StringProvider = AndroidStringProvider(application),
-) {
-    val appUpdateService: AppUpdateService by lazy {
+    override val scope: CoroutineScope,
+    override val logger: AppLogger = AndroidAppLogger(),
+    override val clock: MonotonicClock = AndroidMonotonicClock(),
+    override val mainThread: MainThreadChecker = AndroidMainThreadChecker(),
+    override val connectivity: Connectivity = AndroidConnectivity(application),
+    override val appPaths: AppPaths = AndroidAppPaths(application),
+    override val appInfo: AppInfo = AndroidAppInfo(application),
+    override val backgroundWork: BackgroundWork = AndroidBackgroundWork(application),
+    override val imageCache: ImageCache = AndroidImageCache(application),
+    override val deviceProfile: DeviceProfile = AndroidDeviceProfile(application),
+    override val telemetry: Telemetry = AndroidTelemetry,
+    override val strings: StringProvider = AndroidStringProvider(application),
+) : ViewModelDepsApi {
+    override val appUpdateService: AppUpdateService by lazy {
         AppUpdaterRepository(application, requireNotNull(illustiaApplication).sharedHttpClient)
     }
-    val imageStore: GallerySaver by lazy { NativeImageStore(application.applicationContext) }
-    val appIconSwitcher: AppIconSwitcher by lazy { AndroidAppIconSwitcher(application) }
-    val downloadService: DownloadService by lazy { AndroidDownloadService(sharedHttpClient) }
-    val mediaEncoder: MediaEncoder = AndroidMediaEncoder()
-    val appServices: AppServices by lazy { AndroidAppServices(application) }
+    override val imageStore: GallerySaver by lazy { NativeImageStore(application.applicationContext) }
+    override val appIconSwitcher: AppIconSwitcher by lazy { AndroidAppIconSwitcher(application) }
+    override val downloadService: DownloadService by lazy { AndroidDownloadService(sharedHttpClient) }
+    override val mediaEncoder: MediaEncoder = AndroidMediaEncoder()
+    override val appServices: AppServices by lazy { AndroidAppServices(application) }
     private val documentIoImpl: AndroidDocumentIo by lazy { AndroidDocumentIo(application.contentResolver, sharedHttpClient) }
-    val documentIo: DocumentIo get() = documentIoImpl
+    override val documentIo: DocumentIo get() = documentIoImpl
     val documentStreamIo: DocumentStreamIo get() = documentIoImpl
     val illustiaApplication: IllustiaApplication? get() = application as? IllustiaApplication
 
     /** `IllustiaApplication` の共有インスタンス。サービスロケータの downcast をここに集約する。 */
-    val settings: SettingsStore get() = requireNotNull(illustiaApplication).settingsStore
-    val repository: IllustiaRepository get() = requireNotNull(illustiaApplication).repository
+    override val settings: SettingsFacade get() = requireNotNull(illustiaApplication).settingsStore
+    override val repository: IllustiaRepositoryApi get() = requireNotNull(illustiaApplication).repository
     val sharedHttpClient: OkHttpClient get() = requireNotNull(illustiaApplication).sharedHttpClient
+    override val telemetryControl: TelemetryControl by lazy {
+        AndroidTelemetryControl(requireNotNull(illustiaApplication))
+    }
 
     val contentResolver: ContentResolver get() = application.contentResolver
 }

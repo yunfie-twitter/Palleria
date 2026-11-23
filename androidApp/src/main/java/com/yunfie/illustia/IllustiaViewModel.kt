@@ -5,6 +5,7 @@ import androidx.annotation.Keep
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.yunfie.illustia.platform.ViewModelDeps
+import com.yunfie.illustia.platform.ViewModelDepsApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -23,7 +24,7 @@ import kotlinx.coroutines.cancel
  */
 @Keep
 class IllustiaViewModel(
-    deps: ViewModelDeps,
+    deps: ViewModelDepsApi,
 ) : IllustiaViewModelCore(deps) {
     private val ownedScope: CoroutineScope = deps.scope
 

@@ -1,6 +1,6 @@
 package com.yunfie.illustia
 
-import com.yunfie.illustia.platform.ViewModelDeps
+import com.yunfie.illustia.platform.ViewModelDepsApi
 
 /**
  * Stable implementation entry point assembled from responsibility-focused modules.
@@ -9,5 +9,5 @@ import com.yunfie.illustia.platform.ViewModelDeps
  * module, while state shared across modules belongs in [IllustiaViewModelFoundation].
  */
 open class IllustiaViewModelCore(
-    deps: ViewModelDeps,
+    deps: ViewModelDepsApi,
 ) : IllustiaLibraryNavigationModule(deps)

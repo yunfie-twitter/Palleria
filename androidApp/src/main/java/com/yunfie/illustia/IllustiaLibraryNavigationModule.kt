@@ -11,7 +11,7 @@ import com.yunfie.illustia.models.pixiv.UgoiraPlaybackFrame
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
 import com.yunfie.illustia.platform.StringKey
-import com.yunfie.illustia.platform.ViewModelDeps
+import com.yunfie.illustia.platform.ViewModelDepsApi
 import com.yunfie.illustia.settings.FeatureFlag
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
@@ -32,7 +32,7 @@ private data class StorageSizeSample(
 /** Downloads, offline library, notifications, settings navigation, and account switching. */
 @Suppress("LargeClass")
 abstract class IllustiaLibraryNavigationModule(
-    deps: ViewModelDeps,
+    deps: ViewModelDepsApi,
 ) : IllustiaBookmarkModule(deps) {
     private val storageSizeLock = Any()
     private var cachedStorageBytes: StorageSizeSample? = null

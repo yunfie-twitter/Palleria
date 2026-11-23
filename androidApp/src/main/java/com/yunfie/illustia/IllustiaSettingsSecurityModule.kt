@@ -8,7 +8,7 @@ import com.yunfie.illustia.models.SearchSort
 import com.yunfie.illustia.models.SearchTarget
 import com.yunfie.illustia.models.SearchWorkType
 import com.yunfie.illustia.platform.StringKey
-import com.yunfie.illustia.platform.ViewModelDeps
+import com.yunfie.illustia.platform.ViewModelDepsApi
 import com.yunfie.illustia.settings.AppHapticMode
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.STARTUP_VIEW_HISTORY_LIMIT
@@ -34,7 +34,7 @@ private fun canRefreshProfileOnStartup(
 /** Settings mutations, app/privacy locking, and calculator-backed unlock behavior. */
 @Suppress("LargeClass")
 abstract class IllustiaSettingsSecurityModule(
-    deps: ViewModelDeps,
+    deps: ViewModelDepsApi,
 ) : IllustiaViewModelFoundation(deps) {
     abstract fun refreshHome(forceRefresh: Boolean = false)
 
@@ -220,7 +220,7 @@ abstract class IllustiaSettingsSecurityModule(
 
     fun updateSendTelemetry(value: Boolean) {
         updateSettings { it.copy(sendTelemetry = value) }
-        illustiaApplication?.setTelemetryEnabled(value)
+        telemetryControl.setEnabled(value)
     }
 
     fun updateDiscordRpcEnabled(value: Boolean) {

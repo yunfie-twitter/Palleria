@@ -35,7 +35,8 @@ import com.yunfie.illustia.platform.MonotonicClock
 import com.yunfie.illustia.platform.StringKey
 import com.yunfie.illustia.platform.StringProvider
 import com.yunfie.illustia.platform.Telemetry
-import com.yunfie.illustia.platform.ViewModelDeps
+import com.yunfie.illustia.platform.TelemetryControl
+import com.yunfie.illustia.platform.ViewModelDepsApi
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.SettingsFacade
 import com.yunfie.illustia.ui.app.DetailEntrySnapshot
@@ -120,7 +121,7 @@ internal fun AppSettings.withHydratedRoomCollections(full: AppSettings): AppSett
 /** Shared state, lifecycle, persistence, and cross-feature helpers for ViewModel modules. */
 @Suppress("LargeClass", "TooManyFunctions")
 abstract class IllustiaViewModelFoundation(
-    protected val deps: ViewModelDeps,
+    protected val deps: ViewModelDepsApi,
     protected val strings: StringProvider = deps.strings,
 ) : ViewModel() {
     /**
@@ -129,7 +130,6 @@ abstract class IllustiaViewModelFoundation(
      */
     protected val viewModelScope: CoroutineScope = deps.scope
 
-    protected val illustiaApplication = deps.illustiaApplication
     protected val logger: AppLogger get() = deps.logger
     protected val clock: MonotonicClock get() = deps.clock
     protected val mainThread: MainThreadChecker get() = deps.mainThread
@@ -145,14 +145,10 @@ abstract class IllustiaViewModelFoundation(
     protected val appIconSwitcher: AppIconSwitcher get() = deps.appIconSwitcher
     protected val downloadService: DownloadService get() = deps.downloadService
     protected val mediaEncoder: MediaEncoder get() = deps.mediaEncoder
-    protected val settingsStore: SettingsFacade by lazy {
-        illustiaApplication?.settingsStore
-            ?: deps.settings
-    }
+    protected val telemetryControl: TelemetryControl get() = deps.telemetryControl
+    protected val settingsStore: SettingsFacade get() = deps.settings
 
-    protected val repository: IllustiaRepositoryApi by lazy {
-        illustiaApplication?.repository ?: deps.repository
-    }
+    protected val repository: IllustiaRepositoryApi get() = deps.repository
 
     protected val imageStore: GallerySaver get() = deps.imageStore
     protected val downloadMutex = Mutex()

@@ -5,7 +5,7 @@ import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.SearchWorkType
 import com.yunfie.illustia.platform.StringKey
-import com.yunfie.illustia.platform.ViewModelDeps
+import com.yunfie.illustia.platform.ViewModelDepsApi
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -23,7 +23,7 @@ private const val MAX_SEARCH_LOAD_MORE_PAGES = 20
 /** Pagination for search/profile collections plus bookmark and recommendation behavior. */
 @Suppress("LargeClass")
 abstract class IllustiaBookmarkModule(
-    deps: ViewModelDeps,
+    deps: ViewModelDepsApi,
 ) : IllustiaDetailProfileModule(deps) {
     private val bookmarkRefreshGeneration = AtomicLong()
 
