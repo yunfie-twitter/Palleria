@@ -64,6 +64,7 @@ import com.yunfie.illustia.data.NativeImageAnalysis
 import com.yunfie.illustia.data.proxyPixivImageUrl
 import com.yunfie.illustia.nativebridge.AssistantContentProvider
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
+import com.yunfie.illustia.nativebridge.toIncomingLink
 import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.settings.AppFont
 import com.yunfie.illustia.settings.FeatureFlag
@@ -444,7 +445,7 @@ class MainActivity : FragmentActivity() {
         }
         if (intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY == 0) {
             AppShortcutRouter.accept(intent)
-            viewModel.handleIncomingIntent(intent)
+            viewModel.handleIncomingIntent(intent?.toIncomingLink())
             intent.data = null
             intent.removeExtra(NativeIntentRouter.EXTRA_HANDOFF_URI)
             intent.action = Intent.ACTION_MAIN
@@ -521,7 +522,7 @@ class MainActivity : FragmentActivity() {
         setIntent(intent)
         if (intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY == 0) {
             AppShortcutRouter.accept(intent)
-            viewModel.handleIncomingIntent(intent)
+            viewModel.handleIncomingIntent(intent?.toIncomingLink())
             intent.data = null
             intent.removeExtra(NativeIntentRouter.EXTRA_HANDOFF_URI)
             intent.action = Intent.ACTION_MAIN

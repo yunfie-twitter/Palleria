@@ -1,7 +1,6 @@
 package com.yunfie.illustia
 
 import android.app.Application
-import android.content.Intent
 import android.net.Uri
 import com.yunfie.illustia.GlitchTipTelemetry
 import com.yunfie.illustia.data.FollowDeltaSyncManager
@@ -15,6 +14,7 @@ import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.SearchWorkType
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
+import com.yunfie.illustia.platform.IncomingLink
 import com.yunfie.illustia.platform.ViewModelDeps
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
@@ -925,29 +925,21 @@ abstract class IllustiaAuthFeedModule(
         _uiState.update { it.copy(centeredError = null) }
     }
 
-    fun handleIncomingIntent(intent: Intent?) {
-        if (intent == null) return
-        if (intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY != 0) return
-        intent.dataString?.let(::pixivLoginCodeOrNull)?.let { code ->
+    fun handleIncomingIntent(link: IncomingLink?) {
+        if (link == null) return
+        if (link.launchedFromHistory) return
+        link.dataString?.let(::pixivLoginCodeOrNull)?.let { code ->
             // Always allow validated Pixiv OAuth callbacks (needed for recovery web login).
             completeWebLogin(code)
             return
         }
-        val parsedEvent = NativeIntentRouter.parse(intent)
+        val parsedEvent = NativeIntentRouter.parse(link)
         // Keep the request pending while either lock screen is active. It is dispatched only
         // after authentication, so external intents cannot bypass app or privacy locks.
         if (_uiState.value.appLocked || _uiState.value.privacyLocked) {
             if (parsedEvent != null) pendingNativeIntentEvent = parsedEvent
             return
         }
-        intent
-            ?.getStringExtra(com.yunfie.illustia.nativebridge.NativeIntentRouter.EXTRA_HANDOFF_URI)
-            ?.takeIf(String::isNotBlank)
-            ?.let(NativeIntentRouter::parseText)
-            ?.let { event ->
-                dispatchNativeIntentEvent(event)
-                return
-            }
         parsedEvent?.let(::dispatchNativeIntentEvent)
     }
 
