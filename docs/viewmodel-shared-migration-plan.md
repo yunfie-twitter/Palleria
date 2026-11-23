@@ -153,6 +153,27 @@ each with an interface + Android impl, carried on `ViewModelDeps` and exposed as
 That removed the last direct uses of `android.util.Log` (1), `android.os.SystemClock`
 (2) and `android.os.Looper` (1) from the ViewModel tree — all four are now 0.
 
+### Step 5 — AndroidViewModel → ViewModel — ✅ done
+
+`IllustiaViewModelFoundation` no longer extends `AndroidViewModel`. It extends plain
+`androidx.lifecycle.ViewModel`, and both the `Application` and a lifetime-bound
+`CoroutineScope` arrive through `ViewModelDeps`.
+
+| Check | Before | After |
+|---|---|---|
+| `) : AndroidViewModel(` | 1 | **0** |
+| `import androidx.lifecycle.AndroidViewModel` | 1 | **0** |
+| `import androidx.lifecycle.viewModelScope` | 6 | **0** |
+| `) : ViewModel()` | 0 | **1** |
+
+How the old semantics are preserved:
+- `viewModelScope` is a property on the foundation pointing at `deps.scope`, so the
+  70 existing `viewModelScope.launch { }` call sites are untouched.
+- `IllustiaViewModel.Factory` builds a `CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)`
+  and cancels it in `onCleared()` — the same lifetime contract as `viewModelScope`.
+- `getApplication<T>()` became a local helper returning `deps.application`, so the 26
+  existing call sites keep compiling.
+
 **Still outstanding, measured from the tree (not estimated):**
 
 | Dependency | Remaining sites |
