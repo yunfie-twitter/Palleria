@@ -4,9 +4,6 @@ import android.app.Application
 import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.navigation3.runtime.NavKey
-import coil3.SingletonImageLoader
-import coil3.network.httpHeaders
-import coil3.request.ImageRequest
 import com.yunfie.illustia.account.PalleriaAccount
 import com.yunfie.illustia.data.FeatureRepositories
 import com.yunfie.illustia.data.IllustiaRepository
@@ -32,6 +29,7 @@ import com.yunfie.illustia.platform.AppLogger
 import com.yunfie.illustia.platform.AppPaths
 import com.yunfie.illustia.platform.BackgroundWork
 import com.yunfie.illustia.platform.Connectivity
+import com.yunfie.illustia.platform.ImageCache
 import com.yunfie.illustia.platform.MainThreadChecker
 import com.yunfie.illustia.platform.MonotonicClock
 import com.yunfie.illustia.platform.PlatformCapabilities
@@ -45,7 +43,6 @@ import com.yunfie.illustia.ui.app.AppRoute
 import com.yunfie.illustia.ui.app.AppTab
 import com.yunfie.illustia.ui.app.DetailEntrySnapshot
 import com.yunfie.illustia.ui.app.SearchEntrySnapshot
-import com.yunfie.illustia.ui.components.PixivImageHeaders
 import com.yunfie.illustia.ui.scroll.ScrollPositionProbe
 import com.yunfie.illustia.ui.scroll.ScrollStateRegistry
 import com.yunfie.illustia.updater.AppReleaseInfo
@@ -155,6 +152,7 @@ abstract class IllustiaViewModelFoundation(
     protected val appPaths: AppPaths get() = deps.appPaths
     protected val appInfo: AppInfo get() = deps.appInfo
     protected val backgroundWork: BackgroundWork get() = deps.backgroundWork
+    protected val imageCache: ImageCache get() = deps.imageCache
     protected val settingsStore by lazy {
         illustiaApplication?.settingsStore
             ?: SettingsStore(getApplication<Application>().applicationContext)
@@ -599,7 +597,6 @@ abstract class IllustiaViewModelFoundation(
         if (settings.smartCacheWifiOnly) {
             if (!connectivity.isWifiConnected()) return
         }
-        val loader = SingletonImageLoader.get(context)
         val proxyBaseUrl = settings.pixivImageProxyBaseUrl
         viewModelScope.launch(Dispatchers.IO) {
             delay(SMART_CACHE_WARM_DELAY_MS)
@@ -611,13 +608,7 @@ abstract class IllustiaViewModelFoundation(
                 }.filter(String::isNotBlank)
                 .distinct()
                 .forEach { url ->
-                    val request =
-                        ImageRequest
-                            .Builder(context)
-                            .data(proxyPixivImageUrl(url, proxyBaseUrl))
-                            .httpHeaders(PixivImageHeaders)
-                            .build()
-                    loader.enqueue(request)
+                    imageCache.prefetch(proxyPixivImageUrl(url, proxyBaseUrl))
                 }
         }
     }

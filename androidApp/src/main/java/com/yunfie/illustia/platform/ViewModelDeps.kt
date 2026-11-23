@@ -27,6 +27,7 @@ class ViewModelDeps(
     val appPaths: AppPaths = AndroidAppPaths(application),
     val appInfo: AppInfo = AndroidAppInfo(application),
     val backgroundWork: BackgroundWork = AndroidBackgroundWork(application),
+    val imageCache: ImageCache = AndroidImageCache(application),
 ) {
     val illustiaApplication: IllustiaApplication? get() = application as? IllustiaApplication
 

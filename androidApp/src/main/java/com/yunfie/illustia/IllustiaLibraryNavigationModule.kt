@@ -1,7 +1,6 @@
 package com.yunfie.illustia
 
 import android.app.Application
-import coil3.SingletonImageLoader
 import com.yunfie.illustia.GlitchTipTelemetry
 import com.yunfie.illustia.data.AnimatedGifEncoder
 import com.yunfie.illustia.data.ManagedDataRepository
@@ -629,9 +628,7 @@ abstract class IllustiaLibraryNavigationModule(
             try {
                 val appContext = getApplication<Application>().applicationContext
                 runCatching {
-                    val imageLoader = SingletonImageLoader.get(appContext)
-                    imageLoader.diskCache?.clear()
-                    imageLoader.memoryCache?.clear()
+                    imageCache.clear()
                 }
 
                 val cacheRoot = appPaths.cacheDir()
