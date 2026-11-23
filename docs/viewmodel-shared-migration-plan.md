@@ -181,8 +181,8 @@ How the old semantics are preserved:
 | `getApplication<…>()` / `contentResolver` | 19 | mostly Context passed to repos/workers |
 | `viewModelScope.launch` sites | 70 | **seam done** — now `deps.scope` |
 | `Intent` | 1 | outbound wallpaper broadcast in the foundation |
-| `Uri` | 3 | export/import managed data (repo API takes `Uri`) |
-| `Coil` (`SingletonImageLoader`) | 2 | cache warm + cache clear |
+| `Uri` | 1 | `saveImageToDocument` (repository has no public stream API) |
+| `Coil` (`SingletonImageLoader`) | 0 | `ImageCache` facade |
 | `WorkManager` | 0 code | one comment mention |
 | `ConnectivityManager` / `NetworkCapabilities` | 0 | |
 | `PackageInfoCompat` | 0 | |
@@ -210,9 +210,10 @@ mirroring the `PixivUrlPolicy.kt` split that already works.
 | `AppPaths` | `cacheDir` | ✅ done |
 | `BackgroundWork` | `WorkManager` (app-update job) | ✅ done |
 | `IncomingLink` (data class) | `Intent` in `handleIncomingIntent` | ✅ done |
-| `ImagePrefetcher` | Coil `SingletonImageLoader` + cache clearing | todo |
+| `ImageCache` | Coil `SingletonImageLoader` + cache clearing | ✅ done |
+| `DocumentIo` | `Uri` in export/import managed data | ✅ done |
 | `DeviceProfile` | `PlatformCapabilities` low-RAM / debounce | todo |
-| `String` URI | `android.net.Uri` in export/import | todo |
+| `String` URI (save image) | `android.net.Uri` in `saveImageToDocument` | todo |
 
 ### Step 5 — The hard seams (classes 5–6)
 
