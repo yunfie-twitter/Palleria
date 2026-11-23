@@ -16,7 +16,6 @@ import com.yunfie.illustia.nativebridge.NativeIntentRouter
 import com.yunfie.illustia.platform.StringKey
 import com.yunfie.illustia.platform.ViewModelDeps
 import com.yunfie.illustia.settings.FeatureFlag
-import com.yunfie.illustia.settings.isFeatureEnabled
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
@@ -229,7 +228,7 @@ abstract class IllustiaLibraryNavigationModule(
                     _uiState.update { it.copy(message = str(StringKey.OfflineCapacityLimitDesc)) }
                     return@launch
                 }
-                val resumeEnabled = _uiState.value.settings.isFeatureEnabled(FeatureFlag.ByteRangeResume)
+                val resumeEnabled = FeatureFlag.ByteRangeResume.resolve(_uiState.value.settings)
                 val partFile = resolveDownloadPartFile(filename, requestUrl)
                 val headers =
                     mapOf(
@@ -426,7 +425,7 @@ abstract class IllustiaLibraryNavigationModule(
     ): String {
         val settings = _uiState.value.settings
         val customTemplate =
-            if (settings.isFeatureEnabled(FeatureFlag.CustomDownloadPath)) {
+            if (FeatureFlag.CustomDownloadPath.resolve(settings)) {
                 "{artist}/{tag}/{filename}"
             } else {
                 null
@@ -500,7 +499,7 @@ abstract class IllustiaLibraryNavigationModule(
         clearOld: Boolean = false,
     ) {
         val requestUrl = proxyPixivImageUrl(url, _uiState.value.settings.pixivImageProxyBaseUrl)
-        val resumeEnabled = _uiState.value.settings.isFeatureEnabled(FeatureFlag.ByteRangeResume)
+        val resumeEnabled = FeatureFlag.ByteRangeResume.resolve(_uiState.value.settings)
         val partFile = resolveDownloadPartFile(filename, requestUrl)
         val headers =
             mapOf(

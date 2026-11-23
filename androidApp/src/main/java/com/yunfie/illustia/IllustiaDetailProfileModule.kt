@@ -12,7 +12,6 @@ import com.yunfie.illustia.models.pixiv.UserProfileEdit
 import com.yunfie.illustia.platform.StringKey
 import com.yunfie.illustia.platform.ViewModelDeps
 import com.yunfie.illustia.settings.FeatureFlag
-import com.yunfie.illustia.settings.isFeatureEnabled
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -405,7 +404,7 @@ abstract class IllustiaDetailProfileModule(
 
     // Only reachable while the Miuix QuickPeek flag is on; the cards gate the long-press on it.
     fun onUserLongPress(user: UserPreview) {
-        if (!_uiState.value.settings.isFeatureEnabled(FeatureFlag.MiuixQuickPeek)) return
+        if (!FeatureFlag.MiuixQuickPeek.resolve(_uiState.value.settings)) return
         _uiState.update {
             it.copy(longPressedUser = user, longPressedIllust = null, longPressedTag = null)
         }

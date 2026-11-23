@@ -13,7 +13,6 @@ import com.yunfie.illustia.platform.IncomingLink
 import com.yunfie.illustia.platform.StringKey
 import com.yunfie.illustia.platform.ViewModelDeps
 import com.yunfie.illustia.settings.FeatureFlag
-import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.app.SearchEntrySnapshot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -257,7 +256,7 @@ abstract class IllustiaAuthFeedModule(
                 if (handleAuthExpired(error)) return@launch
                 telemetry.recordException(error, tag = "feed_home_refresh")
                 _uiState.update {
-                    val staleCacheEnabled = it.settings.isFeatureEnabled(FeatureFlag.OfflineStaleCache)
+                    val staleCacheEnabled = FeatureFlag.OfflineStaleCache.resolve(it.settings)
                     val canUseStale = staleCacheEnabled && it.homeItems.isNotEmpty()
                     it.copy(
                         isHomeRefreshing = false,
@@ -1081,7 +1080,7 @@ abstract class IllustiaAuthFeedModule(
                     }
                 }
                 val currentSettings = _uiState.value.settings
-                if (currentSettings.isFeatureEnabled(FeatureFlag.DeltaEtagSync)) {
+                if (FeatureFlag.DeltaEtagSync.resolve(currentSettings)) {
                     val token = currentSettings.refreshToken
                     if (token.isNotBlank()) {
                         appServices.recordFollowDeltaSnapshot(
@@ -1098,7 +1097,7 @@ abstract class IllustiaAuthFeedModule(
                 telemetry.recordException(error, tag = "feed_timeline_refresh")
                 _uiState.update {
                     if (it.settings.followRestrict != requestedRestrict) return@update it.copy(isTimelineRefreshing = false)
-                    val staleCacheEnabled = it.settings.isFeatureEnabled(FeatureFlag.OfflineStaleCache)
+                    val staleCacheEnabled = FeatureFlag.OfflineStaleCache.resolve(it.settings)
                     val canUseStale = staleCacheEnabled && it.timelineItems.isNotEmpty()
                     it.copy(
                         isTimelineRefreshing = false,
