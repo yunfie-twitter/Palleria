@@ -178,11 +178,12 @@ How the old semantics are preserved:
 
 | Dependency | Remaining sites | Note |
 |---|---|---|
-| `getApplication<…>()` / `contentResolver` | 19 | mostly Context passed to repos/workers |
+| `getApplication<…>()` / `contentResolver` | 16 | mostly Context passed to repos/workers |
 | `viewModelScope.launch` sites | 70 | **seam done** — now `deps.scope` |
 | `Intent` | 1 | outbound wallpaper broadcast in the foundation |
-| `Uri` | 1 | `saveImageToDocument` (repository has no public stream API) |
+| `Uri` | 0 | `DocumentIo` facade |
 | `Coil` (`SingletonImageLoader`) | 0 | `ImageCache` facade |
+| `Room` (`SavedIllustEntity`) | 0 | `SavedIllust` model + `SettingsStore` mapping |
 | `WorkManager` | 0 code | one comment mention |
 | `ConnectivityManager` / `NetworkCapabilities` | 0 | |
 | `PackageInfoCompat` | 0 | |
@@ -215,7 +216,7 @@ mirroring the `PixivUrlPolicy.kt` split that already works.
 | `DeviceProfile` | `PlatformCapabilities` low-RAM / debounce | ✅ done |
 | `SavedIllust` (model) | Room `SavedIllustEntity` in UI state | ✅ done |
 | `AppServices` | wallpaper scheduler / widget refresh / download service acquire | ✅ done |
-| `String` URI (save image) | `android.net.Uri` in `saveImageToDocument` | todo |
+| `String` URI (save image) | `android.net.Uri` in `saveImageToDocument` | ✅ done |
 
 ### Step 5 — The hard seams (classes 5–6)
 
