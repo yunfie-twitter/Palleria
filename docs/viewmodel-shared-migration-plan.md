@@ -180,13 +180,16 @@ How the old semantics are preserved:
 |---|---|---|
 | `getApplication<…>()` / `contentResolver` | 19 | mostly Context passed to repos/workers |
 | `viewModelScope.launch` sites | 70 | **seam done** — now `deps.scope` |
-| `Intent` | 3 | `handleIncomingIntent` in AuthFeed |
-| `Uri` | 3 | export/import managed data |
+| `Intent` | 1 | outbound wallpaper broadcast in the foundation |
+| `Uri` | 3 | export/import managed data (repo API takes `Uri`) |
 | `Coil` (`SingletonImageLoader`) | 2 | cache warm + cache clear |
 | `WorkManager` | 0 code | one comment mention |
 | `ConnectivityManager` / `NetworkCapabilities` | 0 | |
 | `PackageInfoCompat` | 0 | |
 | Room (`SavedIllustEntity`) | 1 | leaks into `IllustiaUiState.savedIllusts` |
+
+The inbound `Intent` edge is gone: `handleIncomingIntent` now takes the Android-free
+`IncomingLink`, and `Intent.toIncomingLink()` lives outside the ViewModel tree.
 
 `viewModelScope` is no longer a blocker — the seam is in place and the type-level
 `AndroidViewModel` edge is gone (Step 5).
@@ -206,9 +209,9 @@ mirroring the `PixivUrlPolicy.kt` split that already works.
 | `AppInfo` | `PackageManager.getPackageInfo` + `PackageInfoCompat` | ✅ done |
 | `AppPaths` | `cacheDir` | ✅ done |
 | `BackgroundWork` | `WorkManager` (app-update job) | ✅ done |
+| `IncomingLink` (data class) | `Intent` in `handleIncomingIntent` | ✅ done |
 | `ImagePrefetcher` | Coil `SingletonImageLoader` + cache clearing | todo |
 | `DeviceProfile` | `PlatformCapabilities` low-RAM / debounce | todo |
-| `IncomingLink` (data class) | `Intent` in `handleIncomingIntent` | todo |
 | `String` URI | `android.net.Uri` in export/import | todo |
 
 ### Step 5 — The hard seams (classes 5–6)
