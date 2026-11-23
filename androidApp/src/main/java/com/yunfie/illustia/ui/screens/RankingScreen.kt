@@ -76,6 +76,8 @@ import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import com.yunfie.illustia.ui.components.smoothScrollToTop
+import com.yunfie.illustia.ui.scroll.ScrollStateKeys
+import com.yunfie.illustia.ui.scroll.ScrollStateRegistry
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
@@ -154,7 +156,7 @@ fun RankingScreen(
             if (tab == AppTab.Ranking) {
                 val currentMode = modes.getOrNull(pagerState.currentPage)
                 if (currentMode != null) {
-                    viewModel.rankingGridState(currentMode).smoothScrollToTop(scrollBehavior)
+                    viewModel.scrollStates.grid(ScrollStateKeys.ranking(currentMode)).smoothScrollToTop(scrollBehavior)
                 }
             }
         }
@@ -183,7 +185,7 @@ fun RankingScreen(
                         coroutineScope.launch {
                             val currentMode = modes.getOrNull(pagerState.currentPage)
                             if (currentMode != null) {
-                                viewModel.rankingGridState(currentMode).smoothScrollToTop(scrollBehavior)
+                                viewModel.scrollStates.grid(ScrollStateKeys.ranking(currentMode)).smoothScrollToTop(scrollBehavior)
                             }
                         }
                     },
@@ -220,7 +222,9 @@ fun RankingScreen(
                                     } else {
                                         performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Click)
                                         coroutineScope.launch {
-                                            viewModel.rankingGridState(targetMode).smoothScrollToTop(scrollBehavior)
+                                            viewModel.scrollStates
+                                                .grid(ScrollStateKeys.ranking(targetMode))
+                                                .smoothScrollToTop(scrollBehavior)
                                         }
                                     }
                                 }
@@ -313,7 +317,7 @@ private fun RankingGridContent(
     val isModePaginating = isPaginating
     val feedHighQuality = settings.useHighQualityFeedImages
     val showAiBadge = remember(settings.showAiBadge) { settings.showAiBadge }
-    val gridState = viewModel.rankingGridState(mode)
+    val gridState = viewModel.scrollStates.grid(ScrollStateKeys.ranking(mode))
     PrefetchIllustGridImages(
         items = items,
         gridState = gridState,

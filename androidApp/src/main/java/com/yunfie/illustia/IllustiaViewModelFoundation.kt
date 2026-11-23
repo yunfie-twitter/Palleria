@@ -5,8 +5,6 @@ import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Looper
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.core.content.pm.PackageInfoCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -44,6 +42,8 @@ import com.yunfie.illustia.ui.app.AppTab
 import com.yunfie.illustia.ui.app.DetailEntrySnapshot
 import com.yunfie.illustia.ui.app.SearchEntrySnapshot
 import com.yunfie.illustia.ui.components.PixivImageHeaders
+import com.yunfie.illustia.ui.scroll.ScrollPositionProbe
+import com.yunfie.illustia.ui.scroll.ScrollStateRegistry
 import com.yunfie.illustia.updater.AppReleaseInfo
 import com.yunfie.illustia.updater.AppUpdateDownloadWorker
 import com.yunfie.illustia.updater.AppUpdaterRepository
@@ -186,15 +186,16 @@ abstract class IllustiaViewModelFoundation(
         const val MAX_CACHED_GRID_STATES = 16
     }
 
-    val bookmarkTimelineGridState by lazy { LazyGridState() }
-    val bookmarkMainGridState by lazy { LazyGridState() }
-    val bookmarkWatchlistGridState by lazy { LazyGridState() }
-    val bookmarkFollowingGridState by lazy { LazyGridState() }
-    val homeFeedGridState by lazy { LazyGridState() }
-    val homeTimelineGridState by lazy { LazyGridState() }
-    val searchResultGridState by lazy { LazyGridState() }
-    val userSearchResultGridState by lazy { LazyGridState() }
-    val searchBrowseGridState by lazy { LazyGridState() }
+    /** UI が所有するスクロール状態の置き場。ViewModel は値だけを参照する。 */
+    val scrollStates = ScrollStateRegistry()
+
+    /**
+     * ホームフィードのスクロール位置。UI が設置する。
+     * ViewModel は「先頭から離れているか」だけを見たいので、Compose の状態型ではなく
+     * この小さな関数インターフェースを介して参照する。
+     */
+    @Volatile
+    var homeScrollProbe: ScrollPositionProbe = ScrollPositionProbe.Never
     internal var activeTab: AppTab? = null
     internal val navigationBackStack = androidx.compose.runtime.mutableStateListOf<NavKey>(AppRoute.Main)
     internal val detailSnapshots = androidx.compose.runtime.mutableStateMapOf<Long, DetailEntrySnapshot>()
@@ -212,30 +213,10 @@ abstract class IllustiaViewModelFoundation(
     }
 
     fun clearScrollStates() {
-        rankingGridStates.clear()
-        userProfileGridStates.clear()
-        userProfileBookmarkGridStates.clear()
-        illustDetailListStates.clear()
         illustDetailPagerPages.clear()
         illustDetailRelatedSectionsReady.clear()
     }
 
-    protected val rankingGridStates: MutableMap<String, LazyGridState> =
-        object : java.util.LinkedHashMap<String, LazyGridState>(MAX_CACHED_GRID_STATES, 0.75f, true) {
-            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, LazyGridState>?): Boolean = size > MAX_CACHED_GRID_STATES
-        }
-    protected val userProfileGridStates: MutableMap<Long, LazyGridState> =
-        object : java.util.LinkedHashMap<Long, LazyGridState>(MAX_CACHED_GRID_STATES, 0.75f, true) {
-            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Long, LazyGridState>?): Boolean = size > MAX_CACHED_GRID_STATES
-        }
-    protected val userProfileBookmarkGridStates: MutableMap<Long, LazyGridState> =
-        object : java.util.LinkedHashMap<Long, LazyGridState>(MAX_CACHED_GRID_STATES, 0.75f, true) {
-            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Long, LazyGridState>?): Boolean = size > MAX_CACHED_GRID_STATES
-        }
-    protected val illustDetailListStates: MutableMap<Long, LazyListState> =
-        object : java.util.LinkedHashMap<Long, LazyListState>(MAX_CACHED_GRID_STATES, 0.75f, true) {
-            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Long, LazyListState>?): Boolean = size > MAX_CACHED_GRID_STATES
-        }
     protected val illustDetailPagerPages: MutableMap<Long, Int> =
         object : java.util.LinkedHashMap<Long, Int>(MAX_CACHED_GRID_STATES, 0.75f, true) {
             override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Long, Int>?): Boolean = size > MAX_CACHED_GRID_STATES
@@ -513,11 +494,7 @@ abstract class IllustiaViewModelFoundation(
                 val shouldDeferIncoming =
                     deferIncomingIfScrolled &&
                         it.homeItems.isNotEmpty() &&
-                        (
-                            homeFeedGridState.firstVisibleItemIndex > 0 ||
-                                homeFeedGridState.firstVisibleItemScrollOffset > 0 ||
-                                homeFeedGridState.isScrollInProgress
-                        )
+                        homeScrollProbe.isScrolledAwayFromStart()
                 if (shouldDeferIncoming) {
                     val pendingItems = newHomeItemsToStage(visibleItems, it.homeItems, it.pendingHomeItems)
                     if (pendingItems.isEmpty()) {

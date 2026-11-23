@@ -81,6 +81,8 @@ import com.yunfie.illustia.ui.components.pinchToChangeColumns
 import com.yunfie.illustia.ui.components.profileGridContentPadding
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import com.yunfie.illustia.ui.components.rememberSkeletonShimmer
+import com.yunfie.illustia.ui.scroll.ScrollStateKeys
+import com.yunfie.illustia.ui.scroll.ScrollStateRegistry
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Card
@@ -389,7 +391,7 @@ internal fun BookmarkMainTab(
     chrome: BookmarkChromeState,
     scrollBehavior: ScrollBehavior,
 ) {
-    val gridState = viewModel.bookmarkMainGridState
+    val gridState = viewModel.scrollStates.grid(ScrollStateKeys.BOOKMARK_MAIN)
     PrefetchIllustGridImages(
         items = bookmarkItems,
         gridState = gridState,
@@ -524,7 +526,7 @@ internal fun BookmarkTimelineTab(
     chrome: BookmarkChromeState,
     scrollBehavior: ScrollBehavior,
 ) {
-    val gridState = viewModel.bookmarkTimelineGridState
+    val gridState = viewModel.scrollStates.grid(ScrollStateKeys.BOOKMARK_TIMELINE)
     PrefetchIllustGridImages(
         items = timelineItems,
         gridState = gridState,
@@ -659,7 +661,7 @@ internal fun BookmarkFollowingTab(
     chrome: BookmarkChromeState,
     scrollBehavior: ScrollBehavior? = null,
 ) {
-    val gridState = viewModel.bookmarkFollowingGridState
+    val gridState = viewModel.scrollStates.grid(ScrollStateKeys.BOOKMARK_FOLLOWING)
     val miuixPeekEnabled = settings.isFeatureEnabled(FeatureFlag.MiuixQuickPeek)
     val sortedUsers =
         remember(followingUsers, sort) {

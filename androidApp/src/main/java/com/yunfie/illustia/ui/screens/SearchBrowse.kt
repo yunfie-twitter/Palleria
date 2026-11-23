@@ -44,6 +44,8 @@ import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
 import com.yunfie.illustia.ui.components.adaptiveProfileGridColumns
 import com.yunfie.illustia.ui.components.adaptiveRecommendedTagColumns
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
+import com.yunfie.illustia.ui.scroll.ScrollStateKeys
+import com.yunfie.illustia.ui.scroll.ScrollStateRegistry
 import com.yunfie.illustia.visibleWithMutedTagsVisible
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Text
@@ -86,7 +88,7 @@ internal fun BrowseArea(
         }
 
     LazyVerticalGrid(
-        state = viewModel.searchBrowseGridState,
+        state = viewModel.scrollStates.grid(ScrollStateKeys.SEARCH_BROWSE),
         columns = GridCells.Fixed(adaptiveProfileGridColumns()),
         modifier = Modifier.fillMaxSize(),
         contentPadding =
@@ -113,7 +115,7 @@ internal fun BrowseArea(
                                 detectTapGestures {
                                     performHaptic(AppHapticEffect.Click)
                                     coroutineScope.launch {
-                                        viewModel.searchBrowseGridState.animateScrollToItem(0)
+                                        viewModel.scrollStates.grid(ScrollStateKeys.SEARCH_BROWSE).animateScrollToItem(0)
                                     }
                                 }
                             },

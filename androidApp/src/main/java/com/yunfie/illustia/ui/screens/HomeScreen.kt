@@ -35,6 +35,8 @@ import com.yunfie.illustia.ui.components.ScrollBlurScaffold
 import com.yunfie.illustia.ui.components.onTopBarTap
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.smoothScrollToTop
+import com.yunfie.illustia.ui.scroll.ScrollStateKeys
+import com.yunfie.illustia.ui.scroll.ScrollStateRegistry
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -94,8 +96,8 @@ fun HomeScreen(
                 val currentTab = HomeTab.entries[pagerState.currentPage]
                 val gridState =
                     when (currentTab) {
-                        HomeTab.Feed -> viewModel.homeFeedGridState
-                        HomeTab.Following -> viewModel.homeTimelineGridState
+                        HomeTab.Feed -> viewModel.scrollStates.grid(ScrollStateKeys.HOME_FEED)
+                        HomeTab.Following -> viewModel.scrollStates.grid(ScrollStateKeys.HOME_TIMELINE)
                     }
                 gridState.smoothScrollToTop(scrollBehavior)
             }
@@ -146,8 +148,8 @@ fun HomeScreen(
                             val currentTab = HomeTab.entries[pagerState.currentPage]
                             val gridState =
                                 when (currentTab) {
-                                    HomeTab.Feed -> viewModel.homeFeedGridState
-                                    HomeTab.Following -> viewModel.homeTimelineGridState
+                                    HomeTab.Feed -> viewModel.scrollStates.grid(ScrollStateKeys.HOME_FEED)
+                                    HomeTab.Following -> viewModel.scrollStates.grid(ScrollStateKeys.HOME_TIMELINE)
                                 }
                             gridState.smoothScrollToTop(scrollBehavior)
                         }
@@ -217,8 +219,8 @@ fun HomeScreen(
                                 coroutineScope.launch {
                                     val gridState =
                                         when (selectedTab) {
-                                            HomeTab.Feed -> viewModel.homeFeedGridState
-                                            HomeTab.Following -> viewModel.homeTimelineGridState
+                                            HomeTab.Feed -> viewModel.scrollStates.grid(ScrollStateKeys.HOME_FEED)
+                                            HomeTab.Following -> viewModel.scrollStates.grid(ScrollStateKeys.HOME_TIMELINE)
                                         }
                                     gridState.smoothScrollToTop(scrollBehavior)
                                 }

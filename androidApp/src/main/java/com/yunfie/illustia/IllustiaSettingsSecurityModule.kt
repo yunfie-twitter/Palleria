@@ -1,8 +1,6 @@
 package com.yunfie.illustia
 
 import android.app.Application
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.lifecycle.viewModelScope
 import com.yunfie.illustia.DummyAppIconSwitcher
 import com.yunfie.illustia.data.ManagedDataRepository
@@ -395,12 +393,6 @@ abstract class IllustiaSettingsSecurityModule(
         }
     }
 
-    fun userProfileGridState(userId: Long): LazyGridState = userProfileGridStates.getOrPut(userId) { LazyGridState() }
-
-    fun userProfileBookmarkGridState(userId: Long): LazyGridState = userProfileBookmarkGridStates.getOrPut(userId) { LazyGridState() }
-
-    fun illustDetailListState(illustId: Long): LazyListState = illustDetailListStates.getOrPut(illustId) { LazyListState() }
-
     fun illustDetailPage(illustId: Long): Int = illustDetailPagerPages[illustId] ?: 0
 
     fun updateIllustDetailPage(
@@ -415,8 +407,6 @@ abstract class IllustiaSettingsSecurityModule(
     fun markIllustDetailRelatedSectionReady(illustId: Long) {
         illustDetailRelatedSectionsReady.add(illustId)
     }
-
-    fun rankingGridState(mode: String): LazyGridState = rankingGridStates.getOrPut(mode) { LazyGridState() }
 
     fun updateSaveViewHistory(value: Boolean) {
         updateSettings { it.copy(saveViewHistory = value) }

@@ -86,6 +86,8 @@ import com.yunfie.illustia.ui.screens.profile.RelatedUsersScreen
 import com.yunfie.illustia.ui.screens.profile.UserProfileEditScreen
 import com.yunfie.illustia.ui.screens.profile.UserProfileErrorScreen
 import com.yunfie.illustia.ui.screens.profile.UserProfileSkeletonScreen
+import com.yunfie.illustia.ui.scroll.ScrollStateKeys
+import com.yunfie.illustia.ui.scroll.ScrollStateRegistry
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -411,7 +413,7 @@ internal fun AppNavHost(
                                 ),
                             onRelatedSectionReady = { viewModel.markIllustDetailRelatedSectionReady(illust.id) },
                             onPageChanged = { viewModel.updateIllustDetailPage(illust.id, it) },
-                            listState = viewModel.illustDetailListState(illust.id),
+                            listState = viewModel.scrollStates.list(ScrollStateKeys.illustDetail(illust.id)),
                         )
                     } else {
                         if (backStack.lastOrNull() == route) {
@@ -722,8 +724,8 @@ internal fun AppNavHost(
                                 appState.state.settings.mutedUsers
                                     .contains(user.id),
                             onUnmuteUser = { viewModel.unmuteUser(user.id) },
-                            gridState = viewModel.userProfileGridState(user.id),
-                            bookmarkGridState = viewModel.userProfileBookmarkGridState(user.id),
+                            gridState = viewModel.scrollStates.grid(ScrollStateKeys.userProfile(user.id)),
+                            bookmarkGridState = viewModel.scrollStates.grid(ScrollStateKeys.userProfileBookmarks(user.id)),
                             onIllustLongClick = viewModel::onIllustLongPress,
                             onColumnsChange = viewModel::updateVerticalColumnCount,
                             showHeaderControls = true,

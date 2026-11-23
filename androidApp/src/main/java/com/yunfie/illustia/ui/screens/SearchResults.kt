@@ -55,6 +55,8 @@ import com.yunfie.illustia.ui.components.animatedGridPlacement
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.components.pinchToChangeColumns
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
+import com.yunfie.illustia.ui.scroll.ScrollStateKeys
+import com.yunfie.illustia.ui.scroll.ScrollStateRegistry
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
@@ -73,7 +75,12 @@ internal fun SearchResultGrid(
     val feedHighQuality = state.settings.useHighQualityFeedImages
     val showAiBadge = remember(state.settings.showAiBadge) { state.settings.showAiBadge }
     val isNovelResult = page == 0 && state.settings.searchWorkType.isNovel
-    val gridState = if (page == 0) viewModel.searchResultGridState else viewModel.userSearchResultGridState
+    val gridState =
+        if (page == 0) {
+            viewModel.scrollStates.grid(ScrollStateKeys.SEARCH_RESULT)
+        } else {
+            viewModel.scrollStates.grid(ScrollStateKeys.USER_SEARCH_RESULT)
+        }
     val isPaginating = if (page == 0) state.isSearchPaginating else state.isUserSearchPaginating
     val miuixPeekEnabled = state.settings.isFeatureEnabled(FeatureFlag.MiuixQuickPeek)
 

@@ -55,6 +55,9 @@ import com.yunfie.illustia.ui.components.animatedGridPlacement
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.components.pinchToChangeColumns
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
+import com.yunfie.illustia.ui.scroll.InstallHomeScrollProbe
+import com.yunfie.illustia.ui.scroll.ScrollStateKeys
+import com.yunfie.illustia.ui.scroll.ScrollStateRegistry
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
@@ -116,7 +119,9 @@ internal fun FeedTabContent(
     val feedHighQuality = settings.useHighQualityFeedImages
     val showAiBadge = remember(settings.showAiBadge) { settings.showAiBadge }
     val mutedTagsSet = remember(settings.mutedTags) { settings.mutedTags.toHashSet() }
-    val gridState = viewModel.homeFeedGridState
+    val gridState = viewModel.scrollStates.grid(ScrollStateKeys.HOME_FEED)
+    InstallHomeScrollProbe(viewModel, gridState)
+
     PrefetchIllustGridImages(
         items = items,
         gridState = gridState,
@@ -295,7 +300,9 @@ internal fun FollowingTabContent(
     val feedHighQuality = settings.useHighQualityFeedImages
     val showAiBadge = remember(settings.showAiBadge) { settings.showAiBadge }
     val mutedTagsSet = remember(settings.mutedTags) { settings.mutedTags.toHashSet() }
-    val gridState = viewModel.homeTimelineGridState
+    val gridState = viewModel.scrollStates.grid(ScrollStateKeys.HOME_TIMELINE)
+    InstallHomeScrollProbe(viewModel, gridState)
+
     PrefetchIllustGridImages(
         items = items,
         gridState = gridState,

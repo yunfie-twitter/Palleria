@@ -80,6 +80,8 @@ import com.yunfie.illustia.ui.components.ScrollBlurScaffold
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.smoothScrollToTop
+import com.yunfie.illustia.ui.scroll.ScrollStateKeys
+import com.yunfie.illustia.ui.scroll.ScrollStateRegistry
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Icon
@@ -272,12 +274,12 @@ fun SearchScreen(
                     val targetGrid =
                         if (isResultMode) {
                             if (state.searchSelectedTab == 1) {
-                                viewModel.userSearchResultGridState
+                                viewModel.scrollStates.grid(ScrollStateKeys.USER_SEARCH_RESULT)
                             } else {
-                                viewModel.searchResultGridState
+                                viewModel.scrollStates.grid(ScrollStateKeys.SEARCH_RESULT)
                             }
                         } else {
-                            viewModel.searchBrowseGridState
+                            viewModel.scrollStates.grid(ScrollStateKeys.SEARCH_BROWSE)
                         }
                     targetGrid.smoothScrollToTop(scrollBehavior)
                 }
@@ -298,7 +300,7 @@ fun SearchScreen(
             scrollFraction =
                 remember(viewModel) {
                     {
-                        val grid = viewModel.searchBrowseGridState
+                        val grid = viewModel.scrollStates.grid(ScrollStateKeys.SEARCH_BROWSE)
                         if (grid.firstVisibleItemIndex > 0) {
                             1f
                         } else {
