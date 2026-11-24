@@ -1,7 +1,6 @@
 package com.yunfie.illustia.settings
 
 import androidx.compose.runtime.Composable
-import com.yunfie.illustia.R
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.theme_dark
 import com.yunfie.illustia.resources.theme_light

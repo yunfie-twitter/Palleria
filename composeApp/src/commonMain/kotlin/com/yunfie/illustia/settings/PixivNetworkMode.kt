@@ -1,7 +1,6 @@
 package com.yunfie.illustia.settings
 
 import androidx.compose.runtime.Composable
-import com.yunfie.illustia.R
 import com.yunfie.illustia.models.NetworkMode
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.pixiv_network_mode_compat

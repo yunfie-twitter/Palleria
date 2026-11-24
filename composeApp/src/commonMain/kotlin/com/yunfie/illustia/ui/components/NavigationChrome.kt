@@ -14,7 +14,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.FeatureFlag
-import com.yunfie.illustia.settings.isFeatureEnabled
 import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBarDisplayMode
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -85,7 +84,7 @@ fun AppNavigationBar(
     NavigationBar(
         modifier = modifier,
         mode =
-            if (settings.isFeatureEnabled(FeatureFlag.NavigationIconsOnly)) {
+            if (FeatureFlag.NavigationIconsOnly.resolve(settings)) {
                 NavigationBarDisplayMode.IconOnly
             } else {
                 NavigationBarDisplayMode.IconAndText
