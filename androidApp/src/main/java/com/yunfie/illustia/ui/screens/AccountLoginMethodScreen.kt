@@ -16,13 +16,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.R
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.account_add_description
+import com.yunfie.illustia.resources.account_add_recommended
+import com.yunfie.illustia.resources.account_add_title
+import com.yunfie.illustia.resources.account_add_token_description
+import com.yunfie.illustia.resources.account_add_web_description
+import com.yunfie.illustia.resources.account_token_login
+import com.yunfie.illustia.resources.account_web_login
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.miuixClickable
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -49,8 +57,8 @@ fun AccountLoginMethodScreen(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
             TopAppBar(
-                title = stringResource(R.string.account_add_title),
-                largeTitle = stringResource(R.string.account_add_title),
+                title = stringResource(Res.string.account_add_title),
+                largeTitle = stringResource(Res.string.account_add_title),
                 scrollBehavior = scrollBehavior,
                 navigationIcon = { HeaderIcon(MiuixIcons.Back, onClick = onBack) },
             )
@@ -73,7 +81,7 @@ fun AccountLoginMethodScreen(
         ) {
             item {
                 Text(
-                    text = stringResource(R.string.account_add_description),
+                    text = stringResource(Res.string.account_add_description),
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     style = MiuixTheme.textStyles.body1,
                     modifier = Modifier.padding(start = 4.dp, bottom = 8.dp),
@@ -82,9 +90,9 @@ fun AccountLoginMethodScreen(
             item {
                 LoginMethodCard(
                     icon = MiuixIcons.Contacts,
-                    title = stringResource(R.string.account_web_login),
-                    description = stringResource(R.string.account_add_web_description),
-                    badge = stringResource(R.string.account_add_recommended),
+                    title = stringResource(Res.string.account_web_login),
+                    description = stringResource(Res.string.account_add_web_description),
+                    badge = stringResource(Res.string.account_add_recommended),
                     emphasized = true,
                     onClick = onWebLogin,
                 )
@@ -92,8 +100,8 @@ fun AccountLoginMethodScreen(
             item {
                 LoginMethodCard(
                     icon = MiuixIcons.Refresh,
-                    title = stringResource(R.string.account_token_login),
-                    description = stringResource(R.string.account_add_token_description),
+                    title = stringResource(Res.string.account_token_login),
+                    description = stringResource(Res.string.account_add_token_description),
                     onClick = onRefreshTokenLogin,
                 )
             }

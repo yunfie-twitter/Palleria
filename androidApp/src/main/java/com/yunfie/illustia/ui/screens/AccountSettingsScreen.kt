@@ -12,11 +12,24 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.account_logged_in
+import com.yunfie.illustia.resources.account_login_status
+import com.yunfie.illustia.resources.account_logout
+import com.yunfie.illustia.resources.account_logout_confirm_summary
+import com.yunfie.illustia.resources.account_logout_confirm_title
+import com.yunfie.illustia.resources.account_not_logged_in
+import com.yunfie.illustia.resources.account_status
+import com.yunfie.illustia.resources.account_switch_add
+import com.yunfie.illustia.resources.discord_section_account
+import com.yunfie.illustia.resources.discord_settings_title
+import com.yunfie.illustia.resources.discord_status_connected
+import com.yunfie.illustia.resources.discord_status_disconnected
+import com.yunfie.illustia.resources.settings_account
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
@@ -26,6 +39,7 @@ import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.Section
 import com.yunfie.illustia.ui.components.SettingLinkRow
 import com.yunfie.illustia.ui.components.SettingRow
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
@@ -48,9 +62,9 @@ fun AccountSettingsScreen(
     if (showLogoutConfirm) {
         MiuixConfirmDialog(
             show = true,
-            title = stringResource(R.string.account_logout_confirm_title),
-            summary = stringResource(R.string.account_logout_confirm_summary),
-            confirmText = stringResource(R.string.account_logout),
+            title = stringResource(Res.string.account_logout_confirm_title),
+            summary = stringResource(Res.string.account_logout_confirm_summary),
+            confirmText = stringResource(Res.string.account_logout),
             destructive = true,
             onConfirm = {
                 showLogoutConfirm = false
@@ -63,8 +77,8 @@ fun AccountSettingsScreen(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
             TopAppBar(
-                title = stringResource(R.string.settings_account),
-                largeTitle = stringResource(R.string.settings_account),
+                title = stringResource(Res.string.settings_account),
+                largeTitle = stringResource(Res.string.settings_account),
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     HeaderIcon(MiuixIcons.Back, onClick = onBack)
@@ -88,17 +102,15 @@ fun AccountSettingsScreen(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             item {
-                Section(stringResource(R.string.account_login_status)) {
+                Section(stringResource(Res.string.account_login_status)) {
                     ElevatedPanel {
-                        SettingRow(stringResource(R.string.account_status)) {
+                        SettingRow(stringResource(Res.string.account_status)) {
                             Text(
                                 text =
                                     if (settings.refreshToken.isBlank()) {
-                                        stringResource(
-                                            R.string.account_not_logged_in,
-                                        )
+                                        stringResource(Res.string.account_not_logged_in)
                                     } else {
-                                        stringResource(R.string.account_logged_in)
+                                        stringResource(Res.string.account_logged_in)
                                     },
                                 color =
                                     if (settings.refreshToken.isBlank()) {
@@ -111,23 +123,23 @@ fun AccountSettingsScreen(
                             )
                         }
                         DividerLine()
-                        SettingLinkRow(stringResource(R.string.account_switch_add)) { viewModel.openAccountLoginMethod() }
+                        SettingLinkRow(stringResource(Res.string.account_switch_add)) { viewModel.openAccountLoginMethod() }
                         DividerLine()
-                        SettingLinkRow(stringResource(R.string.account_logout)) { showLogoutConfirm = true }
+                        SettingLinkRow(stringResource(Res.string.account_logout)) { showLogoutConfirm = true }
                     }
                 }
             }
 
             item {
-                Section(stringResource(R.string.discord_section_account)) {
+                Section(stringResource(Res.string.discord_section_account)) {
                     ElevatedPanel {
                         SettingLinkRow(
-                            title = stringResource(R.string.discord_settings_title),
+                            title = stringResource(Res.string.discord_settings_title),
                             summary =
                                 if (settings.discordRpcEnabled) {
-                                    stringResource(R.string.discord_status_connected)
+                                    stringResource(Res.string.discord_status_connected)
                                 } else {
-                                    stringResource(R.string.discord_status_disconnected)
+                                    stringResource(Res.string.discord_status_disconnected)
                                 },
                             onClick = onOpenDiscordSettings,
                         )

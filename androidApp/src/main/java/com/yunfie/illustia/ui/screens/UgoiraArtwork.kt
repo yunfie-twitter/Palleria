@@ -44,7 +44,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -54,6 +53,8 @@ import com.yunfie.illustia.R
 import com.yunfie.illustia.models.pixiv.UgoiraPlayback
 import com.yunfie.illustia.models.pixiv.normalizedUgoiraDelayMillis
 import com.yunfie.illustia.platform.PlatformCapabilities
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.ugoira_load_failed
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.LocalSystemUiCovered
@@ -66,6 +67,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Slider
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -651,7 +653,7 @@ internal fun UgoiraArtwork(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = stringResource(R.string.ugoira_load_failed),
+                        text = stringResource(Res.string.ugoira_load_failed),
                         color = MiuixTheme.colorScheme.onSurface,
                         style = MiuixTheme.textStyles.footnote1,
                     )

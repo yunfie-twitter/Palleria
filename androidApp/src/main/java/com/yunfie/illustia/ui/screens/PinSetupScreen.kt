@@ -26,16 +26,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_delete
+import com.yunfie.illustia.resources.app_lock_confirm_new
+import com.yunfie.illustia.resources.app_lock_enter_current
+import com.yunfie.illustia.resources.app_lock_enter_new
+import com.yunfie.illustia.resources.app_lock_incorrect
+import com.yunfie.illustia.resources.app_lock_mismatch
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.LocalAppHapticMode
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.performAppHapticFeedback
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -82,14 +89,14 @@ fun PinSetupScreen(
 
     val title =
         when (step) {
-            1 -> stringResource(R.string.app_lock_enter_current)
-            2 -> stringResource(R.string.app_lock_enter_new)
-            3 -> stringResource(R.string.app_lock_confirm_new)
+            1 -> stringResource(Res.string.app_lock_enter_current)
+            2 -> stringResource(Res.string.app_lock_enter_new)
+            3 -> stringResource(Res.string.app_lock_confirm_new)
             else -> ""
         }
 
-    val mismatchError = stringResource(R.string.app_lock_mismatch)
-    val incorrectError = stringResource(R.string.app_lock_incorrect)
+    val mismatchError = stringResource(Res.string.app_lock_mismatch)
+    val incorrectError = stringResource(Res.string.app_lock_incorrect)
 
     fun onDigitPressed(digit: Char) {
         performAppHapticFeedback(context, haptic, hapticMode)
@@ -279,7 +286,7 @@ private fun NumberPad(
             ) {
                 Icon(
                     imageVector = MiuixIcons.Remove,
-                    contentDescription = stringResource(R.string.action_delete),
+                    contentDescription = stringResource(Res.string.action_delete),
                     modifier = Modifier.size(28.dp),
                     tint = MiuixTheme.colorScheme.onSurface,
                 )

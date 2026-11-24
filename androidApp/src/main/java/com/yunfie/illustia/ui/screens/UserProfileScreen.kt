@@ -28,7 +28,6 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.R
@@ -36,6 +35,7 @@ import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_unfollow
 import com.yunfie.illustia.resources.detail_unfollow_confirm
 import com.yunfie.illustia.resources.detail_unfollow_title
 import com.yunfie.illustia.settings.AppSettings
@@ -55,6 +55,7 @@ import com.yunfie.illustia.ui.screens.profile.UserWorkSortOrder
 import com.yunfie.illustia.ui.screens.profile.UserWorkTypeFilter
 import com.yunfie.illustia.ui.screens.profile.rememberUserWorks
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import org.jetbrains.compose.resources.stringResource as resString
@@ -203,7 +204,7 @@ fun UserProfileScreen(
             show = true,
             title = resString(Res.string.detail_unfollow_title),
             summary = resString(Res.string.detail_unfollow_confirm, user.name.ifBlank { "@${user.account}" }),
-            confirmText = stringResource(R.string.action_unfollow),
+            confirmText = stringResource(Res.string.action_unfollow),
             destructive = true,
             onConfirm = {
                 showUnfollowConfirm = false

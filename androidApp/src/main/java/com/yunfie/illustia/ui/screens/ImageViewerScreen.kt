@@ -78,7 +78,6 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
@@ -89,6 +88,14 @@ import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.pixiv.UgoiraPlayback
 import com.yunfie.illustia.platform.ImageClipboardHelper
 import com.yunfie.illustia.platform.PlatformCapabilities
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_bookmark
+import com.yunfie.illustia.resources.action_close
+import com.yunfie.illustia.resources.action_copy_image
+import com.yunfie.illustia.resources.action_share
+import com.yunfie.illustia.resources.copied_image_to_clipboard
+import com.yunfie.illustia.resources.copy_image_failed
+import com.yunfie.illustia.resources.viewer_share_failed
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
@@ -99,6 +106,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.FloatingToolbar
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -144,9 +152,9 @@ fun ImageViewerScreen(
     progressiveQuality: Boolean = false,
 ) {
     val context = LocalContext.current
-    val shareFailedMessage = stringResource(R.string.viewer_share_failed)
-    val copiedMessage = stringResource(R.string.copied_image_to_clipboard)
-    val copyFailedMessage = stringResource(R.string.copy_image_failed)
+    val shareFailedMessage = stringResource(Res.string.viewer_share_failed)
+    val copiedMessage = stringResource(Res.string.copied_image_to_clipboard)
+    val copyFailedMessage = stringResource(Res.string.copy_image_failed)
     val imageUrls =
         remember(illust, fullscreenQuality) {
             resolveQualityImageUrls(illust, fullscreenQuality)
@@ -388,7 +396,7 @@ fun ImageViewerScreen(
                         }) {
                             Icon(
                                 imageVector = MiuixIcons.Back,
-                                contentDescription = stringResource(R.string.action_close),
+                                contentDescription = stringResource(Res.string.action_close),
                                 tint = Color.White,
                             )
                         }
@@ -435,7 +443,7 @@ fun ImageViewerScreen(
                                 ) {
                                     Icon(
                                         imageVector = MiuixIcons.Close,
-                                        contentDescription = stringResource(R.string.action_close),
+                                        contentDescription = stringResource(Res.string.action_close),
                                         tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                         modifier = Modifier.size(18.dp),
                                     )
@@ -538,7 +546,7 @@ fun ImageViewerScreen(
                                     ) { isLiked ->
                                         Icon(
                                             imageVector = if (isLiked) MiuixIcons.FavoritesFill else MiuixIcons.Favorites,
-                                            contentDescription = stringResource(R.string.action_bookmark),
+                                            contentDescription = stringResource(Res.string.action_bookmark),
                                             tint = iconColor,
                                         )
                                     }
@@ -558,7 +566,7 @@ fun ImageViewerScreen(
                                 }) {
                                     Icon(
                                         imageVector = MiuixIcons.Copy,
-                                        contentDescription = stringResource(R.string.action_copy_image),
+                                        contentDescription = stringResource(Res.string.action_copy_image),
                                         tint = MiuixTheme.colorScheme.primary,
                                     )
                                 }
@@ -577,7 +585,7 @@ fun ImageViewerScreen(
                                 }) {
                                     Icon(
                                         imageVector = MiuixIcons.Share,
-                                        contentDescription = stringResource(R.string.action_share),
+                                        contentDescription = stringResource(Res.string.action_share),
                                         tint = MiuixTheme.colorScheme.primary,
                                     )
                                 }

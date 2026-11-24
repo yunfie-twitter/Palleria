@@ -26,7 +26,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -36,7 +35,11 @@ import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_bookmark
+import com.yunfie.illustia.resources.action_share
 import com.yunfie.illustia.resources.detail_comments
+import com.yunfie.illustia.resources.shorts_empty
+import com.yunfie.illustia.resources.shorts_loading
 import com.yunfie.illustia.ui.app.AppTab
 import com.yunfie.illustia.ui.app.LocalTabUiState
 import com.yunfie.illustia.ui.components.AppHapticEffect
@@ -46,6 +49,7 @@ import com.yunfie.illustia.ui.components.cachedVerticalGradient
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
@@ -67,7 +71,7 @@ fun ShortsFeedScreen(
 ) {
     val context = LocalContext.current
     val performHaptic = rememberHapticFeedbackAction()
-    val shareLabel = stringResource(R.string.action_share)
+    val shareLabel = stringResource(Res.string.action_share)
     val initialPage =
         remember(items, currentIllustId) {
             items.indexOfFirst { it.id == currentIllustId }.coerceAtLeast(0)
@@ -127,7 +131,7 @@ fun ShortsFeedScreen(
             when (val state = loadState) {
                 LoadState.Idle, LoadState.Loading -> {
                     Text(
-                        text = stringResource(R.string.shorts_loading),
+                        text = stringResource(Res.string.shorts_loading),
                         color = Color.White,
                         modifier = Modifier.align(Alignment.Center),
                     )
@@ -144,7 +148,7 @@ fun ShortsFeedScreen(
 
                 LoadState.Loaded -> {
                     Text(
-                        text = stringResource(R.string.shorts_empty),
+                        text = stringResource(Res.string.shorts_empty),
                         color = Color.White,
                         modifier = Modifier.align(Alignment.Center),
                     )
@@ -227,7 +231,7 @@ fun ShortsFeedScreen(
                         ) {
                             Icon(
                                 imageVector = if (illust.isBookmarked) MiuixIcons.FavoritesFill else MiuixIcons.Favorites,
-                                contentDescription = stringResource(R.string.action_bookmark),
+                                contentDescription = stringResource(Res.string.action_bookmark),
                                 tint = if (illust.isBookmarked) Color(0xFFFF4D67) else Color.White,
                                 modifier = Modifier.size(38.dp),
                             )

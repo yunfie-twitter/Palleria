@@ -36,7 +36,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -45,8 +44,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_open
+import com.yunfie.illustia.resources.novel_inline_illust_label
+import com.yunfie.illustia.resources.novel_open_illust
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.PixivImage
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
@@ -497,7 +501,7 @@ private fun NovelVerticalArtworkCard(
                 if (currentPreviewUrl != null) {
                     PixivImage(
                         url = currentPreviewUrl,
-                        contentDescription = stringResource(R.string.novel_inline_illust_label),
+                        contentDescription = stringResource(Res.string.novel_inline_illust_label),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize(),
                     )
@@ -518,7 +522,7 @@ private fun NovelVerticalArtworkCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = stringResource(R.string.novel_open_illust),
+                        text = stringResource(Res.string.novel_open_illust),
                         style = MiuixTheme.textStyles.subtitle,
                         fontWeight = FontWeight.Bold,
                         color = textColor,
@@ -531,7 +535,7 @@ private fun NovelVerticalArtworkCard(
                     )
                 }
                 Button(onClick = onOpen) {
-                    Text(stringResource(R.string.action_open))
+                    Text(stringResource(Res.string.action_open))
                 }
             }
         }

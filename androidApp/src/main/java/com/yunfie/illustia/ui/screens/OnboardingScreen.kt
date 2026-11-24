@@ -21,7 +21,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -29,9 +28,22 @@ import androidx.compose.ui.unit.sp
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.about_title
+import com.yunfie.illustia.resources.action_close
+import com.yunfie.illustia.resources.app_name
+import com.yunfie.illustia.resources.data_send_telemetry
+import com.yunfie.illustia.resources.data_send_telemetry_desc
+import com.yunfie.illustia.resources.login_details
+import com.yunfie.illustia.resources.login_disclaimer
+import com.yunfie.illustia.resources.login_or
+import com.yunfie.illustia.resources.login_token_short
+import com.yunfie.illustia.resources.login_web_button
+import com.yunfie.illustia.resources.login_web_description
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.AppDialog
 import com.yunfie.illustia.ui.components.miuixClickable
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
@@ -107,14 +119,14 @@ internal fun OnboardingLoginScreen(
 
     AppDialog(
         show = showDetails,
-        title = stringResource(R.string.about_title),
-        summary = stringResource(R.string.login_disclaimer),
+        title = stringResource(Res.string.about_title),
+        summary = stringResource(Res.string.login_disclaimer),
         backgroundColor = MiuixTheme.colorScheme.surfaceContainerHighest,
         onDismissRequest = { showDetails = false },
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Text(
-                text = stringResource(R.string.login_web_description),
+                text = stringResource(Res.string.login_web_description),
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 style = MiuixTheme.textStyles.body1,
             )
@@ -125,7 +137,7 @@ internal fun OnboardingLoginScreen(
                 insideMargin = PaddingValues(vertical = 12.dp),
             ) {
                 Text(
-                    text = stringResource(R.string.action_close),
+                    text = stringResource(Res.string.action_close),
                     fontWeight = FontWeight.Bold,
                 )
             }
@@ -157,8 +169,8 @@ private fun OnboardingActions(
         )
         Spacer(Modifier.height(16.dp))
         CheckboxPreference(
-            title = stringResource(R.string.data_send_telemetry),
-            summary = stringResource(R.string.data_send_telemetry_desc),
+            title = stringResource(Res.string.data_send_telemetry),
+            summary = stringResource(Res.string.data_send_telemetry_desc),
             checked = settings.sendTelemetry,
             onCheckedChange = viewModel::updateSendTelemetry,
             modifier = Modifier.fillMaxWidth(),
@@ -168,7 +180,7 @@ private fun OnboardingActions(
 
 @Composable
 private fun BrandLockup(modifier: Modifier = Modifier) {
-    val appName = stringResource(R.string.app_name)
+    val appName = stringResource(Res.string.app_name)
 
     Row(
         modifier = modifier,
@@ -206,7 +218,7 @@ private fun LoginActions(
             insideMargin = PaddingValues(horizontal = 18.dp, vertical = 14.dp),
         ) {
             Text(
-                text = stringResource(R.string.login_web_button),
+                text = stringResource(Res.string.login_web_button),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
             )
@@ -225,7 +237,7 @@ private fun LoginActions(
                 color = MiuixTheme.colorScheme.dividerLine,
             )
             Text(
-                text = stringResource(R.string.login_or),
+                text = stringResource(Res.string.login_or),
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 fontSize = 17.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -244,12 +256,12 @@ private fun LoginActions(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             BottomAction(
-                label = stringResource(R.string.login_details),
+                label = stringResource(Res.string.login_details),
                 onClick = onShowDetails,
                 modifier = Modifier.weight(1f),
             )
             BottomAction(
-                label = stringResource(R.string.login_token_short),
+                label = stringResource(Res.string.login_token_short),
                 onClick = onRefreshTokenLogin,
                 modifier = Modifier.weight(1f),
             )

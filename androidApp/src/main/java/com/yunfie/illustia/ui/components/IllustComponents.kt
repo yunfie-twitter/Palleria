@@ -45,7 +45,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -53,6 +52,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.illust_load_more
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
@@ -788,7 +790,7 @@ fun IllustGrid(
             if (hasMore && onLoadMore != null) {
                 item(key = "illust_load_more", contentType = "load_more") {
                     Button(onClick = onLoadMore, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-                        Text(stringResource(R.string.illust_load_more))
+                        Text(stringResource(Res.string.illust_load_more))
                     }
                 }
             }

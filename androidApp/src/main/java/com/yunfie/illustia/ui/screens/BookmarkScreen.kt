@@ -21,7 +21,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -36,6 +35,17 @@ import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.UserPreview
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_sort
+import com.yunfie.illustia.resources.bookmark_tag_sort_button
+import com.yunfie.illustia.resources.dialog_reload
+import com.yunfie.illustia.resources.nav_bookmarks_full
+import com.yunfie.illustia.resources.restrict_private
+import com.yunfie.illustia.resources.restrict_public
+import com.yunfie.illustia.resources.sort_date_asc
+import com.yunfie.illustia.resources.sort_date_desc
+import com.yunfie.illustia.resources.sort_name_asc
+import com.yunfie.illustia.resources.sort_popular_desc
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
@@ -53,6 +63,7 @@ import com.yunfie.illustia.ui.scroll.ScrollStateRegistry
 import com.yunfie.illustia.uiRepository
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
@@ -188,8 +199,8 @@ fun BookmarkScreen(
         header = {
             TopAppBar(
                 color = if (settings.isFeatureEnabled(FeatureFlag.TopScrollBlur)) Color.Transparent else MiuixTheme.colorScheme.surface,
-                title = stringResource(R.string.nav_bookmarks_full),
-                largeTitle = stringResource(R.string.nav_bookmarks_full),
+                title = stringResource(Res.string.nav_bookmarks_full),
+                largeTitle = stringResource(Res.string.nav_bookmarks_full),
                 scrollBehavior = scrollBehavior,
                 modifier =
                     Modifier.onTopBarTap(
@@ -212,14 +223,14 @@ fun BookmarkScreen(
                     },
                 actions = {
                     if (selectedTopTab == 1) {
-                        val tagSortLabel = stringResource(R.string.bookmark_tag_sort_button)
-                        val publicLabel = stringResource(R.string.restrict_public)
-                        val privateLabel = stringResource(R.string.restrict_private)
-                        val sortLabel = stringResource(R.string.action_sort)
-                        val sortNewestLabel = stringResource(R.string.sort_date_desc)
-                        val sortOldestLabel = stringResource(R.string.sort_date_asc)
-                        val sortPopularLabel = stringResource(R.string.sort_popular_desc)
-                        val sortTitleLabel = stringResource(R.string.sort_name_asc)
+                        val tagSortLabel = stringResource(Res.string.bookmark_tag_sort_button)
+                        val publicLabel = stringResource(Res.string.restrict_public)
+                        val privateLabel = stringResource(Res.string.restrict_private)
+                        val sortLabel = stringResource(Res.string.action_sort)
+                        val sortNewestLabel = stringResource(Res.string.sort_date_desc)
+                        val sortOldestLabel = stringResource(Res.string.sort_date_asc)
+                        val sortPopularLabel = stringResource(Res.string.sort_popular_desc)
+                        val sortTitleLabel = stringResource(Res.string.sort_name_asc)
 
                         val bookmarkMenuEntries =
                             remember(
@@ -327,16 +338,16 @@ fun BookmarkScreen(
                             icon = MiuixIcons.Tune,
                             backgroundColor = Color.Transparent,
                             contentColor = MiuixTheme.colorScheme.onBackground,
-                            contentDescription = stringResource(R.string.nav_bookmarks_full),
+                            contentDescription = stringResource(Res.string.nav_bookmarks_full),
                         )
                     }
                     if (selectedTopTab == 3) {
-                        val publicLabel = stringResource(R.string.restrict_public)
-                        val privateLabel = stringResource(R.string.restrict_private)
-                        val sortLabel = stringResource(R.string.action_sort)
-                        val sortNewestLabel = stringResource(R.string.sort_date_desc)
-                        val sortOldestLabel = stringResource(R.string.sort_date_asc)
-                        val sortNameLabel = stringResource(R.string.sort_name_asc)
+                        val publicLabel = stringResource(Res.string.restrict_public)
+                        val privateLabel = stringResource(Res.string.restrict_private)
+                        val sortLabel = stringResource(Res.string.action_sort)
+                        val sortNewestLabel = stringResource(Res.string.sort_date_desc)
+                        val sortOldestLabel = stringResource(Res.string.sort_date_asc)
+                        val sortNameLabel = stringResource(Res.string.sort_name_asc)
                         val followingSortEntries =
                             remember(
                                 settings.followRestrict,
@@ -435,8 +446,7 @@ fun BookmarkScreen(
                         Icon(
                             MiuixIcons.Refresh,
                             contentDescription =
-                                androidx.compose.ui.res
-                                    .stringResource(R.string.dialog_reload),
+                                stringResource(Res.string.dialog_reload),
                         )
                     }
                 },

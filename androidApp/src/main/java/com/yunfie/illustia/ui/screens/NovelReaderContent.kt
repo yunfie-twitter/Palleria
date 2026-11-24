@@ -38,7 +38,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.UriHandler
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
@@ -53,10 +52,30 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_open
+import com.yunfie.illustia.resources.novel_font_sans_serif
+import com.yunfie.illustia.resources.novel_font_serif
+import com.yunfie.illustia.resources.novel_font_system
+import com.yunfie.illustia.resources.novel_go_to_page
+import com.yunfie.illustia.resources.novel_inline_illust_label
+import com.yunfie.illustia.resources.novel_layout_paged
+import com.yunfie.illustia.resources.novel_layout_scroll
+import com.yunfie.illustia.resources.novel_layout_vertical
+import com.yunfie.illustia.resources.novel_line_height_compact
+import com.yunfie.illustia.resources.novel_line_height_normal
+import com.yunfie.illustia.resources.novel_line_height_relaxed
+import com.yunfie.illustia.resources.novel_open_illust
+import com.yunfie.illustia.resources.novel_series_next_episode
+import com.yunfie.illustia.resources.novel_theme_black
+import com.yunfie.illustia.resources.novel_theme_dark
+import com.yunfie.illustia.resources.novel_theme_sepia
+import com.yunfie.illustia.resources.novel_theme_system
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.miuixClickable
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
@@ -70,12 +89,12 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 enum class NovelTheme(
     val id: String,
-    val displayNameRes: Int,
+    val displayNameRes: StringResource,
 ) {
-    System("system", R.string.novel_theme_system),
-    Sepia("sepia", R.string.novel_theme_sepia),
-    Dark("dark", R.string.novel_theme_dark),
-    Black("black", R.string.novel_theme_black),
+    System("system", Res.string.novel_theme_system),
+    Sepia("sepia", Res.string.novel_theme_sepia),
+    Dark("dark", Res.string.novel_theme_dark),
+    Black("black", Res.string.novel_theme_black),
     ;
 
     @Composable
@@ -115,11 +134,11 @@ private const val EMPHASIS_CHAR_PADDING_FACTOR = 1.05f
 enum class NovelLineSpacing(
     val id: String,
     val multiplier: Float,
-    val labelRes: Int,
+    val labelRes: StringResource,
 ) {
-    Compact("compact", LINE_SPACING_COMPACT, R.string.novel_line_height_compact),
-    Normal("normal", LINE_SPACING_NORMAL, R.string.novel_line_height_normal),
-    Relaxed("relaxed", LINE_SPACING_RELAXED, R.string.novel_line_height_relaxed),
+    Compact("compact", LINE_SPACING_COMPACT, Res.string.novel_line_height_compact),
+    Normal("normal", LINE_SPACING_NORMAL, Res.string.novel_line_height_normal),
+    Relaxed("relaxed", LINE_SPACING_RELAXED, Res.string.novel_line_height_relaxed),
     ;
 
     companion object {
@@ -129,12 +148,12 @@ enum class NovelLineSpacing(
 
 enum class NovelFontFamily(
     val id: String,
-    val labelRes: Int,
+    val labelRes: StringResource,
     val fontFamily: FontFamily,
 ) {
-    System("system", R.string.novel_font_system, FontFamily.Default),
-    Serif("serif", R.string.novel_font_serif, FontFamily.Serif),
-    SansSerif("sans_serif", R.string.novel_font_sans_serif, FontFamily.SansSerif),
+    System("system", Res.string.novel_font_system, FontFamily.Default),
+    Serif("serif", Res.string.novel_font_serif, FontFamily.Serif),
+    SansSerif("sans_serif", Res.string.novel_font_sans_serif, FontFamily.SansSerif),
     ;
 
     companion object {
@@ -144,11 +163,11 @@ enum class NovelFontFamily(
 
 enum class NovelLayoutMode(
     val id: String,
-    val labelRes: Int,
+    val labelRes: StringResource,
 ) {
-    Paged("paged", R.string.novel_layout_paged),
-    Scroll("scroll", R.string.novel_layout_scroll),
-    Vertical("vertical", R.string.novel_layout_vertical),
+    Paged("paged", Res.string.novel_layout_paged),
+    Scroll("scroll", Res.string.novel_layout_scroll),
+    Vertical("vertical", Res.string.novel_layout_vertical),
     ;
 
     companion object {
@@ -330,13 +349,13 @@ internal fun NovelReaderPage(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = stringResource(R.string.novel_series_next_episode),
+                                text = stringResource(Res.string.novel_series_next_episode),
                                 style = MiuixTheme.textStyles.footnote1,
                                 color = MiuixTheme.colorScheme.primary,
                                 fontWeight = FontWeight.Bold,
                             )
                             Text(
-                                text = seriesNextTitle.orEmpty().ifBlank { stringResource(R.string.novel_series_next_episode) },
+                                text = seriesNextTitle.orEmpty().ifBlank { stringResource(Res.string.novel_series_next_episode) },
                                 style = MiuixTheme.textStyles.body1,
                                 fontWeight = FontWeight.Bold,
                             )
@@ -451,13 +470,13 @@ internal fun NovelReaderContinuousContent(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = stringResource(R.string.novel_series_next_episode),
+                                text = stringResource(Res.string.novel_series_next_episode),
                                 style = MiuixTheme.textStyles.footnote1,
                                 color = MiuixTheme.colorScheme.primary,
                                 fontWeight = FontWeight.Bold,
                             )
                             Text(
-                                text = seriesNextTitle.orEmpty().ifBlank { stringResource(R.string.novel_series_next_episode) },
+                                text = seriesNextTitle.orEmpty().ifBlank { stringResource(Res.string.novel_series_next_episode) },
                                 style = MiuixTheme.textStyles.body1,
                                 fontWeight = FontWeight.Bold,
                             )
@@ -586,7 +605,7 @@ internal fun NovelJumpButton(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(MiuixIcons.ChevronForward, contentDescription = null, modifier = Modifier.size(16.dp))
-            Text(text = stringResource(R.string.novel_go_to_page, pageNumber))
+            Text(text = stringResource(Res.string.novel_go_to_page, pageNumber))
         }
     }
 }
@@ -627,7 +646,7 @@ private fun NovelArtworkCard(
                 ) {
                     PixivImage(
                         url = currentPreviewUrl,
-                        contentDescription = stringResource(R.string.novel_inline_illust_label),
+                        contentDescription = stringResource(Res.string.novel_inline_illust_label),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize(),
                     )
@@ -656,7 +675,7 @@ private fun NovelArtworkCard(
                 }
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = stringResource(R.string.novel_open_illust),
+                        text = stringResource(Res.string.novel_open_illust),
                         style = MiuixTheme.textStyles.subtitle,
                         fontWeight = FontWeight.Bold,
                         color = textColor,
@@ -668,7 +687,7 @@ private fun NovelArtworkCard(
                     )
                 }
                 Button(onClick = onOpen) {
-                    Text(stringResource(R.string.action_open))
+                    Text(stringResource(Res.string.action_open))
                 }
             }
         }

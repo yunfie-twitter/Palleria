@@ -1,6 +1,5 @@
 package com.yunfie.illustia.ui.app
 
-import androidx.annotation.StringRes
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -44,7 +43,6 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
@@ -53,9 +51,49 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.yunfie.illustia.R
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_close
+import com.yunfie.illustia.resources.command_palette_app_data
+import com.yunfie.illustia.resources.command_palette_category_action
+import com.yunfie.illustia.resources.command_palette_category_appearance
+import com.yunfie.illustia.resources.command_palette_category_navigation
+import com.yunfie.illustia.resources.command_palette_category_settings
+import com.yunfie.illustia.resources.command_palette_clear_cache
+import com.yunfie.illustia.resources.command_palette_dark
+import com.yunfie.illustia.resources.command_palette_download_queue
+import com.yunfie.illustia.resources.command_palette_favorite_tags
+import com.yunfie.illustia.resources.command_palette_flags
+import com.yunfie.illustia.resources.command_palette_hint
+import com.yunfie.illustia.resources.command_palette_home
+import com.yunfie.illustia.resources.command_palette_light
+import com.yunfie.illustia.resources.command_palette_mute_settings
+import com.yunfie.illustia.resources.command_palette_no_results
+import com.yunfie.illustia.resources.command_palette_notifications
+import com.yunfie.illustia.resources.command_palette_offline_library
+import com.yunfie.illustia.resources.command_palette_open_clipboard
+import com.yunfie.illustia.resources.command_palette_refresh_feed
+import com.yunfie.illustia.resources.command_palette_search
+import com.yunfie.illustia.resources.command_palette_settings
+import com.yunfie.illustia.resources.command_palette_shortcut_close
+import com.yunfie.illustia.resources.command_palette_shortcut_navigate
+import com.yunfie.illustia.resources.command_palette_shortcut_select
+import com.yunfie.illustia.resources.command_palette_shorts_feed
+import com.yunfie.illustia.resources.command_palette_switch_account
+import com.yunfie.illustia.resources.command_palette_system
+import com.yunfie.illustia.resources.command_palette_toggle_ai
+import com.yunfie.illustia.resources.command_palette_toggle_grid_columns
+import com.yunfie.illustia.resources.command_palette_toggle_image_quality
+import com.yunfie.illustia.resources.command_palette_toggle_r18
+import com.yunfie.illustia.resources.command_palette_toggle_ugoira_autoplay
+import com.yunfie.illustia.resources.command_palette_view_history
+import com.yunfie.illustia.resources.flag_command_palette_title
+import com.yunfie.illustia.resources.nav_bookmarks_full
+import com.yunfie.illustia.resources.nav_novel
+import com.yunfie.illustia.resources.nav_ranking
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
@@ -86,170 +124,170 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 
 internal enum class PaletteAction(
-    @param:StringRes val title: Int,
+    val title: StringResource,
     val icon: ImageVector,
-    @param:StringRes val categoryRes: Int,
+    val categoryRes: StringResource,
     val keywords: List<String> = emptyList(),
 ) {
     Home(
-        R.string.command_palette_home,
+        Res.string.command_palette_home,
         MiuixIcons.Home,
-        R.string.command_palette_category_navigation,
+        Res.string.command_palette_category_navigation,
         listOf("home", "feed"),
     ),
     Search(
-        R.string.command_palette_search,
+        Res.string.command_palette_search,
         MiuixIcons.Search,
-        R.string.command_palette_category_action,
+        Res.string.command_palette_category_action,
     ),
     Ranking(
-        R.string.nav_ranking,
+        Res.string.nav_ranking,
         MiuixIcons.TopDownloads,
-        R.string.command_palette_category_navigation,
+        Res.string.command_palette_category_navigation,
         listOf("ranking", "top"),
     ),
     Bookmarks(
-        R.string.nav_bookmarks_full,
+        Res.string.nav_bookmarks_full,
         MiuixIcons.FavoritesFill,
-        R.string.command_palette_category_navigation,
+        Res.string.command_palette_category_navigation,
         listOf("bookmarks", "fav", "bm"),
     ),
     Novel(
-        R.string.nav_novel,
+        Res.string.nav_novel,
         MiuixIcons.Notes,
-        R.string.command_palette_category_navigation,
+        Res.string.command_palette_category_navigation,
         listOf("novel", "book"),
     ),
     ShortsFeed(
-        R.string.command_palette_shorts_feed,
+        Res.string.command_palette_shorts_feed,
         MiuixIcons.Photos,
-        R.string.command_palette_category_navigation,
+        Res.string.command_palette_category_navigation,
         listOf("shorts", "tiktok", "reel"),
     ),
     ViewHistory(
-        R.string.command_palette_view_history,
+        Res.string.command_palette_view_history,
         MiuixIcons.Timer,
-        R.string.command_palette_category_navigation,
+        Res.string.command_palette_category_navigation,
         listOf("history", "viewed", "rireki"),
     ),
     FavoriteTags(
-        R.string.command_palette_favorite_tags,
+        Res.string.command_palette_favorite_tags,
         MiuixIcons.FavoritesFill,
-        R.string.command_palette_category_navigation,
+        Res.string.command_palette_category_navigation,
         listOf("tag", "favorites", "favtags"),
     ),
     DownloadQueue(
-        R.string.command_palette_download_queue,
+        Res.string.command_palette_download_queue,
         MiuixIcons.Download,
-        R.string.command_palette_category_navigation,
+        Res.string.command_palette_category_navigation,
         listOf("downloads", "dl", "queue"),
     ),
     OfflineLibrary(
-        R.string.command_palette_offline_library,
+        Res.string.command_palette_offline_library,
         MiuixIcons.Favorites,
-        R.string.command_palette_category_navigation,
+        Res.string.command_palette_category_navigation,
         listOf("offline", "saved", "hozon"),
     ),
     Notifications(
-        R.string.command_palette_notifications,
+        Res.string.command_palette_notifications,
         MiuixIcons.Messages,
-        R.string.command_palette_category_navigation,
+        Res.string.command_palette_category_navigation,
         listOf("notifications", "news", "tsuuchi"),
     ),
     SwitchAccount(
-        R.string.command_palette_switch_account,
+        Res.string.command_palette_switch_account,
         MiuixIcons.Contacts,
-        R.string.command_palette_category_action,
+        Res.string.command_palette_category_action,
         listOf("account", "switch user", "login"),
     ),
     ClearCache(
-        R.string.command_palette_clear_cache,
+        Res.string.command_palette_clear_cache,
         MiuixIcons.Remove,
-        R.string.command_palette_category_action,
+        Res.string.command_palette_category_action,
         listOf("clear cache", "purge", "gc"),
     ),
     RefreshFeed(
-        R.string.command_palette_refresh_feed,
+        Res.string.command_palette_refresh_feed,
         MiuixIcons.Refresh,
-        R.string.command_palette_category_action,
+        Res.string.command_palette_category_action,
         listOf("refresh", "reload", "sync"),
     ),
     OpenFromClipboard(
-        R.string.command_palette_open_clipboard,
+        Res.string.command_palette_open_clipboard,
         MiuixIcons.Import,
-        R.string.command_palette_category_action,
+        Res.string.command_palette_category_action,
         listOf("id", "pixiv.net", "jump"),
     ),
     ToggleAi(
-        R.string.command_palette_toggle_ai,
+        Res.string.command_palette_toggle_ai,
         MiuixIcons.Filter,
-        R.string.command_palette_category_appearance,
+        Res.string.command_palette_category_appearance,
         listOf("ai", "toggle ai", "filter"),
     ),
     ToggleR18(
-        R.string.command_palette_toggle_r18,
+        Res.string.command_palette_toggle_r18,
         MiuixIcons.Show,
-        R.string.command_palette_category_appearance,
+        Res.string.command_palette_category_appearance,
         listOf("r18", "nsfw", "safe"),
     ),
     ToggleGridColumns(
-        R.string.command_palette_toggle_grid_columns,
+        Res.string.command_palette_toggle_grid_columns,
         MiuixIcons.Photos,
-        R.string.command_palette_category_appearance,
+        Res.string.command_palette_category_appearance,
         listOf("grid", "columns", "layout"),
     ),
     ToggleImageQuality(
-        R.string.command_palette_toggle_image_quality,
+        Res.string.command_palette_toggle_image_quality,
         MiuixIcons.Background,
-        R.string.command_palette_category_appearance,
+        Res.string.command_palette_category_appearance,
         listOf("quality", "hd", "original"),
     ),
     ToggleUgoiraAutoPlay(
-        R.string.command_palette_toggle_ugoira_autoplay,
+        Res.string.command_palette_toggle_ugoira_autoplay,
         MiuixIcons.Timer,
-        R.string.command_palette_category_appearance,
+        Res.string.command_palette_category_appearance,
         listOf("ugoira", "autoplay", "gif"),
     ),
     MuteSettings(
-        R.string.command_palette_mute_settings,
+        Res.string.command_palette_mute_settings,
         MiuixIcons.Close,
-        R.string.command_palette_category_settings,
+        Res.string.command_palette_category_settings,
         listOf("mute", "blocked", "ng"),
     ),
     AppData(
-        R.string.command_palette_app_data,
+        Res.string.command_palette_app_data,
         MiuixIcons.Tune,
-        R.string.command_palette_category_settings,
+        Res.string.command_palette_category_settings,
         listOf("storage", "data", "appdata"),
     ),
     Settings(
-        R.string.command_palette_settings,
+        Res.string.command_palette_settings,
         MiuixIcons.Settings,
-        R.string.command_palette_category_settings,
+        Res.string.command_palette_category_settings,
         listOf("settings", "pref"),
     ),
     Flags(
-        R.string.command_palette_flags,
+        Res.string.command_palette_flags,
         MiuixIcons.Tune,
-        R.string.command_palette_category_settings,
+        Res.string.command_palette_category_settings,
         listOf("flags", "experiment"),
     ),
     Light(
-        R.string.command_palette_light,
+        Res.string.command_palette_light,
         MiuixIcons.Theme,
-        R.string.command_palette_category_appearance,
+        Res.string.command_palette_category_appearance,
         listOf("light", "theme"),
     ),
     Dark(
-        R.string.command_palette_dark,
+        Res.string.command_palette_dark,
         MiuixIcons.Theme,
-        R.string.command_palette_category_appearance,
+        Res.string.command_palette_category_appearance,
         listOf("dark", "theme"),
     ),
     System(
-        R.string.command_palette_system,
+        Res.string.command_palette_system,
         MiuixIcons.Theme,
-        R.string.command_palette_category_appearance,
+        Res.string.command_palette_category_appearance,
         listOf("system", "theme"),
     ),
 }
@@ -402,7 +440,7 @@ internal fun CommandPalette(
                         Box(contentAlignment = Alignment.CenterStart) {
                             if (query.isEmpty()) {
                                 Text(
-                                    text = stringResource(R.string.command_palette_hint),
+                                    text = stringResource(Res.string.command_palette_hint),
                                     color = colorScheme.onSurfaceVariantSummary,
                                     fontSize = 16.sp,
                                 )
@@ -422,7 +460,7 @@ internal fun CommandPalette(
                     ) {
                         Icon(
                             imageVector = MiuixIcons.Close,
-                            contentDescription = stringResource(R.string.action_close),
+                            contentDescription = stringResource(Res.string.action_close),
                             tint = colorScheme.onSurfaceVariantSummary,
                             modifier = Modifier.size(16.dp),
                         )
@@ -467,7 +505,7 @@ internal fun CommandPalette(
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = stringResource(R.string.command_palette_no_results),
+                                text = stringResource(Res.string.command_palette_no_results),
                                 color = colorScheme.onSurfaceVariantSummary,
                                 fontSize = 14.sp,
                             )
@@ -607,20 +645,20 @@ internal fun CommandPalette(
                 ) {
                     ShortcutHint(
                         keys = listOf("↑", "↓"),
-                        label = stringResource(R.string.command_palette_shortcut_navigate),
+                        label = stringResource(Res.string.command_palette_shortcut_navigate),
                     )
                     ShortcutHint(
                         keys = listOf("↵"),
-                        label = stringResource(R.string.command_palette_shortcut_select),
+                        label = stringResource(Res.string.command_palette_shortcut_select),
                     )
                     ShortcutHint(
                         keys = listOf("ESC"),
-                        label = stringResource(R.string.command_palette_shortcut_close),
+                        label = stringResource(Res.string.command_palette_shortcut_close),
                     )
                 }
 
                 Text(
-                    text = stringResource(R.string.flag_command_palette_title),
+                    text = stringResource(Res.string.flag_command_palette_title),
                     color = colorScheme.onSurfaceVariantSummary.copy(alpha = 0.6f),
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Normal,

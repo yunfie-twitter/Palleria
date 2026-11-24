@@ -34,7 +34,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
@@ -44,11 +43,20 @@ import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
 import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.platform.ImageClipboardHelper
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_copy_image
+import com.yunfie.illustia.resources.copied_image_to_clipboard
+import com.yunfie.illustia.resources.copy_image_failed
+import com.yunfie.illustia.resources.desktop_bookmark_private
+import com.yunfie.illustia.resources.desktop_open_new_tab
+import com.yunfie.illustia.resources.desktop_save_as
+import com.yunfie.illustia.resources.error_browser_failed
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.roundToInt
@@ -105,9 +113,9 @@ private fun Modifier.artworkDesktopMenuEnabled(illust: Illust): Modifier {
     val scale by animateFloatAsState(if (hovered) 1.015f else 1f, label = "artwork-hover")
     val position = menuPosition
     if (position != null) {
-        val copied = stringResource(R.string.copied_image_to_clipboard)
-        val copyFailed = stringResource(R.string.copy_image_failed)
-        val browserFailed = stringResource(R.string.error_browser_failed)
+        val copied = stringResource(Res.string.copied_image_to_clipboard)
+        val copyFailed = stringResource(Res.string.copy_image_failed)
+        val browserFailed = stringResource(Res.string.error_browser_failed)
         Popup(
             popupPositionProvider = remember(position) { ArtworkMenuPosition(position) },
             onDismissRequest = { menuPosition = null },
@@ -119,7 +127,7 @@ private fun Modifier.artworkDesktopMenuEnabled(illust: Illust): Modifier {
                     .widthIn(min = 200.dp)
                     .padding(8.dp),
             ) {
-                DesktopMenuItem(R.string.desktop_open_new_tab) {
+                DesktopMenuItem(Res.string.desktop_open_new_tab) {
                     menuPosition = null
                     val browser =
                         Intent(Intent.ACTION_VIEW, Uri.parse("https://www.example.com"))
@@ -137,7 +145,7 @@ private fun Modifier.artworkDesktopMenuEnabled(illust: Illust): Modifier {
                         context.startActivity(intent)
                     }.onFailure { actions.message(browserFailed) }
                 }
-                DesktopMenuItem(R.string.action_copy_image) {
+                DesktopMenuItem(Res.string.action_copy_image) {
                     menuPosition = null
                     scope.launch {
                         val url = illust.originalImagePages.firstOrNull() ?: illust.originalImageUrl ?: illust.imageUrl
@@ -156,12 +164,12 @@ private fun Modifier.artworkDesktopMenuEnabled(illust: Illust): Modifier {
                     }
                 }
                 if (!illust.isBookmarked) {
-                    DesktopMenuItem(R.string.desktop_bookmark_private) {
+                    DesktopMenuItem(Res.string.desktop_bookmark_private) {
                         menuPosition = null
                         actions.bookmarkPrivately(illust)
                     }
                 }
-                DesktopMenuItem(R.string.desktop_save_as) {
+                DesktopMenuItem(Res.string.desktop_save_as) {
                     menuPosition = null
                     actions.saveAs(illust)
                 }
@@ -194,7 +202,7 @@ private fun Modifier.artworkDesktopMenuEnabled(illust: Illust): Modifier {
 
 @Composable
 private fun DesktopMenuItem(
-    label: Int,
+    label: StringResource,
     onClick: () -> Unit,
 ) {
     Text(stringResource(label), modifier = Modifier.miuixClickable(onClick = onClick).padding(12.dp))

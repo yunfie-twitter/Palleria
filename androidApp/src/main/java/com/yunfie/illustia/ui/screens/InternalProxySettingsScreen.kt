@@ -17,12 +17,35 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_cancel
+import com.yunfie.illustia.resources.action_save
+import com.yunfie.illustia.resources.field_url
+import com.yunfie.illustia.resources.internal_proxy_bypass_hosts
+import com.yunfie.illustia.resources.internal_proxy_bypass_hosts_desc
+import com.yunfie.illustia.resources.internal_proxy_doh_adguard
+import com.yunfie.illustia.resources.internal_proxy_doh_cloudflare
+import com.yunfie.illustia.resources.internal_proxy_doh_custom
+import com.yunfie.illustia.resources.internal_proxy_doh_custom_url
+import com.yunfie.illustia.resources.internal_proxy_doh_custom_url_hint
+import com.yunfie.illustia.resources.internal_proxy_doh_google
+import com.yunfie.illustia.resources.internal_proxy_doh_provider
+import com.yunfie.illustia.resources.internal_proxy_doh_provider_desc
+import com.yunfie.illustia.resources.internal_proxy_doh_quad9
+import com.yunfie.illustia.resources.internal_proxy_doh_system
+import com.yunfie.illustia.resources.internal_proxy_enable
+import com.yunfie.illustia.resources.internal_proxy_enable_desc
+import com.yunfie.illustia.resources.internal_proxy_host
+import com.yunfie.illustia.resources.internal_proxy_port
+import com.yunfie.illustia.resources.internal_proxy_section_doh
+import com.yunfie.illustia.resources.internal_proxy_section_proxy
+import com.yunfie.illustia.resources.internal_proxy_settings_title
+import com.yunfie.illustia.resources.internal_proxy_type
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.AppDialog
 import com.yunfie.illustia.ui.components.DividerLine
@@ -35,6 +58,7 @@ import com.yunfie.illustia.ui.components.SettingLinkRow
 import com.yunfie.illustia.ui.components.SettingSwitchRow
 import com.yunfie.illustia.ui.components.dialogBottomInsets
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -73,8 +97,8 @@ fun InternalProxySettingsScreen(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
             TopAppBar(
-                title = stringResource(R.string.internal_proxy_settings_title),
-                largeTitle = stringResource(R.string.internal_proxy_settings_title),
+                title = stringResource(Res.string.internal_proxy_settings_title),
+                largeTitle = stringResource(Res.string.internal_proxy_settings_title),
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     HeaderIcon(MiuixIcons.Back, onClick = onBack)
@@ -98,11 +122,11 @@ fun InternalProxySettingsScreen(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             item {
-                Section(stringResource(R.string.internal_proxy_section_doh)) {
+                Section(stringResource(Res.string.internal_proxy_section_doh)) {
                     ElevatedPanel {
                         SettingDropdownRow(
-                            title = stringResource(R.string.internal_proxy_doh_provider),
-                            summary = stringResource(R.string.internal_proxy_doh_provider_desc),
+                            title = stringResource(Res.string.internal_proxy_doh_provider),
+                            summary = stringResource(Res.string.internal_proxy_doh_provider_desc),
                             values = DOH_PROVIDERS,
                             selected = settings.dohProvider,
                             label = { dohProviderLabel(it) },
@@ -117,12 +141,10 @@ fun InternalProxySettingsScreen(
                         if (settings.dohProvider == "custom") {
                             DividerLine()
                             SettingLinkRow(
-                                title = stringResource(R.string.internal_proxy_doh_custom_url),
+                                title = stringResource(Res.string.internal_proxy_doh_custom_url),
                                 summary =
                                     settings.dohCustomUrl.ifBlank {
-                                        stringResource(
-                                            R.string.internal_proxy_doh_custom_url_hint,
-                                        )
+                                        stringResource(Res.string.internal_proxy_doh_custom_url_hint)
                                     },
                                 onClick = {
                                     customDohInput = settings.dohCustomUrl
@@ -135,18 +157,18 @@ fun InternalProxySettingsScreen(
             }
 
             item {
-                Section(stringResource(R.string.internal_proxy_section_proxy)) {
+                Section(stringResource(Res.string.internal_proxy_section_proxy)) {
                     ElevatedPanel {
                         SettingSwitchRow(
-                            title = stringResource(R.string.internal_proxy_enable),
-                            summary = stringResource(R.string.internal_proxy_enable_desc),
+                            title = stringResource(Res.string.internal_proxy_enable),
+                            summary = stringResource(Res.string.internal_proxy_enable_desc),
                             checked = settings.internalProxyEnabled,
                             onCheckedChange = viewModel::updateInternalProxyEnabled,
                         )
                         if (settings.internalProxyEnabled) {
                             DividerLine()
                             SettingDropdownRow(
-                                title = stringResource(R.string.internal_proxy_type),
+                                title = stringResource(Res.string.internal_proxy_type),
                                 values = PROXY_TYPES,
                                 selected = settings.internalProxyType,
                                 label = { it },
@@ -154,7 +176,7 @@ fun InternalProxySettingsScreen(
                             )
                             DividerLine()
                             SettingLinkRow(
-                                title = stringResource(R.string.internal_proxy_host),
+                                title = stringResource(Res.string.internal_proxy_host),
                                 summary = settings.internalProxyHost.ifBlank { "127.0.0.1" },
                                 onClick = {
                                     proxyHostInput = settings.internalProxyHost
@@ -163,7 +185,7 @@ fun InternalProxySettingsScreen(
                             )
                             DividerLine()
                             SettingLinkRow(
-                                title = stringResource(R.string.internal_proxy_port),
+                                title = stringResource(Res.string.internal_proxy_port),
                                 summary = settings.internalProxyPort.toString(),
                                 onClick = {
                                     proxyPortInput = settings.internalProxyPort.toString()
@@ -172,7 +194,7 @@ fun InternalProxySettingsScreen(
                             )
                             DividerLine()
                             SettingLinkRow(
-                                title = stringResource(R.string.internal_proxy_bypass_hosts),
+                                title = stringResource(Res.string.internal_proxy_bypass_hosts),
                                 summary = settings.internalProxyBypassHosts.ifBlank { "localhost, 127.0.0.1" },
                                 onClick = {
                                     bypassHostsInput = settings.internalProxyBypassHosts
@@ -188,7 +210,7 @@ fun InternalProxySettingsScreen(
         if (showCustomDohDialog) {
             AppDialog(
                 show = showCustomDohDialog,
-                title = stringResource(R.string.internal_proxy_doh_custom_url),
+                title = stringResource(Res.string.internal_proxy_doh_custom_url),
                 onDismissRequest = { showCustomDohDialog = false },
                 defaultWindowInsetsPadding = false,
             ) {
@@ -202,7 +224,7 @@ fun InternalProxySettingsScreen(
                     TextField(
                         value = customDohInput,
                         onValueChange = { customDohInput = it },
-                        label = stringResource(R.string.field_url),
+                        label = stringResource(Res.string.field_url),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -215,7 +237,7 @@ fun InternalProxySettingsScreen(
                             modifier = Modifier.weight(1f),
                             colors = overlayActionButtonColors(),
                         ) {
-                            Text(stringResource(R.string.action_cancel))
+                            Text(stringResource(Res.string.action_cancel))
                         }
                         Button(
                             onClick = {
@@ -225,7 +247,7 @@ fun InternalProxySettingsScreen(
                             modifier = Modifier.weight(1f),
                             colors = overlayActionButtonColors(),
                         ) {
-                            Text(stringResource(R.string.action_save), fontWeight = FontWeight.Bold)
+                            Text(stringResource(Res.string.action_save), fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -235,7 +257,7 @@ fun InternalProxySettingsScreen(
         if (showProxyHostDialog) {
             AppDialog(
                 show = showProxyHostDialog,
-                title = stringResource(R.string.internal_proxy_host),
+                title = stringResource(Res.string.internal_proxy_host),
                 onDismissRequest = { showProxyHostDialog = false },
                 defaultWindowInsetsPadding = false,
             ) {
@@ -249,7 +271,7 @@ fun InternalProxySettingsScreen(
                     TextField(
                         value = proxyHostInput,
                         onValueChange = { proxyHostInput = it },
-                        label = stringResource(R.string.internal_proxy_host),
+                        label = stringResource(Res.string.internal_proxy_host),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -262,7 +284,7 @@ fun InternalProxySettingsScreen(
                             modifier = Modifier.weight(1f),
                             colors = overlayActionButtonColors(),
                         ) {
-                            Text(stringResource(R.string.action_cancel))
+                            Text(stringResource(Res.string.action_cancel))
                         }
                         Button(
                             onClick = {
@@ -272,7 +294,7 @@ fun InternalProxySettingsScreen(
                             modifier = Modifier.weight(1f),
                             colors = overlayActionButtonColors(),
                         ) {
-                            Text(stringResource(R.string.action_save), fontWeight = FontWeight.Bold)
+                            Text(stringResource(Res.string.action_save), fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -282,7 +304,7 @@ fun InternalProxySettingsScreen(
         if (showProxyPortDialog) {
             AppDialog(
                 show = showProxyPortDialog,
-                title = stringResource(R.string.internal_proxy_port),
+                title = stringResource(Res.string.internal_proxy_port),
                 onDismissRequest = { showProxyPortDialog = false },
                 defaultWindowInsetsPadding = false,
             ) {
@@ -296,7 +318,7 @@ fun InternalProxySettingsScreen(
                     TextField(
                         value = proxyPortInput,
                         onValueChange = { proxyPortInput = it.filter { char -> char.isDigit() } },
-                        label = stringResource(R.string.internal_proxy_port),
+                        label = stringResource(Res.string.internal_proxy_port),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth(),
@@ -310,7 +332,7 @@ fun InternalProxySettingsScreen(
                             modifier = Modifier.weight(1f),
                             colors = overlayActionButtonColors(),
                         ) {
-                            Text(stringResource(R.string.action_cancel))
+                            Text(stringResource(Res.string.action_cancel))
                         }
                         Button(
                             onClick = {
@@ -321,7 +343,7 @@ fun InternalProxySettingsScreen(
                             modifier = Modifier.weight(1f),
                             colors = overlayActionButtonColors(),
                         ) {
-                            Text(stringResource(R.string.action_save), fontWeight = FontWeight.Bold)
+                            Text(stringResource(Res.string.action_save), fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -331,8 +353,8 @@ fun InternalProxySettingsScreen(
         if (showBypassHostsDialog) {
             AppDialog(
                 show = showBypassHostsDialog,
-                title = stringResource(R.string.internal_proxy_bypass_hosts),
-                summary = stringResource(R.string.internal_proxy_bypass_hosts_desc),
+                title = stringResource(Res.string.internal_proxy_bypass_hosts),
+                summary = stringResource(Res.string.internal_proxy_bypass_hosts_desc),
                 onDismissRequest = { showBypassHostsDialog = false },
                 defaultWindowInsetsPadding = false,
             ) {
@@ -346,7 +368,7 @@ fun InternalProxySettingsScreen(
                     TextField(
                         value = bypassHostsInput,
                         onValueChange = { bypassHostsInput = it },
-                        label = stringResource(R.string.internal_proxy_bypass_hosts),
+                        label = stringResource(Res.string.internal_proxy_bypass_hosts),
                         singleLine = false,
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -359,7 +381,7 @@ fun InternalProxySettingsScreen(
                             modifier = Modifier.weight(1f),
                             colors = overlayActionButtonColors(),
                         ) {
-                            Text(stringResource(R.string.action_cancel))
+                            Text(stringResource(Res.string.action_cancel))
                         }
                         Button(
                             onClick = {
@@ -369,7 +391,7 @@ fun InternalProxySettingsScreen(
                             modifier = Modifier.weight(1f),
                             colors = overlayActionButtonColors(),
                         ) {
-                            Text(stringResource(R.string.action_save), fontWeight = FontWeight.Bold)
+                            Text(stringResource(Res.string.action_save), fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -381,11 +403,11 @@ fun InternalProxySettingsScreen(
 @Composable
 private fun dohProviderLabel(value: String): String =
     when (value) {
-        "system" -> stringResource(R.string.internal_proxy_doh_system)
-        "cloudflare" -> stringResource(R.string.internal_proxy_doh_cloudflare)
-        "google" -> stringResource(R.string.internal_proxy_doh_google)
-        "quad9" -> stringResource(R.string.internal_proxy_doh_quad9)
-        "adguard" -> stringResource(R.string.internal_proxy_doh_adguard)
-        "custom" -> stringResource(R.string.internal_proxy_doh_custom)
+        "system" -> stringResource(Res.string.internal_proxy_doh_system)
+        "cloudflare" -> stringResource(Res.string.internal_proxy_doh_cloudflare)
+        "google" -> stringResource(Res.string.internal_proxy_doh_google)
+        "quad9" -> stringResource(Res.string.internal_proxy_doh_quad9)
+        "adguard" -> stringResource(Res.string.internal_proxy_doh_adguard)
+        "custom" -> stringResource(Res.string.internal_proxy_doh_custom)
         else -> value
     }

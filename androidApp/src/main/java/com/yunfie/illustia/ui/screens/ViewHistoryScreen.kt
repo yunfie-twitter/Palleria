@@ -25,12 +25,44 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_back
+import com.yunfie.illustia.resources.action_close
+import com.yunfie.illustia.resources.action_delete
+import com.yunfie.illustia.resources.action_reload
+import com.yunfie.illustia.resources.action_search
+import com.yunfie.illustia.resources.data_delete_view_history
+import com.yunfie.illustia.resources.data_delete_view_history_desc
+import com.yunfie.illustia.resources.data_items_count
+import com.yunfie.illustia.resources.more_view_history
+import com.yunfie.illustia.resources.nav_more
+import com.yunfie.illustia.resources.novel_filter_all
+import com.yunfie.illustia.resources.search_empty_illust
+import com.yunfie.illustia.resources.search_sort_order
+import com.yunfie.illustia.resources.search_work_type
+import com.yunfie.illustia.resources.search_work_type_illustrations
+import com.yunfie.illustia.resources.search_work_type_manga
+import com.yunfie.illustia.resources.search_work_type_ugoira
+import com.yunfie.illustia.resources.sort_date_asc
+import com.yunfie.illustia.resources.sort_date_desc
+import com.yunfie.illustia.resources.sort_name_asc
+import com.yunfie.illustia.resources.view_history_bookmark_selected
+import com.yunfie.illustia.resources.view_history_delete_all
+import com.yunfie.illustia.resources.view_history_delete_selected
+import com.yunfie.illustia.resources.view_history_delete_selected_desc
+import com.yunfie.illustia.resources.view_history_deselect_all
+import com.yunfie.illustia.resources.view_history_empty
+import com.yunfie.illustia.resources.view_history_hide_search
+import com.yunfie.illustia.resources.view_history_search_hint
+import com.yunfie.illustia.resources.view_history_select_all
+import com.yunfie.illustia.resources.view_history_selected_count
+import com.yunfie.illustia.resources.view_history_show_search
+import com.yunfie.illustia.resources.view_history_sort_artist
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -46,6 +78,7 @@ import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.smoothScrollToTop
 import com.yunfie.illustia.visibleWithSettings
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.InputField
@@ -104,7 +137,7 @@ fun ViewHistoryScreen(
     val feedHighQuality = state.settings.useHighQualityFeedImages
     val showAiBadge = state.settings.showAiBadge
     val hasSelection = selectedIds.isNotEmpty()
-    val selectedCountText = stringResource(R.string.data_items_count, selectedIds.size)
+    val selectedCountText = stringResource(Res.string.data_items_count, selectedIds.size)
 
     val bookmarkedIds =
         remember(state.bookmarkItems) {
@@ -168,19 +201,19 @@ fun ViewHistoryScreen(
     deleteTarget?.let { target ->
         val title =
             when (target) {
-                ViewHistoryDeleteTarget.All -> stringResource(R.string.data_delete_view_history)
-                ViewHistoryDeleteTarget.Selected -> stringResource(R.string.view_history_delete_selected)
+                ViewHistoryDeleteTarget.All -> stringResource(Res.string.data_delete_view_history)
+                ViewHistoryDeleteTarget.Selected -> stringResource(Res.string.view_history_delete_selected)
             }
         val summary =
             when (target) {
-                ViewHistoryDeleteTarget.All -> stringResource(R.string.data_delete_view_history_desc)
-                ViewHistoryDeleteTarget.Selected -> stringResource(R.string.view_history_delete_selected_desc, selectedCountText)
+                ViewHistoryDeleteTarget.All -> stringResource(Res.string.data_delete_view_history_desc)
+                ViewHistoryDeleteTarget.Selected -> stringResource(Res.string.view_history_delete_selected_desc, selectedCountText)
             }
         MiuixConfirmDialog(
             show = true,
             title = title,
             summary = summary,
-            confirmText = stringResource(R.string.action_delete),
+            confirmText = stringResource(Res.string.action_delete),
             destructive = true,
             onConfirm = {
                 performHaptic(AppHapticEffect.Click)
@@ -195,30 +228,30 @@ fun ViewHistoryScreen(
         )
     }
 
-    val sortOrderLabel = stringResource(R.string.search_sort_order)
-    val sortNewestLabel = stringResource(R.string.sort_date_desc)
-    val sortOldestLabel = stringResource(R.string.sort_date_asc)
-    val sortTitleLabel = stringResource(R.string.sort_name_asc)
-    val sortArtistLabel = stringResource(R.string.view_history_sort_artist)
+    val sortOrderLabel = stringResource(Res.string.search_sort_order)
+    val sortNewestLabel = stringResource(Res.string.sort_date_desc)
+    val sortOldestLabel = stringResource(Res.string.sort_date_asc)
+    val sortTitleLabel = stringResource(Res.string.sort_name_asc)
+    val sortArtistLabel = stringResource(Res.string.view_history_sort_artist)
 
-    val filterLabel = stringResource(R.string.search_work_type)
-    val filterAllLabel = stringResource(R.string.novel_filter_all)
-    val filterIllustLabel = stringResource(R.string.search_work_type_illustrations)
-    val filterMangaLabel = stringResource(R.string.search_work_type_manga)
-    val filterUgoiraLabel = stringResource(R.string.search_work_type_ugoira)
+    val filterLabel = stringResource(Res.string.search_work_type)
+    val filterAllLabel = stringResource(Res.string.novel_filter_all)
+    val filterIllustLabel = stringResource(Res.string.search_work_type_illustrations)
+    val filterMangaLabel = stringResource(Res.string.search_work_type_manga)
+    val filterUgoiraLabel = stringResource(Res.string.search_work_type_ugoira)
 
-    val selectAllLabel = stringResource(R.string.view_history_select_all)
-    val deselectAllLabel = stringResource(R.string.view_history_deselect_all)
-    val bookmarkSelectedLabel = stringResource(R.string.view_history_bookmark_selected)
+    val selectAllLabel = stringResource(Res.string.view_history_select_all)
+    val deselectAllLabel = stringResource(Res.string.view_history_deselect_all)
+    val bookmarkSelectedLabel = stringResource(Res.string.view_history_bookmark_selected)
 
-    val deleteHistoryLabel = stringResource(R.string.data_delete_view_history)
-    val deleteSelectedLabel = stringResource(R.string.view_history_delete_selected)
-    val deleteAllLabel = stringResource(R.string.view_history_delete_all)
+    val deleteHistoryLabel = stringResource(Res.string.data_delete_view_history)
+    val deleteSelectedLabel = stringResource(Res.string.view_history_delete_selected)
+    val deleteAllLabel = stringResource(Res.string.view_history_delete_all)
 
-    val reloadLabel = stringResource(R.string.action_reload)
-    val showSearchLabel = stringResource(R.string.view_history_show_search)
-    val hideSearchLabel = stringResource(R.string.view_history_hide_search)
-    val moreLabel = stringResource(R.string.nav_more)
+    val reloadLabel = stringResource(Res.string.action_reload)
+    val showSearchLabel = stringResource(Res.string.view_history_show_search)
+    val hideSearchLabel = stringResource(Res.string.view_history_hide_search)
+    val moreLabel = stringResource(Res.string.nav_more)
 
     val menuEntries =
         remember(
@@ -420,9 +453,9 @@ fun ViewHistoryScreen(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
             TopAppBar(
-                title = stringResource(R.string.more_view_history),
-                largeTitle = stringResource(R.string.more_view_history),
-                subtitle = if (hasSelection) stringResource(R.string.view_history_selected_count, selectedIds.size) else "",
+                title = stringResource(Res.string.more_view_history),
+                largeTitle = stringResource(Res.string.more_view_history),
+                subtitle = if (hasSelection) stringResource(Res.string.view_history_selected_count, selectedIds.size) else "",
                 scrollBehavior = scrollBehavior,
                 modifier =
                     Modifier.onTopBarTap(
@@ -438,7 +471,7 @@ fun ViewHistoryScreen(
                 navigationIcon = {
                     HeaderIcon(
                         MiuixIcons.Back,
-                        contentDescription = stringResource(R.string.action_back),
+                        contentDescription = stringResource(Res.string.action_back),
                         onClick = {
                             performHaptic(AppHapticEffect.Click)
                             onBack()
@@ -449,7 +482,7 @@ fun ViewHistoryScreen(
                     if (hasSelection) {
                         HeaderIcon(
                             MiuixIcons.Close,
-                            contentDescription = stringResource(R.string.action_close),
+                            contentDescription = stringResource(Res.string.action_close),
                             onClick = {
                                 performHaptic(AppHapticEffect.Click)
                                 selectedIds = emptySet()
@@ -458,7 +491,7 @@ fun ViewHistoryScreen(
                     } else {
                         HeaderIcon(
                             MiuixIcons.Search,
-                            contentDescription = stringResource(R.string.action_search),
+                            contentDescription = stringResource(Res.string.action_search),
                             onClick = {
                                 performHaptic(AppHapticEffect.Click)
                                 showSearch = !showSearch
@@ -516,7 +549,7 @@ fun ViewHistoryScreen(
                                 onSearch = { showSearch = false },
                                 expanded = showSearch,
                                 onExpandedChange = { expanded -> showSearch = expanded },
-                                label = stringResource(R.string.view_history_search_hint),
+                                label = stringResource(Res.string.view_history_search_hint),
                             )
                         },
                         expanded = showSearch,
@@ -525,7 +558,7 @@ fun ViewHistoryScreen(
                         outsideEndAction = {
                             HeaderIcon(
                                 icon = MiuixIcons.Close,
-                                contentDescription = stringResource(R.string.action_close),
+                                contentDescription = stringResource(Res.string.action_close),
                                 onClick = {
                                     performHaptic(AppHapticEffect.Click)
                                     searchQuery = ""
@@ -541,7 +574,7 @@ fun ViewHistoryScreen(
                 item(span = { GridItemSpan(maxLineSpan) }, contentType = "history_empty") {
                     EmptyState(
                         stringResource(
-                            if (searchQuery.isNotBlank()) R.string.search_empty_illust else R.string.view_history_empty,
+                            if (searchQuery.isNotBlank()) Res.string.search_empty_illust else Res.string.view_history_empty,
                         ),
                     )
                 }

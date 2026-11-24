@@ -21,20 +21,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.app_name
 import com.yunfie.illustia.resources.feature_flags_summary
 import com.yunfie.illustia.resources.feature_flags_title
 import com.yunfie.illustia.resources.feature_flags_unlocked
+import com.yunfie.illustia.resources.settings_footer
+import com.yunfie.illustia.resources.settings_title
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.SettingLinkRow
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -179,8 +182,8 @@ fun SettingsScreen(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
             TopAppBar(
-                title = stringResource(R.string.settings_title),
-                largeTitle = stringResource(R.string.settings_title),
+                title = stringResource(Res.string.settings_title),
+                largeTitle = stringResource(Res.string.settings_title),
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     HeaderIcon(MiuixIcons.Back, onClick = onBack)
@@ -228,7 +231,7 @@ fun SettingsScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
-                        "${stringResource(R.string.app_name)} v$appVersion",
+                        "${stringResource(Res.string.app_name)} v$appVersion",
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.6f),
                         style = MiuixTheme.textStyles.footnote1,
                         modifier =
@@ -251,7 +254,7 @@ fun SettingsScreen(
                             },
                     )
                     Text(
-                        stringResource(R.string.settings_footer),
+                        stringResource(Res.string.settings_footer),
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.6f),
                         style = MiuixTheme.textStyles.footnote1,
                         textAlign = TextAlign.Center,

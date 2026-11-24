@@ -38,14 +38,20 @@ import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.R
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_add
+import com.yunfie.illustia.resources.action_bookmark
+import com.yunfie.illustia.resources.action_follow
+import com.yunfie.illustia.resources.action_following
+import com.yunfie.illustia.resources.action_remove_bookmark
 import kotlinx.coroutines.delay
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -173,7 +179,7 @@ fun FollowPill(
 
                 FollowPillStage.FOLLOWED -> {
                     Text(
-                        text = stringResource(R.string.action_following),
+                        text = stringResource(Res.string.action_following),
                         color = scheme.onPrimary,
                         fontWeight = FontWeight.Bold,
                         style = MiuixTheme.textStyles.subtitle,
@@ -184,7 +190,7 @@ fun FollowPill(
                 FollowPillStage.UNFOLLOWED,
                 -> {
                     Text(
-                        text = stringResource(R.string.action_follow),
+                        text = stringResource(Res.string.action_follow),
                         color = scheme.onSurface,
                         fontWeight = FontWeight.Bold,
                         style = MiuixTheme.textStyles.subtitle,
@@ -298,7 +304,7 @@ fun WatchlistPill(
                             modifier = Modifier.size(16.dp),
                         )
                         Text(
-                            text = stringResource(R.string.action_remove_bookmark),
+                            text = stringResource(Res.string.action_remove_bookmark),
                             color = scheme.onPrimary,
                             fontWeight = FontWeight.Bold,
                             style = MiuixTheme.textStyles.subtitle,
@@ -318,7 +324,7 @@ fun WatchlistPill(
                             modifier = Modifier.size(16.dp),
                         )
                         Text(
-                            text = stringResource(R.string.action_remove_bookmark),
+                            text = stringResource(Res.string.action_remove_bookmark),
                             color = scheme.onPrimary,
                             fontWeight = FontWeight.Bold,
                             style = MiuixTheme.textStyles.subtitle,
@@ -340,7 +346,7 @@ fun WatchlistPill(
                             modifier = Modifier.size(16.dp),
                         )
                         Text(
-                            text = stringResource(R.string.action_add),
+                            text = stringResource(Res.string.action_add),
                             color = scheme.onSurface,
                             fontWeight = FontWeight.Bold,
                             style = MiuixTheme.textStyles.subtitle,
@@ -370,7 +376,7 @@ fun BookmarkHeartButton(
     val hapticMode = LocalAppHapticMode.current
     var userClicked by remember { mutableStateOf(false) }
     var privateRequested by remember { mutableStateOf(false) }
-    val actionLabel = stringResource(if (isBookmarked) R.string.action_remove_bookmark else R.string.action_bookmark)
+    val actionLabel = stringResource(if (isBookmarked) Res.string.action_remove_bookmark else Res.string.action_bookmark)
     var previousBookmarked by remember { mutableStateOf(isBookmarked) }
     var stage by remember(isBookmarked) {
         val initial =

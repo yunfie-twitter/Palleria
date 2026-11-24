@@ -24,7 +24,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
@@ -34,6 +33,11 @@ import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.models.isEmptyAfterLoad
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_load_more
+import com.yunfie.illustia.resources.home_feed_empty
+import com.yunfie.illustia.resources.home_following_empty
+import com.yunfie.illustia.resources.home_new_items_available
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
@@ -59,6 +63,7 @@ import com.yunfie.illustia.ui.scroll.InstallHomeScrollProbe
 import com.yunfie.illustia.ui.scroll.ScrollStateKeys
 import com.yunfie.illustia.ui.scroll.ScrollStateRegistry
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -204,7 +209,7 @@ internal fun FeedTabContent(
 
                 if (isEmptyAfterLoad(items.isEmpty(), loadState)) {
                     item(key = "home_feed_empty", span = { GridItemSpan(maxLineSpan) }) {
-                        EmptyState(stringResource(R.string.home_feed_empty))
+                        EmptyState(stringResource(Res.string.home_feed_empty))
                     }
                 }
 
@@ -260,10 +265,10 @@ internal fun FeedTabContent(
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
                                     LoadingIndicator(modifier = Modifier.size(16.dp))
-                                    Text(stringResource(R.string.action_load_more))
+                                    Text(stringResource(Res.string.action_load_more))
                                 }
                             } else {
-                                Text(stringResource(R.string.action_load_more))
+                                Text(stringResource(Res.string.action_load_more))
                             }
                         }
                     }
@@ -278,7 +283,7 @@ internal fun FeedTabContent(
                     modifier = Modifier.align(Alignment.TopCenter).padding(12.dp),
                     colors = overlayActionButtonColors(),
                 ) {
-                    Text(stringResource(R.string.home_new_items_available, pendingHomeItemsCount))
+                    Text(stringResource(Res.string.home_new_items_available, pendingHomeItemsCount))
                 }
             }
         }
@@ -382,7 +387,7 @@ internal fun FollowingTabContent(
 
             if (isEmptyAfterLoad(items.isEmpty(), loadState)) {
                 item(key = "home_following_empty", span = { GridItemSpan(maxLineSpan) }) {
-                    EmptyState(stringResource(R.string.home_following_empty))
+                    EmptyState(stringResource(Res.string.home_following_empty))
                 }
             }
 
@@ -438,10 +443,10 @@ internal fun FollowingTabContent(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 LoadingIndicator(modifier = Modifier.size(16.dp))
-                                Text(stringResource(R.string.action_load_more))
+                                Text(stringResource(Res.string.action_load_more))
                             }
                         } else {
-                            Text(stringResource(R.string.action_load_more))
+                            Text(stringResource(Res.string.action_load_more))
                         }
                     }
                 }

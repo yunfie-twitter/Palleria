@@ -20,11 +20,24 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_add
+import com.yunfie.illustia.resources.action_close
+import com.yunfie.illustia.resources.mute_add_tag_label
+import com.yunfie.illustia.resources.mute_add_tag_title
+import com.yunfie.illustia.resources.mute_illust_id
+import com.yunfie.illustia.resources.mute_section_tags
+import com.yunfie.illustia.resources.mute_section_users
+import com.yunfie.illustia.resources.mute_section_works
+import com.yunfie.illustia.resources.mute_settings_title
+import com.yunfie.illustia.resources.mute_tags_empty
+import com.yunfie.illustia.resources.mute_user_id
+import com.yunfie.illustia.resources.mute_users_empty
+import com.yunfie.illustia.resources.mute_works_empty
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.AppBottomSheet
 import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
@@ -33,6 +46,7 @@ import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.Section
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
@@ -65,8 +79,8 @@ fun MuteSettingsScreen(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
             TopAppBar(
-                title = stringResource(R.string.mute_settings_title),
-                largeTitle = stringResource(R.string.mute_settings_title),
+                title = stringResource(Res.string.mute_settings_title),
+                largeTitle = stringResource(Res.string.mute_settings_title),
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     HeaderIcon(MiuixIcons.Back, onClick = onBack)
@@ -89,17 +103,17 @@ fun MuteSettingsScreen(
                 ),
         ) {
             item {
-                Section(stringResource(R.string.mute_section_users)) {
+                Section(stringResource(Res.string.mute_section_users)) {
                     if (settings.mutedUsers.isEmpty()) {
                         Text(
-                            stringResource(R.string.mute_users_empty),
+                            stringResource(Res.string.mute_users_empty),
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         )
                     }
                 }
             }
             items(settings.mutedUsers, key = { "user_$it" }, contentType = { "muted_user" }) { userId ->
-                MuteItemRow(text = stringResource(R.string.mute_user_id, userId)) {
+                MuteItemRow(text = stringResource(Res.string.mute_user_id, userId)) {
                     viewModel.unmuteUser(userId)
                 }
             }
@@ -107,17 +121,17 @@ fun MuteSettingsScreen(
             item { Spacer(Modifier.height(24.dp)) }
 
             item {
-                Section(stringResource(R.string.mute_section_works)) {
+                Section(stringResource(Res.string.mute_section_works)) {
                     if (settings.mutedIllusts.isEmpty()) {
                         Text(
-                            stringResource(R.string.mute_works_empty),
+                            stringResource(Res.string.mute_works_empty),
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         )
                     }
                 }
             }
             items(settings.mutedIllusts, key = { "illust_$it" }, contentType = { "muted_illust" }) { illustId ->
-                MuteItemRow(text = stringResource(R.string.mute_illust_id, illustId)) {
+                MuteItemRow(text = stringResource(Res.string.mute_illust_id, illustId)) {
                     viewModel.unmuteIllust(illustId)
                 }
             }
@@ -131,17 +145,17 @@ fun MuteSettingsScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        SmallTitle(text = stringResource(R.string.mute_section_tags))
+                        SmallTitle(text = stringResource(Res.string.mute_section_tags))
                         IconButton(onClick = { showAddTagSheet = true }) {
                             Icon(
                                 imageVector = MiuixIcons.Add,
-                                contentDescription = stringResource(R.string.action_add),
+                                contentDescription = stringResource(Res.string.action_add),
                             )
                         }
                     }
                     if (settings.mutedTags.isEmpty()) {
                         Text(
-                            stringResource(R.string.mute_tags_empty),
+                            stringResource(Res.string.mute_tags_empty),
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         )
                     }
@@ -192,11 +206,11 @@ private fun AddMuteTagSheet(
     AppBottomSheet(
         show = true,
         modifier = Modifier.scrollEndHaptic(),
-        title = stringResource(R.string.mute_add_tag_title),
+        title = stringResource(Res.string.mute_add_tag_title),
         backgroundColor = LocalBottomSheetBackgroundColor.current,
         startAction = {
             IconButton(onClick = onDismiss) {
-                Icon(imageVector = MiuixIcons.Close, contentDescription = stringResource(R.string.action_close))
+                Icon(imageVector = MiuixIcons.Close, contentDescription = stringResource(Res.string.action_close))
             }
         },
         onDismissRequest = onDismiss,
@@ -212,7 +226,7 @@ private fun AddMuteTagSheet(
             TextField(
                 value = tagInput,
                 onValueChange = { tagInput = it },
-                label = stringResource(R.string.mute_add_tag_label),
+                label = stringResource(Res.string.mute_add_tag_label),
                 useLabelAsPlaceholder = true,
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
@@ -234,7 +248,7 @@ private fun AddMuteTagSheet(
                 modifier = Modifier.fillMaxWidth(),
                 colors = overlayActionButtonColors(),
             ) {
-                Text(stringResource(R.string.action_add), fontWeight = FontWeight.Bold)
+                Text(stringResource(Res.string.action_add), fontWeight = FontWeight.Bold)
             }
         }
     }

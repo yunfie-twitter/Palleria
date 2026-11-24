@@ -14,9 +14,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.R
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_delete
+import com.yunfie.illustia.resources.app_lock_biometric_title
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -65,7 +68,7 @@ internal fun NumberPad(
                 if (onBiometric != null) {
                     Icon(
                         imageVector = MiuixIcons.Unlock,
-                        contentDescription = stringResource(R.string.app_lock_biometric_title),
+                        contentDescription = stringResource(Res.string.app_lock_biometric_title),
                         modifier =
                             Modifier
                                 .size(if (compact) 32.dp else 40.dp)
@@ -91,7 +94,7 @@ internal fun NumberPad(
             ) {
                 Icon(
                     imageVector = MiuixIcons.Remove,
-                    contentDescription = stringResource(R.string.action_delete),
+                    contentDescription = stringResource(Res.string.action_delete),
                     modifier = Modifier.size(28.dp),
                     tint = MiuixTheme.colorScheme.onSurface,
                 )

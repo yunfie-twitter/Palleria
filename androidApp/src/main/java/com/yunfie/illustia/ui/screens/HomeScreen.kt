@@ -19,13 +19,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.UserProfile
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.dialog_reload
+import com.yunfie.illustia.resources.more_notifications
+import com.yunfie.illustia.resources.nav_home
+import com.yunfie.illustia.resources.nav_novel
+import com.yunfie.illustia.resources.nav_search
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
@@ -39,6 +44,7 @@ import com.yunfie.illustia.ui.components.smoothScrollToTop
 import com.yunfie.illustia.ui.scroll.ScrollStateKeys
 import com.yunfie.illustia.ui.scroll.ScrollStateRegistry
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
@@ -136,8 +142,8 @@ fun HomeScreen(
         header = {
             TopAppBar(
                 color = if (settings.isFeatureEnabled(FeatureFlag.TopScrollBlur)) Color.Transparent else MiuixTheme.colorScheme.surface,
-                title = stringResource(R.string.nav_home),
-                largeTitle = stringResource(R.string.nav_home),
+                title = stringResource(Res.string.nav_home),
+                largeTitle = stringResource(Res.string.nav_home),
                 scrollBehavior = scrollBehavior,
                 modifier =
                     Modifier.onTopBarTap(
@@ -170,7 +176,7 @@ fun HomeScreen(
                             performHaptic(AppHapticEffect.Click)
                             onSearch()
                         }) {
-                            Icon(MiuixIcons.Search, contentDescription = stringResource(R.string.nav_search))
+                            Icon(MiuixIcons.Search, contentDescription = stringResource(Res.string.nav_search))
                         }
                     }
                     if (!settings.hideHomeNovelButton) {
@@ -180,7 +186,7 @@ fun HomeScreen(
                         }) {
                             Icon(
                                 MiuixIcons.Photos,
-                                contentDescription = stringResource(R.string.nav_novel),
+                                contentDescription = stringResource(Res.string.nav_novel),
                             )
                         }
                     } else {
@@ -190,7 +196,7 @@ fun HomeScreen(
                         }) {
                             Icon(
                                 MiuixIcons.Messages,
-                                contentDescription = stringResource(R.string.more_notifications),
+                                contentDescription = stringResource(Res.string.more_notifications),
                             )
                         }
                     }
@@ -205,7 +211,7 @@ fun HomeScreen(
                     ) {
                         Icon(
                             MiuixIcons.Refresh,
-                            contentDescription = stringResource(R.string.dialog_reload),
+                            contentDescription = stringResource(Res.string.dialog_reload),
                         )
                     }
                 },

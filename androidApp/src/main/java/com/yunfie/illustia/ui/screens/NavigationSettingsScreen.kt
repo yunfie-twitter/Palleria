@@ -10,10 +10,34 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_move_down
+import com.yunfie.illustia.resources.action_move_up
+import com.yunfie.illustia.resources.experimental_hide_home_novel_button
+import com.yunfie.illustia.resources.experimental_hide_home_novel_button_desc
+import com.yunfie.illustia.resources.experimental_navigation_auto
+import com.yunfie.illustia.resources.experimental_navigation_floating
+import com.yunfie.illustia.resources.experimental_navigation_section
+import com.yunfie.illustia.resources.experimental_navigation_standard
+import com.yunfie.illustia.resources.experimental_navigation_style
+import com.yunfie.illustia.resources.experimental_navigation_style_desc
+import com.yunfie.illustia.resources.experimental_start_tab
+import com.yunfie.illustia.resources.experimental_start_tab_desc
+import com.yunfie.illustia.resources.experimental_tab_hidden
+import com.yunfie.illustia.resources.experimental_tab_visible
+import com.yunfie.illustia.resources.general_shorts_feed
+import com.yunfie.illustia.resources.general_shorts_feed_desc
+import com.yunfie.illustia.resources.nav_bookmarks
+import com.yunfie.illustia.resources.nav_home
+import com.yunfie.illustia.resources.nav_more
+import com.yunfie.illustia.resources.nav_ranking
+import com.yunfie.illustia.resources.nav_search
+import com.yunfie.illustia.resources.nav_shorts_feed
+import com.yunfie.illustia.resources.navigation_section_tabs
+import com.yunfie.illustia.resources.navigation_settings_title
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
@@ -24,6 +48,7 @@ import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.Section
 import com.yunfie.illustia.ui.components.SettingDropdownRow
 import com.yunfie.illustia.ui.components.SettingSwitchRow
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -72,8 +97,8 @@ fun NavigationSettingsScreen(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
             TopAppBar(
-                title = stringResource(R.string.navigation_settings_title),
-                largeTitle = stringResource(R.string.navigation_settings_title),
+                title = stringResource(Res.string.navigation_settings_title),
+                largeTitle = stringResource(Res.string.navigation_settings_title),
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     HeaderIcon(MiuixIcons.Back, onClick = onBack)
@@ -97,13 +122,13 @@ fun NavigationSettingsScreen(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             item {
-                Section(stringResource(R.string.experimental_navigation_section)) {
+                Section(stringResource(Res.string.experimental_navigation_section)) {
                     ElevatedPanel {
                         var hasItemAbove = false
                         if (navigationCustomizationFlag) {
                             SettingDropdownRow(
-                                title = stringResource(R.string.experimental_navigation_style),
-                                summary = stringResource(R.string.experimental_navigation_style_desc),
+                                title = stringResource(Res.string.experimental_navigation_style),
+                                summary = stringResource(Res.string.experimental_navigation_style_desc),
                                 selected = settings.navigationStyle,
                                 values = listOf("standard", "floating", "auto"),
                                 label = { navigationStyleLabel(it) },
@@ -111,8 +136,8 @@ fun NavigationSettingsScreen(
                             )
                             DividerLine()
                             SettingDropdownRow(
-                                title = stringResource(R.string.experimental_start_tab),
-                                summary = stringResource(R.string.experimental_start_tab_desc),
+                                title = stringResource(Res.string.experimental_start_tab),
+                                summary = stringResource(Res.string.experimental_start_tab_desc),
                                 selected = activeStartId.takeIf { it in selectableStartIds } ?: selectableStartIds.first(),
                                 values = selectableStartIds,
                                 label = { navigationLabel(it) },
@@ -124,10 +149,10 @@ fun NavigationSettingsScreen(
                         if (shortsFeedFlag) {
                             if (hasItemAbove) DividerLine()
                             SettingSwitchRow(
-                                title = stringResource(R.string.general_shorts_feed),
+                                title = stringResource(Res.string.general_shorts_feed),
                                 checked = settings.shortsFeedEnabled,
                                 onCheckedChange = viewModel::updateShortsFeedEnabled,
-                                summary = stringResource(R.string.general_shorts_feed_desc),
+                                summary = stringResource(Res.string.general_shorts_feed_desc),
                             )
                             hasItemAbove = true
                         }
@@ -135,10 +160,10 @@ fun NavigationSettingsScreen(
                         if (hideHomeNovelButtonFlag) {
                             if (hasItemAbove) DividerLine()
                             SettingSwitchRow(
-                                title = stringResource(R.string.experimental_hide_home_novel_button),
+                                title = stringResource(Res.string.experimental_hide_home_novel_button),
                                 checked = settings.hideHomeNovelButton,
                                 onCheckedChange = viewModel::updateHideHomeNovelButton,
-                                summary = stringResource(R.string.experimental_hide_home_novel_button_desc),
+                                summary = stringResource(Res.string.experimental_hide_home_novel_button_desc),
                             )
                         }
                     }
@@ -147,7 +172,7 @@ fun NavigationSettingsScreen(
 
             if (navigationCustomizationFlag) {
                 item {
-                    Section(stringResource(R.string.navigation_section_tabs)) {
+                    Section(stringResource(Res.string.navigation_section_tabs)) {
                         ElevatedPanel {
                             orderedIds.forEachIndexed { index, id ->
                                 NavigationEditorRow(
@@ -191,7 +216,7 @@ private fun NavigationEditorRow(
 ) {
     BasicComponent(
         title = title,
-        summary = stringResource(if (visible) R.string.experimental_tab_visible else R.string.experimental_tab_hidden),
+        summary = stringResource(if (visible) Res.string.experimental_tab_visible else Res.string.experimental_tab_hidden),
         modifier = Modifier.fillMaxWidth(),
         startAction = {
             Switch(
@@ -204,7 +229,7 @@ private fun NavigationEditorRow(
             IconButton(onClick = onMoveUp, enabled = canMoveUp) {
                 Icon(
                     imageVector = MiuixIcons.ChevronForward,
-                    contentDescription = stringResource(R.string.action_move_up),
+                    contentDescription = stringResource(Res.string.action_move_up),
                     tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
                     modifier = Modifier.rotate(-90f),
                 )
@@ -212,7 +237,7 @@ private fun NavigationEditorRow(
             IconButton(onClick = onMoveDown, enabled = canMoveDown) {
                 Icon(
                     imageVector = MiuixIcons.ChevronForward,
-                    contentDescription = stringResource(R.string.action_move_down),
+                    contentDescription = stringResource(Res.string.action_move_down),
                     tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
                     modifier = Modifier.rotate(90f),
                 )
@@ -240,18 +265,18 @@ private fun <T> List<T>.moved(
 @Composable
 private fun navigationStyleLabel(value: String): String =
     when (value) {
-        "floating" -> stringResource(R.string.experimental_navigation_floating)
-        "auto" -> stringResource(R.string.experimental_navigation_auto)
-        else -> stringResource(R.string.experimental_navigation_standard)
+        "floating" -> stringResource(Res.string.experimental_navigation_floating)
+        "auto" -> stringResource(Res.string.experimental_navigation_auto)
+        else -> stringResource(Res.string.experimental_navigation_standard)
     }
 
 @Composable
 private fun navigationLabel(id: String): String =
     when (id) {
-        "ranking" -> stringResource(R.string.nav_ranking)
-        "bookmarks" -> stringResource(R.string.nav_bookmarks)
-        "search" -> stringResource(R.string.nav_search)
-        "shorts" -> stringResource(R.string.nav_shorts_feed)
-        "more" -> stringResource(R.string.nav_more)
-        else -> stringResource(R.string.nav_home)
+        "ranking" -> stringResource(Res.string.nav_ranking)
+        "bookmarks" -> stringResource(Res.string.nav_bookmarks)
+        "search" -> stringResource(Res.string.nav_search)
+        "shorts" -> stringResource(Res.string.nav_shorts_feed)
+        "more" -> stringResource(Res.string.nav_more)
+        else -> stringResource(Res.string.nav_home)
     }

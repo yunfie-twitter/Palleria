@@ -9,19 +9,22 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.R
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.home_tab_feed
+import com.yunfie.illustia.resources.home_tab_following
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.TabRowDefaults
 import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.squircle.squircleBorder
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 internal enum class HomeTab(
-    @param:StringRes val labelResId: Int,
+    val labelResId: StringResource,
 ) {
-    Feed(R.string.home_tab_feed),
-    Following(R.string.home_tab_following),
+    Feed(Res.string.home_tab_feed),
+    Following(Res.string.home_tab_following),
 }
 
 @Composable

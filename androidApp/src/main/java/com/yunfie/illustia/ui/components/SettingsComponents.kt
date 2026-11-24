@@ -20,8 +20,6 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.res.pluralStringResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -29,7 +27,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.R
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_cancel
+import com.yunfie.illustia.resources.section_hidden_rows
 import com.yunfie.illustia.ui.components.AppDialog
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -209,7 +212,7 @@ fun MiuixConfirmDialog(
                 colors = overlayActionButtonColors(),
                 insideMargin = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
             ) {
-                Text(stringResource(R.string.action_cancel))
+                Text(stringResource(Res.string.action_cancel))
             }
             Button(
                 onClick = onConfirm,
@@ -457,7 +460,7 @@ fun CollapsibleSection(
                 if (expanded) {
                     null
                 } else {
-                    pluralStringResource(R.plurals.section_hidden_rows, hiddenCount, hiddenCount)
+                    pluralStringResource(Res.plurals.section_hidden_rows, hiddenCount, hiddenCount)
                 },
             modifier =
                 Modifier

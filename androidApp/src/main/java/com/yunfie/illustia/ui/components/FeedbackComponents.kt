@@ -32,7 +32,6 @@ import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalWindowInfo
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -41,6 +40,12 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.LoadState
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_close
+import com.yunfie.illustia.resources.action_retry
+import com.yunfie.illustia.resources.offline_cached_banner_label
+import com.yunfie.illustia.resources.offline_retry_button
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
@@ -80,13 +85,13 @@ fun OfflineCachedChip(
                 modifier = Modifier.size(14.dp),
             )
             Text(
-                text = stringResource(R.string.offline_cached_banner_label),
+                text = stringResource(Res.string.offline_cached_banner_label),
                 style = MiuixTheme.textStyles.footnote1,
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             )
             if (onRetry != null) {
                 Text(
-                    text = stringResource(R.string.offline_retry_button),
+                    text = stringResource(Res.string.offline_retry_button),
                     style = MiuixTheme.textStyles.footnote1,
                     fontWeight = FontWeight.Bold,
                     color = MiuixTheme.colorScheme.primary,
@@ -176,7 +181,7 @@ fun RequestErrorState(
         )
         if (onRetry != null) {
             Button(onClick = onRetry) {
-                Text(stringResource(R.string.action_retry))
+                Text(stringResource(Res.string.action_retry))
             }
         }
     }
@@ -250,7 +255,7 @@ fun CenteredErrorOverlay(
             ) {
                 RequestErrorState(message = message, onRetry = onRetry)
                 Button(onClick = onDismiss, colors = overlayActionButtonColors()) {
-                    Text(stringResource(R.string.action_close))
+                    Text(stringResource(Res.string.action_close))
                 }
             }
         }

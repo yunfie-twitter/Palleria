@@ -13,9 +13,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.R
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_cancel
+import com.yunfie.illustia.resources.action_delete
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -62,7 +65,7 @@ internal fun VerifyNumberPad(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = stringResource(R.string.action_cancel),
+                    text = stringResource(Res.string.action_cancel),
                     color = MiuixTheme.colorScheme.primary,
                     style = MiuixTheme.textStyles.body1,
                 )
@@ -78,7 +81,7 @@ internal fun VerifyNumberPad(
             ) {
                 Icon(
                     imageVector = MiuixIcons.Remove,
-                    contentDescription = stringResource(R.string.action_delete),
+                    contentDescription = stringResource(Res.string.action_delete),
                     modifier = Modifier.size(28.dp),
                     tint = MiuixTheme.colorScheme.onSurface,
                 )

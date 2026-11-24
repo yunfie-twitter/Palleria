@@ -2,13 +2,22 @@ package com.yunfie.illustia.ui.app
 
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation3.runtime.NavKey
-import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.NovelPreview
 import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.models.pixiv.Comment
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.nav_bookmarks
+import com.yunfie.illustia.resources.nav_bookmarks_full
+import com.yunfie.illustia.resources.nav_home
+import com.yunfie.illustia.resources.nav_more
+import com.yunfie.illustia.resources.nav_novel
+import com.yunfie.illustia.resources.nav_ranking
+import com.yunfie.illustia.resources.nav_search
+import com.yunfie.illustia.resources.nav_shorts_feed
 import com.yunfie.illustia.settings.AppSettings
+import org.jetbrains.compose.resources.StringResource
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
 import top.yukonga.miuix.kmp.icon.extended.More
@@ -19,17 +28,17 @@ import top.yukonga.miuix.kmp.icon.extended.Search as MiuixSearch
 
 internal enum class AppTab(
     val id: String,
-    @param:androidx.annotation.StringRes val labelResId: Int,
-    @param:androidx.annotation.StringRes val titleResId: Int,
+    val labelResId: StringResource,
+    val titleResId: StringResource,
     val icon: ImageVector,
 ) {
-    Home("home", R.string.nav_home, R.string.nav_home, MiuixIcons.VerticalSplit),
-    Novel("novel", R.string.nav_novel, R.string.nav_novel, MiuixIcons.Photos),
-    Ranking("ranking", R.string.nav_ranking, R.string.nav_ranking, MiuixIcons.TopDownloads),
-    Bookmarks("bookmarks", R.string.nav_bookmarks, R.string.nav_bookmarks_full, MiuixIcons.FavoritesFill),
-    Search("search", R.string.nav_search, R.string.nav_search, MiuixIcons.MiuixSearch),
-    ShortsFeed("shorts", R.string.nav_shorts_feed, R.string.nav_shorts_feed, MiuixIcons.Photos),
-    More("more", R.string.nav_more, R.string.nav_more, MiuixIcons.More),
+    Home("home", Res.string.nav_home, Res.string.nav_home, MiuixIcons.VerticalSplit),
+    Novel("novel", Res.string.nav_novel, Res.string.nav_novel, MiuixIcons.Photos),
+    Ranking("ranking", Res.string.nav_ranking, Res.string.nav_ranking, MiuixIcons.TopDownloads),
+    Bookmarks("bookmarks", Res.string.nav_bookmarks, Res.string.nav_bookmarks_full, MiuixIcons.FavoritesFill),
+    Search("search", Res.string.nav_search, Res.string.nav_search, MiuixIcons.MiuixSearch),
+    ShortsFeed("shorts", Res.string.nav_shorts_feed, Res.string.nav_shorts_feed, MiuixIcons.Photos),
+    More("more", Res.string.nav_more, Res.string.nav_more, MiuixIcons.More),
 }
 
 internal val SwipeTabs = listOf(AppTab.Home, AppTab.Search, AppTab.Bookmarks, AppTab.Ranking, AppTab.More)

@@ -8,7 +8,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaUiState
@@ -22,12 +21,25 @@ import com.yunfie.illustia.models.SearchSort
 import com.yunfie.illustia.models.SearchTarget
 import com.yunfie.illustia.models.SearchWorkType
 import com.yunfie.illustia.models.labelResId
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_close
+import com.yunfie.illustia.resources.search_age_restriction
+import com.yunfie.illustia.resources.search_bookmark_count
+import com.yunfie.illustia.resources.search_duration
+import com.yunfie.illustia.resources.search_options
+import com.yunfie.illustia.resources.search_reset_filters
+import com.yunfie.illustia.resources.search_sort_order
+import com.yunfie.illustia.resources.search_target
+import com.yunfie.illustia.resources.search_work_type
+import com.yunfie.illustia.resources.settings_hide_ai_works
+import com.yunfie.illustia.resources.settings_hide_ai_works_desc
 import com.yunfie.illustia.searchUiState
 import com.yunfie.illustia.ui.components.AppBottomSheet
 import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.ChoiceRow
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
 import com.yunfie.illustia.ui.components.SettingSwitchRow
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -55,15 +67,15 @@ internal fun SearchOptionsSheet(
     AppBottomSheet(
         show = true,
         modifier = Modifier.scrollEndHaptic(),
-        title = stringResource(R.string.search_options),
+        title = stringResource(Res.string.search_options),
         startAction = {
             IconButton(onClick = onDismiss) {
-                Icon(imageVector = MiuixIcons.Close, contentDescription = stringResource(R.string.action_close))
+                Icon(imageVector = MiuixIcons.Close, contentDescription = stringResource(Res.string.action_close))
             }
         },
         endAction = {
             IconButton(onClick = { viewModel.resetSearchOptions() }) {
-                Icon(imageVector = MiuixIcons.Refresh, contentDescription = stringResource(R.string.search_reset_filters))
+                Icon(imageVector = MiuixIcons.Refresh, contentDescription = stringResource(Res.string.search_reset_filters))
             }
         },
         onDismissRequest = onDismiss,
@@ -108,7 +120,7 @@ internal fun SearchOptionsContent(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
-            stringResource(R.string.search_sort_order),
+            stringResource(Res.string.search_sort_order),
             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             style = MiuixTheme.textStyles.footnote1,
             fontWeight = FontWeight.Bold,
@@ -120,7 +132,7 @@ internal fun SearchOptionsContent(
             onSelect = viewModel::updateSearchSort,
         )
         Text(
-            stringResource(R.string.search_target),
+            stringResource(Res.string.search_target),
             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             style = MiuixTheme.textStyles.footnote1,
             fontWeight = FontWeight.Bold,
@@ -132,7 +144,7 @@ internal fun SearchOptionsContent(
             onSelect = viewModel::updateSearchTarget,
         )
         Text(
-            stringResource(R.string.search_work_type),
+            stringResource(Res.string.search_work_type),
             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             style = MiuixTheme.textStyles.footnote1,
             fontWeight = FontWeight.Bold,
@@ -145,7 +157,7 @@ internal fun SearchOptionsContent(
             columns = 1,
         )
         Text(
-            stringResource(R.string.search_duration),
+            stringResource(Res.string.search_duration),
             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             style = MiuixTheme.textStyles.footnote1,
             fontWeight = FontWeight.Bold,
@@ -157,7 +169,7 @@ internal fun SearchOptionsContent(
             onSelect = viewModel::updateSearchDuration,
         )
         Text(
-            stringResource(R.string.search_bookmark_count),
+            stringResource(Res.string.search_bookmark_count),
             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             style = MiuixTheme.textStyles.footnote1,
             fontWeight = FontWeight.Bold,
@@ -169,7 +181,7 @@ internal fun SearchOptionsContent(
             onSelect = viewModel::updateSearchBookmarkFilter,
         )
         Text(
-            stringResource(R.string.search_age_restriction),
+            stringResource(Res.string.search_age_restriction),
             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             style = MiuixTheme.textStyles.footnote1,
             fontWeight = FontWeight.Bold,
@@ -182,16 +194,16 @@ internal fun SearchOptionsContent(
             columns = 3,
         )
         SettingSwitchRow(
-            title = stringResource(R.string.settings_hide_ai_works),
+            title = stringResource(Res.string.settings_hide_ai_works),
             checked = state.settings.hideAiWorks,
             onCheckedChange = viewModel::updateHideAiWorks,
-            summary = stringResource(R.string.settings_hide_ai_works_desc),
+            summary = stringResource(Res.string.settings_hide_ai_works_desc),
         )
         Button(
             onClick = { viewModel.resetSearchOptions() },
             modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
         ) {
-            Text(stringResource(R.string.search_reset_filters))
+            Text(stringResource(Res.string.search_reset_filters))
         }
     }
 }

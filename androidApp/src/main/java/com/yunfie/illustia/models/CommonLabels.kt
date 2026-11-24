@@ -1,23 +1,26 @@
 package com.yunfie.illustia.models
 
-import androidx.annotation.StringRes
-import com.yunfie.illustia.R
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.feed_new
+import com.yunfie.illustia.resources.feed_ranking
+import com.yunfie.illustia.resources.feed_recommended
+import com.yunfie.illustia.resources.restrict_private
+import com.yunfie.illustia.resources.restrict_public
+import org.jetbrains.compose.resources.StringResource
 
 /** フィード種別の UI ラベル。 */
-@get:StringRes
-val HomeFeedKind.labelResId: Int
+val HomeFeedKind.labelResId: StringResource
     get() =
         when (this) {
-            HomeFeedKind.Recommended -> R.string.feed_recommended
-            HomeFeedKind.Ranking -> R.string.feed_ranking
-            HomeFeedKind.New -> R.string.feed_new
+            HomeFeedKind.Recommended -> Res.string.feed_recommended
+            HomeFeedKind.Ranking -> Res.string.feed_ranking
+            HomeFeedKind.New -> Res.string.feed_new
         }
 
 /** 公開範囲の UI ラベル。 */
-@get:StringRes
-val Restrict.labelResId: Int
+val Restrict.labelResId: StringResource
     get() =
         when (this) {
-            Restrict.Public -> R.string.restrict_public
-            Restrict.Private -> R.string.restrict_private
+            Restrict.Public -> Res.string.restrict_public
+            Restrict.Private -> Res.string.restrict_private
         }

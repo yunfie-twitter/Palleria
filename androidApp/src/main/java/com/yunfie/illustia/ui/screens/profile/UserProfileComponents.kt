@@ -64,7 +64,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -74,11 +73,36 @@ import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_load_more
+import com.yunfie.illustia.resources.action_reload
+import com.yunfie.illustia.resources.action_report_problem
+import com.yunfie.illustia.resources.action_sort
+import com.yunfie.illustia.resources.bookmark_empty
 import com.yunfie.illustia.resources.detail_muted_artist
 import com.yunfie.illustia.resources.detail_muted_artist_blur
 import com.yunfie.illustia.resources.detail_muted_artist_blur_default
 import com.yunfie.illustia.resources.detail_share
 import com.yunfie.illustia.resources.detail_unmute
+import com.yunfie.illustia.resources.dialog_mute
+import com.yunfie.illustia.resources.error_share_failed
+import com.yunfie.illustia.resources.search_empty_illust
+import com.yunfie.illustia.resources.settings_account
+import com.yunfie.illustia.resources.user_filter_all
+import com.yunfie.illustia.resources.user_filter_category
+import com.yunfie.illustia.resources.user_filter_illust_only
+import com.yunfie.illustia.resources.user_filter_manga_only
+import com.yunfie.illustia.resources.user_id_label
+import com.yunfie.illustia.resources.user_profile_edit_title
+import com.yunfie.illustia.resources.user_profile_no_image
+import com.yunfie.illustia.resources.user_related_empty
+import com.yunfie.illustia.resources.user_related_summary
+import com.yunfie.illustia.resources.user_sort_newest
+import com.yunfie.illustia.resources.user_sort_oldest
+import com.yunfie.illustia.resources.user_sort_popular
+import com.yunfie.illustia.resources.user_tab_bookmarks
+import com.yunfie.illustia.resources.user_tab_info
+import com.yunfie.illustia.resources.user_tab_related
+import com.yunfie.illustia.resources.user_tab_works
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.AvatarImage
@@ -106,6 +130,7 @@ import com.yunfie.illustia.ui.components.pinchToChangeColumns
 import com.yunfie.illustia.ui.components.profileGridContentPadding
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import com.yunfie.illustia.ui.screens.UserResultCard
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.DropdownEntry
@@ -282,7 +307,7 @@ internal fun UserProfilePagerContent(
                             onLoadMore = onLoadMoreBookmarks,
                             gridState = bookmarksGridState,
                             backgroundColor = backgroundColor,
-                            emptyLabel = stringResource(R.string.bookmark_empty),
+                            emptyLabel = stringResource(Res.string.bookmark_empty),
                             keyPrefix = "user_bookmark",
                             onIllustLongClick = onIllustLongClick,
                             onColumnsChange = onColumnsChange,
@@ -381,18 +406,18 @@ internal fun UserProfileSmallTopAppBar(
 ) {
     val context = LocalContext.current
     val shareLabel = resString(Res.string.detail_share)
-    val shareFailedMessage = stringResource(R.string.error_share_failed)
-    val sortLabel = stringResource(R.string.action_sort)
-    val sortNewestLabel = stringResource(R.string.user_sort_newest)
-    val sortOldestLabel = stringResource(R.string.user_sort_oldest)
-    val sortPopularLabel = stringResource(R.string.user_sort_popular)
-    val filterCategoryLabel = stringResource(R.string.user_filter_category)
-    val filterAllLabel = stringResource(R.string.user_filter_all)
-    val filterIllustLabel = stringResource(R.string.user_filter_illust_only)
-    val filterMangaLabel = stringResource(R.string.user_filter_manga_only)
-    val relatedLabel = stringResource(R.string.user_tab_related)
-    val muteLabel = stringResource(R.string.dialog_mute)
-    val reportProblemLabel = stringResource(R.string.action_report_problem)
+    val shareFailedMessage = stringResource(Res.string.error_share_failed)
+    val sortLabel = stringResource(Res.string.action_sort)
+    val sortNewestLabel = stringResource(Res.string.user_sort_newest)
+    val sortOldestLabel = stringResource(Res.string.user_sort_oldest)
+    val sortPopularLabel = stringResource(Res.string.user_sort_popular)
+    val filterCategoryLabel = stringResource(Res.string.user_filter_category)
+    val filterAllLabel = stringResource(Res.string.user_filter_all)
+    val filterIllustLabel = stringResource(Res.string.user_filter_illust_only)
+    val filterMangaLabel = stringResource(Res.string.user_filter_manga_only)
+    val relatedLabel = stringResource(Res.string.user_tab_related)
+    val muteLabel = stringResource(Res.string.dialog_mute)
+    val reportProblemLabel = stringResource(Res.string.action_report_problem)
     var showReportDialog by remember(user.id) { mutableStateOf(false) }
     val shareTitle = user.name.ifBlank { "@${user.account}" }
     val profileUrl = remember(user.id) { "https://www.pixiv.net/users/${user.id}" }
@@ -787,9 +812,9 @@ internal fun UserProfileTabs(
             .rememberHapticFeedbackAction()
     val tabs =
         listOf(
-            stringResource(R.string.user_tab_works),
-            stringResource(R.string.user_tab_bookmarks),
-            stringResource(R.string.user_tab_info),
+            stringResource(Res.string.user_tab_works),
+            stringResource(Res.string.user_tab_bookmarks),
+            stringResource(Res.string.user_tab_info),
         )
     val currentSelectedTab = selectedTabProvider?.invoke() ?: selectedTab
     TabRowWithContour(
@@ -838,14 +863,14 @@ private fun EditUserPill() {
         ) {
             androidx.compose.foundation.Image(
                 painter = painterResource(R.drawable.ic_edit_pen),
-                contentDescription = stringResource(R.string.user_profile_edit_title),
+                contentDescription = stringResource(Res.string.user_profile_edit_title),
                 modifier = Modifier.size(16.dp),
                 colorFilter =
                     androidx.compose.ui.graphics.ColorFilter
                         .tint(scheme.onSurface),
             )
             Text(
-                text = stringResource(R.string.user_profile_edit_title),
+                text = stringResource(Res.string.user_profile_edit_title),
                 color = scheme.onSurface,
                 fontWeight = FontWeight.Bold,
                 style = MiuixTheme.textStyles.body2,
@@ -892,7 +917,7 @@ private fun UserIllustGridPage(
     onLoadMore: () -> Unit,
     gridState: LazyGridState,
     backgroundColor: Color,
-    emptyLabel: String = stringResource(R.string.search_empty_illust),
+    emptyLabel: String = stringResource(Res.string.search_empty_illust),
     keyPrefix: String = "user_illust",
     loaded: Boolean = true,
     errorMessage: String? = null,
@@ -1022,10 +1047,10 @@ private fun UserIllustGridPage(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             LoadingIndicator(modifier = Modifier.size(16.dp))
-                            Text(stringResource(R.string.action_load_more))
+                            Text(stringResource(Res.string.action_load_more))
                         }
                     } else {
-                        Text(stringResource(R.string.action_load_more))
+                        Text(stringResource(Res.string.action_load_more))
                     }
                 }
             }
@@ -1067,7 +1092,7 @@ internal fun RelatedCreatorsSheetContent(
     ) {
         item(contentType = "related_intro") {
             Text(
-                text = stringResource(R.string.user_related_summary),
+                text = stringResource(Res.string.user_related_summary),
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp),
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 style = MiuixTheme.textStyles.footnote1,
@@ -1095,9 +1120,9 @@ internal fun RelatedCreatorsSheetContent(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    EmptyState(stringResource(R.string.user_related_empty))
+                    EmptyState(stringResource(Res.string.user_related_empty))
                     Button(onClick = onRetry) {
-                        Text(stringResource(R.string.action_reload))
+                        Text(stringResource(Res.string.action_reload))
                     }
                 }
             }
@@ -1112,7 +1137,7 @@ internal fun RelatedCreatorsSheetContent(
                     if (loading) {
                         LoadingIndicator(Modifier.size(20.dp))
                     } else {
-                        Text(stringResource(R.string.action_load_more))
+                        Text(stringResource(Res.string.action_load_more))
                     }
                 }
             }
@@ -1132,9 +1157,9 @@ private fun UserDetailsCard(user: UserProfile) {
             )
             DividerLine()
         }
-        SettingRow(stringResource(R.string.user_id_label), user.id.toString()) {}
+        SettingRow(stringResource(Res.string.user_id_label), user.id.toString()) {}
         DividerLine()
-        SettingRow(stringResource(R.string.settings_account), "@${user.account}") {}
+        SettingRow(stringResource(Res.string.settings_account), "@${user.account}") {}
     }
 }
 
@@ -1190,7 +1215,7 @@ internal fun UserProfileAvatarPreviewOverlay(
                     )
                 } else {
                     Text(
-                        text = stringResource(R.string.user_profile_no_image),
+                        text = stringResource(Res.string.user_profile_no_image),
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         style = MiuixTheme.textStyles.body1,
                         fontWeight = FontWeight.Bold,

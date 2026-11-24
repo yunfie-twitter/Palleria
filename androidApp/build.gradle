@@ -95,6 +95,20 @@ android {
         }
     }
 
+    sourceSets {
+        // Compose Multiplatform の stringResource は Android では AssetManager から
+        // "composeResources/<resources namespace>/" 配下の cvr を読む。ユニットテスト
+        // (Robolectric) は debug の unit test APK から assets を読むが、composeApp の
+        // 準備済みリソースはマージされない。生成コードが期待するパス階層に合わせて
+        // ステージングしたディレクトリを debug assets に追加する。
+        debug {
+            assets.srcDirs += layout.buildDirectory.dir("generated/composeTestAssets")
+        }
+    }
+    tasks.matching { it.name.startsWith("mergeDebugAssets") || it.name.startsWith("packageDebugUnitTestForUnitTest") }.configureEach {
+        mustRunAfter(":composeApp:prepareComposeResourcesTaskForCommonMain", "stageComposeTestAssets")
+    }
+
     lint {
         abortOnError false
         sarifReport true
@@ -103,6 +117,24 @@ android {
         informational 'MissingTranslation'
         warning 'StringFormatInvalid'
     }
+}
+
+// Robolectric のユニットテストで Compose Resources を解決するためのステージング。
+// 生成アクセサは "composeResources/<namespace>/" を前提とするため、その階層で複製する。
+def composePreparedResources =
+    rootProject.layout.projectDirectory.dir(
+        "composeApp/build/generated/compose/resourceGenerator/preparedResources/commonMain/composeResources",
+    )
+def composeTestAssetsDir = layout.buildDirectory.dir("generated/composeTestAssets")
+
+tasks.register("stageComposeTestAssets", Sync) {
+    from(composePreparedResources)
+    into(composeTestAssetsDir.map { it.dir("composeResources/com.yunfie.illustia.resources") })
+    dependsOn(":composeApp:prepareComposeResourcesTaskForCommonMain")
+}
+
+tasks.matching { it.name == "mergeDebugAssets" || it.name == "packageDebugUnitTestForUnitTest" }.configureEach {
+    dependsOn("stageComposeTestAssets")
 }
 
 composeCompiler {

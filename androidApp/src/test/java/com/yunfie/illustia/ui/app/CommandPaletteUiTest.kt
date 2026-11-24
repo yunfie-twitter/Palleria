@@ -7,6 +7,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.pressKey
+import com.yunfie.illustia.ComposeResourcesRule
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -19,6 +20,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @RunWith(RobolectricTestRunner::class)
 @Config(application = Application::class, sdk = [28])
 class CommandPaletteUiTest {
+    @get:Rule val composeResources = ComposeResourcesRule()
+
     @get:Rule val compose = createComposeRule()
 
     @Test fun enterExecutesTypedSearchOnce() {

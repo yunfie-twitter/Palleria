@@ -36,8 +36,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.pluralStringResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -53,6 +51,18 @@ import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.models.isEmptyAfterLoad
 import com.yunfie.illustia.models.pixiv.MangaSeriesModel
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_load_more
+import com.yunfie.illustia.resources.bookmark_empty
+import com.yunfie.illustia.resources.bookmark_following_empty
+import com.yunfie.illustia.resources.bookmark_tab_bookmarks
+import com.yunfie.illustia.resources.bookmark_tab_following
+import com.yunfie.illustia.resources.bookmark_tab_timeline
+import com.yunfie.illustia.resources.bookmark_tab_watchlist
+import com.yunfie.illustia.resources.following_users_empty
+import com.yunfie.illustia.resources.series_chapter_count
+import com.yunfie.illustia.resources.watchlist_series_empty
+import com.yunfie.illustia.resources.watchlist_series_load_more
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
@@ -84,6 +94,8 @@ import com.yunfie.illustia.ui.components.rememberSkeletonShimmer
 import com.yunfie.illustia.ui.scroll.ScrollStateKeys
 import com.yunfie.illustia.ui.scroll.ScrollStateRegistry
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
@@ -171,7 +183,7 @@ internal fun BookmarkWatchlistTab(
                 }
             }
             if (watchlistState.mangaSeries.isEmpty() && !watchlistPending) {
-                item(span = { GridItemSpan(maxLineSpan) }) { EmptyState(stringResource(R.string.watchlist_series_empty)) }
+                item(span = { GridItemSpan(maxLineSpan) }) { EmptyState(stringResource(Res.string.watchlist_series_empty)) }
             }
             gridItems(watchlistState.mangaSeries, key = { it.id }, contentType = { "watchlist_series_card" }) { series ->
                 WatchlistSeriesCard(
@@ -203,10 +215,10 @@ internal fun BookmarkWatchlistTab(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 LoadingIndicator(modifier = Modifier.size(16.dp))
-                                Text(stringResource(R.string.watchlist_series_load_more))
+                                Text(stringResource(Res.string.watchlist_series_load_more))
                             }
                         } else {
-                            Text(stringResource(R.string.watchlist_series_load_more))
+                            Text(stringResource(Res.string.watchlist_series_load_more))
                         }
                     }
                 }
@@ -283,7 +295,7 @@ private fun WatchlistSeriesCard(
                         Text(
                             text =
                                 pluralStringResource(
-                                    R.plurals.series_chapter_count,
+                                    Res.plurals.series_chapter_count,
                                     series.publishedContentCount,
                                     series.publishedContentCount,
                                 ),
@@ -458,7 +470,7 @@ internal fun BookmarkMainTab(
             }
             if (isEmptyAfterLoad(bookmarkItems.isEmpty(), loadState)) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    EmptyState(stringResource(R.string.bookmark_empty))
+                    EmptyState(stringResource(Res.string.bookmark_empty))
                 }
             }
             gridItems(bookmarkItems, key = { it.id }, contentType = { "illust_card" }) { illust ->
@@ -503,10 +515,10 @@ internal fun BookmarkMainTab(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 LoadingIndicator(modifier = Modifier.size(16.dp))
-                                Text(stringResource(R.string.action_load_more))
+                                Text(stringResource(Res.string.action_load_more))
                             }
                         } else {
-                            Text(stringResource(R.string.action_load_more))
+                            Text(stringResource(Res.string.action_load_more))
                         }
                     }
                 }
@@ -594,7 +606,7 @@ internal fun BookmarkTimelineTab(
             }
             if (isEmptyAfterLoad(timelineItems.isEmpty(), loadState)) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    EmptyState(stringResource(R.string.bookmark_following_empty))
+                    EmptyState(stringResource(Res.string.bookmark_following_empty))
                 }
             }
             gridItems(timelineItems, key = { "timeline_${it.id}" }, contentType = { "illust_card" }) { illust ->
@@ -639,10 +651,10 @@ internal fun BookmarkTimelineTab(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 LoadingIndicator(modifier = Modifier.size(16.dp))
-                                Text(stringResource(R.string.action_load_more))
+                                Text(stringResource(Res.string.action_load_more))
                             }
                         } else {
-                            Text(stringResource(R.string.action_load_more))
+                            Text(stringResource(Res.string.action_load_more))
                         }
                     }
                 }
@@ -742,7 +754,7 @@ internal fun BookmarkFollowingTab(
             }
             if (isEmptyAfterLoad(followingUsers.isEmpty(), loadState)) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    EmptyState(stringResource(R.string.following_users_empty))
+                    EmptyState(stringResource(Res.string.following_users_empty))
                 }
             }
             gridItems(sortedUsers, key = { "follow_user_${it.id}" }, contentType = { "user_card" }) { user ->
@@ -782,10 +794,10 @@ internal fun BookmarkFollowingTab(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 LoadingIndicator(modifier = Modifier.size(16.dp))
-                                Text(stringResource(R.string.action_load_more))
+                                Text(stringResource(Res.string.action_load_more))
                             }
                         } else {
-                            Text(stringResource(R.string.action_load_more))
+                            Text(stringResource(Res.string.action_load_more))
                         }
                     }
                 }
@@ -846,10 +858,10 @@ internal fun CompactBookmarkTabs(
     TabRowWithContour(
         tabs =
             listOf(
-                stringResource(R.string.bookmark_tab_timeline),
-                stringResource(R.string.bookmark_tab_bookmarks),
-                stringResource(R.string.bookmark_tab_watchlist),
-                stringResource(R.string.bookmark_tab_following),
+                stringResource(Res.string.bookmark_tab_timeline),
+                stringResource(Res.string.bookmark_tab_bookmarks),
+                stringResource(Res.string.bookmark_tab_watchlist),
+                stringResource(Res.string.bookmark_tab_following),
             ),
         selectedTabIndex = selectedTab,
         onTabSelected = onSelect,

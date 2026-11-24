@@ -41,7 +41,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -49,6 +48,13 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_bookmark
+import com.yunfie.illustia.resources.action_copy_image
+import com.yunfie.illustia.resources.dialog_artist_label
+import com.yunfie.illustia.resources.dialog_show_detail
+import com.yunfie.illustia.resources.dialog_work_options
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
@@ -206,7 +212,7 @@ fun QuickPeekOverlay(
                                 ) {
                                     Icon(
                                         imageVector = if (illust.isBookmarked) MiuixIcons.FavoritesFill else MiuixIcons.Favorites,
-                                        contentDescription = stringResource(R.string.action_bookmark),
+                                        contentDescription = stringResource(Res.string.action_bookmark),
                                         tint = if (illust.isBookmarked) MiuixTheme.colorScheme.primary else Color.White,
                                         modifier = Modifier.size(20.dp),
                                     )
@@ -224,7 +230,7 @@ fun QuickPeekOverlay(
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             Text(
-                                text = illust.title.ifBlank { stringResource(R.string.dialog_work_options) },
+                                text = illust.title.ifBlank { stringResource(Res.string.dialog_work_options) },
                                 style = MiuixTheme.textStyles.title3,
                                 fontWeight = FontWeight.Bold,
                                 color = MiuixTheme.colorScheme.onSurface,
@@ -233,7 +239,7 @@ fun QuickPeekOverlay(
                             )
 
                             Text(
-                                text = stringResource(R.string.dialog_artist_label, illust.artistName),
+                                text = stringResource(Res.string.dialog_artist_label, illust.artistName),
                                 style = MiuixTheme.textStyles.footnote1,
                                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 maxLines = 1,
@@ -257,7 +263,7 @@ fun QuickPeekOverlay(
                                             contentColor = MiuixTheme.colorScheme.onPrimary,
                                         ),
                                 ) {
-                                    Text(stringResource(R.string.dialog_show_detail))
+                                    Text(stringResource(Res.string.dialog_show_detail))
                                 }
 
                                 Box(
@@ -274,7 +280,7 @@ fun QuickPeekOverlay(
                                     }) {
                                         Icon(
                                             imageVector = MiuixIcons.Copy,
-                                            contentDescription = stringResource(R.string.action_copy_image),
+                                            contentDescription = stringResource(Res.string.action_copy_image),
                                             tint = MiuixTheme.colorScheme.primary,
                                             modifier = Modifier.size(20.dp),
                                         )

@@ -16,12 +16,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.R
 import com.yunfie.illustia.TagPreview
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.tag_sheet_add_favorite
+import com.yunfie.illustia.resources.tag_sheet_mute
+import com.yunfie.illustia.resources.tag_sheet_remove_favorite
+import com.yunfie.illustia.resources.tag_sheet_search
+import com.yunfie.illustia.resources.tag_sheet_title
+import com.yunfie.illustia.resources.tag_sheet_unmute
 import com.yunfie.illustia.ui.components.AppBottomSheet
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
@@ -42,7 +49,7 @@ fun TagPreviewBottomSheet(
     AppBottomSheet(
         show = true,
         modifier = Modifier.scrollEndHaptic(),
-        title = stringResource(R.string.tag_sheet_title),
+        title = stringResource(Res.string.tag_sheet_title),
         onDismissRequest = onDismiss,
         backgroundColor = LocalBottomSheetBackgroundColor.current,
         insideMargin = BottomSheetInsideMargin,
@@ -54,7 +61,7 @@ fun TagPreviewBottomSheet(
                 modifier = Modifier.fillMaxWidth(),
                 colors = overlayActionButtonColors(),
             ) {
-                Text(stringResource(R.string.tag_sheet_search))
+                Text(stringResource(Res.string.tag_sheet_search))
             }
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Button(
@@ -66,9 +73,9 @@ fun TagPreviewBottomSheet(
                         text =
                             stringResource(
                                 if (isFavorite) {
-                                    R.string.tag_sheet_remove_favorite
+                                    Res.string.tag_sheet_remove_favorite
                                 } else {
-                                    R.string.tag_sheet_add_favorite
+                                    Res.string.tag_sheet_add_favorite
                                 },
                             ),
                         color = MiuixTheme.colorScheme.primary,
@@ -83,9 +90,9 @@ fun TagPreviewBottomSheet(
                         text =
                             stringResource(
                                 if (isMuted) {
-                                    R.string.tag_sheet_unmute
+                                    Res.string.tag_sheet_unmute
                                 } else {
-                                    R.string.tag_sheet_mute
+                                    Res.string.tag_sheet_mute
                                 },
                             ),
                         color =

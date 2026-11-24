@@ -21,7 +21,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaUiState
@@ -31,6 +30,12 @@ import com.yunfie.illustia.RecommendedTagTile
 import com.yunfie.illustia.SearchUiState
 import com.yunfie.illustia.isMutedByTags
 import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_view_all
+import com.yunfie.illustia.resources.nav_search
+import com.yunfie.illustia.resources.recommended_tags_empty
+import com.yunfie.illustia.resources.search_recent_viewed
+import com.yunfie.illustia.resources.search_recommended_tags
 import com.yunfie.illustia.searchUiState
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.IllustCard
@@ -48,6 +53,7 @@ import com.yunfie.illustia.ui.scroll.ScrollStateKeys
 import com.yunfie.illustia.ui.scroll.ScrollStateRegistry
 import com.yunfie.illustia.visibleWithMutedTagsVisible
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -104,7 +110,7 @@ internal fun BrowseArea(
         if (showHeader) {
             item(key = "search_header", span = { GridItemSpan(maxLineSpan) }, contentType = "search_header") {
                 Text(
-                    text = stringResource(R.string.nav_search),
+                    text = stringResource(Res.string.nav_search),
                     color = MiuixTheme.colorScheme.onBackground,
                     style = MiuixTheme.textStyles.title2,
                     fontWeight = FontWeight.Bold,
@@ -125,8 +131,8 @@ internal fun BrowseArea(
         if (recentIllusts.isNotEmpty()) {
             item(key = "recent_header", span = { GridItemSpan(maxLineSpan) }, contentType = "section_header") {
                 SectionHeader(
-                    stringResource(R.string.search_recent_viewed),
-                    action = stringResource(R.string.action_view_all),
+                    stringResource(Res.string.search_recent_viewed),
+                    action = stringResource(Res.string.action_view_all),
                     onAction = viewModel::openViewHistory,
                 )
             }
@@ -158,7 +164,7 @@ internal fun BrowseArea(
         }
         item(key = "recommended_tags_title", span = { GridItemSpan(maxLineSpan) }, contentType = "section_header") {
             Text(
-                stringResource(R.string.search_recommended_tags),
+                stringResource(Res.string.search_recommended_tags),
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 style = MiuixTheme.textStyles.title4,
                 fontWeight = FontWeight.Bold,
@@ -190,7 +196,7 @@ internal fun BrowseArea(
                     }
 
                     else -> {
-                        Text(stringResource(R.string.recommended_tags_empty))
+                        Text(stringResource(Res.string.recommended_tags_empty))
                     }
                 }
             } else {

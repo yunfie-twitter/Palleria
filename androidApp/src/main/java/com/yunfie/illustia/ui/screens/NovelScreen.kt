@@ -52,14 +52,23 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.NovelPreview
 import com.yunfie.illustia.models.NovelTextContent
 import com.yunfie.illustia.models.isEmptyAfterLoad
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_back
+import com.yunfie.illustia.resources.action_load_more
+import com.yunfie.illustia.resources.dialog_reload
+import com.yunfie.illustia.resources.nav_novel
+import com.yunfie.illustia.resources.novel_empty
+import com.yunfie.illustia.resources.novel_filter_all
+import com.yunfie.illustia.resources.novel_filter_completed
+import com.yunfie.illustia.resources.novel_filter_later
+import com.yunfie.illustia.resources.novel_filter_reading
+import com.yunfie.illustia.resources.novel_reader_loading
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
@@ -84,6 +93,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -99,12 +110,12 @@ import android.view.KeyEvent as AndroidKeyEvent
 import androidx.compose.foundation.lazy.grid.items as gridItems
 
 private enum class NovelFilterTab(
-    val labelRes: Int,
+    val labelRes: StringResource,
 ) {
-    All(R.string.novel_filter_all),
-    Reading(R.string.novel_filter_reading),
-    Later(R.string.novel_filter_later),
-    Completed(R.string.novel_filter_completed),
+    All(Res.string.novel_filter_all),
+    Reading(Res.string.novel_filter_reading),
+    Later(Res.string.novel_filter_later),
+    Completed(Res.string.novel_filter_completed),
 }
 
 @Composable
@@ -182,8 +193,8 @@ fun NovelScreen(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
             TopAppBar(
-                title = stringResource(R.string.nav_novel),
-                largeTitle = stringResource(R.string.nav_novel),
+                title = stringResource(Res.string.nav_novel),
+                largeTitle = stringResource(Res.string.nav_novel),
                 scrollBehavior = scrollBehavior,
                 modifier =
                     Modifier.onTopBarTap(
@@ -198,7 +209,7 @@ fun NovelScreen(
                     },
                 navigationIcon = {
                     IconButton(modifier = Modifier.pointerHoverIcon(PointerIcon.Hand), onClick = onBack) {
-                        Icon(MiuixIcons.Back, contentDescription = stringResource(R.string.action_back))
+                        Icon(MiuixIcons.Back, contentDescription = stringResource(Res.string.action_back))
                     }
                 },
                 actions = {
@@ -206,7 +217,7 @@ fun NovelScreen(
                         modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
                         onClick = { viewModel.refreshNovels(forceRefresh = true) },
                     ) {
-                        Icon(MiuixIcons.Refresh, contentDescription = stringResource(R.string.dialog_reload))
+                        Icon(MiuixIcons.Refresh, contentDescription = stringResource(Res.string.dialog_reload))
                     }
                 },
             )
@@ -267,7 +278,7 @@ fun NovelScreen(
                 }
                 if (isEmptyAfterLoad(filteredItems.isEmpty(), loadState)) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
-                        EmptyState(stringResource(R.string.novel_empty))
+                        EmptyState(stringResource(Res.string.novel_empty))
                     }
                 }
 
@@ -321,10 +332,10 @@ fun NovelScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
                                     LoadingIndicator(modifier = Modifier.size(16.dp))
-                                    Text(stringResource(R.string.action_load_more))
+                                    Text(stringResource(Res.string.action_load_more))
                                 }
                             } else {
-                                Text(stringResource(R.string.action_load_more))
+                                Text(stringResource(Res.string.action_load_more))
                             }
                         }
                     }
@@ -757,7 +768,7 @@ fun NovelReaderScreen(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = stringResource(R.string.novel_reader_loading),
+                        text = stringResource(Res.string.novel_reader_loading),
                         style = MiuixTheme.textStyles.body1,
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     )

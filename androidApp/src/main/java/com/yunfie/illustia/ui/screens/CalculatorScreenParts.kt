@@ -42,7 +42,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -52,8 +51,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.yunfie.illustia.CalculatorHistoryEntry
 import com.yunfie.illustia.R
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_cancel
+import com.yunfie.illustia.resources.action_confirm
+import com.yunfie.illustia.resources.calculator_error
+import com.yunfie.illustia.resources.calculator_history
+import com.yunfie.illustia.resources.calculator_history_empty
+import com.yunfie.illustia.resources.privacy_enter_unlock_code
+import com.yunfie.illustia.resources.privacy_unlock_code
 import com.yunfie.illustia.ui.components.AppDialog
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
@@ -73,7 +81,7 @@ internal fun CalculatorHistorySection(
 
     Column(modifier = modifier) {
         Text(
-            text = stringResource(R.string.calculator_history),
+            text = stringResource(Res.string.calculator_history),
             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             style = MiuixTheme.textStyles.footnote1,
             modifier =
@@ -101,7 +109,7 @@ internal fun CalculatorHistorySection(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = stringResource(R.string.calculator_history_empty),
+                    text = stringResource(Res.string.calculator_history_empty),
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     style = MiuixTheme.textStyles.footnote1,
                 )
@@ -128,7 +136,7 @@ internal fun CalculatorHistorySection(
     if (showUnlockDialog) {
         AppDialog(
             show = true,
-            title = stringResource(R.string.privacy_enter_unlock_code),
+            title = stringResource(Res.string.privacy_enter_unlock_code),
             onDismissRequest = {
                 showUnlockDialog = false
                 unlockCode = ""
@@ -138,7 +146,7 @@ internal fun CalculatorHistorySection(
                 TextField(
                     value = unlockCode,
                     onValueChange = { unlockCode = it },
-                    label = stringResource(R.string.privacy_unlock_code),
+                    label = stringResource(Res.string.privacy_unlock_code),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions =
@@ -159,7 +167,7 @@ internal fun CalculatorHistorySection(
                         modifier = Modifier.weight(1f),
                         colors = overlayActionButtonColors(),
                     ) {
-                        Text(stringResource(R.string.action_cancel))
+                        Text(stringResource(Res.string.action_cancel))
                     }
                     Button(
                         onClick = {
@@ -171,7 +179,7 @@ internal fun CalculatorHistorySection(
                         modifier = Modifier.weight(1f),
                         colors = overlayActionButtonColors(),
                     ) {
-                        Text(stringResource(R.string.action_confirm), fontWeight = FontWeight.Bold)
+                        Text(stringResource(Res.string.action_confirm), fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -215,7 +223,7 @@ internal fun CalculatorDisplay(
     val displayText =
         when {
             buffer.isEmpty() -> "0"
-            buffer == "エラー" -> stringResource(R.string.calculator_error)
+            buffer == "エラー" -> stringResource(Res.string.calculator_error)
             else -> buffer
         }
 

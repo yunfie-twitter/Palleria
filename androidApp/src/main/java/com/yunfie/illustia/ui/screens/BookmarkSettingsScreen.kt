@@ -8,12 +8,31 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.labelResId
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.bookmark_auto_tag
+import com.yunfie.illustia.resources.bookmark_auto_tag_desc
+import com.yunfie.illustia.resources.bookmark_bookmark_on_download
+import com.yunfie.illustia.resources.bookmark_bookmark_on_download_desc
+import com.yunfie.illustia.resources.bookmark_confirm_on_long_press
+import com.yunfie.illustia.resources.bookmark_confirm_on_long_press_desc
+import com.yunfie.illustia.resources.bookmark_download_on_bookmark
+import com.yunfie.illustia.resources.bookmark_download_on_bookmark_desc
+import com.yunfie.illustia.resources.bookmark_follow_on_like
+import com.yunfie.illustia.resources.bookmark_follow_on_like_desc
+import com.yunfie.illustia.resources.bookmark_private_default
+import com.yunfie.illustia.resources.bookmark_private_default_desc
+import com.yunfie.illustia.resources.bookmark_section_behavior
+import com.yunfie.illustia.resources.bookmark_section_confirm
+import com.yunfie.illustia.resources.bookmark_section_sync
+import com.yunfie.illustia.resources.bookmark_settings_title
+import com.yunfie.illustia.resources.bookmark_skip_confirm_on_detail
+import com.yunfie.illustia.resources.bookmark_skip_confirm_on_detail_desc
+import com.yunfie.illustia.resources.follow_visibility
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
@@ -22,6 +41,7 @@ import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.Section
 import com.yunfie.illustia.ui.components.SettingDropdownRow
 import com.yunfie.illustia.ui.components.SettingSwitchRow
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.TopAppBar
@@ -41,8 +61,8 @@ fun BookmarkSettingsScreen(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
             TopAppBar(
-                title = stringResource(R.string.bookmark_settings_title),
-                largeTitle = stringResource(R.string.bookmark_settings_title),
+                title = stringResource(Res.string.bookmark_settings_title),
+                largeTitle = stringResource(Res.string.bookmark_settings_title),
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     HeaderIcon(MiuixIcons.Back, onClick = onBack)
@@ -66,17 +86,17 @@ fun BookmarkSettingsScreen(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             item {
-                Section(stringResource(R.string.bookmark_section_behavior)) {
+                Section(stringResource(Res.string.bookmark_section_behavior)) {
                     ElevatedPanel {
                         SettingSwitchRow(
-                            stringResource(R.string.bookmark_private_default),
+                            stringResource(Res.string.bookmark_private_default),
                             settings.privateBookmarkDefault,
                             viewModel::updatePrivateBookmarkDefault,
-                            stringResource(R.string.bookmark_private_default_desc),
+                            stringResource(Res.string.bookmark_private_default_desc),
                         )
                         DividerLine()
                         SettingDropdownRow(
-                            title = stringResource(R.string.follow_visibility),
+                            title = stringResource(Res.string.follow_visibility),
                             selected = settings.followRestrict,
                             values = Restrict.entries,
                             label = { stringResource(it.labelResId) },
@@ -88,57 +108,57 @@ fun BookmarkSettingsScreen(
                         )
                         DividerLine()
                         SettingSwitchRow(
-                            stringResource(R.string.bookmark_follow_on_like),
+                            stringResource(Res.string.bookmark_follow_on_like),
                             settings.followOnLike,
                             viewModel::updateFollowOnLike,
-                            stringResource(R.string.bookmark_follow_on_like_desc),
+                            stringResource(Res.string.bookmark_follow_on_like_desc),
                         )
                         DividerLine()
                         SettingSwitchRow(
-                            stringResource(R.string.bookmark_auto_tag),
+                            stringResource(Res.string.bookmark_auto_tag),
                             settings.autoTagOnBookmark,
                             viewModel::updateAutoTagOnBookmark,
-                            stringResource(R.string.bookmark_auto_tag_desc),
+                            stringResource(Res.string.bookmark_auto_tag_desc),
                         )
                     }
                 }
             }
 
             item {
-                Section(stringResource(R.string.bookmark_section_sync)) {
+                Section(stringResource(Res.string.bookmark_section_sync)) {
                     ElevatedPanel {
                         SettingSwitchRow(
-                            stringResource(R.string.bookmark_download_on_bookmark),
+                            stringResource(Res.string.bookmark_download_on_bookmark),
                             settings.autoDownloadOnBookmark,
                             viewModel::updateAutoDownloadOnBookmark,
-                            stringResource(R.string.bookmark_download_on_bookmark_desc),
+                            stringResource(Res.string.bookmark_download_on_bookmark_desc),
                         )
                         DividerLine()
                         SettingSwitchRow(
-                            stringResource(R.string.bookmark_bookmark_on_download),
+                            stringResource(Res.string.bookmark_bookmark_on_download),
                             settings.autoBookmarkOnDownload,
                             viewModel::updateAutoBookmarkOnDownload,
-                            stringResource(R.string.bookmark_bookmark_on_download_desc),
+                            stringResource(Res.string.bookmark_bookmark_on_download_desc),
                         )
                     }
                 }
             }
 
             item {
-                Section(stringResource(R.string.bookmark_section_confirm)) {
+                Section(stringResource(Res.string.bookmark_section_confirm)) {
                     ElevatedPanel {
                         SettingSwitchRow(
-                            stringResource(R.string.bookmark_confirm_on_long_press),
+                            stringResource(Res.string.bookmark_confirm_on_long_press),
                             settings.confirmOnLongPressSave,
                             viewModel::updateConfirmOnLongPressSave,
-                            stringResource(R.string.bookmark_confirm_on_long_press_desc),
+                            stringResource(Res.string.bookmark_confirm_on_long_press_desc),
                         )
                         DividerLine()
                         SettingSwitchRow(
-                            stringResource(R.string.bookmark_skip_confirm_on_detail),
+                            stringResource(Res.string.bookmark_skip_confirm_on_detail),
                             settings.skipConfirmOnDetailSave,
                             viewModel::updateSkipConfirmOnDetailSave,
-                            stringResource(R.string.bookmark_skip_confirm_on_detail_desc),
+                            stringResource(Res.string.bookmark_skip_confirm_on_detail_desc),
                         )
                     }
                 }

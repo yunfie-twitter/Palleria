@@ -21,11 +21,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.R
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_cancel
+import com.yunfie.illustia.resources.action_save
+import com.yunfie.illustia.resources.general_seed_color_dialog_desc
+import com.yunfie.illustia.resources.general_seed_color_dialog_title
+import com.yunfie.illustia.resources.general_seed_color_presets
 import com.yunfie.illustia.ui.components.AppDialog
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ColorPicker
@@ -106,8 +112,8 @@ fun SeedColorPickerDialog(
 
     AppDialog(
         show = true,
-        title = stringResource(R.string.general_seed_color_dialog_title),
-        summary = stringResource(R.string.general_seed_color_dialog_desc),
+        title = stringResource(Res.string.general_seed_color_dialog_title),
+        summary = stringResource(Res.string.general_seed_color_dialog_desc),
         backgroundColor = MiuixTheme.colorScheme.surfaceContainerHighest,
         onDismissRequest = onDismiss,
     ) {
@@ -134,7 +140,7 @@ fun SeedColorPickerDialog(
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = stringResource(R.string.general_seed_color_presets),
+                    text = stringResource(Res.string.general_seed_color_presets),
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     style = MiuixTheme.textStyles.footnote1,
                 )
@@ -177,7 +183,7 @@ fun SeedColorPickerDialog(
                     colors = overlayActionButtonColors(),
                     insideMargin = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
                 ) {
-                    Text(stringResource(R.string.action_cancel))
+                    Text(stringResource(Res.string.action_cancel))
                 }
                 Button(
                     onClick = { onConfirm(draftColor) },
@@ -185,7 +191,7 @@ fun SeedColorPickerDialog(
                     colors = overlayActionButtonColors(),
                     insideMargin = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
                 ) {
-                    Text(stringResource(R.string.action_save))
+                    Text(stringResource(Res.string.action_save))
                 }
             }
         }

@@ -12,13 +12,13 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavKey
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.data.pixiv.CommentArtworkType
 import com.yunfie.illustia.ui.components.rememberIsCompactWindow
 import com.yunfie.illustia.ui.components.scrollCaptureEnabled
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.NavigationRail
 import top.yukonga.miuix.kmp.basic.NavigationRailItem
 import top.yukonga.miuix.kmp.basic.Scaffold

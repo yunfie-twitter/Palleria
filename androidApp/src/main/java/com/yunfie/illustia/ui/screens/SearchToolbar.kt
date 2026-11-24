@@ -11,12 +11,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.R
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_cancel
+import com.yunfie.illustia.resources.search_delete_history_item
+import com.yunfie.illustia.resources.search_history
+import com.yunfie.illustia.resources.search_placeholder
+import com.yunfie.illustia.resources.search_suggest
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -64,7 +70,7 @@ fun SearchToolbar(
                 onSearch = { onSearch() },
                 expanded = expanded,
                 onExpandedChange = onExpandedChange,
-                label = stringResource(R.string.search_placeholder),
+                label = stringResource(Res.string.search_placeholder),
             )
         },
         expanded = expanded,
@@ -84,7 +90,7 @@ fun SearchToolbar(
                             onValueChange("")
                             onCancel?.invoke()
                         },
-                text = stringResource(R.string.action_cancel),
+                text = stringResource(Res.string.action_cancel),
                 color = MiuixTheme.colorScheme.primary,
             )
         },
@@ -120,7 +126,7 @@ fun SearchToolbar(
                 }
             if (historyItems.isNotEmpty()) {
                 Text(
-                    stringResource(R.string.search_history),
+                    stringResource(Res.string.search_history),
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     style = MiuixTheme.textStyles.footnote1,
                     fontWeight = FontWeight.Bold,
@@ -148,7 +154,7 @@ fun SearchToolbar(
                                 ) {
                                     Icon(
                                         imageVector = MiuixIcons.Close,
-                                        contentDescription = stringResource(R.string.search_delete_history_item),
+                                        contentDescription = stringResource(Res.string.search_delete_history_item),
                                         tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                         modifier = Modifier.size(18.dp),
                                     )
@@ -161,7 +167,7 @@ fun SearchToolbar(
             }
             if (suggestedItems.isNotEmpty()) {
                 Text(
-                    stringResource(R.string.search_suggest),
+                    stringResource(Res.string.search_suggest),
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     style = MiuixTheme.textStyles.footnote1,
                     fontWeight = FontWeight.Bold,

@@ -24,13 +24,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.UserPreview
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_load_more
+import com.yunfie.illustia.resources.action_reload
+import com.yunfie.illustia.resources.user_related_empty
+import com.yunfie.illustia.resources.user_related_summary
+import com.yunfie.illustia.resources.user_tab_related
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.EmptyState
@@ -48,6 +53,7 @@ import com.yunfie.illustia.ui.screens.UserResultCard
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.PullToRefresh
@@ -121,7 +127,7 @@ fun RelatedUsersScreen(
         if (userName.isNotBlank()) {
             userName
         } else {
-            stringResource(R.string.user_tab_related)
+            stringResource(Res.string.user_tab_related)
         }
 
     Scaffold(
@@ -179,7 +185,7 @@ fun RelatedUsersScreen(
             ) {
                 item(contentType = "related_intro") {
                     Text(
-                        text = stringResource(R.string.user_related_summary),
+                        text = stringResource(Res.string.user_related_summary),
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp),
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         style = MiuixTheme.textStyles.footnote1,
@@ -229,9 +235,9 @@ fun RelatedUsersScreen(
                                     onRetry = { viewModel.loadSelectedRelatedUsers(targetUserId = userId, force = true) },
                                 )
                             } else {
-                                EmptyState(stringResource(R.string.user_related_empty))
+                                EmptyState(stringResource(Res.string.user_related_empty))
                                 Button(onClick = { viewModel.loadSelectedRelatedUsers(targetUserId = userId, force = true) }) {
-                                    Text(stringResource(R.string.action_reload))
+                                    Text(stringResource(Res.string.action_reload))
                                 }
                             }
                         }
@@ -248,7 +254,7 @@ fun RelatedUsersScreen(
                             if (relatedUsersUiState.loading || relatedUsersUiState.paginating) {
                                 LoadingIndicator(Modifier.size(20.dp))
                             } else {
-                                Text(stringResource(R.string.action_load_more))
+                                Text(stringResource(Res.string.action_load_more))
                             }
                         }
                     }

@@ -28,7 +28,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -41,7 +40,14 @@ import com.yunfie.illustia.data.proxyPixivImageUrl
 import com.yunfie.illustia.models.pixiv.Comment
 import com.yunfie.illustia.models.pixiv.PixivStamp
 import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_add
+import com.yunfie.illustia.resources.action_close
+import com.yunfie.illustia.resources.action_load_more
+import com.yunfie.illustia.resources.comment_stamp_empty
+import com.yunfie.illustia.resources.comment_stamp_select
+import com.yunfie.illustia.resources.comments_empty
 import com.yunfie.illustia.resources.detail_comments
+import com.yunfie.illustia.resources.dialog_reload
 import com.yunfie.illustia.ui.components.AVATAR_IMAGE_MAX_DECODE_DIMENSION_PX
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
@@ -68,6 +74,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -178,12 +185,12 @@ fun CommentScreen(
         title = resString(Res.string.detail_comments),
         startAction = {
             IconButton(onClick = onDismiss) {
-                Icon(imageVector = MiuixIcons.Close, contentDescription = stringResource(R.string.action_close))
+                Icon(imageVector = MiuixIcons.Close, contentDescription = stringResource(Res.string.action_close))
             }
         },
         endAction = {
             IconButton(onClick = { scope.launch { store.fetch(forceRefresh = true) } }) {
-                Icon(imageVector = MiuixIcons.Refresh, contentDescription = stringResource(R.string.dialog_reload))
+                Icon(imageVector = MiuixIcons.Refresh, contentDescription = stringResource(Res.string.dialog_reload))
             }
         },
         onDismissRequest = onDismiss,
@@ -230,7 +237,7 @@ fun CommentScreen(
                         }
                     }
                     if (state.comments.isEmpty() && !state.isLoading && state.errorMessage == null) {
-                        item { EmptyState(stringResource(R.string.comments_empty)) }
+                        item { EmptyState(stringResource(Res.string.comments_empty)) }
                     }
                     itemsIndexed(
                         items = state.comments,
@@ -257,7 +264,7 @@ fun CommentScreen(
                                 if (state.isPaginating) {
                                     LoadingIndicator(modifier = Modifier.size(18.dp))
                                 } else {
-                                    Text(stringResource(R.string.action_load_more))
+                                    Text(stringResource(Res.string.action_load_more))
                                 }
                             }
                         }
@@ -304,7 +311,7 @@ fun CommentScreen(
                             ) {
                                 Icon(
                                     imageVector = MiuixIcons.Favorites,
-                                    contentDescription = stringResource(R.string.comment_stamp_select),
+                                    contentDescription = stringResource(Res.string.comment_stamp_select),
                                     tint = if (showStampPicker) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface,
                                 )
                             }
@@ -332,7 +339,7 @@ fun CommentScreen(
                         ) {
                             Icon(
                                 imageVector = MiuixIcons.Send,
-                                contentDescription = stringResource(R.string.action_add),
+                                contentDescription = stringResource(Res.string.action_add),
                                 tint = MiuixTheme.colorScheme.onPrimary,
                             )
                         }
@@ -357,7 +364,7 @@ fun CommentScreen(
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Text(
-                                    text = stringResource(R.string.comment_stamp_empty),
+                                    text = stringResource(Res.string.comment_stamp_empty),
                                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 )
                             }

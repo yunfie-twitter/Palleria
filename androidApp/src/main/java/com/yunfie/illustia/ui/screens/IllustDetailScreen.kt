@@ -66,7 +66,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.fromHtml
@@ -80,12 +79,18 @@ import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
 import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_save
+import com.yunfie.illustia.resources.action_unfollow
 import com.yunfie.illustia.resources.detail_muted_artist
 import com.yunfie.illustia.resources.detail_muted_artist_blur
 import com.yunfie.illustia.resources.detail_muted_artist_blur_default
 import com.yunfie.illustia.resources.detail_muted_work
 import com.yunfie.illustia.resources.detail_muted_work_blur
 import com.yunfie.illustia.resources.detail_related
+import com.yunfie.illustia.resources.detail_save_image_confirm
+import com.yunfie.illustia.resources.detail_save_image_title
+import com.yunfie.illustia.resources.detail_save_ugoira_confirm
+import com.yunfie.illustia.resources.detail_save_ugoira_title
 import com.yunfie.illustia.resources.detail_unfollow_confirm
 import com.yunfie.illustia.resources.detail_unfollow_title
 import com.yunfie.illustia.ui.components.AppHapticEffect
@@ -111,6 +116,7 @@ import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.performAppHapticFeedback
 import com.yunfie.illustia.ui.components.rememberLiquidGlassBackdrop
 import kotlinx.coroutines.delay
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.FloatingActionButton
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -283,9 +289,9 @@ fun IllustDetailScreen(
         val isUgoira = illust.type == "ugoira"
         MiuixConfirmDialog(
             show = true,
-            title = stringResource(if (isUgoira) R.string.detail_save_ugoira_title else R.string.detail_save_image_title),
-            summary = stringResource(if (isUgoira) R.string.detail_save_ugoira_confirm else R.string.detail_save_image_confirm),
-            confirmText = stringResource(R.string.action_save),
+            title = stringResource(if (isUgoira) Res.string.detail_save_ugoira_title else Res.string.detail_save_image_title),
+            summary = stringResource(if (isUgoira) Res.string.detail_save_ugoira_confirm else Res.string.detail_save_image_confirm),
+            confirmText = stringResource(Res.string.action_save),
             onConfirm = {
                 pendingSave?.let { (url, filename) ->
                     performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Success)
@@ -302,7 +308,7 @@ fun IllustDetailScreen(
             show = true,
             title = resString(Res.string.detail_unfollow_title),
             summary = resString(Res.string.detail_unfollow_confirm, illust.artistName),
-            confirmText = stringResource(R.string.action_unfollow),
+            confirmText = stringResource(Res.string.action_unfollow),
             destructive = true,
             onConfirm = {
                 showUnfollowConfirm = false

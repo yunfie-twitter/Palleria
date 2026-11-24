@@ -16,10 +16,29 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_delete
+import com.yunfie.illustia.resources.data_delete_cache
+import com.yunfie.illustia.resources.data_delete_cache_desc
+import com.yunfie.illustia.resources.data_export
+import com.yunfie.illustia.resources.data_import
+import com.yunfie.illustia.resources.data_import_confirm_desc
+import com.yunfie.illustia.resources.data_import_confirm_title
+import com.yunfie.illustia.resources.data_import_export_note
+import com.yunfie.illustia.resources.data_save_search_history
+import com.yunfie.illustia.resources.data_save_search_history_desc
+import com.yunfie.illustia.resources.data_save_view_history
+import com.yunfie.illustia.resources.data_save_view_history_desc
+import com.yunfie.illustia.resources.data_section_cleanup
+import com.yunfie.illustia.resources.data_section_history
+import com.yunfie.illustia.resources.data_section_privacy_telemetry
+import com.yunfie.illustia.resources.data_section_transfer
+import com.yunfie.illustia.resources.data_send_telemetry
+import com.yunfie.illustia.resources.data_send_telemetry_desc
+import com.yunfie.illustia.resources.data_settings_title
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
@@ -29,6 +48,7 @@ import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.Section
 import com.yunfie.illustia.ui.components.SettingLinkRow
 import com.yunfie.illustia.ui.components.SettingSwitchRow
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
@@ -62,9 +82,9 @@ fun DataSettingsScreen(
     if (showCacheDeleteConfirm) {
         MiuixConfirmDialog(
             show = true,
-            title = stringResource(R.string.data_delete_cache),
-            summary = stringResource(R.string.data_delete_cache_desc),
-            confirmText = stringResource(R.string.action_delete),
+            title = stringResource(Res.string.data_delete_cache),
+            summary = stringResource(Res.string.data_delete_cache_desc),
+            confirmText = stringResource(Res.string.action_delete),
             destructive = true,
             onConfirm = {
                 showCacheDeleteConfirm = false
@@ -77,9 +97,9 @@ fun DataSettingsScreen(
     pendingImportUri?.let { uri ->
         MiuixConfirmDialog(
             show = true,
-            title = stringResource(R.string.data_import_confirm_title),
-            summary = stringResource(R.string.data_import_confirm_desc),
-            confirmText = stringResource(R.string.data_import),
+            title = stringResource(Res.string.data_import_confirm_title),
+            summary = stringResource(Res.string.data_import_confirm_desc),
+            confirmText = stringResource(Res.string.data_import),
             onConfirm = {
                 pendingImportUri = null
                 viewModel.importManagedData(uri.toString())
@@ -92,8 +112,8 @@ fun DataSettingsScreen(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
             TopAppBar(
-                title = stringResource(R.string.data_settings_title),
-                largeTitle = stringResource(R.string.data_settings_title),
+                title = stringResource(Res.string.data_settings_title),
+                largeTitle = stringResource(Res.string.data_settings_title),
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     HeaderIcon(MiuixIcons.Back, onClick = onBack)
@@ -117,38 +137,38 @@ fun DataSettingsScreen(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             item {
-                Section(stringResource(R.string.data_section_history)) {
+                Section(stringResource(Res.string.data_section_history)) {
                     ElevatedPanel(contentPadding = PaddingValues(0.dp)) {
                         SettingSwitchRow(
-                            stringResource(R.string.data_save_view_history),
+                            stringResource(Res.string.data_save_view_history),
                             settings.saveViewHistory,
                             viewModel::updateSaveViewHistory,
-                            stringResource(R.string.data_save_view_history_desc),
+                            stringResource(Res.string.data_save_view_history_desc),
                         )
                         DividerLine()
                         SettingSwitchRow(
-                            stringResource(R.string.data_save_search_history),
+                            stringResource(Res.string.data_save_search_history),
                             settings.saveSearchHistory,
                             viewModel::updateSaveSearchHistory,
-                            stringResource(R.string.data_save_search_history_desc),
+                            stringResource(Res.string.data_save_search_history_desc),
                         )
                     }
                 }
             }
 
             item {
-                Section(stringResource(R.string.data_section_transfer)) {
+                Section(stringResource(Res.string.data_section_transfer)) {
                     ElevatedPanel(contentPadding = PaddingValues(0.dp)) {
-                        SettingLinkRow(stringResource(R.string.data_export)) {
+                        SettingLinkRow(stringResource(Res.string.data_export)) {
                             exportLauncher.launch("illustia-data-${LocalDate.now()}.json")
                         }
                         DividerLine()
-                        SettingLinkRow(stringResource(R.string.data_import)) {
+                        SettingLinkRow(stringResource(Res.string.data_import)) {
                             importLauncher.launch(arrayOf("application/json", "text/json", "text/plain"))
                         }
                     }
                     Text(
-                        text = stringResource(R.string.data_import_export_note),
+                        text = stringResource(Res.string.data_import_export_note),
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         style = MiuixTheme.textStyles.footnote1,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -157,21 +177,21 @@ fun DataSettingsScreen(
             }
 
             item {
-                Section(stringResource(R.string.data_section_cleanup)) {
+                Section(stringResource(Res.string.data_section_cleanup)) {
                     ElevatedPanel(contentPadding = PaddingValues(0.dp)) {
-                        SettingLinkRow(stringResource(R.string.data_delete_cache)) { showCacheDeleteConfirm = true }
+                        SettingLinkRow(stringResource(Res.string.data_delete_cache)) { showCacheDeleteConfirm = true }
                     }
                 }
             }
 
             item {
-                Section(stringResource(R.string.data_section_privacy_telemetry)) {
+                Section(stringResource(Res.string.data_section_privacy_telemetry)) {
                     ElevatedPanel(contentPadding = PaddingValues(0.dp)) {
                         SettingSwitchRow(
-                            title = stringResource(R.string.data_send_telemetry),
+                            title = stringResource(Res.string.data_send_telemetry),
                             checked = settings.sendTelemetry,
                             onCheckedChange = viewModel::updateSendTelemetry,
-                            summary = stringResource(R.string.data_send_telemetry_desc),
+                            summary = stringResource(Res.string.data_send_telemetry_desc),
                         )
                     }
                 }

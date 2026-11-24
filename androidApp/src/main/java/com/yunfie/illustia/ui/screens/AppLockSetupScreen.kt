@@ -34,7 +34,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -43,6 +42,25 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.app_lock_attempts_remaining
+import com.yunfie.illustia.resources.app_lock_biometric
+import com.yunfie.illustia.resources.app_lock_biometric_desc
+import com.yunfie.illustia.resources.app_lock_change_pin
+import com.yunfie.illustia.resources.app_lock_cooldown
+import com.yunfie.illustia.resources.app_lock_disable
+import com.yunfie.illustia.resources.app_lock_disabled
+import com.yunfie.illustia.resources.app_lock_enable
+import com.yunfie.illustia.resources.app_lock_enabled
+import com.yunfie.illustia.resources.app_lock_incorrect
+import com.yunfie.illustia.resources.app_lock_section_options
+import com.yunfie.illustia.resources.app_lock_section_pin
+import com.yunfie.illustia.resources.app_lock_settings_title
+import com.yunfie.illustia.resources.app_lock_timing_return
+import com.yunfie.illustia.resources.app_lock_timing_return_desc
+import com.yunfie.illustia.resources.app_lock_verify_change_timing
+import com.yunfie.illustia.resources.app_lock_verify_disable
+import com.yunfie.illustia.resources.data_section_cleanup
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.DividerLine
@@ -58,6 +76,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -229,8 +248,8 @@ fun AppLockSetupScreen(
 
     val verifyTitle =
         when (pendingAction) {
-            is PinVerifyAction.Disable -> stringResource(R.string.app_lock_verify_disable)
-            is PinVerifyAction.ChangeTiming -> stringResource(R.string.app_lock_verify_change_timing)
+            is PinVerifyAction.Disable -> stringResource(Res.string.app_lock_verify_disable)
+            is PinVerifyAction.ChangeTiming -> stringResource(Res.string.app_lock_verify_change_timing)
             null -> ""
         }
 
@@ -238,8 +257,8 @@ fun AppLockSetupScreen(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
             TopAppBar(
-                title = stringResource(R.string.app_lock_settings_title),
-                largeTitle = stringResource(R.string.app_lock_settings_title),
+                title = stringResource(Res.string.app_lock_settings_title),
+                largeTitle = stringResource(Res.string.app_lock_settings_title),
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     HeaderIcon(MiuixIcons.Back, onClick = onBack)
@@ -264,10 +283,10 @@ fun AppLockSetupScreen(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 item {
-                    Section(stringResource(R.string.app_lock_enable)) {
+                    Section(stringResource(Res.string.app_lock_enable)) {
                         ElevatedPanel {
                             SettingSwitchRow(
-                                title = stringResource(R.string.app_lock_enable),
+                                title = stringResource(Res.string.app_lock_enable),
                                 checked = settings.appLockEnabled,
                                 onCheckedChange = { enabled ->
                                     if (!enabled) {
@@ -278,9 +297,9 @@ fun AppLockSetupScreen(
                                 },
                                 summary =
                                     if (settings.appLockEnabled) {
-                                        stringResource(R.string.app_lock_enabled)
+                                        stringResource(Res.string.app_lock_enabled)
                                     } else {
-                                        stringResource(R.string.app_lock_disabled)
+                                        stringResource(Res.string.app_lock_disabled)
                                     },
                             )
                         }
@@ -289,10 +308,10 @@ fun AppLockSetupScreen(
 
                 if (settings.appLockEnabled) {
                     item {
-                        Section(stringResource(R.string.app_lock_section_pin)) {
+                        Section(stringResource(Res.string.app_lock_section_pin)) {
                             ElevatedPanel {
                                 SettingLinkRow(
-                                    title = stringResource(R.string.app_lock_change_pin),
+                                    title = stringResource(Res.string.app_lock_change_pin),
                                     onClick = { viewModel.openAppLockPinEntry() },
                                 )
                             }
@@ -300,21 +319,21 @@ fun AppLockSetupScreen(
                     }
 
                     item {
-                        Section(stringResource(R.string.app_lock_section_options)) {
+                        Section(stringResource(Res.string.app_lock_section_options)) {
                             ElevatedPanel {
                                 SettingSwitchRow(
-                                    title = stringResource(R.string.app_lock_timing_return),
+                                    title = stringResource(Res.string.app_lock_timing_return),
                                     checked = settings.appLockTiming == "return",
                                     onCheckedChange = { enabled ->
                                         showPinOverlay(
                                             PinVerifyAction.ChangeTiming(if (enabled) "return" else "launch"),
                                         )
                                     },
-                                    summary = stringResource(R.string.app_lock_timing_return_desc),
+                                    summary = stringResource(Res.string.app_lock_timing_return_desc),
                                 )
                                 DividerLine()
                                 SettingSwitchRow(
-                                    title = stringResource(R.string.app_lock_biometric),
+                                    title = stringResource(Res.string.app_lock_biometric),
                                     checked = settings.biometricEnabled,
                                     onCheckedChange = { enable ->
                                         if (enable) {
@@ -323,17 +342,17 @@ fun AppLockSetupScreen(
                                             viewModel.updateBiometricEnabled(false)
                                         }
                                     },
-                                    summary = stringResource(R.string.app_lock_biometric_desc),
+                                    summary = stringResource(Res.string.app_lock_biometric_desc),
                                 )
                             }
                         }
                     }
 
                     item {
-                        Section(stringResource(R.string.data_section_cleanup)) {
+                        Section(stringResource(Res.string.data_section_cleanup)) {
                             ElevatedPanel {
                                 SettingLinkRow(
-                                    title = stringResource(R.string.app_lock_disable),
+                                    title = stringResource(Res.string.app_lock_disable),
                                     onClick = { showPinOverlay(PinVerifyAction.Disable) },
                                 )
                             }
@@ -396,7 +415,7 @@ fun AppLockSetupScreen(
 
                         if (isCooldownActive) {
                             Text(
-                                text = stringResource(R.string.app_lock_cooldown, cooldownRemaining.toFloat()),
+                                text = stringResource(Res.string.app_lock_cooldown, cooldownRemaining.toFloat()),
                                 color = MiuixTheme.colorScheme.error,
                                 style = MiuixTheme.textStyles.footnote1,
                                 fontWeight = FontWeight.SemiBold,
@@ -405,13 +424,13 @@ fun AppLockSetupScreen(
                             val attemptsRemaining = (12 - settings.appLockFailCount).coerceAtLeast(0)
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
-                                    text = stringResource(R.string.app_lock_incorrect),
+                                    text = stringResource(Res.string.app_lock_incorrect),
                                     color = MiuixTheme.colorScheme.error,
                                     style = MiuixTheme.textStyles.footnote1,
                                 )
                                 if (settings.appLockFailCount in 3..11) {
                                     Text(
-                                        text = stringResource(R.string.app_lock_attempts_remaining, attemptsRemaining),
+                                        text = stringResource(Res.string.app_lock_attempts_remaining, attemptsRemaining),
                                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                         style = MiuixTheme.textStyles.footnote1,
                                     )

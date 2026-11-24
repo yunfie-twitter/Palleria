@@ -27,7 +27,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -35,6 +34,12 @@ import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.pixiv.PixivNotification
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.dialog_reload
+import com.yunfie.illustia.resources.more_notifications
+import com.yunfie.illustia.resources.notifications_empty
+import com.yunfie.illustia.resources.notifications_load_more
+import com.yunfie.illustia.resources.notifications_unread
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.CenteredErrorState
 import com.yunfie.illustia.ui.components.EmptyState
@@ -50,6 +55,7 @@ import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import com.yunfie.illustia.ui.components.smoothScrollToTop
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
@@ -83,8 +89,8 @@ fun NotificationScreen(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
             TopAppBar(
-                title = stringResource(R.string.more_notifications),
-                largeTitle = stringResource(R.string.more_notifications),
+                title = stringResource(Res.string.more_notifications),
+                largeTitle = stringResource(Res.string.more_notifications),
                 scrollBehavior = scrollBehavior,
                 modifier =
                     Modifier.onTopBarTap(
@@ -102,7 +108,7 @@ fun NotificationScreen(
                     HeaderIcon(
                         MiuixIcons.Refresh,
                         onClick = viewModel::refreshNotifications,
-                        contentDescription = stringResource(R.string.dialog_reload),
+                        contentDescription = stringResource(Res.string.dialog_reload),
                     )
                 },
             )
@@ -147,7 +153,7 @@ fun NotificationScreen(
                             onRetry = viewModel::refreshNotifications,
                         )
                     } else {
-                        EmptyState(stringResource(R.string.notifications_empty))
+                        EmptyState(stringResource(Res.string.notifications_empty))
                     }
                 }
             }
@@ -168,7 +174,7 @@ fun NotificationScreen(
                         title =
                             viewMore.title
                                 .orEmpty()
-                                .ifBlank { stringResource(R.string.notifications_load_more) },
+                                .ifBlank { stringResource(Res.string.notifications_load_more) },
                         unread = viewMore.unreadExists,
                         onClick = { viewModel.expandNotification(notification.id) },
                     )
@@ -178,7 +184,7 @@ fun NotificationScreen(
             if (state.notificationNextUrl != null) {
                 item(key = "notification_view_more", contentType = "notification_view_more") {
                     ViewMoreRow(
-                        title = stringResource(R.string.notifications_load_more),
+                        title = stringResource(Res.string.notifications_load_more),
                         unread = false,
                         onClick = viewModel::loadMoreNotifications,
                     )
@@ -278,7 +284,7 @@ private fun ViewMoreRow(
         horizontalArrangement = Arrangement.Center,
     ) {
         Text(
-            text = if (unread) "$title · ${stringResource(R.string.notifications_unread)}" else title,
+            text = if (unread) "$title · ${stringResource(Res.string.notifications_unread)}" else title,
             color = MiuixTheme.colorScheme.primary,
             fontWeight = FontWeight.Bold,
         )

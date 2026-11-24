@@ -21,7 +21,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -32,7 +31,42 @@ import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.discord.DiscordRpcManager
 import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.account_status
+import com.yunfie.illustia.resources.action_cancel
+import com.yunfie.illustia.resources.action_confirm
 import com.yunfie.illustia.resources.action_reset
+import com.yunfie.illustia.resources.discord_application_id
+import com.yunfie.illustia.resources.discord_application_id_desc
+import com.yunfie.illustia.resources.discord_application_id_dialog_title
+import com.yunfie.illustia.resources.discord_enable_log
+import com.yunfie.illustia.resources.discord_enable_log_desc
+import com.yunfie.illustia.resources.discord_enable_rpc
+import com.yunfie.illustia.resources.discord_enable_rpc_desc
+import com.yunfie.illustia.resources.discord_log_clear
+import com.yunfie.illustia.resources.discord_log_empty
+import com.yunfie.illustia.resources.discord_login_manual_token
+import com.yunfie.illustia.resources.discord_login_with_discord
+import com.yunfie.illustia.resources.discord_login_with_discord_desc
+import com.yunfie.illustia.resources.discord_section_advanced
+import com.yunfie.illustia.resources.discord_section_connection
+import com.yunfie.illustia.resources.discord_section_display
+import com.yunfie.illustia.resources.discord_section_log
+import com.yunfie.illustia.resources.discord_settings_title
+import com.yunfie.illustia.resources.discord_show_artwork_details
+import com.yunfie.illustia.resources.discord_show_artwork_details_desc
+import com.yunfie.illustia.resources.discord_show_buttons
+import com.yunfie.illustia.resources.discord_show_buttons_desc
+import com.yunfie.illustia.resources.discord_status_connected
+import com.yunfie.illustia.resources.discord_status_disconnected
+import com.yunfie.illustia.resources.discord_status_no_token
+import com.yunfie.illustia.resources.discord_token_desc
+import com.yunfie.illustia.resources.discord_token_dialog_title
+import com.yunfie.illustia.resources.discord_token_hide
+import com.yunfie.illustia.resources.discord_token_hint
+import com.yunfie.illustia.resources.discord_token_show
+import com.yunfie.illustia.resources.discord_unsupported_version
+import com.yunfie.illustia.resources.discord_warning_desc
+import com.yunfie.illustia.resources.discord_warning_title
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.AppDialog
 import com.yunfie.illustia.ui.components.DividerLine
@@ -43,6 +77,7 @@ import com.yunfie.illustia.ui.components.Section
 import com.yunfie.illustia.ui.components.SettingLinkRow
 import com.yunfie.illustia.ui.components.SettingRow
 import com.yunfie.illustia.ui.components.SettingSwitchRow
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
@@ -84,8 +119,8 @@ fun DiscordSettingsScreen(
     if (showTokenDialog) {
         AppDialog(
             show = true,
-            title = stringResource(R.string.discord_token_dialog_title),
-            summary = stringResource(R.string.discord_token_desc),
+            title = stringResource(Res.string.discord_token_dialog_title),
+            summary = stringResource(Res.string.discord_token_desc),
             backgroundColor = MiuixTheme.colorScheme.surfaceContainerHighest,
             onDismissRequest = { showTokenDialog = false },
         ) {
@@ -96,7 +131,7 @@ fun DiscordSettingsScreen(
                 TextField(
                     value = tempToken,
                     onValueChange = { tempToken = it },
-                    label = stringResource(R.string.discord_token_hint),
+                    label = stringResource(Res.string.discord_token_hint),
                     useLabelAsPlaceholder = true,
                     modifier = Modifier.fillMaxWidth(),
                     visualTransformation = if (tokenVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -107,7 +142,7 @@ fun DiscordSettingsScreen(
                                 imageVector = if (tokenVisible) MiuixIcons.Hide else MiuixIcons.Show,
                                 contentDescription =
                                     stringResource(
-                                        if (tokenVisible) R.string.discord_token_hide else R.string.discord_token_show,
+                                        if (tokenVisible) Res.string.discord_token_hide else Res.string.discord_token_show,
                                     ),
                             )
                         }
@@ -120,7 +155,7 @@ fun DiscordSettingsScreen(
                     TextButton(
                         onClick = { showTokenDialog = false },
                         modifier = Modifier.weight(1f),
-                        text = stringResource(R.string.action_cancel),
+                        text = stringResource(Res.string.action_cancel),
                     )
                     Spacer(Modifier.width(20.dp))
                     TextButton(
@@ -131,7 +166,7 @@ fun DiscordSettingsScreen(
                         },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.textButtonColorsPrimary(),
-                        text = stringResource(R.string.action_confirm),
+                        text = stringResource(Res.string.action_confirm),
                     )
                 }
             }
@@ -141,8 +176,8 @@ fun DiscordSettingsScreen(
     if (showAppIdDialog) {
         AppDialog(
             show = true,
-            title = stringResource(R.string.discord_application_id_dialog_title),
-            summary = stringResource(R.string.discord_application_id_desc),
+            title = stringResource(Res.string.discord_application_id_dialog_title),
+            summary = stringResource(Res.string.discord_application_id_desc),
             backgroundColor = MiuixTheme.colorScheme.surfaceContainerHighest,
             onDismissRequest = { showAppIdDialog = false },
         ) {
@@ -153,7 +188,7 @@ fun DiscordSettingsScreen(
                 TextField(
                     value = tempAppId,
                     onValueChange = { tempAppId = it },
-                    label = stringResource(R.string.discord_application_id),
+                    label = stringResource(Res.string.discord_application_id),
                     useLabelAsPlaceholder = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -174,7 +209,7 @@ fun DiscordSettingsScreen(
                     TextButton(
                         onClick = { showAppIdDialog = false },
                         modifier = Modifier.weight(1f),
-                        text = stringResource(R.string.action_cancel),
+                        text = stringResource(Res.string.action_cancel),
                     )
                     Spacer(Modifier.width(12.dp))
                     TextButton(
@@ -186,7 +221,7 @@ fun DiscordSettingsScreen(
                         },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.textButtonColorsPrimary(),
-                        text = stringResource(R.string.action_confirm),
+                        text = stringResource(Res.string.action_confirm),
                     )
                 }
             }
@@ -197,8 +232,8 @@ fun DiscordSettingsScreen(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
             TopAppBar(
-                title = stringResource(R.string.discord_settings_title),
-                largeTitle = stringResource(R.string.discord_settings_title),
+                title = stringResource(Res.string.discord_settings_title),
+                largeTitle = stringResource(Res.string.discord_settings_title),
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     HeaderIcon(MiuixIcons.Back, onClick = onBack)
@@ -235,7 +270,7 @@ fun DiscordSettingsScreen(
                             verticalArrangement = Arrangement.spacedBy(6.dp),
                         ) {
                             Text(
-                                text = stringResource(R.string.discord_unsupported_version),
+                                text = stringResource(Res.string.discord_unsupported_version),
                                 style = MiuixTheme.textStyles.body1,
                                 fontWeight = FontWeight.Bold,
                                 color = MiuixTheme.colorScheme.error,
@@ -258,13 +293,13 @@ fun DiscordSettingsScreen(
                         verticalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
                         Text(
-                            text = stringResource(R.string.discord_warning_title),
+                            text = stringResource(Res.string.discord_warning_title),
                             style = MiuixTheme.textStyles.headline1,
                             fontWeight = FontWeight.Bold,
                             color = MiuixTheme.colorScheme.primary,
                         )
                         Text(
-                            text = stringResource(R.string.discord_warning_desc),
+                            text = stringResource(Res.string.discord_warning_desc),
                             style = MiuixTheme.textStyles.body2,
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         )
@@ -273,11 +308,11 @@ fun DiscordSettingsScreen(
             }
 
             item {
-                Section(stringResource(R.string.discord_section_connection)) {
+                Section(stringResource(Res.string.discord_section_connection)) {
                     ElevatedPanel {
                         SettingSwitchRow(
-                            title = stringResource(R.string.discord_enable_rpc),
-                            summary = stringResource(R.string.discord_enable_rpc_desc),
+                            title = stringResource(Res.string.discord_enable_rpc),
+                            summary = stringResource(Res.string.discord_enable_rpc_desc),
                             checked = isSupported && settings.discordRpcEnabled,
                             onCheckedChange = {
                                 if (isSupported) {
@@ -287,18 +322,18 @@ fun DiscordSettingsScreen(
                         )
                         DividerLine()
                         SettingLinkRow(
-                            title = stringResource(R.string.discord_login_with_discord),
-                            summary = stringResource(R.string.discord_login_with_discord_desc),
+                            title = stringResource(Res.string.discord_login_with_discord),
+                            summary = stringResource(Res.string.discord_login_with_discord_desc),
                             onClick = onOpenDiscordLogin,
                         )
                         DividerLine()
                         SettingLinkRow(
-                            title = stringResource(R.string.discord_login_manual_token),
+                            title = stringResource(Res.string.discord_login_manual_token),
                             summary =
                                 if (settings.discordToken.isNotBlank()) {
                                     "••••••••••••••••"
                                 } else {
-                                    stringResource(R.string.discord_status_no_token)
+                                    stringResource(Res.string.discord_status_no_token)
                                 },
                             onClick = {
                                 tempToken = settings.discordToken
@@ -307,14 +342,14 @@ fun DiscordSettingsScreen(
                             },
                         )
                         DividerLine()
-                        SettingRow(stringResource(R.string.account_status)) {
+                        SettingRow(stringResource(Res.string.account_status)) {
                             val isConnected = isSupported && settings.discordRpcEnabled && settings.discordToken.isNotBlank()
                             val statusText =
                                 when {
-                                    !isSupported -> stringResource(R.string.discord_unsupported_version)
-                                    settings.discordToken.isBlank() -> stringResource(R.string.discord_status_no_token)
-                                    isConnected -> stringResource(R.string.discord_status_connected)
-                                    else -> stringResource(R.string.discord_status_disconnected)
+                                    !isSupported -> stringResource(Res.string.discord_unsupported_version)
+                                    settings.discordToken.isBlank() -> stringResource(Res.string.discord_status_no_token)
+                                    isConnected -> stringResource(Res.string.discord_status_connected)
+                                    else -> stringResource(Res.string.discord_status_disconnected)
                                 }
                             Text(
                                 text = statusText,
@@ -333,18 +368,18 @@ fun DiscordSettingsScreen(
             }
 
             item {
-                Section(stringResource(R.string.discord_section_display)) {
+                Section(stringResource(Res.string.discord_section_display)) {
                     ElevatedPanel {
                         SettingSwitchRow(
-                            title = stringResource(R.string.discord_show_artwork_details),
-                            summary = stringResource(R.string.discord_show_artwork_details_desc),
+                            title = stringResource(Res.string.discord_show_artwork_details),
+                            summary = stringResource(Res.string.discord_show_artwork_details_desc),
                             checked = settings.discordRpcShowArtworkDetails,
                             onCheckedChange = { viewModel.updateDiscordRpcShowArtworkDetails(it) },
                         )
                         DividerLine()
                         SettingSwitchRow(
-                            title = stringResource(R.string.discord_show_buttons),
-                            summary = stringResource(R.string.discord_show_buttons_desc),
+                            title = stringResource(Res.string.discord_show_buttons),
+                            summary = stringResource(Res.string.discord_show_buttons_desc),
                             checked = settings.discordRpcShowButtons,
                             onCheckedChange = { viewModel.updateDiscordRpcShowButtons(it) },
                         )
@@ -353,10 +388,10 @@ fun DiscordSettingsScreen(
             }
 
             item {
-                Section(stringResource(R.string.discord_section_advanced)) {
+                Section(stringResource(Res.string.discord_section_advanced)) {
                     ElevatedPanel {
                         SettingLinkRow(
-                            title = stringResource(R.string.discord_application_id),
+                            title = stringResource(Res.string.discord_application_id),
                             summary = settings.discordApplicationId.ifBlank { DiscordRpcManager.DEFAULT_APP_ID },
                             onClick = {
                                 tempAppId = settings.discordApplicationId
@@ -368,11 +403,11 @@ fun DiscordSettingsScreen(
             }
 
             item {
-                Section(stringResource(R.string.discord_section_log)) {
+                Section(stringResource(Res.string.discord_section_log)) {
                     ElevatedPanel {
                         SettingSwitchRow(
-                            title = stringResource(R.string.discord_enable_log),
-                            summary = stringResource(R.string.discord_enable_log_desc),
+                            title = stringResource(Res.string.discord_enable_log),
+                            summary = stringResource(Res.string.discord_enable_log_desc),
                             checked = settings.discordRpcShowLogs,
                             onCheckedChange = { viewModel.updateDiscordRpcShowLogs(it) },
                         )
@@ -380,7 +415,7 @@ fun DiscordSettingsScreen(
                             DividerLine()
                             if (diagnostics.isEmpty()) {
                                 Text(
-                                    text = stringResource(R.string.discord_log_empty),
+                                    text = stringResource(Res.string.discord_log_empty),
                                     style = MiuixTheme.textStyles.body2,
                                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 )
@@ -394,7 +429,7 @@ fun DiscordSettingsScreen(
                                 }
                             }
                             TextButton(
-                                text = stringResource(R.string.discord_log_clear),
+                                text = stringResource(Res.string.discord_log_clear),
                                 onClick = DiscordRpcManager::clearDiagnostics,
                             )
                         }

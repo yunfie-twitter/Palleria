@@ -8,10 +8,30 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.card_customization_section_actions
+import com.yunfie.illustia.resources.card_customization_section_elements
+import com.yunfie.illustia.resources.card_customization_section_related
+import com.yunfie.illustia.resources.card_customization_settings_title
+import com.yunfie.illustia.resources.experimental_card_ai
+import com.yunfie.illustia.resources.experimental_card_artist
+import com.yunfie.illustia.resources.experimental_card_bookmark_button
+import com.yunfie.illustia.resources.experimental_card_double_tap_to_bookmark
+import com.yunfie.illustia.resources.experimental_card_double_tap_to_bookmark_desc
+import com.yunfie.illustia.resources.experimental_card_r18
+import com.yunfie.illustia.resources.experimental_card_rating
+import com.yunfie.illustia.resources.experimental_card_rating_desc
+import com.yunfie.illustia.resources.experimental_card_related_r18
+import com.yunfie.illustia.resources.experimental_card_related_r18_desc
+import com.yunfie.illustia.resources.experimental_card_tags
+import com.yunfie.illustia.resources.experimental_card_title
+import com.yunfie.illustia.resources.setting_quick_peek_desc
+import com.yunfie.illustia.resources.setting_quick_peek_shared_element_transition_desc
+import com.yunfie.illustia.resources.setting_quick_peek_shared_element_transition_title
+import com.yunfie.illustia.resources.setting_quick_peek_title
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
@@ -21,6 +41,7 @@ import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.Section
 import com.yunfie.illustia.ui.components.SettingSwitchRow
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.TopAppBar
@@ -41,8 +62,8 @@ fun CardCustomizationSettingsScreen(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
             TopAppBar(
-                title = stringResource(R.string.card_customization_settings_title),
-                largeTitle = stringResource(R.string.card_customization_settings_title),
+                title = stringResource(Res.string.card_customization_settings_title),
+                largeTitle = stringResource(Res.string.card_customization_settings_title),
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     HeaderIcon(MiuixIcons.Back, onClick = onBack)
@@ -66,41 +87,41 @@ fun CardCustomizationSettingsScreen(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             item {
-                Section(stringResource(R.string.card_customization_section_elements)) {
+                Section(stringResource(Res.string.card_customization_section_elements)) {
                     ElevatedPanel {
                         SettingSwitchRow(
-                            title = stringResource(R.string.experimental_card_title),
+                            title = stringResource(Res.string.experimental_card_title),
                             checked = settings.showCardTitle,
                             onCheckedChange = viewModel::updateShowCardTitle,
                         )
                         DividerLine()
                         SettingSwitchRow(
-                            title = stringResource(R.string.experimental_card_artist),
+                            title = stringResource(Res.string.experimental_card_artist),
                             checked = settings.showCardArtist,
                             onCheckedChange = viewModel::updateShowCardArtist,
                         )
                         DividerLine()
                         SettingSwitchRow(
-                            title = stringResource(R.string.experimental_card_tags),
+                            title = stringResource(Res.string.experimental_card_tags),
                             checked = settings.showCardTags,
                             onCheckedChange = viewModel::updateShowCardTags,
                         )
                         DividerLine()
                         SettingSwitchRow(
-                            title = stringResource(R.string.experimental_card_rating),
+                            title = stringResource(Res.string.experimental_card_rating),
                             checked = settings.showCardBookmarkCount,
                             onCheckedChange = viewModel::updateShowCardBookmarkCount,
-                            summary = stringResource(R.string.experimental_card_rating_desc),
+                            summary = stringResource(Res.string.experimental_card_rating_desc),
                         )
                         DividerLine()
                         SettingSwitchRow(
-                            title = stringResource(R.string.experimental_card_ai),
+                            title = stringResource(Res.string.experimental_card_ai),
                             checked = settings.showAiBadge,
                             onCheckedChange = viewModel::updateShowAiBadge,
                         )
                         DividerLine()
                         SettingSwitchRow(
-                            title = stringResource(R.string.experimental_card_r18),
+                            title = stringResource(Res.string.experimental_card_r18),
                             checked = settings.showR18Badge,
                             onCheckedChange = viewModel::updateShowR18Badge,
                         )
@@ -109,46 +130,46 @@ fun CardCustomizationSettingsScreen(
             }
 
             item {
-                Section(stringResource(R.string.card_customization_section_actions)) {
+                Section(stringResource(Res.string.card_customization_section_actions)) {
                     ElevatedPanel {
                         SettingSwitchRow(
-                            title = stringResource(R.string.experimental_card_bookmark_button),
+                            title = stringResource(Res.string.experimental_card_bookmark_button),
                             checked = settings.showCardBookmarkButton,
                             onCheckedChange = viewModel::updateShowCardBookmarkButton,
                         )
                         DividerLine()
                         SettingSwitchRow(
-                            title = stringResource(R.string.experimental_card_double_tap_to_bookmark),
+                            title = stringResource(Res.string.experimental_card_double_tap_to_bookmark),
                             checked = settings.doubleTapToBookmark,
                             onCheckedChange = viewModel::updateDoubleTapToBookmark,
-                            summary = stringResource(R.string.experimental_card_double_tap_to_bookmark_desc),
+                            summary = stringResource(Res.string.experimental_card_double_tap_to_bookmark_desc),
                         )
                         DividerLine()
                         SettingSwitchRow(
-                            title = stringResource(R.string.setting_quick_peek_title),
+                            title = stringResource(Res.string.setting_quick_peek_title),
                             checked = settings.quickPeekEnabled,
                             onCheckedChange = viewModel::updateQuickPeekEnabled,
-                            summary = stringResource(R.string.setting_quick_peek_desc),
+                            summary = stringResource(Res.string.setting_quick_peek_desc),
                         )
                         DividerLine()
                         SettingSwitchRow(
-                            title = stringResource(R.string.setting_quick_peek_shared_element_transition_title),
+                            title = stringResource(Res.string.setting_quick_peek_shared_element_transition_title),
                             checked = settings.quickPeekSharedElementTransition,
                             onCheckedChange = viewModel::updateQuickPeekSharedElementTransition,
-                            summary = stringResource(R.string.setting_quick_peek_shared_element_transition_desc),
+                            summary = stringResource(Res.string.setting_quick_peek_shared_element_transition_desc),
                         )
                     }
                 }
             }
 
             item {
-                Section(stringResource(R.string.card_customization_section_related)) {
+                Section(stringResource(Res.string.card_customization_section_related)) {
                     ElevatedPanel {
                         SettingSwitchRow(
-                            title = stringResource(R.string.experimental_card_related_r18),
+                            title = stringResource(Res.string.experimental_card_related_r18),
                             checked = settings.showRelatedR18,
                             onCheckedChange = viewModel::updateShowRelatedR18,
-                            summary = stringResource(R.string.experimental_card_related_r18_desc),
+                            summary = stringResource(Res.string.experimental_card_related_r18_desc),
                             enabled = settings.showR18Badge,
                         )
                     }

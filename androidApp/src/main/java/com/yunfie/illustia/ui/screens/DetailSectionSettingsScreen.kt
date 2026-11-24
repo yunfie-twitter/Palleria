@@ -10,12 +10,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_move_down
+import com.yunfie.illustia.resources.action_move_up
 import com.yunfie.illustia.resources.detail_section_settings_title
+import com.yunfie.illustia.resources.experimental_detail_artist
+import com.yunfie.illustia.resources.experimental_detail_description
+import com.yunfie.illustia.resources.experimental_detail_related
+import com.yunfie.illustia.resources.experimental_detail_section
+import com.yunfie.illustia.resources.experimental_detail_tags
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.DEFAULT_DETAIL_SECTION_ORDER
 import com.yunfie.illustia.ui.components.DividerLine
@@ -23,6 +29,7 @@ import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.Section
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -74,7 +81,7 @@ fun DetailSectionSettingsScreen(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             item {
-                Section(stringResource(R.string.experimental_detail_section)) {
+                Section(stringResource(Res.string.experimental_detail_section)) {
                     ElevatedPanel {
                         orderedSections.forEachIndexed { index, id ->
                             OrderEditorRow(
@@ -122,7 +129,7 @@ private fun MoveButtons(
     IconButton(onClick = onMoveUp, enabled = canMoveUp) {
         Icon(
             imageVector = MiuixIcons.ChevronForward,
-            contentDescription = stringResource(R.string.action_move_up),
+            contentDescription = stringResource(Res.string.action_move_up),
             tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
             modifier = Modifier.rotate(-90f),
         )
@@ -130,7 +137,7 @@ private fun MoveButtons(
     IconButton(onClick = onMoveDown, enabled = canMoveDown) {
         Icon(
             imageVector = MiuixIcons.ChevronForward,
-            contentDescription = stringResource(R.string.action_move_down),
+            contentDescription = stringResource(Res.string.action_move_down),
             tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
             modifier = Modifier.rotate(90f),
         )
@@ -152,8 +159,8 @@ private fun <T> List<T>.moved(
 @Composable
 private fun detailSectionLabel(id: String): String =
     when (id) {
-        "tags" -> stringResource(R.string.experimental_detail_tags)
-        "description" -> stringResource(R.string.experimental_detail_description)
-        "related" -> stringResource(R.string.experimental_detail_related)
-        else -> stringResource(R.string.experimental_detail_artist)
+        "tags" -> stringResource(Res.string.experimental_detail_tags)
+        "description" -> stringResource(Res.string.experimental_detail_description)
+        "related" -> stringResource(Res.string.experimental_detail_related)
+        else -> stringResource(Res.string.experimental_detail_artist)
     }

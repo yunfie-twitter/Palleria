@@ -42,13 +42,24 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.app_lock_attempts_remaining
+import com.yunfie.illustia.resources.app_lock_cooldown
+import com.yunfie.illustia.resources.app_lock_forgot_pin
+import com.yunfie.illustia.resources.app_lock_incorrect
+import com.yunfie.illustia.resources.app_lock_recovery_reset
+import com.yunfie.illustia.resources.app_lock_recovery_reset_confirm_summary
+import com.yunfie.illustia.resources.app_lock_recovery_reset_confirm_title
+import com.yunfie.illustia.resources.app_lock_recovery_summary
+import com.yunfie.illustia.resources.app_lock_recovery_title
+import com.yunfie.illustia.resources.app_lock_recovery_verify
+import com.yunfie.illustia.resources.app_lock_title
 import com.yunfie.illustia.ui.components.AppBottomSheet
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
@@ -59,6 +70,7 @@ import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.components.performAppHapticFeedback
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -339,7 +351,7 @@ fun AppLockScreen(
             show = true,
             modifier = Modifier.scrollEndHaptic(),
             onDismissRequest = { showRecoverySheet = false },
-            title = stringResource(R.string.app_lock_recovery_title),
+            title = stringResource(Res.string.app_lock_recovery_title),
             backgroundColor = LocalBottomSheetBackgroundColor.current,
             insideMargin = BottomSheetInsideMargin,
         ) {
@@ -348,7 +360,7 @@ fun AppLockScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
-                    text = stringResource(R.string.app_lock_recovery_summary, failCount),
+                    text = stringResource(Res.string.app_lock_recovery_summary, failCount),
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     style = MiuixTheme.textStyles.footnote1,
                     modifier = Modifier.padding(bottom = 8.dp),
@@ -362,7 +374,7 @@ fun AppLockScreen(
                     colors = overlayActionButtonColors(),
                 ) {
                     Text(
-                        stringResource(R.string.app_lock_recovery_verify),
+                        stringResource(Res.string.app_lock_recovery_verify),
                         color = MiuixTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold,
                     )
@@ -376,7 +388,7 @@ fun AppLockScreen(
                     colors = overlayActionButtonColors(),
                 ) {
                     Text(
-                        stringResource(R.string.app_lock_recovery_reset),
+                        stringResource(Res.string.app_lock_recovery_reset),
                         color = MiuixTheme.colorScheme.error,
                         fontWeight = FontWeight.Bold,
                     )
@@ -388,9 +400,9 @@ fun AppLockScreen(
     if (showResetConfirmDialog) {
         MiuixConfirmDialog(
             show = true,
-            title = stringResource(R.string.app_lock_recovery_reset_confirm_title),
-            summary = stringResource(R.string.app_lock_recovery_reset_confirm_summary),
-            confirmText = stringResource(R.string.app_lock_recovery_reset),
+            title = stringResource(Res.string.app_lock_recovery_reset_confirm_title),
+            summary = stringResource(Res.string.app_lock_recovery_reset_confirm_summary),
+            confirmText = stringResource(Res.string.app_lock_recovery_reset),
             destructive = true,
             onConfirm = {
                 showResetConfirmDialog = false
@@ -429,7 +441,7 @@ private fun AppLockStatusPane(
             tint = if (error) MiuixTheme.colorScheme.error else MiuixTheme.colorScheme.primary,
         )
         Text(
-            text = stringResource(R.string.app_lock_title),
+            text = stringResource(Res.string.app_lock_title),
             color = MiuixTheme.colorScheme.onSurface,
             style = MiuixTheme.textStyles.title2,
             fontWeight = FontWeight.Bold,
@@ -458,7 +470,7 @@ private fun AppLockStatusPane(
         when {
             isCooldownActive -> {
                 Text(
-                    text = stringResource(R.string.app_lock_cooldown, cooldownRemaining.toFloat()),
+                    text = stringResource(Res.string.app_lock_cooldown, cooldownRemaining.toFloat()),
                     color = MiuixTheme.colorScheme.error,
                     style = MiuixTheme.textStyles.footnote1,
                     fontWeight = FontWeight.SemiBold,
@@ -468,13 +480,13 @@ private fun AppLockStatusPane(
             error -> {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = stringResource(R.string.app_lock_incorrect),
+                        text = stringResource(Res.string.app_lock_incorrect),
                         color = MiuixTheme.colorScheme.error,
                         style = MiuixTheme.textStyles.footnote1,
                     )
                     if (failCount in 3..11) {
                         Text(
-                            text = stringResource(R.string.app_lock_attempts_remaining, attemptsRemaining),
+                            text = stringResource(Res.string.app_lock_attempts_remaining, attemptsRemaining),
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                             style = MiuixTheme.textStyles.footnote1,
                         )
@@ -488,7 +500,7 @@ private fun AppLockStatusPane(
         }
         if (failCount >= 3) {
             Text(
-                text = stringResource(R.string.app_lock_forgot_pin),
+                text = stringResource(Res.string.app_lock_forgot_pin),
                 color = MiuixTheme.colorScheme.primary,
                 style = MiuixTheme.textStyles.footnote1,
                 modifier = Modifier.clickable(onClick = onShowRecovery).padding(vertical = 8.dp),

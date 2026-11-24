@@ -20,12 +20,22 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.models.pixiv.UserProfileEdit
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.settings_general
+import com.yunfie.illustia.resources.user_profile_edit_birthday
+import com.yunfie.illustia.resources.user_profile_edit_comment
+import com.yunfie.illustia.resources.user_profile_edit_failed
+import com.yunfie.illustia.resources.user_profile_edit_save
+import com.yunfie.illustia.resources.user_profile_edit_saved
+import com.yunfie.illustia.resources.user_profile_edit_title
+import com.yunfie.illustia.resources.user_profile_edit_twitter
+import com.yunfie.illustia.resources.user_profile_edit_user_name
+import com.yunfie.illustia.resources.user_profile_edit_webpage
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -33,6 +43,7 @@ import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.Section
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -110,8 +121,8 @@ fun UserProfileEditScreen(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
             TopAppBar(
-                title = stringResource(R.string.user_profile_edit_title),
-                largeTitle = stringResource(R.string.user_profile_edit_title),
+                title = stringResource(Res.string.user_profile_edit_title),
+                largeTitle = stringResource(Res.string.user_profile_edit_title),
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     HeaderIcon(MiuixIcons.Back, onClick = onBack)
@@ -130,7 +141,7 @@ fun UserProfileEditScreen(
                                 ),
                             modifier = Modifier.padding(end = 8.dp),
                         ) {
-                            Text(stringResource(R.string.user_profile_edit_save))
+                            Text(stringResource(Res.string.user_profile_edit_save))
                         }
                     }
                 },
@@ -159,7 +170,7 @@ fun UserProfileEditScreen(
                         contentPadding = PaddingValues(12.dp),
                     ) {
                         Text(
-                            text = errorMessage ?: stringResource(R.string.user_profile_edit_failed),
+                            text = errorMessage ?: stringResource(Res.string.user_profile_edit_failed),
                             color = MiuixTheme.colorScheme.error,
                             style = MiuixTheme.textStyles.body2,
                         )
@@ -174,7 +185,7 @@ fun UserProfileEditScreen(
                         contentPadding = PaddingValues(12.dp),
                     ) {
                         Text(
-                            text = successMessage ?: stringResource(R.string.user_profile_edit_saved),
+                            text = successMessage ?: stringResource(Res.string.user_profile_edit_saved),
                             color = MiuixTheme.colorScheme.primary,
                             style = MiuixTheme.textStyles.body2,
                         )
@@ -183,12 +194,12 @@ fun UserProfileEditScreen(
             }
 
             item {
-                Section(stringResource(R.string.user_profile_edit_title)) {
+                Section(stringResource(Res.string.user_profile_edit_title)) {
                     ElevatedPanel {
                         TextField(
                             value = userName,
                             onValueChange = { userName = it },
-                            label = stringResource(R.string.user_profile_edit_user_name),
+                            label = stringResource(Res.string.user_profile_edit_user_name),
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
                             singleLine = true,
                         )
@@ -196,7 +207,7 @@ fun UserProfileEditScreen(
                         TextField(
                             value = comment,
                             onValueChange = { comment = it },
-                            label = stringResource(R.string.user_profile_edit_comment),
+                            label = stringResource(Res.string.user_profile_edit_comment),
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
                             singleLine = false,
                             maxLines = 6,
@@ -206,12 +217,12 @@ fun UserProfileEditScreen(
             }
 
             item {
-                Section(stringResource(R.string.settings_general)) {
+                Section(stringResource(Res.string.settings_general)) {
                     ElevatedPanel {
                         TextField(
                             value = webpage,
                             onValueChange = { webpage = it },
-                            label = stringResource(R.string.user_profile_edit_webpage),
+                            label = stringResource(Res.string.user_profile_edit_webpage),
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
                             singleLine = true,
                         )
@@ -219,7 +230,7 @@ fun UserProfileEditScreen(
                         TextField(
                             value = twitter,
                             onValueChange = { twitter = it },
-                            label = stringResource(R.string.user_profile_edit_twitter),
+                            label = stringResource(Res.string.user_profile_edit_twitter),
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
                             singleLine = true,
                         )
@@ -227,7 +238,7 @@ fun UserProfileEditScreen(
                         TextField(
                             value = birthday,
                             onValueChange = { birthday = it },
-                            label = stringResource(R.string.user_profile_edit_birthday),
+                            label = stringResource(Res.string.user_profile_edit_birthday),
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
                             singleLine = true,
                         )

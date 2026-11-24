@@ -37,7 +37,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.glance.appwidget.GlanceAppWidgetManager
@@ -50,6 +49,12 @@ import com.yunfie.illustia.IllustiaViewModelFactory
 import com.yunfie.illustia.R
 import com.yunfie.illustia.data.proxyPixivImageUrl
 import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_close
+import com.yunfie.illustia.resources.widget_illust_apply
+import com.yunfie.illustia.resources.widget_illust_cancel
+import com.yunfie.illustia.resources.widget_illust_pick_page
+import com.yunfie.illustia.resources.widget_illust_title
 import com.yunfie.illustia.ui.components.AppBottomSheet
 import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.LoadingIndicator
@@ -62,6 +67,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.Request
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -145,12 +151,12 @@ class IllustWidgetConfigureActivity : FragmentActivity() {
                         containerColor = MiuixTheme.colorScheme.surface,
                         topBar = {
                             TopAppBar(
-                                title = stringResource(R.string.widget_illust_title),
-                                largeTitle = stringResource(R.string.widget_illust_title),
+                                title = stringResource(Res.string.widget_illust_title),
+                                largeTitle = stringResource(Res.string.widget_illust_title),
                                 scrollBehavior = scrollBehavior,
                                 navigationIcon = {
                                     IconButton(onClick = { finish() }) {
-                                        Icon(MiuixIcons.Close, contentDescription = stringResource(R.string.action_close))
+                                        Icon(MiuixIcons.Close, contentDescription = stringResource(Res.string.action_close))
                                     }
                                 },
                             )
@@ -381,7 +387,7 @@ private fun WidgetPagePickerSheet(
     AppBottomSheet(
         show = true,
         modifier = Modifier.scrollEndHaptic(),
-        title = stringResource(R.string.widget_illust_pick_page),
+        title = stringResource(Res.string.widget_illust_pick_page),
         onDismissRequest = onCancel,
         backgroundColor = MiuixTheme.colorScheme.surfaceContainerHigh,
         insideMargin = BottomSheetInsideMargin,
@@ -429,10 +435,10 @@ private fun WidgetPagePickerSheet(
                 }
                 if (isSaving) LoadingIndicator()
                 Button(onClick = { onApply(selected) }, enabled = !isSaving, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.widget_illust_apply))
+                    Text(stringResource(Res.string.widget_illust_apply))
                 }
                 Button(onClick = onCancel, enabled = !isSaving, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.widget_illust_cancel))
+                    Text(stringResource(Res.string.widget_illust_cancel))
                 }
             }
         }

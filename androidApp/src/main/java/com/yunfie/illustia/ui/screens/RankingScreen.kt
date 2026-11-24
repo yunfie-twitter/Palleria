@@ -39,18 +39,27 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
 import com.yunfie.illustia.isMutedByTags
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.Restrict
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_load_more
+import com.yunfie.illustia.resources.dialog_reload
+import com.yunfie.illustia.resources.nav_ranking
+import com.yunfie.illustia.resources.ranking_day
+import com.yunfie.illustia.resources.ranking_day_ai
+import com.yunfie.illustia.resources.ranking_day_female
+import com.yunfie.illustia.resources.ranking_day_male
+import com.yunfie.illustia.resources.ranking_month
+import com.yunfie.illustia.resources.ranking_week
+import com.yunfie.illustia.resources.ranking_week_rookie
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
@@ -83,6 +92,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -174,8 +184,8 @@ fun RankingScreen(
         header = {
             TopAppBar(
                 color = if (settings.isFeatureEnabled(FeatureFlag.TopScrollBlur)) Color.Transparent else MiuixTheme.colorScheme.surface,
-                title = stringResource(R.string.nav_ranking),
-                largeTitle = stringResource(R.string.nav_ranking),
+                title = stringResource(Res.string.nav_ranking),
+                largeTitle = stringResource(Res.string.nav_ranking),
                 scrollBehavior = scrollBehavior,
                 modifier =
                     Modifier.onTopBarTap(
@@ -196,20 +206,20 @@ fun RankingScreen(
                         modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
                         onClick = { viewModel.refreshRanking(modes[pagerState.targetPage]) },
                     ) {
-                        Icon(MiuixIcons.Refresh, contentDescription = stringResource(R.string.dialog_reload))
+                        Icon(MiuixIcons.Refresh, contentDescription = stringResource(Res.string.dialog_reload))
                     }
                 },
                 bottomContent = {
                     val tabs =
                         remember {
                             listOf(
-                                R.string.ranking_day,
-                                R.string.ranking_day_male,
-                                R.string.ranking_day_female,
-                                R.string.ranking_week,
-                                R.string.ranking_month,
-                                R.string.ranking_week_rookie,
-                                R.string.ranking_day_ai,
+                                Res.string.ranking_day,
+                                Res.string.ranking_day_male,
+                                Res.string.ranking_day_female,
+                                Res.string.ranking_week,
+                                Res.string.ranking_month,
+                                Res.string.ranking_week_rookie,
+                                Res.string.ranking_day_ai,
                             )
                         }
                     val tabTitles = tabs.map { stringResource(it) }
@@ -441,10 +451,10 @@ private fun RankingGridContent(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 LoadingIndicator(modifier = Modifier.size(16.dp))
-                                Text(stringResource(R.string.action_load_more))
+                                Text(stringResource(Res.string.action_load_more))
                             }
                         } else {
-                            Text(stringResource(R.string.action_load_more))
+                            Text(stringResource(Res.string.action_load_more))
                         }
                     }
                 }

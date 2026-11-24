@@ -22,7 +22,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -30,12 +29,22 @@ import androidx.compose.ui.unit.sp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.StoredAccount
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.account_remove_summary
+import com.yunfie.illustia.resources.account_remove_title
+import com.yunfie.illustia.resources.account_switch_add
+import com.yunfie.illustia.resources.account_switch_title
+import com.yunfie.illustia.resources.action_add
+import com.yunfie.illustia.resources.action_close
+import com.yunfie.illustia.resources.action_delete
+import com.yunfie.illustia.resources.active
 import com.yunfie.illustia.ui.components.AppBottomSheet
 import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.miuixClickable
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Text
@@ -63,16 +72,16 @@ fun AccountSwitchSheet(
     AppBottomSheet(
         show = true,
         modifier = Modifier.scrollEndHaptic(),
-        title = stringResource(R.string.account_switch_title),
+        title = stringResource(Res.string.account_switch_title),
         backgroundColor = LocalBottomSheetBackgroundColor.current,
         startAction = {
             IconButton(onClick = onDismiss) {
-                Icon(imageVector = MiuixIcons.Close, contentDescription = stringResource(R.string.action_close))
+                Icon(imageVector = MiuixIcons.Close, contentDescription = stringResource(Res.string.action_close))
             }
         },
         endAction = {
             IconButton(onClick = onAddAccount) {
-                Icon(imageVector = MiuixIcons.Add, contentDescription = stringResource(R.string.action_add))
+                Icon(imageVector = MiuixIcons.Add, contentDescription = stringResource(Res.string.action_add))
             }
         },
         onDismissRequest = onDismiss,
@@ -105,9 +114,9 @@ fun AccountSwitchSheet(
         val account = accounts.getOrNull(index)
         MiuixConfirmDialog(
             show = true,
-            title = stringResource(R.string.account_remove_title),
-            summary = stringResource(R.string.account_remove_summary, account?.name?.ifBlank { account.account } ?: ""),
-            confirmText = stringResource(R.string.action_delete),
+            title = stringResource(Res.string.account_remove_title),
+            summary = stringResource(Res.string.account_remove_summary, account?.name?.ifBlank { account.account } ?: ""),
+            confirmText = stringResource(Res.string.action_delete),
             destructive = true,
             onConfirm = {
                 viewModel.removeAccount(index)
@@ -191,7 +200,7 @@ private fun AccountRow(
         if (isActive) {
             Icon(
                 imageVector = MiuixIcons.Ok,
-                contentDescription = stringResource(R.string.active),
+                contentDescription = stringResource(Res.string.active),
                 tint = MiuixTheme.colorScheme.primary,
                 modifier = Modifier.size(20.dp),
             )
@@ -200,7 +209,7 @@ private fun AccountRow(
         IconButton(onClick = onRemove) {
             Icon(
                 imageVector = MiuixIcons.Delete,
-                contentDescription = stringResource(R.string.action_delete),
+                contentDescription = stringResource(Res.string.action_delete),
                 tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 modifier = Modifier.size(18.dp),
             )
@@ -236,7 +245,7 @@ private fun AddAccountRow(onClick: () -> Unit) {
             )
         }
         Text(
-            text = stringResource(R.string.account_switch_add),
+            text = stringResource(Res.string.account_switch_add),
             color = MiuixTheme.colorScheme.onBackground,
             style = MiuixTheme.textStyles.body1,
             fontWeight = FontWeight.Bold,

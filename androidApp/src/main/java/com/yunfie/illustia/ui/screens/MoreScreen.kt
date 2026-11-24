@@ -29,7 +29,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -38,6 +37,13 @@ import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.UserProfile
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.account_switch_title
+import com.yunfie.illustia.resources.more_connected_pixiv
+import com.yunfie.illustia.resources.more_logged_in_account
+import com.yunfie.illustia.resources.more_login_prompt
+import com.yunfie.illustia.resources.more_not_logged_in
+import com.yunfie.illustia.resources.nav_more
 import com.yunfie.illustia.ui.app.AppTab
 import com.yunfie.illustia.ui.app.LocalTabUiState
 import com.yunfie.illustia.ui.components.AppHapticEffect
@@ -48,6 +54,7 @@ import com.yunfie.illustia.ui.components.onTopBarTap
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.smoothScrollToTop
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Badge
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Card
@@ -102,8 +109,8 @@ fun MoreScreen(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
             TopAppBar(
-                title = stringResource(R.string.nav_more),
-                largeTitle = stringResource(R.string.nav_more),
+                title = stringResource(Res.string.nav_more),
+                largeTitle = stringResource(Res.string.nav_more),
                 scrollBehavior = scrollBehavior,
                 modifier =
                     Modifier.onTopBarTap(
@@ -326,7 +333,7 @@ private fun MoreHeader(
             ) {
                 Icon(
                     imageVector = MiuixIcons.More,
-                    contentDescription = stringResource(R.string.account_switch_title),
+                    contentDescription = stringResource(Res.string.account_switch_title),
                     tint = MiuixTheme.colorScheme.onSurface,
                     modifier = Modifier.size(20.dp),
                 )
@@ -460,9 +467,9 @@ private fun accountTitle(
     account: UserProfile?,
 ): String =
     when {
-        !isLoggedIn -> stringResource(R.string.more_not_logged_in)
+        !isLoggedIn -> stringResource(Res.string.more_not_logged_in)
         account != null -> account.name.ifBlank { "@${account.account}" }
-        else -> stringResource(R.string.more_logged_in_account)
+        else -> stringResource(Res.string.more_logged_in_account)
     }
 
 @Composable
@@ -471,7 +478,7 @@ private fun accountSubtitle(
     account: UserProfile?,
 ): String =
     when {
-        !isLoggedIn -> stringResource(R.string.more_login_prompt)
+        !isLoggedIn -> stringResource(Res.string.more_login_prompt)
         account != null && account.account.isNotBlank() -> "@${account.account}"
-        else -> stringResource(R.string.more_connected_pixiv)
+        else -> stringResource(Res.string.more_connected_pixiv)
     }

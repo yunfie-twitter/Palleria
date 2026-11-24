@@ -20,17 +20,28 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.R
 import com.yunfie.illustia.data.IllustiaRepository
 import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.pixiv.BookmarkTag
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_back
+import com.yunfie.illustia.resources.bookmark_tag_sort_all
+import com.yunfie.illustia.resources.bookmark_tag_sort_empty
+import com.yunfie.illustia.resources.bookmark_tag_sort_error
+import com.yunfie.illustia.resources.bookmark_tag_sort_search
+import com.yunfie.illustia.resources.bookmark_tag_sort_title
+import com.yunfie.illustia.resources.bookmark_tag_unclassified
+import com.yunfie.illustia.resources.dialog_reload
+import com.yunfie.illustia.resources.restrict_private
+import com.yunfie.illustia.resources.restrict_public
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
@@ -62,12 +73,12 @@ internal fun BookmarkTagSortScreen(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
             SmallTopAppBar(
-                title = stringResource(R.string.bookmark_tag_sort_title),
+                title = stringResource(Res.string.bookmark_tag_sort_title),
                 navigationIcon = {
                     HeaderIcon(
                         icon = MiuixIcons.Back,
                         onClick = onBack,
-                        contentDescription = stringResource(R.string.action_back),
+                        contentDescription = stringResource(Res.string.action_back),
                     )
                 },
             )
@@ -77,7 +88,7 @@ internal fun BookmarkTagSortScreen(
             modifier = Modifier.fillMaxSize().padding(padding),
         ) {
             TabRowWithContour(
-                tabs = listOf(stringResource(R.string.restrict_public), stringResource(R.string.restrict_private)),
+                tabs = listOf(stringResource(Res.string.restrict_public), stringResource(Res.string.restrict_private)),
                 selectedTabIndex = if (restrict == Restrict.Public) 0 else 1,
                 onTabSelected = { index -> coroutineScope.launch { pagerState.animateScrollToPage(index) } },
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
@@ -85,7 +96,7 @@ internal fun BookmarkTagSortScreen(
             TextField(
                 value = query,
                 onValueChange = { query = it },
-                label = stringResource(R.string.bookmark_tag_sort_search),
+                label = stringResource(Res.string.bookmark_tag_sort_search),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
             )
@@ -144,13 +155,13 @@ private fun BookmarkTagSortPage(
         error -> {
             Column(modifier = Modifier.padding(18.dp)) {
                 Text(
-                    text = stringResource(R.string.bookmark_tag_sort_error),
+                    text = stringResource(Res.string.bookmark_tag_sort_error),
                     color = MiuixTheme.colorScheme.error,
                 )
                 Button(
                     onClick = { retryCount++ },
                     modifier = Modifier.padding(top = 8.dp),
-                ) { Text(stringResource(R.string.dialog_reload)) }
+                ) { Text(stringResource(Res.string.dialog_reload)) }
             }
         }
 
@@ -161,7 +172,7 @@ private fun BookmarkTagSortPage(
             ) {
                 item(key = "all") {
                     BookmarkTagSortRow(
-                        name = stringResource(R.string.bookmark_tag_sort_all),
+                        name = stringResource(Res.string.bookmark_tag_sort_all),
                         count = null,
                         selected = selectedTag == null,
                         onClick = { onSelect(restrict, null) },
@@ -169,7 +180,7 @@ private fun BookmarkTagSortPage(
                 }
                 item(key = "unclassified") {
                     BookmarkTagSortRow(
-                        name = stringResource(R.string.bookmark_tag_unclassified),
+                        name = stringResource(Res.string.bookmark_tag_unclassified),
                         count = null,
                         selected = selectedTag == "",
                         onClick = { onSelect(restrict, "") },
@@ -186,7 +197,7 @@ private fun BookmarkTagSortPage(
                 if (filteredTags.isEmpty() && !loading) {
                     item {
                         Text(
-                            text = stringResource(R.string.bookmark_tag_sort_empty),
+                            text = stringResource(Res.string.bookmark_tag_sort_empty),
                             color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                             modifier = Modifier.padding(18.dp),
                         )

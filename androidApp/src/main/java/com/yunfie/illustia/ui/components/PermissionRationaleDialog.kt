@@ -16,12 +16,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.PermissionRationaleType
 import com.yunfie.illustia.R
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.permission_grant_button
+import com.yunfie.illustia.resources.permission_later_button
+import com.yunfie.illustia.resources.permission_notification_desc
+import com.yunfie.illustia.resources.permission_notification_title
+import com.yunfie.illustia.resources.permission_storage_desc
+import com.yunfie.illustia.resources.permission_storage_title
 import com.yunfie.illustia.ui.components.AppDialog
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
@@ -43,13 +50,13 @@ fun PermissionRationaleDialog(
 ) {
     val title =
         when (type) {
-            PermissionRationaleType.Notification -> stringResource(R.string.permission_notification_title)
-            PermissionRationaleType.Storage -> stringResource(R.string.permission_storage_title)
+            PermissionRationaleType.Notification -> stringResource(Res.string.permission_notification_title)
+            PermissionRationaleType.Storage -> stringResource(Res.string.permission_storage_title)
         }
     val description =
         when (type) {
-            PermissionRationaleType.Notification -> stringResource(R.string.permission_notification_desc)
-            PermissionRationaleType.Storage -> stringResource(R.string.permission_storage_desc)
+            PermissionRationaleType.Notification -> stringResource(Res.string.permission_notification_desc)
+            PermissionRationaleType.Storage -> stringResource(Res.string.permission_storage_desc)
         }
     val icon =
         when (type) {
@@ -99,7 +106,7 @@ fun PermissionRationaleDialog(
                         ),
                 ) {
                     Text(
-                        text = stringResource(R.string.permission_later_button),
+                        text = stringResource(Res.string.permission_later_button),
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     )
                 }
@@ -111,7 +118,7 @@ fun PermissionRationaleDialog(
                     colors = ButtonDefaults.buttonColorsPrimary(),
                 ) {
                     Text(
-                        text = stringResource(R.string.permission_grant_button),
+                        text = stringResource(Res.string.permission_grant_button),
                         color = MiuixTheme.colorScheme.onPrimary,
                         fontWeight = FontWeight.SemiBold,
                     )

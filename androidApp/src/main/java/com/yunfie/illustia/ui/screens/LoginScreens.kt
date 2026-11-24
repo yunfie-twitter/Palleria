@@ -35,7 +35,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -48,6 +47,15 @@ import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.PixivWebLoginRequest
 import com.yunfie.illustia.R
 import com.yunfie.illustia.data.pixivLoginCodeOrNull
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_close
+import com.yunfie.illustia.resources.dialog_reload
+import com.yunfie.illustia.resources.error_generic
+import com.yunfie.illustia.resources.login_refresh_token_hide
+import com.yunfie.illustia.resources.login_refresh_token_label
+import com.yunfie.illustia.resources.login_refresh_token_show
+import com.yunfie.illustia.resources.login_token_button
+import com.yunfie.illustia.resources.login_token_title
 import com.yunfie.illustia.ui.components.AppBottomSheet
 import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.ElevatedPanel
@@ -57,6 +65,7 @@ import com.yunfie.illustia.ui.components.NonAmoledDarkTheme
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.StateBanner
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -91,7 +100,7 @@ fun RefreshTokenLoginBottomSheet(
     AppBottomSheet(
         show = true,
         modifier = Modifier.scrollEndHaptic(),
-        title = stringResource(R.string.login_token_title),
+        title = stringResource(Res.string.login_token_title),
         onDismissRequest = onDismiss,
         backgroundColor = LocalBottomSheetBackgroundColor.current,
         insideMargin = BottomSheetInsideMargin,
@@ -101,7 +110,7 @@ fun RefreshTokenLoginBottomSheet(
         defaultWindowInsetsPadding = false,
         startAction = {
             IconButton(onClick = onDismiss) {
-                Icon(imageVector = MiuixIcons.Close, contentDescription = stringResource(R.string.action_close))
+                Icon(imageVector = MiuixIcons.Close, contentDescription = stringResource(Res.string.action_close))
             }
         },
     ) {
@@ -118,7 +127,7 @@ fun RefreshTokenLoginBottomSheet(
                 TextField(
                     value = state.settings.refreshToken,
                     onValueChange = viewModel::updateRefreshToken,
-                    label = stringResource(R.string.login_refresh_token_label),
+                    label = stringResource(Res.string.login_refresh_token_label),
                     useLabelAsPlaceholder = true,
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
@@ -130,7 +139,7 @@ fun RefreshTokenLoginBottomSheet(
                                 imageVector = if (tokenVisible) MiuixIcons.Hide else MiuixIcons.Show,
                                 contentDescription =
                                     stringResource(
-                                        if (tokenVisible) R.string.login_refresh_token_hide else R.string.login_refresh_token_show,
+                                        if (tokenVisible) Res.string.login_refresh_token_hide else Res.string.login_refresh_token_show,
                                     ),
                             )
                         }
@@ -142,7 +151,7 @@ fun RefreshTokenLoginBottomSheet(
                     modifier = Modifier.fillMaxWidth(),
                     colors = overlayActionButtonColors(),
                 ) {
-                    Text(stringResource(R.string.login_token_button))
+                    Text(stringResource(Res.string.login_token_button))
                 }
                 StateBanner(state.loadState)
             }
@@ -271,7 +280,7 @@ fun PixivWebLoginScreen(
                     contentAlignment = Alignment.Center,
                 ) {
                     ElevatedPanel {
-                        Text(stringResource(R.string.error_generic), style = MiuixTheme.textStyles.title3, fontWeight = FontWeight.Bold)
+                        Text(stringResource(Res.string.error_generic), style = MiuixTheme.textStyles.title3, fontWeight = FontWeight.Bold)
                         Text(
                             webError.orEmpty(),
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
@@ -287,7 +296,7 @@ fun PixivWebLoginScreen(
                             modifier = Modifier.fillMaxWidth(),
                             colors = overlayActionButtonColors(),
                         ) {
-                            Text(stringResource(R.string.dialog_reload))
+                            Text(stringResource(Res.string.dialog_reload))
                         }
                     }
                 }

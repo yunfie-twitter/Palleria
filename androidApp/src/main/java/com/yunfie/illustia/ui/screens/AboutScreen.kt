@@ -35,7 +35,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -43,6 +42,31 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.about_disclaimer
+import com.yunfie.illustia.resources.about_fdroid
+import com.yunfie.illustia.resources.about_no_license_information
+import com.yunfie.illustia.resources.about_open_source_licenses
+import com.yunfie.illustia.resources.about_pixiv
+import com.yunfie.illustia.resources.about_section_libraries
+import com.yunfie.illustia.resources.about_section_links
+import com.yunfie.illustia.resources.about_title
+import com.yunfie.illustia.resources.about_version
+import com.yunfie.illustia.resources.about_version_label
+import com.yunfie.illustia.resources.action_close
+import com.yunfie.illustia.resources.app_name
+import com.yunfie.illustia.resources.update_available_title
+import com.yunfie.illustia.resources.update_cancel_download
+import com.yunfie.illustia.resources.update_check_button
+import com.yunfie.illustia.resources.update_checking
+import com.yunfie.illustia.resources.update_download_button
+import com.yunfie.illustia.resources.update_in_app_updater
+import com.yunfie.illustia.resources.update_install_button
+import com.yunfie.illustia.resources.update_installing
+import com.yunfie.illustia.resources.update_ready_to_install
+import com.yunfie.illustia.resources.update_retry_download
+import com.yunfie.illustia.resources.update_up_to_date
+import com.yunfie.illustia.resources.update_view_on_github
 import com.yunfie.illustia.ui.components.AppBottomSheet
 import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.DividerLine
@@ -55,6 +79,7 @@ import com.yunfie.illustia.ui.components.Section
 import com.yunfie.illustia.ui.components.SettingLinkRow
 import com.yunfie.illustia.ui.components.SettingRow
 import com.yunfie.illustia.updater.UpdateCheckState
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
@@ -107,7 +132,7 @@ fun AboutScreen(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
             SmallTopAppBar(
-                title = stringResource(R.string.about_title),
+                title = stringResource(Res.string.about_title),
                 scrollBehavior = scrollBehavior,
                 color = MiuixTheme.colorScheme.surface.copy(alpha = scrollProgress),
                 titleColor = MiuixTheme.colorScheme.onSurface.copy(alpha = scrollProgress),
@@ -147,7 +172,7 @@ fun AboutScreen(
             ) {
                 Image(
                     painter = painterResource(R.mipmap.ic_launcher_foreground),
-                    contentDescription = stringResource(R.string.app_name),
+                    contentDescription = stringResource(Res.string.app_name),
                     modifier =
                         Modifier
                             .size(88.dp)
@@ -160,7 +185,7 @@ fun AboutScreen(
                     contentScale = ContentScale.Fit,
                 )
                 Text(
-                    text = stringResource(R.string.app_name),
+                    text = stringResource(Res.string.app_name),
                     color = MiuixTheme.colorScheme.onBackground,
                     fontSize = 35.sp,
                     fontWeight = FontWeight.Bold,
@@ -185,7 +210,7 @@ fun AboutScreen(
                         },
                 ) {
                     Text(
-                        text = stringResource(R.string.about_version, appVersion),
+                        text = stringResource(Res.string.about_version, appVersion),
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         style = MiuixTheme.textStyles.footnote1,
                         textAlign = TextAlign.Center,
@@ -213,10 +238,10 @@ fun AboutScreen(
 
                 // アプリ内アップデーター
                 item {
-                    Section(stringResource(R.string.update_in_app_updater)) {
+                    Section(stringResource(Res.string.update_in_app_updater)) {
                         ElevatedPanel {
                             SettingRow(
-                                title = stringResource(R.string.about_version_label),
+                                title = stringResource(Res.string.about_version_label),
                                 summary = appVersion,
                             ) {
                                 Button(
@@ -226,7 +251,7 @@ fun AboutScreen(
                                     insideMargin = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
                                 ) {
                                     Text(
-                                        stringResource(R.string.update_check_button),
+                                        stringResource(Res.string.update_check_button),
                                         color = MiuixTheme.colorScheme.onPrimary,
                                         style = MiuixTheme.textStyles.footnote1,
                                         fontWeight = FontWeight.Bold,
@@ -244,7 +269,7 @@ fun AboutScreen(
                                     ) {
                                         LoadingIndicator(modifier = Modifier.size(24.dp))
                                         Text(
-                                            stringResource(R.string.update_checking),
+                                            stringResource(Res.string.update_checking),
                                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                             style = MiuixTheme.textStyles.body2,
                                         )
@@ -255,7 +280,7 @@ fun AboutScreen(
                                     DividerLine()
                                     Box(modifier = Modifier.fillMaxWidth().padding(14.dp)) {
                                         Text(
-                                            stringResource(R.string.update_up_to_date, currentUpdate.currentVersion),
+                                            stringResource(Res.string.update_up_to_date, currentUpdate.currentVersion),
                                             color = MiuixTheme.colorScheme.primary,
                                             style = MiuixTheme.textStyles.body2,
                                             fontWeight = FontWeight.Bold,
@@ -271,7 +296,7 @@ fun AboutScreen(
                                         verticalArrangement = Arrangement.spacedBy(10.dp),
                                     ) {
                                         Text(
-                                            stringResource(R.string.update_available_title, release.versionName),
+                                            stringResource(Res.string.update_available_title, release.versionName),
                                             color = MiuixTheme.colorScheme.onBackground,
                                             style = MiuixTheme.textStyles.title2,
                                             fontWeight = FontWeight.Bold,
@@ -303,7 +328,7 @@ fun AboutScreen(
                                             colors = ButtonDefaults.buttonColorsPrimary(),
                                         ) {
                                             Text(
-                                                stringResource(R.string.update_download_button),
+                                                stringResource(Res.string.update_download_button),
                                                 color = MiuixTheme.colorScheme.onPrimary,
                                                 fontWeight = FontWeight.Bold,
                                             )
@@ -344,7 +369,7 @@ fun AboutScreen(
                                             modifier = Modifier.fillMaxWidth(),
                                         ) {
                                             Text(
-                                                stringResource(R.string.update_cancel_download),
+                                                stringResource(Res.string.update_cancel_download),
                                                 style = MiuixTheme.textStyles.footnote1,
                                             )
                                         }
@@ -358,7 +383,7 @@ fun AboutScreen(
                                         verticalArrangement = Arrangement.spacedBy(10.dp),
                                     ) {
                                         Text(
-                                            stringResource(R.string.update_ready_to_install),
+                                            stringResource(Res.string.update_ready_to_install),
                                             color = MiuixTheme.colorScheme.primary,
                                             style = MiuixTheme.textStyles.body2,
                                             fontWeight = FontWeight.Bold,
@@ -369,7 +394,7 @@ fun AboutScreen(
                                             colors = ButtonDefaults.buttonColorsPrimary(),
                                         ) {
                                             Text(
-                                                stringResource(R.string.update_install_button),
+                                                stringResource(Res.string.update_install_button),
                                                 color = MiuixTheme.colorScheme.onPrimary,
                                                 fontWeight = FontWeight.Bold,
                                             )
@@ -386,7 +411,7 @@ fun AboutScreen(
                                     ) {
                                         LoadingIndicator(modifier = Modifier.size(24.dp))
                                         Text(
-                                            stringResource(R.string.update_installing),
+                                            stringResource(Res.string.update_installing),
                                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                             style = MiuixTheme.textStyles.body2,
                                         )
@@ -417,7 +442,7 @@ fun AboutScreen(
                                             colors = ButtonDefaults.buttonColorsPrimary(),
                                         ) {
                                             Text(
-                                                stringResource(R.string.update_retry_download),
+                                                stringResource(Res.string.update_retry_download),
                                                 color = MiuixTheme.colorScheme.onPrimary,
                                                 style = MiuixTheme.textStyles.footnote1,
                                                 fontWeight = FontWeight.Bold,
@@ -436,21 +461,21 @@ fun AboutScreen(
 
                 // リンク
                 item {
-                    Section(stringResource(R.string.about_section_links)) {
+                    Section(stringResource(Res.string.about_section_links)) {
                         ElevatedPanel(contentPadding = PaddingValues(0.dp)) {
-                            SettingLinkRow(stringResource(R.string.about_fdroid)) {
+                            SettingLinkRow(stringResource(Res.string.about_fdroid)) {
                                 runCatching {
                                     context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(FDROID_URL)))
                                 }
                             }
                             DividerLine()
-                            SettingLinkRow(stringResource(R.string.about_pixiv)) {
+                            SettingLinkRow(stringResource(Res.string.about_pixiv)) {
                                 runCatching {
                                     context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.pixiv.net/")))
                                 }
                             }
                             DividerLine()
-                            SettingLinkRow(stringResource(R.string.update_view_on_github)) {
+                            SettingLinkRow(stringResource(Res.string.update_view_on_github)) {
                                 runCatching {
                                     context.startActivity(
                                         Intent(
@@ -466,7 +491,7 @@ fun AboutScreen(
 
                 // 使用ライブラリ
                 item {
-                    Section(stringResource(R.string.about_section_libraries)) {
+                    Section(stringResource(Res.string.about_section_libraries)) {
                         ElevatedPanel {
                             listOf(
                                 "Jetpack Compose" to "Google",
@@ -480,7 +505,7 @@ fun AboutScreen(
                                 SettingRow(lib, author) {}
                             }
                             DividerLine()
-                            SettingLinkRow(stringResource(R.string.about_open_source_licenses)) {
+                            SettingLinkRow(stringResource(Res.string.about_open_source_licenses)) {
                                 showLicensesSheet = true
                             }
                         }
@@ -497,7 +522,7 @@ fun AboutScreen(
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
                         Text(
-                            stringResource(R.string.about_disclaimer),
+                            stringResource(Res.string.about_disclaimer),
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.6f),
                             style = MiuixTheme.textStyles.footnote1,
                             textAlign = TextAlign.Center,
@@ -565,10 +590,10 @@ private fun OpenSourceLicensesSheet(
     AppBottomSheet(
         show = true,
         modifier = Modifier.scrollEndHaptic(),
-        title = stringResource(R.string.about_open_source_licenses),
+        title = stringResource(Res.string.about_open_source_licenses),
         startAction = {
             IconButton(onClick = onDismiss) {
-                Icon(imageVector = MiuixIcons.Close, contentDescription = stringResource(R.string.action_close))
+                Icon(imageVector = MiuixIcons.Close, contentDescription = stringResource(Res.string.action_close))
             }
         },
         onDismissRequest = onDismiss,
@@ -584,7 +609,7 @@ private fun OpenSourceLicensesSheet(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = stringResource(R.string.about_no_license_information),
+                    text = stringResource(Res.string.about_no_license_information),
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     style = MiuixTheme.textStyles.footnote1,
                 )

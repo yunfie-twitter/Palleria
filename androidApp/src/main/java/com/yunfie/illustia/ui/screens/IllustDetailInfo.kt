@@ -45,7 +45,6 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.fromHtml
@@ -65,7 +64,9 @@ import com.yunfie.illustia.resources.detail_resolution_dimensions
 import com.yunfie.illustia.resources.detail_series
 import com.yunfie.illustia.resources.detail_show_comments
 import com.yunfie.illustia.resources.detail_tags_show_less
+import com.yunfie.illustia.resources.detail_tags_show_more
 import com.yunfie.illustia.resources.detail_unmute
+import com.yunfie.illustia.resources.page_count_short
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.ArtworkCardPreferences
 import com.yunfie.illustia.ui.components.AvatarImage
@@ -79,6 +80,7 @@ import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
@@ -360,7 +362,7 @@ internal fun IllustDetailInfo(
                                                     resString(Res.string.detail_tags_show_less)
                                                 } else {
                                                     stringResource(
-                                                        R.string.detail_tags_show_more,
+                                                        Res.string.detail_tags_show_more,
                                                         illust.tags.size - collapsedTagLimit,
                                                     )
                                                 },
@@ -728,7 +730,7 @@ internal fun RelatedIllustCard(
         }
         if (related.pageCount > 1) {
             Text(
-                text = stringResource(R.string.page_count_short, related.pageCount),
+                text = stringResource(Res.string.page_count_short, related.pageCount),
                 color = Color.White,
                 style = MiuixTheme.textStyles.footnote2,
                 fontWeight = FontWeight.Black,

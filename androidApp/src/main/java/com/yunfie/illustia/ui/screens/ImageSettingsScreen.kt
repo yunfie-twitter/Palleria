@@ -10,16 +10,69 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.ambient_light_viewer_desc
+import com.yunfie.illustia.resources.ambient_light_viewer_title
+import com.yunfie.illustia.resources.card_customization_settings_summary
+import com.yunfie.illustia.resources.card_customization_settings_title
+import com.yunfie.illustia.resources.data_columns_count
+import com.yunfie.illustia.resources.data_columns_dynamic
+import com.yunfie.illustia.resources.data_items_count
 import com.yunfie.illustia.resources.detail_section_settings_summary
 import com.yunfie.illustia.resources.detail_section_settings_title
+import com.yunfie.illustia.resources.download_settings_summary
+import com.yunfie.illustia.resources.download_settings_title
 import com.yunfie.illustia.resources.flag_ugoira_auto_play_desc
 import com.yunfie.illustia.resources.flag_ugoira_auto_play_title
+import com.yunfie.illustia.resources.image_cache_capacity
+import com.yunfie.illustia.resources.image_cache_capacity_desc
+import com.yunfie.illustia.resources.image_cache_capacity_unlimited
+import com.yunfie.illustia.resources.image_columns
+import com.yunfie.illustia.resources.image_columns_landscape
+import com.yunfie.illustia.resources.image_detail_quality
+import com.yunfie.illustia.resources.image_fullscreen_quality
+import com.yunfie.illustia.resources.image_high_quality
+import com.yunfie.illustia.resources.image_high_quality_desc
+import com.yunfie.illustia.resources.image_manga_reader_mode
+import com.yunfie.illustia.resources.image_manga_reader_mode_desc
+import com.yunfie.illustia.resources.image_prefetch
+import com.yunfie.illustia.resources.image_prefetch_desc
+import com.yunfie.illustia.resources.image_preview_quality
+import com.yunfie.illustia.resources.image_quality_high
+import com.yunfie.illustia.resources.image_quality_low
+import com.yunfie.illustia.resources.image_quality_medium
+import com.yunfie.illustia.resources.image_related_columns
+import com.yunfie.illustia.resources.image_section_cache
+import com.yunfie.illustia.resources.image_section_customization
+import com.yunfie.illustia.resources.image_section_layout
+import com.yunfie.illustia.resources.image_section_quality
+import com.yunfie.illustia.resources.image_settings_title
+import com.yunfie.illustia.resources.image_smart_cache
+import com.yunfie.illustia.resources.image_smart_cache_count
+import com.yunfie.illustia.resources.image_smart_cache_desc
+import com.yunfie.illustia.resources.image_smart_cache_wifi
+import com.yunfie.illustia.resources.image_smart_cache_wifi_desc
+import com.yunfie.illustia.resources.network_settings_summary
+import com.yunfie.illustia.resources.network_settings_title
+import com.yunfie.illustia.resources.setting_grid_pinch_to_zoom_desc
+import com.yunfie.illustia.resources.setting_grid_pinch_to_zoom_title
+import com.yunfie.illustia.resources.setting_image_viewer_swipe_to_dismiss_desc
+import com.yunfie.illustia.resources.setting_image_viewer_swipe_to_dismiss_title
+import com.yunfie.illustia.resources.setting_quick_peek_desc
+import com.yunfie.illustia.resources.setting_quick_peek_shared_element_transition_desc
+import com.yunfie.illustia.resources.setting_quick_peek_shared_element_transition_title
+import com.yunfie.illustia.resources.setting_quick_peek_title
+import com.yunfie.illustia.resources.settings_wide_color_gamut_desc
+import com.yunfie.illustia.resources.settings_wide_color_gamut_title
+import com.yunfie.illustia.resources.settings_wide_color_gamut_unsupported
+import com.yunfie.illustia.resources.viewer_comic_mode
+import com.yunfie.illustia.resources.viewer_page_mode
+import com.yunfie.illustia.resources.wallpaper_playlist
+import com.yunfie.illustia.resources.wallpaper_playlist_desc
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
@@ -29,6 +82,7 @@ import com.yunfie.illustia.ui.components.Section
 import com.yunfie.illustia.ui.components.SettingDropdownRow
 import com.yunfie.illustia.ui.components.SettingLinkRow
 import com.yunfie.illustia.ui.components.SettingSwitchRow
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.TopAppBar
@@ -62,8 +116,8 @@ fun ImageSettingsScreen(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
             TopAppBar(
-                title = stringResource(R.string.image_settings_title),
-                largeTitle = stringResource(R.string.image_settings_title),
+                title = stringResource(Res.string.image_settings_title),
+                largeTitle = stringResource(Res.string.image_settings_title),
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     HeaderIcon(MiuixIcons.Back, onClick = onBack)
@@ -86,37 +140,37 @@ fun ImageSettingsScreen(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             item {
-                Section(stringResource(R.string.image_section_quality)) {
+                Section(stringResource(Res.string.image_section_quality)) {
                     ElevatedPanel {
                         SettingSwitchRow(
-                            stringResource(R.string.image_high_quality),
+                            stringResource(Res.string.image_high_quality),
                             settings.highQualityImages,
                             viewModel::updateHighQuality,
-                            stringResource(R.string.image_high_quality_desc),
+                            stringResource(Res.string.image_high_quality_desc),
                         )
                         DividerLine()
                         SettingSwitchRow(
-                            title = stringResource(R.string.settings_wide_color_gamut_title),
+                            title = stringResource(Res.string.settings_wide_color_gamut_title),
                             checked = settings.wideColorGamutEnabled && supportsWcg,
                             onCheckedChange = { if (supportsWcg) viewModel.updateWideColorGamut(it) },
                             summary =
                                 if (supportsWcg) {
-                                    stringResource(R.string.settings_wide_color_gamut_desc)
+                                    stringResource(Res.string.settings_wide_color_gamut_desc)
                                 } else {
-                                    stringResource(R.string.settings_wide_color_gamut_unsupported)
+                                    stringResource(Res.string.settings_wide_color_gamut_unsupported)
                                 },
                             enabled = supportsWcg,
                         )
                         DividerLine()
                         SettingSwitchRow(
-                            stringResource(R.string.image_prefetch),
+                            stringResource(Res.string.image_prefetch),
                             settings.prefetchImages,
                             viewModel::updatePrefetchImages,
-                            stringResource(R.string.image_prefetch_desc),
+                            stringResource(Res.string.image_prefetch_desc),
                         )
                         DividerLine()
                         SettingDropdownRow(
-                            title = stringResource(R.string.image_preview_quality),
+                            title = stringResource(Res.string.image_preview_quality),
                             values = listOf("low", "medium", "high"),
                             selected = settings.feedPreviewQuality,
                             label = { qualityLabel(it) },
@@ -124,7 +178,7 @@ fun ImageSettingsScreen(
                         )
                         DividerLine()
                         SettingDropdownRow(
-                            title = stringResource(R.string.image_detail_quality),
+                            title = stringResource(Res.string.image_detail_quality),
                             values = listOf("low", "medium", "high"),
                             selected = settings.illustDetailQuality,
                             label = { qualityLabel(it) },
@@ -132,7 +186,7 @@ fun ImageSettingsScreen(
                         )
                         DividerLine()
                         SettingDropdownRow(
-                            title = stringResource(R.string.image_fullscreen_quality),
+                            title = stringResource(Res.string.image_fullscreen_quality),
                             values = listOf("low", "medium", "high"),
                             selected = settings.fullscreenQuality,
                             label = { qualityLabel(it) },
@@ -140,86 +194,86 @@ fun ImageSettingsScreen(
                         )
                         DividerLine()
                         SettingDropdownRow(
-                            title = stringResource(R.string.image_manga_reader_mode),
-                            summary = stringResource(R.string.image_manga_reader_mode_desc),
+                            title = stringResource(Res.string.image_manga_reader_mode),
+                            summary = stringResource(Res.string.image_manga_reader_mode_desc),
                             values = listOf("paged", "vertical"),
                             selected = settings.mangaReaderMode,
                             label = {
                                 if (it == "vertical") {
-                                    stringResource(R.string.viewer_comic_mode)
+                                    stringResource(Res.string.viewer_comic_mode)
                                 } else {
-                                    stringResource(R.string.viewer_page_mode)
+                                    stringResource(Res.string.viewer_page_mode)
                                 }
                             },
                             onSelect = viewModel::updateMangaReaderMode,
                         )
                         DividerLine()
                         SettingSwitchRow(
-                            title = stringResource(R.string.ambient_light_viewer_title),
+                            title = stringResource(Res.string.ambient_light_viewer_title),
                             checked = settings.dynamicAmbientViewerEnabled,
                             onCheckedChange = viewModel::updateDynamicAmbientViewerEnabled,
-                            summary = stringResource(R.string.ambient_light_viewer_desc),
+                            summary = stringResource(Res.string.ambient_light_viewer_desc),
                         )
                         DividerLine()
                         SettingSwitchRow(
-                            title = stringResource(R.string.setting_image_viewer_swipe_to_dismiss_title),
+                            title = stringResource(Res.string.setting_image_viewer_swipe_to_dismiss_title),
                             checked = settings.imageViewerSwipeToDismissEnabled,
                             onCheckedChange = viewModel::updateImageViewerSwipeToDismissEnabled,
-                            summary = stringResource(R.string.setting_image_viewer_swipe_to_dismiss_desc),
+                            summary = stringResource(Res.string.setting_image_viewer_swipe_to_dismiss_desc),
                         )
                     }
                 }
             }
 
             item {
-                Section(stringResource(R.string.image_section_layout)) {
+                Section(stringResource(Res.string.image_section_layout)) {
                     ElevatedPanel {
                         SettingDropdownRow(
-                            title = stringResource(R.string.image_columns),
+                            title = stringResource(Res.string.image_columns),
                             values = listOf(1, 2, 3, 4),
                             selected = settings.verticalColumnCount.coerceIn(1, 4),
-                            label = { stringResource(R.string.data_columns_count, it) },
+                            label = { stringResource(Res.string.data_columns_count, it) },
                             onSelect = viewModel::updateVerticalColumnCount,
                         )
                         DividerLine()
                         SettingDropdownRow(
-                            title = stringResource(R.string.image_columns_landscape),
+                            title = stringResource(Res.string.image_columns_landscape),
                             values = listOf(3, 4, 5, 6),
                             selected = settings.horizontalColumnCount.coerceIn(3, 6),
-                            label = { stringResource(R.string.data_columns_count, it) },
+                            label = { stringResource(Res.string.data_columns_count, it) },
                             onSelect = viewModel::updateHorizontalColumnCount,
                         )
                         DividerLine()
                         SettingDropdownRow(
-                            title = stringResource(R.string.image_related_columns),
+                            title = stringResource(Res.string.image_related_columns),
                             values = listOf(0, 2, 3, 4, 5),
                             selected = if (settings.relatedIllustColumnCount in 2..5) settings.relatedIllustColumnCount else 0,
                             label = {
                                 if (it == 0) {
-                                    stringResource(R.string.data_columns_dynamic)
+                                    stringResource(Res.string.data_columns_dynamic)
                                 } else {
-                                    stringResource(R.string.data_columns_count, it)
+                                    stringResource(Res.string.data_columns_count, it)
                                 }
                             },
                             onSelect = viewModel::updateRelatedIllustColumnCount,
                         )
                         DividerLine()
                         SettingSwitchRow(
-                            title = stringResource(R.string.setting_grid_pinch_to_zoom_title),
+                            title = stringResource(Res.string.setting_grid_pinch_to_zoom_title),
                             checked = settings.gridPinchToZoom,
                             onCheckedChange = viewModel::updateGridPinchToZoom,
-                            summary = stringResource(R.string.setting_grid_pinch_to_zoom_desc),
+                            summary = stringResource(Res.string.setting_grid_pinch_to_zoom_desc),
                         )
                     }
                 }
             }
 
             item {
-                Section(stringResource(R.string.image_section_customization)) {
+                Section(stringResource(Res.string.image_section_customization)) {
                     ElevatedPanel {
                         SettingLinkRow(
-                            title = stringResource(R.string.card_customization_settings_title),
-                            summary = stringResource(R.string.card_customization_settings_summary),
+                            title = stringResource(Res.string.card_customization_settings_title),
+                            summary = stringResource(Res.string.card_customization_settings_summary),
                             onClick = onOpenCardCustomizationSettings,
                         )
                         DividerLine()
@@ -231,24 +285,24 @@ fun ImageSettingsScreen(
                         if (!isDesktop) {
                             DividerLine()
                             SettingLinkRow(
-                                title = stringResource(R.string.wallpaper_playlist),
-                                summary = stringResource(R.string.wallpaper_playlist_desc),
+                                title = stringResource(Res.string.wallpaper_playlist),
+                                summary = stringResource(Res.string.wallpaper_playlist_desc),
                                 onClick = onOpenWallpaperPlaylistSettings,
                             )
                         }
                         DividerLine()
                         SettingSwitchRow(
-                            title = stringResource(R.string.setting_quick_peek_title),
+                            title = stringResource(Res.string.setting_quick_peek_title),
                             checked = settings.quickPeekEnabled,
                             onCheckedChange = viewModel::updateQuickPeekEnabled,
-                            summary = stringResource(R.string.setting_quick_peek_desc),
+                            summary = stringResource(Res.string.setting_quick_peek_desc),
                         )
                         DividerLine()
                         SettingSwitchRow(
-                            title = stringResource(R.string.setting_quick_peek_shared_element_transition_title),
+                            title = stringResource(Res.string.setting_quick_peek_shared_element_transition_title),
                             checked = settings.quickPeekSharedElementTransition,
                             onCheckedChange = viewModel::updateQuickPeekSharedElementTransition,
-                            summary = stringResource(R.string.setting_quick_peek_shared_element_transition_desc),
+                            summary = stringResource(Res.string.setting_quick_peek_shared_element_transition_desc),
                         )
                         DividerLine()
                         SettingSwitchRow(
@@ -262,11 +316,11 @@ fun ImageSettingsScreen(
             }
 
             item {
-                Section(stringResource(R.string.download_settings_title)) {
+                Section(stringResource(Res.string.download_settings_title)) {
                     ElevatedPanel {
                         SettingLinkRow(
-                            title = stringResource(R.string.download_settings_title),
-                            summary = stringResource(R.string.download_settings_summary),
+                            title = stringResource(Res.string.download_settings_title),
+                            summary = stringResource(Res.string.download_settings_summary),
                             onClick = onOpenDownloadSettings,
                         )
                     }
@@ -274,38 +328,38 @@ fun ImageSettingsScreen(
             }
 
             item {
-                Section(stringResource(R.string.image_section_cache)) {
+                Section(stringResource(Res.string.image_section_cache)) {
                     ElevatedPanel {
                         SettingSwitchRow(
-                            title = stringResource(R.string.image_smart_cache),
+                            title = stringResource(Res.string.image_smart_cache),
                             checked = settings.smartCacheEnabled,
                             onCheckedChange = viewModel::updateSmartCacheEnabled,
-                            summary = stringResource(R.string.image_smart_cache_desc),
+                            summary = stringResource(Res.string.image_smart_cache_desc),
                         )
                         DividerLine()
                         SettingSwitchRow(
-                            title = stringResource(R.string.image_smart_cache_wifi),
+                            title = stringResource(Res.string.image_smart_cache_wifi),
                             checked = settings.smartCacheWifiOnly,
                             onCheckedChange = viewModel::updateSmartCacheWifiOnly,
-                            summary = stringResource(R.string.image_smart_cache_wifi_desc),
+                            summary = stringResource(Res.string.image_smart_cache_wifi_desc),
                         )
                         DividerLine()
                         SettingDropdownRow(
-                            title = stringResource(R.string.image_smart_cache_count),
+                            title = stringResource(Res.string.image_smart_cache_count),
                             values = listOf(6, 12, 20, 30),
                             selected = settings.smartCacheItemCount,
-                            label = { stringResource(R.string.data_items_count, it) },
+                            label = { stringResource(Res.string.data_items_count, it) },
                             onSelect = viewModel::updateSmartCacheItemCount,
                         )
                         DividerLine()
                         SettingDropdownRow(
-                            title = stringResource(R.string.image_cache_capacity),
-                            summary = stringResource(R.string.image_cache_capacity_desc),
+                            title = stringResource(Res.string.image_cache_capacity),
+                            summary = stringResource(Res.string.image_cache_capacity_desc),
                             values = listOf(0, 100, 300, 500, 1000),
                             selected = settings.imageCacheSizeMb,
                             label = {
                                 if (it == 0) {
-                                    stringResource(R.string.image_cache_capacity_unlimited)
+                                    stringResource(Res.string.image_cache_capacity_unlimited)
                                 } else {
                                     "$it MB"
                                 }
@@ -317,11 +371,11 @@ fun ImageSettingsScreen(
             }
 
             item {
-                Section(stringResource(R.string.network_settings_title)) {
+                Section(stringResource(Res.string.network_settings_title)) {
                     ElevatedPanel {
                         SettingLinkRow(
-                            title = stringResource(R.string.network_settings_title),
-                            summary = stringResource(R.string.network_settings_summary),
+                            title = stringResource(Res.string.network_settings_title),
+                            summary = stringResource(Res.string.network_settings_summary),
                             onClick = onOpenNetworkSettings,
                         )
                     }
@@ -334,7 +388,7 @@ fun ImageSettingsScreen(
 @Composable
 private fun qualityLabel(value: String): String =
     when (value) {
-        "high" -> stringResource(R.string.image_quality_high)
-        "medium" -> stringResource(R.string.image_quality_medium)
-        else -> stringResource(R.string.image_quality_low)
+        "high" -> stringResource(Res.string.image_quality_high)
+        "medium" -> stringResource(Res.string.image_quality_medium)
+        else -> stringResource(Res.string.image_quality_low)
     }

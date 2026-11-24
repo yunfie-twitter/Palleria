@@ -17,12 +17,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.R
 import com.yunfie.illustia.TagPreview
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.tag_sheet_add_favorite
+import com.yunfie.illustia.resources.tag_sheet_mute
+import com.yunfie.illustia.resources.tag_sheet_remove_favorite
+import com.yunfie.illustia.resources.tag_sheet_search
+import com.yunfie.illustia.resources.tag_sheet_unmute
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
@@ -96,7 +102,7 @@ fun TagMenuBottomSheet(
                 ) {
                     TagMenuActionContent(
                         icon = { Icon(MiuixIcons.Search, contentDescription = null, modifier = Modifier.size(20.dp)) },
-                        label = stringResource(R.string.tag_sheet_search),
+                        label = stringResource(Res.string.tag_sheet_search),
                         tint = MiuixTheme.colorScheme.onSurface,
                     )
                 }
@@ -116,9 +122,9 @@ fun TagMenuBottomSheet(
                         label =
                             stringResource(
                                 if (isFavorite) {
-                                    R.string.tag_sheet_remove_favorite
+                                    Res.string.tag_sheet_remove_favorite
                                 } else {
-                                    R.string.tag_sheet_add_favorite
+                                    Res.string.tag_sheet_add_favorite
                                 },
                             ),
                         tint = MiuixTheme.colorScheme.primary,
@@ -140,9 +146,9 @@ fun TagMenuBottomSheet(
                         label =
                             stringResource(
                                 if (isMuted) {
-                                    R.string.tag_sheet_unmute
+                                    Res.string.tag_sheet_unmute
                                 } else {
-                                    R.string.tag_sheet_mute
+                                    Res.string.tag_sheet_mute
                                 },
                             ),
                         tint = if (isMuted) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.error,

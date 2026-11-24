@@ -57,7 +57,6 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -69,8 +68,18 @@ import com.yunfie.illustia.data.pixiv.IllustSeriesStore
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.pixiv.Illusts
 import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_add
+import com.yunfie.illustia.resources.action_load_more
+import com.yunfie.illustia.resources.action_reload
+import com.yunfie.illustia.resources.action_remove_bookmark
+import com.yunfie.illustia.resources.data_items_count
 import com.yunfie.illustia.resources.detail_series
 import com.yunfie.illustia.resources.detail_share
+import com.yunfie.illustia.resources.error_share_failed
+import com.yunfie.illustia.resources.illust_series_empty
+import com.yunfie.illustia.resources.search_sort_order
+import com.yunfie.illustia.resources.sort_date_asc
+import com.yunfie.illustia.resources.sort_date_desc
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.AvatarImage
 import com.yunfie.illustia.ui.components.CenteredErrorState
@@ -98,6 +107,7 @@ import com.yunfie.illustia.ui.components.profileGridContentPadding
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import com.yunfie.illustia.uiRepository
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
@@ -384,7 +394,7 @@ fun IllustSeriesScreen(
                     }
                     if (processedIllusts.isEmpty() && !state.isLoading && state.errorMessage == null) {
                         item(span = { GridItemSpan(maxLineSpan) }) {
-                            EmptyState(stringResource(R.string.illust_series_empty))
+                            EmptyState(stringResource(Res.string.illust_series_empty))
                         }
                     }
                     gridItems(processedIllusts, key = { it.id }, contentType = { "illust_card" }) { illust ->
@@ -423,7 +433,7 @@ fun IllustSeriesScreen(
                                 if (state.isPaginating) {
                                     LoadingIndicator(modifier = Modifier.size(18.dp))
                                 } else {
-                                    Text(stringResource(R.string.action_load_more))
+                                    Text(stringResource(Res.string.action_load_more))
                                 }
                             }
                         }
@@ -604,7 +614,7 @@ private fun SeriesProfileInfo(
                 )
             }
             Text(
-                text = stringResource(R.string.data_items_count, workCount),
+                text = stringResource(Res.string.data_items_count, workCount),
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 style = MiuixTheme.textStyles.footnote1,
                 fontWeight = FontWeight.Bold,
@@ -640,13 +650,20 @@ private fun SeriesSmallTopAppBar(
 ) {
     val context = LocalContext.current
     var showMoreMenu by remember { mutableStateOf(false) }
-    val reloadLabel = stringResource(R.string.action_reload)
+    val reloadLabel = stringResource(Res.string.action_reload)
     val shareLabel = resString(Res.string.detail_share)
-    val shareFailedMessage = stringResource(R.string.error_share_failed)
-    val sortLabel = stringResource(R.string.search_sort_order)
-    val sortNewestLabel = stringResource(R.string.sort_date_desc)
-    val sortOldestLabel = stringResource(R.string.sort_date_asc)
-    val watchlistActionLabel = if (watchlistAdded) stringResource(R.string.action_remove_bookmark) else stringResource(R.string.action_add)
+    val shareFailedMessage = stringResource(Res.string.error_share_failed)
+    val sortLabel = stringResource(Res.string.search_sort_order)
+    val sortNewestLabel = stringResource(Res.string.sort_date_desc)
+    val sortOldestLabel = stringResource(Res.string.sort_date_asc)
+    val watchlistActionLabel =
+        if (watchlistAdded) {
+            stringResource(
+                Res.string.action_remove_bookmark,
+            )
+        } else {
+            stringResource(Res.string.action_add)
+        }
 
     val menuEntries =
         remember(sortOrder, sortLabel, sortNewestLabel, sortOldestLabel, watchlistAdded, watchlistActionLabel, reloadLabel, shareLabel) {

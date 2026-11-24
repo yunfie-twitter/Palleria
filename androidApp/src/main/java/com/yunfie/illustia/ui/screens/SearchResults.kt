@@ -20,7 +20,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -33,6 +32,11 @@ import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.UserPreview
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_load_more
+import com.yunfie.illustia.resources.search_empty_illust
+import com.yunfie.illustia.resources.search_empty_novel
+import com.yunfie.illustia.resources.search_empty_user
 import com.yunfie.illustia.searchUiState
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
@@ -57,6 +61,7 @@ import com.yunfie.illustia.ui.components.pinchToChangeColumns
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import com.yunfie.illustia.ui.scroll.ScrollStateKeys
 import com.yunfie.illustia.ui.scroll.ScrollStateRegistry
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
@@ -187,10 +192,10 @@ internal fun SearchResultGrid(
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
                                     LoadingIndicator(modifier = Modifier.size(16.dp))
-                                    Text(stringResource(R.string.action_load_more))
+                                    Text(stringResource(Res.string.action_load_more))
                                 }
                             } else {
-                                Text(stringResource(R.string.action_load_more))
+                                Text(stringResource(Res.string.action_load_more))
                             }
                         }
                     }
@@ -214,7 +219,7 @@ internal fun SearchResultGrid(
                         }
                     } else {
                         item(key = "search_novel_empty_state", span = { GridItemSpan(maxLineSpan) }, contentType = "empty_state") {
-                            EmptyState(stringResource(R.string.search_empty_novel))
+                            EmptyState(stringResource(Res.string.search_empty_novel))
                         }
                     }
                 }
@@ -261,10 +266,10 @@ internal fun SearchResultGrid(
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
                                     LoadingIndicator(modifier = Modifier.size(16.dp))
-                                    Text(stringResource(R.string.action_load_more))
+                                    Text(stringResource(Res.string.action_load_more))
                                 }
                             } else {
-                                Text(stringResource(R.string.action_load_more))
+                                Text(stringResource(Res.string.action_load_more))
                             }
                         }
                     }
@@ -287,7 +292,7 @@ internal fun SearchResultGrid(
                         }
                     } else {
                         item(key = "search_illust_empty_state", span = { GridItemSpan(maxLineSpan) }, contentType = "empty_state") {
-                            EmptyState(stringResource(R.string.search_empty_illust))
+                            EmptyState(stringResource(Res.string.search_empty_illust))
                         }
                     }
                 }
@@ -324,10 +329,10 @@ internal fun SearchResultGrid(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 LoadingIndicator(modifier = Modifier.size(16.dp))
-                                Text(stringResource(R.string.action_load_more))
+                                Text(stringResource(Res.string.action_load_more))
                             }
                         } else {
-                            Text(stringResource(R.string.action_load_more))
+                            Text(stringResource(Res.string.action_load_more))
                         }
                     }
                 }
@@ -351,7 +356,7 @@ internal fun SearchResultGrid(
                     }
                 } else {
                     item(key = "search_user_empty_state", span = { GridItemSpan(maxLineSpan) }, contentType = "empty_state") {
-                        EmptyState(stringResource(R.string.search_empty_user))
+                        EmptyState(stringResource(Res.string.search_empty_user))
                     }
                 }
             }

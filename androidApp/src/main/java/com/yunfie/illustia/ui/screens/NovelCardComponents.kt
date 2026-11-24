@@ -35,18 +35,26 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.NovelPreview
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_bookmark
+import com.yunfie.illustia.resources.action_remove_bookmark
+import com.yunfie.illustia.resources.novel_page_count
+import com.yunfie.illustia.resources.novel_resume_reading
+import com.yunfie.illustia.resources.novel_status_completed
+import com.yunfie.illustia.resources.novel_status_later
+import com.yunfie.illustia.resources.novel_status_reading
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.LocalArtworkCardPreferences
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.cachedVerticalGradient
 import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
@@ -182,7 +190,7 @@ internal fun NovelCard(
                 }
 
                 Text(
-                    text = stringResource(R.string.novel_page_count, novel.pageCount),
+                    text = stringResource(Res.string.novel_page_count, novel.pageCount),
                     color = Color.White,
                     style = MiuixTheme.textStyles.footnote2,
                     fontWeight = FontWeight.Bold,
@@ -209,7 +217,7 @@ internal fun NovelCard(
                             imageVector = if (novel.isBookmarked) MiuixIcons.FavoritesFill else MiuixIcons.Favorites,
                             contentDescription =
                                 stringResource(
-                                    if (novel.isBookmarked) R.string.action_remove_bookmark else R.string.action_bookmark,
+                                    if (novel.isBookmarked) Res.string.action_remove_bookmark else Res.string.action_bookmark,
                                 ),
                             modifier = Modifier.size(20.dp),
                             tint = if (novel.isBookmarked) Color(0xFFFF4D67) else Color.White,
@@ -223,9 +231,9 @@ internal fun NovelCard(
                             com.yunfie.illustia.models.NovelReadingStatus.Reading -> {
                                 Triple(
                                     if (progress.lastReadPage > 0) {
-                                        stringResource(R.string.novel_resume_reading, progress.lastReadPage + 1, progress.totalPages)
+                                        stringResource(Res.string.novel_resume_reading, progress.lastReadPage + 1, progress.totalPages)
                                     } else {
-                                        stringResource(R.string.novel_status_reading)
+                                        stringResource(Res.string.novel_status_reading)
                                     },
                                     MiuixTheme.colorScheme.primaryContainer,
                                     MiuixTheme.colorScheme.onPrimaryContainer,
@@ -234,7 +242,7 @@ internal fun NovelCard(
 
                             com.yunfie.illustia.models.NovelReadingStatus.Completed -> {
                                 Triple(
-                                    stringResource(R.string.novel_status_completed),
+                                    stringResource(Res.string.novel_status_completed),
                                     MiuixTheme.colorScheme.primary,
                                     MiuixTheme.colorScheme.onPrimary,
                                 )
@@ -242,7 +250,7 @@ internal fun NovelCard(
 
                             com.yunfie.illustia.models.NovelReadingStatus.Later -> {
                                 Triple(
-                                    stringResource(R.string.novel_status_later),
+                                    stringResource(Res.string.novel_status_later),
                                     MiuixTheme.colorScheme.secondaryContainer,
                                     MiuixTheme.colorScheme.onSecondaryContainer,
                                 )

@@ -36,7 +36,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -45,6 +44,18 @@ import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.isEmptyAfterLoad
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_back
+import com.yunfie.illustia.resources.action_delete
+import com.yunfie.illustia.resources.action_load_more
+import com.yunfie.illustia.resources.data_items_count
+import com.yunfie.illustia.resources.dialog_reload
+import com.yunfie.illustia.resources.favorite_tags_delete_confirm
+import com.yunfie.illustia.resources.favorite_tags_delete_title
+import com.yunfie.illustia.resources.favorite_tags_empty
+import com.yunfie.illustia.resources.favorite_tags_no_selection
+import com.yunfie.illustia.resources.favorite_tags_title
+import com.yunfie.illustia.resources.favorite_tags_works_not_found
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.CenteredErrorState
@@ -67,6 +78,7 @@ import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import com.yunfie.illustia.ui.components.smoothScrollToTop
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -125,9 +137,9 @@ fun FavoriteTagsScreen(
     tagToDelete?.let { tag ->
         MiuixConfirmDialog(
             show = true,
-            title = stringResource(R.string.favorite_tags_delete_title),
-            summary = stringResource(R.string.favorite_tags_delete_confirm, tag),
-            confirmText = stringResource(R.string.action_delete),
+            title = stringResource(Res.string.favorite_tags_delete_title),
+            summary = stringResource(Res.string.favorite_tags_delete_confirm, tag),
+            confirmText = stringResource(Res.string.action_delete),
             destructive = true,
             onConfirm = {
                 viewModel.toggleFavoriteTag(tag)
@@ -141,8 +153,8 @@ fun FavoriteTagsScreen(
     }
 
     val subtitle =
-        selectedTag?.let { "#$it / ${stringResource(R.string.data_items_count, state.watchlistItems.size)}" }
-            ?: stringResource(R.string.favorite_tags_no_selection)
+        selectedTag?.let { "#$it / ${stringResource(Res.string.data_items_count, state.watchlistItems.size)}" }
+            ?: stringResource(Res.string.favorite_tags_no_selection)
 
     val coroutineScope = rememberCoroutineScope()
     val performHaptic = rememberHapticFeedbackAction()
@@ -153,8 +165,8 @@ fun FavoriteTagsScreen(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
             TopAppBar(
-                title = stringResource(R.string.favorite_tags_title),
-                largeTitle = stringResource(R.string.favorite_tags_title),
+                title = stringResource(Res.string.favorite_tags_title),
+                largeTitle = stringResource(Res.string.favorite_tags_title),
                 subtitle = subtitle,
                 scrollBehavior = scrollBehavior,
                 modifier =
@@ -172,7 +184,7 @@ fun FavoriteTagsScreen(
                     HeaderIcon(
                         icon = MiuixIcons.Back,
                         onClick = onBack,
-                        contentDescription = stringResource(R.string.action_back),
+                        contentDescription = stringResource(Res.string.action_back),
                     )
                 },
                 actions = {
@@ -180,7 +192,7 @@ fun FavoriteTagsScreen(
                         HeaderIcon(
                             icon = MiuixIcons.Refresh,
                             onClick = { selectedTag?.let { viewModel.loadWatchlistTag(it, forceRefresh = true) } },
-                            contentDescription = stringResource(R.string.dialog_reload),
+                            contentDescription = stringResource(Res.string.dialog_reload),
                         )
                     }
                 },
@@ -223,7 +235,7 @@ fun FavoriteTagsScreen(
                 // ── タグチップ一覧 ────────────────────────────
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     if (state.settings.favoriteTags.isEmpty()) {
-                        EmptyState(stringResource(R.string.favorite_tags_empty))
+                        EmptyState(stringResource(Res.string.favorite_tags_empty))
                     } else {
                         TagChipRow(
                             tags = state.settings.favoriteTags,
@@ -268,7 +280,7 @@ fun FavoriteTagsScreen(
                         currentSelectedTag != null
                     ) {
                         item(span = { GridItemSpan(maxLineSpan) }, contentType = "empty_state") {
-                            EmptyState(stringResource(R.string.favorite_tags_works_not_found, currentSelectedTag))
+                            EmptyState(stringResource(Res.string.favorite_tags_works_not_found, currentSelectedTag))
                         }
                     }
 
@@ -312,10 +324,10 @@ fun FavoriteTagsScreen(
                                         verticalAlignment = Alignment.CenterVertically,
                                     ) {
                                         LoadingIndicator(modifier = Modifier.size(16.dp))
-                                        Text(stringResource(R.string.action_load_more))
+                                        Text(stringResource(Res.string.action_load_more))
                                     }
                                 } else {
-                                    Text(stringResource(R.string.action_load_more))
+                                    Text(stringResource(Res.string.action_load_more))
                                 }
                             }
                         }
@@ -418,7 +430,7 @@ private fun TagChip(
                 ) {
                     Icon(
                         imageVector = MiuixIcons.Close,
-                        contentDescription = stringResource(R.string.action_delete),
+                        contentDescription = stringResource(Res.string.action_delete),
                         tint = if (selected) Color.White else MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         modifier = Modifier.size(10.dp),
                     )

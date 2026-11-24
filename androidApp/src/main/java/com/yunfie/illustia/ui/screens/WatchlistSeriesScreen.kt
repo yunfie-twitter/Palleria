@@ -69,8 +69,6 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.pluralStringResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -81,7 +79,19 @@ import com.yunfie.illustia.R
 import com.yunfie.illustia.data.pixiv.WatchlistStore
 import com.yunfie.illustia.models.pixiv.MangaSeriesModel
 import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_reload
+import com.yunfie.illustia.resources.data_items_count
 import com.yunfie.illustia.resources.detail_share
+import com.yunfie.illustia.resources.error_share_failed
+import com.yunfie.illustia.resources.more_watchlist_series_summary
+import com.yunfie.illustia.resources.search_sort_order
+import com.yunfie.illustia.resources.series_chapter_count
+import com.yunfie.illustia.resources.sort_date_asc
+import com.yunfie.illustia.resources.sort_date_desc
+import com.yunfie.illustia.resources.sort_popular_desc
+import com.yunfie.illustia.resources.watchlist_series_empty
+import com.yunfie.illustia.resources.watchlist_series_load_more
+import com.yunfie.illustia.resources.watchlist_series_title
 import com.yunfie.illustia.settings.isDynamicColorAvailable
 import com.yunfie.illustia.settings.resolvePageBackgroundColor
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
@@ -109,6 +119,8 @@ import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import com.yunfie.illustia.ui.components.rememberSkeletonShimmer
 import com.yunfie.illustia.uiRepository
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
@@ -394,7 +406,7 @@ fun WatchlistSeriesScreen(
                     }
                     if (processedSeries.isEmpty() && !watchlistPending) {
                         item(span = { GridItemSpan(maxLineSpan) }, contentType = "watchlist_empty") {
-                            EmptyState(stringResource(R.string.watchlist_series_empty))
+                            EmptyState(stringResource(Res.string.watchlist_series_empty))
                         }
                     }
                     gridItems(processedSeries, key = { it.id }, contentType = { "watchlist_series_card" }) { series ->
@@ -423,7 +435,7 @@ fun WatchlistSeriesScreen(
                                 if (state.isPaginating) {
                                     LoadingIndicator(modifier = Modifier.size(18.dp))
                                 } else {
-                                    Text(stringResource(R.string.watchlist_series_load_more))
+                                    Text(stringResource(Res.string.watchlist_series_load_more))
                                 }
                             }
                         }
@@ -566,7 +578,7 @@ private fun WatchlistInfo(
                         modifier = Modifier.size(16.dp),
                     )
                     Text(
-                        text = stringResource(R.string.action_reload),
+                        text = stringResource(Res.string.action_reload),
                         color = MiuixTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Bold,
                         style = MiuixTheme.textStyles.body2,
@@ -577,7 +589,7 @@ private fun WatchlistInfo(
 
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
-                text = stringResource(R.string.watchlist_series_title),
+                text = stringResource(Res.string.watchlist_series_title),
                 color = MiuixTheme.colorScheme.onBackground,
                 style = MiuixTheme.textStyles.title2,
                 fontWeight = FontWeight.Black,
@@ -585,13 +597,13 @@ private fun WatchlistInfo(
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = stringResource(R.string.data_items_count, seriesCount),
+                text = stringResource(Res.string.data_items_count, seriesCount),
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 style = MiuixTheme.textStyles.body2,
                 fontWeight = FontWeight.Bold,
             )
             Text(
-                text = stringResource(R.string.more_watchlist_series_summary),
+                text = stringResource(Res.string.more_watchlist_series_summary),
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 style = MiuixTheme.textStyles.footnote1,
                 lineHeight = 18.sp,
@@ -613,14 +625,14 @@ private fun WatchlistSmallTopAppBar(
 ) {
     val context = LocalContext.current
     var showMoreMenu by remember { mutableStateOf(false) }
-    val reloadLabel = stringResource(R.string.action_reload)
+    val reloadLabel = stringResource(Res.string.action_reload)
     val shareLabel = resString(Res.string.detail_share)
-    val shareFailedMessage = stringResource(R.string.error_share_failed)
-    val watchlistTitle = stringResource(R.string.watchlist_series_title)
-    val sortLabel = stringResource(R.string.search_sort_order)
-    val sortNewestLabel = stringResource(R.string.sort_date_desc)
-    val sortOldestLabel = stringResource(R.string.sort_date_asc)
-    val sortEpisodesLabel = stringResource(R.string.sort_popular_desc)
+    val shareFailedMessage = stringResource(Res.string.error_share_failed)
+    val watchlistTitle = stringResource(Res.string.watchlist_series_title)
+    val sortLabel = stringResource(Res.string.search_sort_order)
+    val sortNewestLabel = stringResource(Res.string.sort_date_desc)
+    val sortOldestLabel = stringResource(Res.string.sort_date_asc)
+    val sortEpisodesLabel = stringResource(Res.string.sort_popular_desc)
 
     val menuEntries =
         remember(sortOrder, sortLabel, sortNewestLabel, sortOldestLabel, sortEpisodesLabel, reloadLabel, shareLabel) {
@@ -820,7 +832,7 @@ private fun WatchlistSeriesCard(
                         Text(
                             text =
                                 pluralStringResource(
-                                    R.plurals.series_chapter_count,
+                                    Res.plurals.series_chapter_count,
                                     series.publishedContentCount,
                                     series.publishedContentCount,
                                 ),

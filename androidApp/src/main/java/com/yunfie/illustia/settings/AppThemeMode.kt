@@ -1,8 +1,12 @@
 package com.yunfie.illustia.settings
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.res.stringResource
 import com.yunfie.illustia.R
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.theme_dark
+import com.yunfie.illustia.resources.theme_light
+import com.yunfie.illustia.resources.theme_system
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 
 enum class AppThemeMode(
@@ -30,7 +34,7 @@ fun appThemeColorSchemeMode(value: String): ColorSchemeMode =
 @Composable
 fun appThemeLabel(value: String): String =
     when (AppThemeMode.fromValue(value)) {
-        AppThemeMode.System -> stringResource(R.string.theme_system)
-        AppThemeMode.Light -> stringResource(R.string.theme_light)
-        AppThemeMode.Dark -> stringResource(R.string.theme_dark)
+        AppThemeMode.System -> stringResource(Res.string.theme_system)
+        AppThemeMode.Light -> stringResource(Res.string.theme_light)
+        AppThemeMode.Dark -> stringResource(Res.string.theme_dark)
     }

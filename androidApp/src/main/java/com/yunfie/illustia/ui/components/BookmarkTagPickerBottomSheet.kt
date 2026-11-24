@@ -21,14 +21,33 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.pixiv.BookmarkTag
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_close
+import com.yunfie.illustia.resources.action_retry
+import com.yunfie.illustia.resources.bookmark_tag_picker_confirm_private
+import com.yunfie.illustia.resources.bookmark_tag_picker_confirm_public
+import com.yunfie.illustia.resources.bookmark_tag_picker_empty
+import com.yunfie.illustia.resources.bookmark_tag_picker_no_matches
+import com.yunfie.illustia.resources.bookmark_tag_picker_private
+import com.yunfie.illustia.resources.bookmark_tag_picker_private_summary
+import com.yunfie.illustia.resources.bookmark_tag_picker_private_tab
+import com.yunfie.illustia.resources.bookmark_tag_picker_public
+import com.yunfie.illustia.resources.bookmark_tag_picker_public_summary
+import com.yunfie.illustia.resources.bookmark_tag_picker_public_tab
+import com.yunfie.illustia.resources.bookmark_tag_picker_search_or_add
+import com.yunfie.illustia.resources.bookmark_tag_picker_select_or_add
+import com.yunfie.illustia.resources.bookmark_tag_picker_selected_count
+import com.yunfie.illustia.resources.bookmark_tag_picker_tag_count
+import com.yunfie.illustia.resources.bookmark_tag_picker_work_tag
+import com.yunfie.illustia.resources.bookmark_tag_picker_work_tag_with_count
 import com.yunfie.illustia.ui.components.AppBottomSheet
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -81,7 +100,7 @@ fun BookmarkTagPickerBottomSheet(
     AppBottomSheet(
         show = true,
         modifier = Modifier.scrollEndHaptic(),
-        title = stringResource(if (isPrivate) R.string.bookmark_tag_picker_private else R.string.bookmark_tag_picker_public),
+        title = stringResource(if (isPrivate) Res.string.bookmark_tag_picker_private else Res.string.bookmark_tag_picker_public),
         onDismissRequest = onDismiss,
         backgroundColor = LocalBottomSheetBackgroundColor.current,
         insideMargin = BottomSheetInsideMargin,
@@ -93,8 +112,8 @@ fun BookmarkTagPickerBottomSheet(
             TabRowWithContour(
                 tabs =
                     listOf(
-                        stringResource(R.string.bookmark_tag_picker_public_tab),
-                        stringResource(R.string.bookmark_tag_picker_private_tab),
+                        stringResource(Res.string.bookmark_tag_picker_public_tab),
+                        stringResource(Res.string.bookmark_tag_picker_private_tab),
                     ),
                 selectedTabIndex = if (isPrivate) 1 else 0,
                 onTabSelected = { index -> onRestrictChange(if (index == 1) Restrict.Private else Restrict.Public) },
@@ -110,9 +129,9 @@ fun BookmarkTagPickerBottomSheet(
                         text =
                             stringResource(
                                 if (isPrivate) {
-                                    R.string.bookmark_tag_picker_private_summary
+                                    Res.string.bookmark_tag_picker_private_summary
                                 } else {
-                                    R.string.bookmark_tag_picker_public_summary
+                                    Res.string.bookmark_tag_picker_public_summary
                                 },
                             ),
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
@@ -121,7 +140,7 @@ fun BookmarkTagPickerBottomSheet(
                     IconButton(onClick = { summaryVisible = false }) {
                         Icon(
                             imageVector = MiuixIcons.Close,
-                            contentDescription = stringResource(R.string.action_close),
+                            contentDescription = stringResource(Res.string.action_close),
                         )
                     }
                 }
@@ -133,12 +152,12 @@ fun BookmarkTagPickerBottomSheet(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
-                    text = stringResource(R.string.bookmark_tag_picker_selected_count, selectedTags.size, MAX_BOOKMARK_TAGS),
+                    text = stringResource(Res.string.bookmark_tag_picker_selected_count, selectedTags.size, MAX_BOOKMARK_TAGS),
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
                 if (availableTags.isNotEmpty()) {
                     Text(
-                        text = stringResource(R.string.bookmark_tag_picker_tag_count, availableTags.size),
+                        text = stringResource(Res.string.bookmark_tag_picker_tag_count, availableTags.size),
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     )
                 }
@@ -173,7 +192,7 @@ fun BookmarkTagPickerBottomSheet(
                                     color = MiuixTheme.colorScheme.error,
                                     modifier = Modifier.padding(vertical = 8.dp),
                                 )
-                                Button(onClick = onRetry) { Text(stringResource(R.string.action_retry)) }
+                                Button(onClick = onRetry) { Text(stringResource(Res.string.action_retry)) }
                             }
                         }
                     }
@@ -181,7 +200,7 @@ fun BookmarkTagPickerBottomSheet(
                     availableTags.isEmpty() && tagQuery.isBlank() -> {
                         item(key = "empty") {
                             Text(
-                                text = stringResource(R.string.bookmark_tag_picker_empty),
+                                text = stringResource(Res.string.bookmark_tag_picker_empty),
                                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 modifier = Modifier.padding(vertical = 16.dp),
                             )
@@ -191,7 +210,7 @@ fun BookmarkTagPickerBottomSheet(
                     visibleTags.isEmpty() -> {
                         item(key = "no_matches") {
                             Text(
-                                text = stringResource(R.string.bookmark_tag_picker_no_matches),
+                                text = stringResource(Res.string.bookmark_tag_picker_no_matches),
                                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 modifier = Modifier.padding(vertical = 16.dp),
                             )
@@ -222,7 +241,7 @@ fun BookmarkTagPickerBottomSheet(
             ) {
                 Text(
                     stringResource(
-                        if (isPrivate) R.string.bookmark_tag_picker_confirm_private else R.string.bookmark_tag_picker_confirm_public,
+                        if (isPrivate) Res.string.bookmark_tag_picker_confirm_private else Res.string.bookmark_tag_picker_confirm_public,
                         selectedTags.size,
                     ),
                 )
@@ -236,7 +255,7 @@ fun BookmarkTagPickerBottomSheet(
                 TextField(
                     value = tagQuery,
                     onValueChange = { tagQuery = it },
-                    label = stringResource(R.string.bookmark_tag_picker_search_or_add),
+                    label = stringResource(Res.string.bookmark_tag_picker_search_or_add),
                     modifier = Modifier.weight(1f),
                     singleLine = true,
                 )
@@ -252,7 +271,7 @@ fun BookmarkTagPickerBottomSheet(
                     },
                     enabled = tagQuery.isNotBlank() && selectedTags.size < MAX_BOOKMARK_TAGS,
                 ) {
-                    Text(stringResource(R.string.bookmark_tag_picker_select_or_add))
+                    Text(stringResource(Res.string.bookmark_tag_picker_select_or_add))
                 }
             }
         }
@@ -292,12 +311,12 @@ private fun BookmarkTagPickerRow(
         summary =
             if (tag.isArtworkTag) {
                 if (tag.count > 0) {
-                    stringResource(R.string.bookmark_tag_picker_work_tag_with_count, tag.count)
+                    stringResource(Res.string.bookmark_tag_picker_work_tag_with_count, tag.count)
                 } else {
-                    stringResource(R.string.bookmark_tag_picker_work_tag)
+                    stringResource(Res.string.bookmark_tag_picker_work_tag)
                 }
             } else {
-                stringResource(R.string.bookmark_tag_picker_tag_count, tag.count)
+                stringResource(Res.string.bookmark_tag_picker_tag_count, tag.count)
             },
         checked = checked,
         onCheckedChange = onCheckedChange,

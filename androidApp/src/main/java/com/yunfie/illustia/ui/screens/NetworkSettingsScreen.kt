@@ -16,12 +16,29 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.data.PixivImageProxyOptions
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_add
+import com.yunfie.illustia.resources.action_cancel
+import com.yunfie.illustia.resources.field_url
+import com.yunfie.illustia.resources.image_pixiv_network_mode
+import com.yunfie.illustia.resources.image_pixiv_network_mode_desc
+import com.yunfie.illustia.resources.image_proxy_custom
+import com.yunfie.illustia.resources.image_proxy_custom_dialog_summary
+import com.yunfie.illustia.resources.image_proxy_custom_dialog_title
+import com.yunfie.illustia.resources.image_proxy_desc
+import com.yunfie.illustia.resources.image_proxy_none
+import com.yunfie.illustia.resources.image_proxy_title
+import com.yunfie.illustia.resources.image_section_proxy
+import com.yunfie.illustia.resources.internal_proxy_entry_desc
+import com.yunfie.illustia.resources.internal_proxy_entry_title
+import com.yunfie.illustia.resources.network_settings_title
+import com.yunfie.illustia.resources.setup_proxy_bypass_label
+import com.yunfie.illustia.resources.setup_proxy_official_label
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.pixivNetworkModeLabel
 import com.yunfie.illustia.settings.pixivNetworkModeOptions
@@ -35,6 +52,7 @@ import com.yunfie.illustia.ui.components.SettingDropdownRow
 import com.yunfie.illustia.ui.components.SettingLinkRow
 import com.yunfie.illustia.ui.components.dialogBottomInsets
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -74,8 +92,8 @@ fun NetworkSettingsScreen(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
             TopAppBar(
-                title = stringResource(R.string.network_settings_title),
-                largeTitle = stringResource(R.string.network_settings_title),
+                title = stringResource(Res.string.network_settings_title),
+                largeTitle = stringResource(Res.string.network_settings_title),
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     HeaderIcon(MiuixIcons.Back, onClick = onBack)
@@ -99,11 +117,11 @@ fun NetworkSettingsScreen(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             item {
-                Section(stringResource(R.string.image_section_proxy)) {
+                Section(stringResource(Res.string.image_section_proxy)) {
                     ElevatedPanel {
                         SettingDropdownRow(
-                            title = stringResource(R.string.image_pixiv_network_mode),
-                            summary = stringResource(R.string.image_pixiv_network_mode_desc),
+                            title = stringResource(Res.string.image_pixiv_network_mode),
+                            summary = stringResource(Res.string.image_pixiv_network_mode_desc),
                             values = pixivNetworkModeOptions(),
                             selected = settings.pixivNetworkMode,
                             label = { pixivNetworkModeLabel(it) },
@@ -111,8 +129,8 @@ fun NetworkSettingsScreen(
                         )
                         DividerLine()
                         SettingDropdownRow(
-                            title = stringResource(R.string.image_proxy_title),
-                            summary = stringResource(R.string.image_proxy_desc),
+                            title = stringResource(Res.string.image_proxy_title),
+                            summary = stringResource(Res.string.image_proxy_desc),
                             values = proxyOptions,
                             selected = if (isCustomActive) currentProxy else currentProxy,
                             label = { pixivImageProxyLabel(it) },
@@ -127,8 +145,8 @@ fun NetworkSettingsScreen(
                         )
                         DividerLine()
                         SettingLinkRow(
-                            title = stringResource(R.string.internal_proxy_entry_title),
-                            summary = stringResource(R.string.internal_proxy_entry_desc),
+                            title = stringResource(Res.string.internal_proxy_entry_title),
+                            summary = stringResource(Res.string.internal_proxy_entry_desc),
                             onClick = onOpenInternalProxySettings,
                         )
                     }
@@ -139,8 +157,8 @@ fun NetworkSettingsScreen(
         if (showCustomDialog) {
             AppDialog(
                 show = showCustomDialog,
-                title = stringResource(R.string.image_proxy_custom_dialog_title),
-                summary = stringResource(R.string.image_proxy_custom_dialog_summary),
+                title = stringResource(Res.string.image_proxy_custom_dialog_title),
+                summary = stringResource(Res.string.image_proxy_custom_dialog_summary),
                 onDismissRequest = { showCustomDialog = false },
                 // 既定では imePadding と navigationBarsPadding の両方が適用される。ルートが
                 // navigationBars 分を消費済みのため、キーボード表示時に両方が積まれて
@@ -157,7 +175,7 @@ fun NetworkSettingsScreen(
                     TextField(
                         value = customUrlInput,
                         onValueChange = { customUrlInput = it },
-                        label = stringResource(R.string.field_url),
+                        label = stringResource(Res.string.field_url),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -170,7 +188,7 @@ fun NetworkSettingsScreen(
                             modifier = Modifier.weight(1f),
                             colors = overlayActionButtonColors(),
                         ) {
-                            Text(stringResource(R.string.action_cancel))
+                            Text(stringResource(Res.string.action_cancel))
                         }
                         Button(
                             onClick = {
@@ -180,7 +198,7 @@ fun NetworkSettingsScreen(
                             modifier = Modifier.weight(1f),
                             colors = overlayActionButtonColors(),
                         ) {
-                            Text(stringResource(R.string.action_add), fontWeight = FontWeight.Bold)
+                            Text(stringResource(Res.string.action_add), fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -193,16 +211,16 @@ fun NetworkSettingsScreen(
 private fun pixivImageProxyLabel(value: String): String =
     when {
         value.isBlank() -> {
-            stringResource(R.string.image_proxy_none) + " (" + stringResource(R.string.setup_proxy_official_label) + ")"
+            stringResource(Res.string.image_proxy_none) + " (" + stringResource(Res.string.setup_proxy_official_label) + ")"
         }
 
         value == "custom" -> {
-            stringResource(R.string.image_proxy_custom)
+            stringResource(Res.string.image_proxy_custom)
         }
 
         value.contains("pixiv.cat") -> {
             val name = PixivImageProxyOptions.firstOrNull { it.baseUrl == value }?.name ?: value
-            name + " (" + stringResource(R.string.setup_proxy_bypass_label) + ")"
+            name + " (" + stringResource(Res.string.setup_proxy_bypass_label) + ")"
         }
 
         else -> {

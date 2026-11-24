@@ -44,7 +44,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -56,10 +55,16 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.CalculatorHistoryEntry
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_cancel
+import com.yunfie.illustia.resources.action_confirm
+import com.yunfie.illustia.resources.privacy_enter_unlock_code
+import com.yunfie.illustia.resources.privacy_unlock_code
 import com.yunfie.illustia.ui.components.AppDialog
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
@@ -233,7 +238,7 @@ fun CalculatorScreen(
                 if (showCornerUnlockDialog) {
                     AppDialog(
                         show = true,
-                        title = stringResource(R.string.privacy_enter_unlock_code),
+                        title = stringResource(Res.string.privacy_enter_unlock_code),
                         onDismissRequest = {
                             // キャンセル時: ダイアログを閉じるだけでフィードバックなし (Req 4.7)
                             showCornerUnlockDialog = false
@@ -244,7 +249,7 @@ fun CalculatorScreen(
                             TextField(
                                 value = cornerUnlockCode,
                                 onValueChange = { cornerUnlockCode = it },
-                                label = stringResource(R.string.privacy_unlock_code),
+                                label = stringResource(Res.string.privacy_unlock_code),
                                 singleLine = true,
                                 modifier = Modifier.fillMaxWidth(),
                                 keyboardOptions =
@@ -265,7 +270,7 @@ fun CalculatorScreen(
                                     },
                                     colors = overlayActionButtonColors(),
                                 ) {
-                                    Text(stringResource(R.string.action_cancel))
+                                    Text(stringResource(Res.string.action_cancel))
                                 }
                                 Button(
                                     onClick = {
@@ -280,7 +285,7 @@ fun CalculatorScreen(
                                     },
                                     colors = overlayActionButtonColors(),
                                 ) {
-                                    Text(stringResource(R.string.action_confirm), fontWeight = FontWeight.Bold)
+                                    Text(stringResource(Res.string.action_confirm), fontWeight = FontWeight.Bold)
                                 }
                             }
                         }

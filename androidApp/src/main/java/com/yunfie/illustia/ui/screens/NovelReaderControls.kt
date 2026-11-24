@@ -30,10 +30,48 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.R
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_add
+import com.yunfie.illustia.resources.action_back
+import com.yunfie.illustia.resources.action_bookmark
+import com.yunfie.illustia.resources.action_close
+import com.yunfie.illustia.resources.action_edit
+import com.yunfie.illustia.resources.action_remove_bookmark
+import com.yunfie.illustia.resources.dialog_reload
+import com.yunfie.illustia.resources.novel_display_settings
+import com.yunfie.illustia.resources.novel_font_family
+import com.yunfie.illustia.resources.novel_font_size
+import com.yunfie.illustia.resources.novel_go_to_page
+import com.yunfie.illustia.resources.novel_layout_mode
+import com.yunfie.illustia.resources.novel_line_height
+import com.yunfie.illustia.resources.novel_page_count
+import com.yunfie.illustia.resources.novel_series_next
+import com.yunfie.illustia.resources.novel_series_next_episode
+import com.yunfie.illustia.resources.novel_series_prev
+import com.yunfie.illustia.resources.novel_series_prev_episode
+import com.yunfie.illustia.resources.novel_series_section
+import com.yunfie.illustia.resources.novel_theme
+import com.yunfie.illustia.resources.novel_toc
+import com.yunfie.illustia.resources.tts_dictionary_add
+import com.yunfie.illustia.resources.tts_dictionary_delete
+import com.yunfie.illustia.resources.tts_dictionary_empty
+import com.yunfie.illustia.resources.tts_dictionary_reading
+import com.yunfie.illustia.resources.tts_dictionary_summary
+import com.yunfie.illustia.resources.tts_dictionary_title
+import com.yunfie.illustia.resources.tts_dictionary_word
+import com.yunfie.illustia.resources.tts_pause
+import com.yunfie.illustia.resources.tts_pitch_label
+import com.yunfie.illustia.resources.tts_play
+import com.yunfie.illustia.resources.tts_settings_title
+import com.yunfie.illustia.resources.tts_skip_symbols_summary
+import com.yunfie.illustia.resources.tts_skip_symbols_title
+import com.yunfie.illustia.resources.tts_speed
+import com.yunfie.illustia.resources.tts_speed_label
+import com.yunfie.illustia.resources.tts_voice_default
+import com.yunfie.illustia.resources.tts_voice_label
 import com.yunfie.illustia.ui.components.AppBottomSheet
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
@@ -43,6 +81,7 @@ import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
 import com.yunfie.illustia.ui.components.SystemBarAppearanceEffect
 import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
@@ -214,7 +253,7 @@ internal fun NovelReaderTopBar(
                 IconButton(modifier = Modifier.pointerHoverIcon(PointerIcon.Hand), onClick = onBack) {
                     Icon(
                         imageVector = MiuixIcons.Back,
-                        contentDescription = stringResource(R.string.action_back),
+                        contentDescription = stringResource(Res.string.action_back),
                         tint = textColor,
                     )
                 }
@@ -229,9 +268,9 @@ internal fun NovelReaderTopBar(
                         contentDescription =
                             stringResource(
                                 if (isBookmarked) {
-                                    R.string.action_remove_bookmark
+                                    Res.string.action_remove_bookmark
                                 } else {
-                                    R.string.action_bookmark
+                                    Res.string.action_bookmark
                                 },
                             ),
                         tint = if (isBookmarked) Color(0xFFFF4D67) else textColor,
@@ -240,7 +279,7 @@ internal fun NovelReaderTopBar(
                 IconButton(modifier = Modifier.pointerHoverIcon(PointerIcon.Hand), onClick = onRetry) {
                     Icon(
                         imageVector = MiuixIcons.Refresh,
-                        contentDescription = stringResource(R.string.dialog_reload),
+                        contentDescription = stringResource(Res.string.dialog_reload),
                         tint = textColor,
                     )
                 }
@@ -326,7 +365,7 @@ internal fun NovelBottomControlBar(
                     ) {
                         Icon(
                             imageVector = MiuixIcons.Back,
-                            contentDescription = stringResource(R.string.novel_series_prev_episode),
+                            contentDescription = stringResource(Res.string.novel_series_prev_episode),
                         )
                     }
 
@@ -347,10 +386,10 @@ internal fun NovelBottomControlBar(
                         ) {
                             Icon(
                                 imageVector = MiuixIcons.Filter,
-                                contentDescription = stringResource(R.string.novel_toc),
+                                contentDescription = stringResource(Res.string.novel_toc),
                                 modifier = Modifier.size(16.dp),
                             )
-                            Text(stringResource(R.string.novel_toc))
+                            Text(stringResource(Res.string.novel_toc))
                         }
                     }
 
@@ -371,10 +410,10 @@ internal fun NovelBottomControlBar(
                         ) {
                             Icon(
                                 imageVector = MiuixIcons.Settings,
-                                contentDescription = stringResource(R.string.novel_display_settings),
+                                contentDescription = stringResource(Res.string.novel_display_settings),
                                 modifier = Modifier.size(16.dp),
                             )
-                            Text(stringResource(R.string.novel_display_settings))
+                            Text(stringResource(Res.string.novel_display_settings))
                         }
                     }
 
@@ -402,7 +441,7 @@ internal fun NovelBottomControlBar(
                         ) {
                             Icon(
                                 imageVector = if (ttsPlayer.isPlaying) TtsPauseIcon else TtsPlayIcon,
-                                contentDescription = stringResource(if (ttsPlayer.isPlaying) R.string.tts_pause else R.string.tts_play),
+                                contentDescription = stringResource(if (ttsPlayer.isPlaying) Res.string.tts_pause else Res.string.tts_play),
                                 modifier = Modifier.size(18.dp),
                             )
                         }
@@ -417,7 +456,7 @@ internal fun NovelBottomControlBar(
                     ) {
                         Icon(
                             imageVector = MiuixIcons.ChevronForward,
-                            contentDescription = stringResource(R.string.novel_series_next_episode),
+                            contentDescription = stringResource(Res.string.novel_series_next_episode),
                         )
                     }
                 }
@@ -444,7 +483,7 @@ internal fun NovelTocBottomSheet(
     AppBottomSheet(
         show = true,
         modifier = Modifier.scrollEndHaptic(),
-        title = stringResource(R.string.novel_toc),
+        title = stringResource(Res.string.novel_toc),
         onDismissRequest = onDismiss,
         backgroundColor = LocalBottomSheetBackgroundColor.current,
         insideMargin = BottomSheetInsideMargin,
@@ -456,7 +495,7 @@ internal fun NovelTocBottomSheet(
             if (seriesPrevId != null || seriesNextId != null) {
                 item {
                     Text(
-                        text = stringResource(R.string.novel_series_section),
+                        text = stringResource(Res.string.novel_series_section),
                         style = MiuixTheme.textStyles.headline1,
                         color = MiuixTheme.colorScheme.onSurface,
                     )
@@ -482,7 +521,7 @@ internal fun NovelTocBottomSheet(
                                 ) {
                                     Icon(MiuixIcons.Back, contentDescription = null, modifier = Modifier.size(20.dp))
                                     Text(
-                                        text = stringResource(R.string.novel_series_prev, seriesPrevTitle.orEmpty()),
+                                        text = stringResource(Res.string.novel_series_prev, seriesPrevTitle.orEmpty()),
                                         style = MiuixTheme.textStyles.body1,
                                         modifier = Modifier.weight(1f),
                                     )
@@ -508,7 +547,7 @@ internal fun NovelTocBottomSheet(
                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 ) {
                                     Text(
-                                        text = stringResource(R.string.novel_series_next, seriesNextTitle.orEmpty()),
+                                        text = stringResource(Res.string.novel_series_next, seriesNextTitle.orEmpty()),
                                         style = MiuixTheme.textStyles.body1,
                                         modifier = Modifier.weight(1f),
                                     )
@@ -523,7 +562,7 @@ internal fun NovelTocBottomSheet(
             if (chapters.isNotEmpty()) {
                 item {
                     Text(
-                        text = stringResource(R.string.novel_toc),
+                        text = stringResource(Res.string.novel_toc),
                         style = MiuixTheme.textStyles.headline1,
                         color = MiuixTheme.colorScheme.onSurface,
                     )
@@ -555,7 +594,7 @@ internal fun NovelTocBottomSheet(
                                     color = if (isCurrent) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onSurface,
                                     modifier = Modifier.weight(1f),
                                 )
-                                NovelMetaPill(text = stringResource(R.string.novel_go_to_page, chapter.pageIndex + 1))
+                                NovelMetaPill(text = stringResource(Res.string.novel_go_to_page, chapter.pageIndex + 1))
                             }
                         }
                     }
@@ -564,7 +603,7 @@ internal fun NovelTocBottomSheet(
 
             item {
                 Text(
-                    text = stringResource(R.string.novel_page_count, pageCount),
+                    text = stringResource(Res.string.novel_page_count, pageCount),
                     style = MiuixTheme.textStyles.headline1,
                     color = MiuixTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(top = 6.dp),
@@ -653,7 +692,7 @@ internal fun NovelSettingsBottomSheet(
     AppBottomSheet(
         show = true,
         modifier = Modifier.scrollEndHaptic(),
-        title = stringResource(R.string.novel_display_settings),
+        title = stringResource(Res.string.novel_display_settings),
         onDismissRequest = onDismiss,
         backgroundColor = LocalBottomSheetBackgroundColor.current,
         insideMargin = BottomSheetInsideMargin,
@@ -676,7 +715,7 @@ internal fun NovelSettingsBottomSheet(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text = stringResource(R.string.novel_font_size),
+                            text = stringResource(Res.string.novel_font_size),
                             style = MiuixTheme.textStyles.body1,
                             fontWeight = FontWeight.Bold,
                         )
@@ -703,7 +742,7 @@ internal fun NovelSettingsBottomSheet(
 
             item {
                 NovelSettingChoicePanel(
-                    title = stringResource(R.string.novel_font_family),
+                    title = stringResource(Res.string.novel_font_family),
                     entries = NovelFontFamily.entries,
                     selected = fontFamily,
                     label = { stringResource(it.labelRes) },
@@ -713,7 +752,7 @@ internal fun NovelSettingsBottomSheet(
 
             item {
                 NovelSettingChoicePanel(
-                    title = stringResource(R.string.novel_line_height),
+                    title = stringResource(Res.string.novel_line_height),
                     entries = NovelLineSpacing.entries,
                     selected = lineSpacing,
                     label = { stringResource(it.labelRes) },
@@ -724,7 +763,7 @@ internal fun NovelSettingsBottomSheet(
             item {
                 ElevatedPanel {
                     Text(
-                        text = stringResource(R.string.novel_theme),
+                        text = stringResource(Res.string.novel_theme),
                         style = MiuixTheme.textStyles.body1,
                         fontWeight = FontWeight.Bold,
                     )
@@ -782,7 +821,7 @@ internal fun NovelSettingsBottomSheet(
 
             item {
                 NovelSettingChoicePanel(
-                    title = stringResource(R.string.novel_layout_mode),
+                    title = stringResource(Res.string.novel_layout_mode),
                     entries = NovelLayoutMode.entries,
                     selected = layoutMode,
                     label = { stringResource(it.labelRes) },
@@ -837,7 +876,7 @@ private fun NovelTtsSettingsSection(
 ) {
     ElevatedPanel {
         Text(
-            text = stringResource(R.string.tts_settings_title),
+            text = stringResource(Res.string.tts_settings_title),
             style = MiuixTheme.textStyles.headline1,
             fontWeight = FontWeight.Bold,
             color = MiuixTheme.colorScheme.primary,
@@ -849,12 +888,12 @@ private fun NovelTtsSettingsSection(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = stringResource(R.string.tts_speed_label),
+                text = stringResource(Res.string.tts_speed_label),
                 style = MiuixTheme.textStyles.body1,
                 fontWeight = FontWeight.Bold,
             )
             Text(
-                text = stringResource(R.string.tts_speed, ttsSpeechRate),
+                text = stringResource(Res.string.tts_speed, ttsSpeechRate),
                 style = MiuixTheme.textStyles.footnote1,
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             )
@@ -879,7 +918,7 @@ private fun NovelTtsSettingsSection(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = stringResource(R.string.tts_pitch_label),
+                text = stringResource(Res.string.tts_pitch_label),
                 style = MiuixTheme.textStyles.body1,
                 fontWeight = FontWeight.Bold,
             )
@@ -905,7 +944,7 @@ private fun NovelTtsSettingsSection(
 
         if (availableVoices.isNotEmpty()) {
             Text(
-                text = stringResource(R.string.tts_voice_label),
+                text = stringResource(Res.string.tts_voice_label),
                 style = MiuixTheme.textStyles.body1,
                 fontWeight = FontWeight.Bold,
             )
@@ -934,7 +973,7 @@ private fun NovelTtsSettingsSection(
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
-                            text = stringResource(R.string.tts_voice_default),
+                            text = stringResource(Res.string.tts_voice_default),
                             color = if (isDefault) MiuixTheme.colorScheme.onPrimary else MiuixTheme.colorScheme.onSurface,
                             style = MiuixTheme.textStyles.body2,
                             fontWeight = if (isDefault) FontWeight.Bold else FontWeight.Normal,
@@ -984,12 +1023,12 @@ private fun NovelTtsSettingsSection(
         ) {
             Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
                 Text(
-                    text = stringResource(R.string.tts_skip_symbols_title),
+                    text = stringResource(Res.string.tts_skip_symbols_title),
                     style = MiuixTheme.textStyles.body1,
                     fontWeight = FontWeight.Bold,
                 )
                 Text(
-                    text = stringResource(R.string.tts_skip_symbols_summary),
+                    text = stringResource(Res.string.tts_skip_symbols_summary),
                     style = MiuixTheme.textStyles.footnote1,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
@@ -1010,12 +1049,12 @@ private fun NovelTtsSettingsSection(
         ) {
             Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
                 Text(
-                    text = stringResource(R.string.tts_dictionary_title),
+                    text = stringResource(Res.string.tts_dictionary_title),
                     style = MiuixTheme.textStyles.body1,
                     fontWeight = FontWeight.Bold,
                 )
                 Text(
-                    text = stringResource(R.string.tts_dictionary_summary),
+                    text = stringResource(Res.string.tts_dictionary_summary),
                     style = MiuixTheme.textStyles.footnote1,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                 )
@@ -1031,7 +1070,7 @@ private fun NovelTtsSettingsSection(
                         contentColor = MiuixTheme.colorScheme.onSurface,
                     ),
             ) {
-                Text(stringResource(R.string.action_edit))
+                Text(stringResource(Res.string.action_edit))
             }
         }
     }
@@ -1052,13 +1091,13 @@ private fun NovelTtsDictionarySheet(
     AppBottomSheet(
         show = true,
         modifier = Modifier.scrollEndHaptic(),
-        title = stringResource(R.string.tts_dictionary_title),
+        title = stringResource(Res.string.tts_dictionary_title),
         onDismissRequest = onDismiss,
         backgroundColor = LocalBottomSheetBackgroundColor.current,
         insideMargin = BottomSheetInsideMargin,
         startAction = {
             IconButton(onClick = onDismiss) {
-                Icon(imageVector = MiuixIcons.Close, contentDescription = stringResource(R.string.action_close))
+                Icon(imageVector = MiuixIcons.Close, contentDescription = stringResource(Res.string.action_close))
             }
         },
     ) {
@@ -1069,14 +1108,14 @@ private fun NovelTtsDictionarySheet(
             item {
                 ElevatedPanel {
                     Text(
-                        text = stringResource(R.string.tts_dictionary_add),
+                        text = stringResource(Res.string.tts_dictionary_add),
                         style = MiuixTheme.textStyles.body1,
                         fontWeight = FontWeight.Bold,
                     )
                     TextField(
                         value = wordInput,
                         onValueChange = { wordInput = it },
-                        label = stringResource(R.string.tts_dictionary_word),
+                        label = stringResource(Res.string.tts_dictionary_word),
                         useLabelAsPlaceholder = true,
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
@@ -1084,7 +1123,7 @@ private fun NovelTtsDictionarySheet(
                     TextField(
                         value = readingInput,
                         onValueChange = { readingInput = it },
-                        label = stringResource(R.string.tts_dictionary_reading),
+                        label = stringResource(Res.string.tts_dictionary_reading),
                         useLabelAsPlaceholder = true,
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
@@ -1102,7 +1141,7 @@ private fun NovelTtsDictionarySheet(
                         enabled = wordInput.isNotBlank() && readingInput.isNotBlank(),
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Text(stringResource(R.string.action_add), fontWeight = FontWeight.Bold)
+                        Text(stringResource(Res.string.action_add), fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -1110,7 +1149,7 @@ private fun NovelTtsDictionarySheet(
             if (dictionary.isEmpty()) {
                 item {
                     Text(
-                        text = stringResource(R.string.tts_dictionary_empty),
+                        text = stringResource(Res.string.tts_dictionary_empty),
                         style = MiuixTheme.textStyles.footnote1,
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         modifier = Modifier.padding(vertical = 12.dp),
@@ -1144,7 +1183,7 @@ private fun NovelTtsDictionarySheet(
                             IconButton(onClick = { onRemoveEntry(word) }) {
                                 Icon(
                                     imageVector = MiuixIcons.Remove,
-                                    contentDescription = stringResource(R.string.tts_dictionary_delete),
+                                    contentDescription = stringResource(Res.string.tts_dictionary_delete),
                                     tint = MiuixTheme.colorScheme.error,
                                 )
                             }

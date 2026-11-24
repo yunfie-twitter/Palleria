@@ -12,14 +12,17 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.data_items_count
+import com.yunfie.illustia.resources.offline_library_title
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
@@ -45,8 +48,8 @@ fun SavedIllustViewerScreen(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
             TopAppBar(
-                title = item?.title ?: stringResource(R.string.offline_library_title),
-                largeTitle = item?.title ?: stringResource(R.string.offline_library_title),
+                title = item?.title ?: stringResource(Res.string.offline_library_title),
+                largeTitle = item?.title ?: stringResource(Res.string.offline_library_title),
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     HeaderIcon(MiuixIcons.Back, onClick = {
@@ -73,7 +76,7 @@ fun SavedIllustViewerScreen(
                         item
                             ?.pageCount
                             ?.let {
-                                stringResource(R.string.data_items_count, it)
+                                stringResource(Res.string.data_items_count, it)
                             }.orEmpty(),
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     )

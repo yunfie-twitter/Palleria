@@ -17,11 +17,36 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.about_section_links
+import com.yunfie.illustia.resources.update_auto_check_startup
+import com.yunfie.illustia.resources.update_auto_check_startup_desc
+import com.yunfie.illustia.resources.update_auto_download
+import com.yunfie.illustia.resources.update_auto_download_desc
+import com.yunfie.illustia.resources.update_auto_download_wifi_only
+import com.yunfie.illustia.resources.update_auto_download_wifi_only_desc
+import com.yunfie.illustia.resources.update_check_background
+import com.yunfie.illustia.resources.update_check_background_desc
+import com.yunfie.illustia.resources.update_include_prerelease
+import com.yunfie.illustia.resources.update_include_prerelease_desc
+import com.yunfie.illustia.resources.update_install_method
+import com.yunfie.illustia.resources.update_method_shizuku_desc
+import com.yunfie.illustia.resources.update_method_standard_desc
+import com.yunfie.illustia.resources.update_notify_new_version
+import com.yunfie.illustia.resources.update_notify_new_version_desc
+import com.yunfie.illustia.resources.update_section_check_and_download
+import com.yunfie.illustia.resources.update_section_install
+import com.yunfie.illustia.resources.update_settings_title
+import com.yunfie.illustia.resources.update_shizuku_available
+import com.yunfie.illustia.resources.update_shizuku_grant
+import com.yunfie.illustia.resources.update_shizuku_not_running
+import com.yunfie.illustia.resources.update_shizuku_open
+import com.yunfie.illustia.resources.update_shizuku_permission_required
+import com.yunfie.illustia.resources.update_view_on_github
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
@@ -32,6 +57,7 @@ import com.yunfie.illustia.ui.components.SettingLinkRow
 import com.yunfie.illustia.ui.components.SettingRow
 import com.yunfie.illustia.ui.components.SettingSwitchRow
 import com.yunfie.illustia.updater.UpdateInstallMethod
+import org.jetbrains.compose.resources.stringResource
 import rikka.shizuku.Shizuku
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -113,8 +139,8 @@ fun UpdateSettingsScreen(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
             TopAppBar(
-                title = stringResource(R.string.update_settings_title),
-                largeTitle = stringResource(R.string.update_settings_title),
+                title = stringResource(Res.string.update_settings_title),
+                largeTitle = stringResource(Res.string.update_settings_title),
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     HeaderIcon(MiuixIcons.Back, onClick = onBack)
@@ -139,15 +165,15 @@ fun UpdateSettingsScreen(
         ) {
             // インストール設定セクション
             item {
-                Section(stringResource(R.string.update_section_install)) {
+                Section(stringResource(Res.string.update_section_install)) {
                     ElevatedPanel {
                         if (!isDesktop) {
                             OverlayDropdownPreference(
-                                title = stringResource(R.string.update_install_method),
+                                title = stringResource(Res.string.update_install_method),
                                 summary =
                                     when (selectedInstallIndex) {
-                                        1 -> stringResource(R.string.update_method_shizuku_desc)
-                                        else -> stringResource(R.string.update_method_standard_desc)
+                                        1 -> stringResource(Res.string.update_method_shizuku_desc)
+                                        else -> stringResource(Res.string.update_method_standard_desc)
                                     },
                                 items = installMethods,
                                 selectedIndex = selectedInstallIndex,
@@ -167,9 +193,9 @@ fun UpdateSettingsScreen(
                                 title = "Shizuku",
                                 summary =
                                     when {
-                                        !isShizukuAvailable -> stringResource(R.string.update_shizuku_not_running)
-                                        !isShizukuGranted -> stringResource(R.string.update_shizuku_permission_required)
-                                        else -> stringResource(R.string.update_shizuku_available)
+                                        !isShizukuAvailable -> stringResource(Res.string.update_shizuku_not_running)
+                                        !isShizukuGranted -> stringResource(Res.string.update_shizuku_permission_required)
+                                        else -> stringResource(Res.string.update_shizuku_available)
                                     },
                             ) {
                                 if (!isShizukuAvailable) {
@@ -193,7 +219,7 @@ fun UpdateSettingsScreen(
                                         },
                                         insideMargin = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
                                     ) {
-                                        Text(stringResource(R.string.update_shizuku_open))
+                                        Text(stringResource(Res.string.update_shizuku_open))
                                     }
                                 } else if (!isShizukuGranted) {
                                     Button(
@@ -205,7 +231,7 @@ fun UpdateSettingsScreen(
                                         colors = ButtonDefaults.buttonColorsPrimary(),
                                         insideMargin = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
                                     ) {
-                                        Text(stringResource(R.string.update_shizuku_grant), color = MiuixTheme.colorScheme.onPrimary)
+                                        Text(stringResource(Res.string.update_shizuku_grant), color = MiuixTheme.colorScheme.onPrimary)
                                     }
                                 }
                             }
@@ -215,50 +241,50 @@ fun UpdateSettingsScreen(
             }
 
             item {
-                Section(stringResource(R.string.update_section_check_and_download)) {
+                Section(stringResource(Res.string.update_section_check_and_download)) {
                     ElevatedPanel {
                         SettingSwitchRow(
-                            title = stringResource(R.string.update_include_prerelease),
-                            summary = stringResource(R.string.update_include_prerelease_desc),
+                            title = stringResource(Res.string.update_include_prerelease),
+                            summary = stringResource(Res.string.update_include_prerelease_desc),
                             checked = settings.includePrereleaseUpdates,
                             onCheckedChange = viewModel::updateIncludePrereleaseUpdates,
                         )
                         DividerLine()
                         SettingSwitchRow(
-                            title = stringResource(R.string.update_notify_new_version),
-                            summary = stringResource(R.string.update_notify_new_version_desc),
+                            title = stringResource(Res.string.update_notify_new_version),
+                            summary = stringResource(Res.string.update_notify_new_version_desc),
                             checked = settings.notifyNewVersion,
                             onCheckedChange = viewModel::updateNotifyNewVersion,
                         )
                         if (settings.notifyNewVersion) {
                             DividerLine()
                             SettingSwitchRow(
-                                title = stringResource(R.string.update_check_background),
-                                summary = stringResource(R.string.update_check_background_desc),
+                                title = stringResource(Res.string.update_check_background),
+                                summary = stringResource(Res.string.update_check_background_desc),
                                 checked = settings.checkUpdatesInBackground,
                                 onCheckedChange = viewModel::updateCheckUpdatesInBackground,
                             )
                         }
                         DividerLine()
                         SettingSwitchRow(
-                            title = stringResource(R.string.update_auto_download),
-                            summary = stringResource(R.string.update_auto_download_desc),
+                            title = stringResource(Res.string.update_auto_download),
+                            summary = stringResource(Res.string.update_auto_download_desc),
                             checked = settings.autoDownloadUpdates,
                             onCheckedChange = viewModel::updateAutoDownloadUpdates,
                         )
                         if (settings.autoDownloadUpdates) {
                             DividerLine()
                             SettingSwitchRow(
-                                title = stringResource(R.string.update_auto_download_wifi_only),
-                                summary = stringResource(R.string.update_auto_download_wifi_only_desc),
+                                title = stringResource(Res.string.update_auto_download_wifi_only),
+                                summary = stringResource(Res.string.update_auto_download_wifi_only_desc),
                                 checked = settings.autoDownloadWifiOnly,
                                 onCheckedChange = viewModel::updateAutoDownloadWifiOnly,
                             )
                         }
                         DividerLine()
                         SettingSwitchRow(
-                            title = stringResource(R.string.update_auto_check_startup),
-                            summary = stringResource(R.string.update_auto_check_startup_desc),
+                            title = stringResource(Res.string.update_auto_check_startup),
+                            summary = stringResource(Res.string.update_auto_check_startup_desc),
                             checked = settings.autoCheckUpdateOnStartup,
                             onCheckedChange = viewModel::updateAutoCheckUpdateOnStartup,
                         )
@@ -267,9 +293,9 @@ fun UpdateSettingsScreen(
             }
 
             item {
-                Section(stringResource(R.string.about_section_links)) {
+                Section(stringResource(Res.string.about_section_links)) {
                     ElevatedPanel {
-                        SettingLinkRow(stringResource(R.string.update_view_on_github)) {
+                        SettingLinkRow(stringResource(Res.string.update_view_on_github)) {
                             runCatching {
                                 context.startActivity(
                                     Intent(

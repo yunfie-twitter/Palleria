@@ -17,12 +17,20 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.R
 import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_cancel
+import com.yunfie.illustia.resources.action_submit_report
 import com.yunfie.illustia.resources.detail_open_in_browser
+import com.yunfie.illustia.resources.error_browser_failed
+import com.yunfie.illustia.resources.report_browser_fallback
+import com.yunfie.illustia.resources.report_dialog_summary
+import com.yunfie.illustia.resources.report_dialog_title
+import com.yunfie.illustia.resources.report_message_hint
+import com.yunfie.illustia.resources.report_submitting
 import com.yunfie.illustia.ui.components.AppDialog
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
@@ -42,11 +50,11 @@ internal fun PixivReportDialog(
     var submitting by remember(targetUrl) { mutableStateOf(false) }
     var failed by rememberSaveable(targetUrl) { mutableStateOf(false) }
     val context = LocalContext.current
-    val browserFailedMessage = stringResource(R.string.error_browser_failed)
+    val browserFailedMessage = stringResource(Res.string.error_browser_failed)
     AppDialog(
         show = true,
-        title = stringResource(R.string.report_dialog_title),
-        summary = stringResource(R.string.report_dialog_summary, target),
+        title = stringResource(Res.string.report_dialog_title),
+        summary = stringResource(Res.string.report_dialog_summary, target),
         backgroundColor = MiuixTheme.colorScheme.surfaceContainerHighest,
         onDismissRequest = { if (!submitting) onDismiss() },
     ) {
@@ -57,15 +65,15 @@ internal fun PixivReportDialog(
             TextField(
                 value = message,
                 onValueChange = { if (!submitting) message = it },
-                label = stringResource(R.string.report_message_hint),
+                label = stringResource(Res.string.report_message_hint),
                 useLabelAsPlaceholder = true,
                 modifier = Modifier.fillMaxWidth(),
             )
             if (submitting) {
-                Text(stringResource(R.string.report_submitting))
+                Text(stringResource(Res.string.report_submitting))
             }
             if (failed) {
-                Text(stringResource(R.string.report_browser_fallback))
+                Text(stringResource(Res.string.report_browser_fallback))
                 Button(
                     onClick = {
                         runCatching {
@@ -92,7 +100,7 @@ internal fun PixivReportDialog(
                     enabled = !submitting,
                     modifier = Modifier.weight(1f),
                 ) {
-                    Text(stringResource(R.string.action_cancel))
+                    Text(stringResource(Res.string.action_cancel))
                 }
                 Button(
                     onClick = {
@@ -109,7 +117,7 @@ internal fun PixivReportDialog(
                     enabled = !submitting,
                     modifier = Modifier.weight(1f),
                 ) {
-                    Text(stringResource(R.string.action_submit_report))
+                    Text(stringResource(Res.string.action_submit_report))
                 }
             }
         }

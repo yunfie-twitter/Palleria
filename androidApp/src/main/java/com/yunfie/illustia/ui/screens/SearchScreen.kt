@@ -46,7 +46,6 @@ import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -68,6 +67,11 @@ import com.yunfie.illustia.models.SearchWorkType
 import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.search_options
+import com.yunfie.illustia.resources.search_tab_illust
+import com.yunfie.illustia.resources.search_tab_novel
+import com.yunfie.illustia.resources.search_tab_user
 import com.yunfie.illustia.searchUiState
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
@@ -87,6 +91,7 @@ import com.yunfie.illustia.ui.scroll.ScrollStateRegistry
 import com.yunfie.illustia.uiRepository
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -437,9 +442,9 @@ private fun SearchResultsArea(
     onIllustSelected: ((Illust) -> Unit)? = null,
 ) {
     var showOptionsSheet by rememberSaveable { mutableStateOf(false) }
-    val tabIllust = stringResource(R.string.search_tab_illust)
-    val tabNovel = stringResource(R.string.search_tab_novel)
-    val tabUser = stringResource(R.string.search_tab_user)
+    val tabIllust = stringResource(Res.string.search_tab_illust)
+    val tabNovel = stringResource(Res.string.search_tab_novel)
+    val tabUser = stringResource(Res.string.search_tab_user)
     val tabs =
         remember(state.settings.searchUsersEnabled, state.settings.searchWorkType, widgetSelectionMode, tabIllust, tabNovel, tabUser) {
             val workTab = if (state.settings.searchWorkType.isNovel) tabNovel else tabIllust
@@ -511,7 +516,7 @@ private fun SearchResultsArea(
                 }) {
                     Icon(
                         imageVector = MiuixIcons.Filter,
-                        contentDescription = stringResource(R.string.search_options),
+                        contentDescription = stringResource(Res.string.search_options),
                         tint = if (isSearchFilterActive) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.onBackground,
                     )
                 }

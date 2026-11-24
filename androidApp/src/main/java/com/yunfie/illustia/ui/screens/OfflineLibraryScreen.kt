@@ -13,13 +13,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.SavedIllust
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.offline_library_empty
+import com.yunfie.illustia.resources.offline_library_title
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.IllustGrid
@@ -30,6 +32,7 @@ import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.smoothScrollToTop
 import com.yunfie.illustia.visibleWithSettings
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.TopAppBar
@@ -61,8 +64,8 @@ fun OfflineLibraryScreen(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
             TopAppBar(
-                title = stringResource(R.string.offline_library_title),
-                largeTitle = stringResource(R.string.offline_library_title),
+                title = stringResource(Res.string.offline_library_title),
+                largeTitle = stringResource(Res.string.offline_library_title),
                 scrollBehavior = scrollBehavior,
                 modifier =
                     Modifier.onTopBarTap(
@@ -82,7 +85,7 @@ fun OfflineLibraryScreen(
         IllustGrid(
             illusts = savedIllusts,
             state = gridState,
-            emptyMessage = stringResource(R.string.offline_library_empty),
+            emptyMessage = stringResource(Res.string.offline_library_empty),
             onOpenIllust = { viewModel.openIllust(it) },
             modifier =
                 Modifier

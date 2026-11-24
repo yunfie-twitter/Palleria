@@ -48,11 +48,12 @@ import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.msg_double_back_exit
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.AppHapticEffect
@@ -70,6 +71,7 @@ import com.yunfie.illustia.ui.screens.RankingScreen
 import com.yunfie.illustia.ui.screens.SearchScreen
 import com.yunfie.illustia.ui.screens.ShortsFeedScreen
 import com.yunfie.illustia.visibleWith
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.anim.SinOutEasing
 import top.yukonga.miuix.kmp.anim.folmeSpring
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
@@ -131,7 +133,7 @@ internal fun MainSurface(
                 }
             }
         }
-    val doubleBackExitMessage = stringResource(R.string.msg_double_back_exit)
+    val doubleBackExitMessage = stringResource(Res.string.msg_double_back_exit)
 
     LaunchedEffect(selectedTab) {
         if (appState.state.showAccountSwitcher) {

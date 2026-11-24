@@ -15,14 +15,25 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.UserPreview
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_bookmark
+import com.yunfie.illustia.resources.action_copy_image
+import com.yunfie.illustia.resources.action_remove_bookmark
+import com.yunfie.illustia.resources.dialog_artist_label
+import com.yunfie.illustia.resources.dialog_show_detail
+import com.yunfie.illustia.resources.dialog_work_options
+import com.yunfie.illustia.resources.quick_peek_follow
+import com.yunfie.illustia.resources.quick_peek_illust_count
+import com.yunfie.illustia.resources.quick_peek_show_profile
+import com.yunfie.illustia.resources.quick_peek_unfollow
 import com.yunfie.illustia.ui.components.AppBottomSheet
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Text
@@ -47,7 +58,7 @@ fun MiuixArtworkQuickPeek(
     AppBottomSheet(
         show = true,
         modifier = Modifier.scrollEndHaptic(),
-        title = illust.title.ifBlank { stringResource(R.string.dialog_work_options) },
+        title = illust.title.ifBlank { stringResource(Res.string.dialog_work_options) },
         onDismissRequest = onDismiss,
         backgroundColor = LocalBottomSheetBackgroundColor.current,
         insideMargin = BottomSheetInsideMargin,
@@ -70,7 +81,7 @@ fun MiuixArtworkQuickPeek(
 
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    text = illust.title.ifBlank { stringResource(R.string.dialog_work_options) },
+                    text = illust.title.ifBlank { stringResource(Res.string.dialog_work_options) },
                     style = MiuixTheme.textStyles.title4,
                     fontWeight = FontWeight.Bold,
                     color = MiuixTheme.colorScheme.onSurface,
@@ -78,7 +89,7 @@ fun MiuixArtworkQuickPeek(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = stringResource(R.string.dialog_artist_label, illust.artistName),
+                    text = stringResource(Res.string.dialog_artist_label, illust.artistName),
                     style = MiuixTheme.textStyles.footnote1,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     maxLines = 1,
@@ -91,7 +102,7 @@ fun MiuixArtworkQuickPeek(
                 modifier = Modifier.fillMaxWidth(),
                 colors = overlayActionButtonColors(),
             ) {
-                Text(stringResource(R.string.dialog_show_detail))
+                Text(stringResource(Res.string.dialog_show_detail))
             }
             Button(
                 onClick = onBookmark,
@@ -102,9 +113,9 @@ fun MiuixArtworkQuickPeek(
                     text =
                         stringResource(
                             if (illust.isBookmarked) {
-                                R.string.action_remove_bookmark
+                                Res.string.action_remove_bookmark
                             } else {
-                                R.string.action_bookmark
+                                Res.string.action_bookmark
                             },
                         ),
                     color = MiuixTheme.colorScheme.primary,
@@ -115,7 +126,7 @@ fun MiuixArtworkQuickPeek(
                 modifier = Modifier.fillMaxWidth(),
                 colors = overlayActionButtonColors(),
             ) {
-                Text(stringResource(R.string.action_copy_image))
+                Text(stringResource(Res.string.action_copy_image))
             }
         }
     }
@@ -170,7 +181,7 @@ fun MiuixUserQuickPeek(
                     )
                     if (user.previewIllusts.isNotEmpty()) {
                         Text(
-                            text = stringResource(R.string.quick_peek_illust_count, user.previewIllusts.size),
+                            text = stringResource(Res.string.quick_peek_illust_count, user.previewIllusts.size),
                             style = MiuixTheme.textStyles.footnote2,
                             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         )
@@ -203,7 +214,7 @@ fun MiuixUserQuickPeek(
                 modifier = Modifier.fillMaxWidth(),
                 colors = overlayActionButtonColors(),
             ) {
-                Text(stringResource(R.string.quick_peek_show_profile))
+                Text(stringResource(Res.string.quick_peek_show_profile))
             }
             Button(
                 onClick = onToggleFollow,
@@ -214,9 +225,9 @@ fun MiuixUserQuickPeek(
                     text =
                         stringResource(
                             if (user.isFollowed) {
-                                R.string.quick_peek_unfollow
+                                Res.string.quick_peek_unfollow
                             } else {
-                                R.string.quick_peek_follow
+                                Res.string.quick_peek_follow
                             },
                         ),
                     color = MiuixTheme.colorScheme.primary,

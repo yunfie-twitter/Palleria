@@ -38,7 +38,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -49,9 +48,32 @@ import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.data.PixivImageProxyOptions
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.app_name
+import com.yunfie.illustia.resources.general_language
+import com.yunfie.illustia.resources.image_pixiv_network_mode
+import com.yunfie.illustia.resources.image_proxy_custom
+import com.yunfie.illustia.resources.image_proxy_title
+import com.yunfie.illustia.resources.setup_compat
+import com.yunfie.illustia.resources.setup_compat_desc
+import com.yunfie.illustia.resources.setup_ech
+import com.yunfie.illustia.resources.setup_ech_desc
+import com.yunfie.illustia.resources.setup_help
+import com.yunfie.illustia.resources.setup_help_title
+import com.yunfie.illustia.resources.setup_intro
+import com.yunfie.illustia.resources.setup_language_title
+import com.yunfie.illustia.resources.setup_network_title
+import com.yunfie.illustia.resources.setup_next
+import com.yunfie.illustia.resources.setup_official_images
+import com.yunfie.illustia.resources.setup_previous
+import com.yunfie.illustia.resources.setup_progress
+import com.yunfie.illustia.resources.setup_standard
+import com.yunfie.illustia.resources.setup_standard_desc
+import com.yunfie.illustia.resources.setup_welcome
 import com.yunfie.illustia.settings.AppLanguage
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.appLanguageLabelRes
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
@@ -117,7 +139,7 @@ fun OnboardingScreen(
                             verticalArrangement = Arrangement.spacedBy(24.dp),
                         ) {
                             Text(
-                                stringResource(if (displayedPage == 0) R.string.setup_language_title else R.string.setup_network_title),
+                                stringResource(if (displayedPage == 0) Res.string.setup_language_title else Res.string.setup_network_title),
                                 fontSize = 32.sp,
                                 lineHeight = 40.sp,
                                 fontWeight = FontWeight.Bold,
@@ -150,19 +172,19 @@ private fun LanguageSetup(
     ) {
         Image(painterResource(R.drawable.splashscreen_logo), contentDescription = null, modifier = Modifier.size(88.dp))
         Text(
-            stringResource(R.string.setup_welcome, stringResource(R.string.app_name)),
+            stringResource(Res.string.setup_welcome, stringResource(Res.string.app_name)),
             style = MiuixTheme.textStyles.title3,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center,
         )
         Text(
-            stringResource(R.string.setup_intro),
+            stringResource(Res.string.setup_intro),
             color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             textAlign = TextAlign.Center,
             style = MiuixTheme.textStyles.body1,
         )
     }
-    SetupSectionLabel(stringResource(R.string.general_language))
+    SetupSectionLabel(stringResource(Res.string.general_language))
     Card(Modifier.fillMaxWidth(), cornerRadius = 24.dp, insideMargin = PaddingValues(0.dp)) {
         AppLanguage.entries.forEach { language ->
             RadioButtonPreference(
@@ -180,10 +202,10 @@ private fun NetworkSetup(
     settings: AppSettings,
     viewModel: IllustiaViewModel,
 ) {
-    SetupSectionLabel(stringResource(R.string.image_proxy_title))
+    SetupSectionLabel(stringResource(Res.string.image_proxy_title))
     Card(Modifier.fillMaxWidth(), cornerRadius = 24.dp, insideMargin = PaddingValues(0.dp)) {
         RadioButtonPreference(
-            title = stringResource(R.string.setup_official_images),
+            title = stringResource(Res.string.setup_official_images),
             summary = "i.pximg.net",
             selected = settings.pixivImageProxyBaseUrl.isEmpty(),
             onClick = { viewModel.updatePixivImageProxyBaseUrl("") },
@@ -199,19 +221,19 @@ private fun NetworkSetup(
         val current = settings.pixivImageProxyBaseUrl
         if (current.isNotBlank() && PixivImageProxyOptions.none { it.baseUrl == current }) {
             RadioButtonPreference(
-                title = stringResource(R.string.image_proxy_custom),
+                title = stringResource(Res.string.image_proxy_custom),
                 summary = current,
                 selected = true,
                 onClick = {},
             )
         }
     }
-    SetupSectionLabel(stringResource(R.string.image_pixiv_network_mode))
+    SetupSectionLabel(stringResource(Res.string.image_pixiv_network_mode))
     Card(Modifier.fillMaxWidth(), cornerRadius = 24.dp, insideMargin = PaddingValues(0.dp)) {
         listOf(
-            Triple("standard", R.string.setup_standard, R.string.setup_standard_desc),
-            Triple("compat", R.string.setup_compat, R.string.setup_compat_desc),
-            Triple("ech", R.string.setup_ech, R.string.setup_ech_desc),
+            Triple("standard", Res.string.setup_standard, Res.string.setup_standard_desc),
+            Triple("compat", Res.string.setup_compat, Res.string.setup_compat_desc),
+            Triple("ech", Res.string.setup_ech, Res.string.setup_ech_desc),
         ).forEach { (mode, title, summary) ->
             RadioButtonPreference(
                 title = stringResource(title),
@@ -223,8 +245,8 @@ private fun NetworkSetup(
     }
     Card(Modifier.fillMaxWidth(), cornerRadius = 24.dp, insideMargin = PaddingValues(20.dp)) {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(stringResource(R.string.setup_help_title), fontWeight = FontWeight.Bold, style = MiuixTheme.textStyles.title4)
-            Text(stringResource(R.string.setup_help), color = MiuixTheme.colorScheme.onSurfaceVariantSummary)
+            Text(stringResource(Res.string.setup_help_title), fontWeight = FontWeight.Bold, style = MiuixTheme.textStyles.title4)
+            Text(stringResource(Res.string.setup_help), color = MiuixTheme.colorScheme.onSurfaceVariantSummary)
         }
     }
 }
@@ -247,14 +269,14 @@ private fun SetupNavigation(
     onBack: () -> Unit,
     onNext: () -> Unit,
 ) {
-    val progress = stringResource(R.string.setup_progress, page + 1, 3)
+    val progress = stringResource(Res.string.setup_progress, page + 1, 3)
     Row(
         Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 20.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Box(Modifier.weight(1f)) {
-            if (page > 0) Button(onClick = onBack, enabled = enabled) { Text(stringResource(R.string.setup_previous)) }
+            if (page > 0) Button(onClick = onBack, enabled = enabled) { Text(stringResource(Res.string.setup_previous)) }
         }
         Row(Modifier.semantics { contentDescription = progress }, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             repeat(3) { index ->
@@ -279,7 +301,7 @@ private fun SetupNavigation(
         Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
             if (page < 2) {
                 Button(onClick = onNext, enabled = enabled, colors = ButtonDefaults.buttonColorsPrimary()) {
-                    Text(stringResource(R.string.setup_next))
+                    Text(stringResource(Res.string.setup_next))
                 }
             }
         }

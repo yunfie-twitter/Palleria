@@ -49,7 +49,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.R
@@ -57,6 +56,13 @@ import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.pixiv.UgoiraPlayback
 import com.yunfie.illustia.platform.ImageClipboardHelper
 import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_back
+import com.yunfie.illustia.resources.action_copy_image
+import com.yunfie.illustia.resources.action_report_problem
+import com.yunfie.illustia.resources.action_retry
+import com.yunfie.illustia.resources.action_show
+import com.yunfie.illustia.resources.copied_image_to_clipboard
+import com.yunfie.illustia.resources.copy_image_failed
 import com.yunfie.illustia.resources.detail_copy_url
 import com.yunfie.illustia.resources.detail_image_load_failed
 import com.yunfie.illustia.resources.detail_more
@@ -69,6 +75,9 @@ import com.yunfie.illustia.resources.detail_save_image
 import com.yunfie.illustia.resources.detail_save_this_page
 import com.yunfie.illustia.resources.detail_save_ugoira
 import com.yunfie.illustia.resources.detail_share
+import com.yunfie.illustia.resources.error_browser_failed
+import com.yunfie.illustia.resources.error_share_failed
+import com.yunfie.illustia.resources.msg_url_copied
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.HeaderOverlayIcon
 import com.yunfie.illustia.ui.components.LiquidGlassIconButton
@@ -94,6 +103,7 @@ import com.yunfie.illustia.ui.components.resolveSaveImageUrls
 import com.yunfie.illustia.ui.components.sharedArtworkElement
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
@@ -166,7 +176,7 @@ internal fun IllustDetailHeader(
     val muteLabel = resString(Res.string.detail_mute)
     val muteWorkLabel = resString(Res.string.detail_mute_work)
     val muteArtistLabel = resString(Res.string.detail_mute_artist)
-    val reportProblemLabel = stringResource(R.string.action_report_problem)
+    val reportProblemLabel = stringResource(Res.string.action_report_problem)
     var showReportDialog by remember(illust.id) { mutableStateOf(false) }
     if (showReportDialog) {
         PixivReportDialog(
@@ -178,12 +188,12 @@ internal fun IllustDetailHeader(
         )
     }
     val moreLabel = resString(Res.string.detail_more)
-    val copyImageLabel = stringResource(R.string.action_copy_image)
-    val copiedImageMessage = stringResource(R.string.copied_image_to_clipboard)
-    val copyImageFailedMessage = stringResource(R.string.copy_image_failed)
-    val browserFailedMessage = stringResource(R.string.error_browser_failed)
-    val shareFailedMessage = stringResource(R.string.error_share_failed)
-    val urlCopiedMessage = stringResource(R.string.msg_url_copied)
+    val copyImageLabel = stringResource(Res.string.action_copy_image)
+    val copiedImageMessage = stringResource(Res.string.copied_image_to_clipboard)
+    val copyImageFailedMessage = stringResource(Res.string.copy_image_failed)
+    val browserFailedMessage = stringResource(Res.string.error_browser_failed)
+    val shareFailedMessage = stringResource(Res.string.error_share_failed)
+    val urlCopiedMessage = stringResource(Res.string.msg_url_copied)
     val coroutineScope = rememberCoroutineScope()
     var useDarkHeaderIcons by remember(illust.id) { mutableStateOf(false) }
     val effectiveDetailQuality = if (!highQualityImages) QUALITY_LOW else detailQuality
@@ -491,7 +501,7 @@ internal fun IllustDetailHeader(
                 } else {
                     Color.Black.copy(alpha = 0.18f)
                 }
-            val backLabel = stringResource(R.string.action_back)
+            val backLabel = stringResource(Res.string.action_back)
             if (liquidGlassBackdrop != null) {
                 LiquidGlassIconButton(
                     icon = MiuixIcons.Back,
@@ -741,7 +751,7 @@ private fun HeroImageRetry(
             fontWeight = FontWeight.Bold,
         )
         Text(
-            text = stringResource(R.string.action_retry),
+            text = stringResource(Res.string.action_retry),
             color = Color.White.copy(alpha = 0.85f),
             style = MiuixTheme.textStyles.footnote1,
         )
@@ -787,7 +797,7 @@ internal fun MutedArtworkOverlay(
                 ),
             insideMargin = PaddingValues(horizontal = 18.dp, vertical = 10.dp),
         ) {
-            Text(stringResource(R.string.action_show), color = Color.White, fontWeight = FontWeight.Bold)
+            Text(stringResource(Res.string.action_show), color = Color.White, fontWeight = FontWeight.Bold)
         }
     }
 }

@@ -40,7 +40,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -48,7 +47,28 @@ import com.yunfie.illustia.DownloadQueueEntry
 import com.yunfie.illustia.DownloadQueueStatus
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_back
+import com.yunfie.illustia.resources.download_queue_clear
+import com.yunfie.illustia.resources.download_queue_clear_summary
+import com.yunfie.illustia.resources.download_queue_clear_title
+import com.yunfie.illustia.resources.download_queue_completed
+import com.yunfie.illustia.resources.download_queue_downloading
+import com.yunfie.illustia.resources.download_queue_empty
+import com.yunfie.illustia.resources.download_queue_empty_all
+import com.yunfie.illustia.resources.download_queue_empty_completed
+import com.yunfie.illustia.resources.download_queue_empty_failed
+import com.yunfie.illustia.resources.download_queue_failed
+import com.yunfie.illustia.resources.download_queue_section_completed
+import com.yunfie.illustia.resources.download_queue_section_downloading
+import com.yunfie.illustia.resources.download_queue_section_failed
+import com.yunfie.illustia.resources.download_queue_skipped
+import com.yunfie.illustia.resources.download_queue_tab_all
+import com.yunfie.illustia.resources.download_queue_tab_completed
+import com.yunfie.illustia.resources.download_queue_tab_downloading
+import com.yunfie.illustia.resources.download_queue_title
+import com.yunfie.illustia.resources.download_queue_waiting
+import com.yunfie.illustia.resources.user_filter_category
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -58,6 +78,8 @@ import com.yunfie.illustia.ui.components.onTopBarTap
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.smoothScrollToTop
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.DropdownImpl
@@ -135,18 +157,18 @@ fun DownloadQueueScreen(
 
     val categoryOptions =
         listOf(
-            stringResource(R.string.download_queue_tab_all),
-            stringResource(R.string.download_queue_tab_downloading),
-            stringResource(R.string.download_queue_tab_completed),
-            stringResource(R.string.download_queue_section_failed),
+            stringResource(Res.string.download_queue_tab_all),
+            stringResource(Res.string.download_queue_tab_downloading),
+            stringResource(Res.string.download_queue_tab_completed),
+            stringResource(Res.string.download_queue_section_failed),
         )
 
     if (showClearConfirmation) {
         MiuixConfirmDialog(
             show = true,
-            title = stringResource(R.string.download_queue_clear_title),
-            summary = stringResource(R.string.download_queue_clear_summary),
-            confirmText = stringResource(R.string.download_queue_clear),
+            title = stringResource(Res.string.download_queue_clear_title),
+            summary = stringResource(Res.string.download_queue_clear_summary),
+            confirmText = stringResource(Res.string.download_queue_clear),
             destructive = true,
             onConfirm = {
                 showClearConfirmation = false
@@ -160,8 +182,8 @@ fun DownloadQueueScreen(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
             TopAppBar(
-                title = stringResource(R.string.download_queue_title),
-                largeTitle = stringResource(R.string.download_queue_title),
+                title = stringResource(Res.string.download_queue_title),
+                largeTitle = stringResource(Res.string.download_queue_title),
                 scrollBehavior = scrollBehavior,
                 modifier =
                     Modifier.onTopBarTap(
@@ -178,7 +200,7 @@ fun DownloadQueueScreen(
                     HeaderIcon(
                         MiuixIcons.Back,
                         onClick = onBack,
-                        contentDescription = stringResource(R.string.action_back),
+                        contentDescription = stringResource(Res.string.action_back),
                     )
                 },
                 actions = {
@@ -186,14 +208,14 @@ fun DownloadQueueScreen(
                         HeaderIcon(
                             icon = MiuixIcons.Delete,
                             onClick = { showClearConfirmation = true },
-                            contentDescription = stringResource(R.string.download_queue_clear),
+                            contentDescription = stringResource(Res.string.download_queue_clear),
                         )
                     }
                     Box {
                         HeaderIcon(
                             icon = MiuixIcons.More,
                             onClick = { showCategoryPopup = true },
-                            contentDescription = stringResource(R.string.user_filter_category),
+                            contentDescription = stringResource(Res.string.user_filter_category),
                         )
                         OverlayListPopup(
                             show = showCategoryPopup,
@@ -241,15 +263,15 @@ fun DownloadQueueScreen(
                 when (selected) {
                     QueueTab.All -> {
                         queueSection(
-                            titleRes = R.string.download_queue_section_downloading,
+                            titleRes = Res.string.download_queue_section_downloading,
                             items = groups.active,
                         )
                         queueSection(
-                            titleRes = R.string.download_queue_section_failed,
+                            titleRes = Res.string.download_queue_section_failed,
                             items = groups.failed,
                         )
                         queueSection(
-                            titleRes = R.string.download_queue_section_completed,
+                            titleRes = Res.string.download_queue_section_completed,
                             items = groups.completed,
                         )
                         if (groups.totalCount == 0) {
@@ -322,7 +344,7 @@ private fun ActiveTransferTrack() {
 }
 
 private fun androidx.compose.foundation.lazy.LazyListScope.queueSection(
-    titleRes: Int,
+    titleRes: StringResource,
     items: List<DownloadQueueEntry>,
 ) {
     if (items.isEmpty()) return
@@ -349,7 +371,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.queueTabContent(
 
 @Composable
 private fun QueueSectionHeader(
-    titleRes: Int,
+    titleRes: StringResource,
     count: Int,
 ) {
     Row(
@@ -513,10 +535,10 @@ private fun QueueEmptyState(tab: QueueTab) {
     val message =
         stringResource(
             when (tab) {
-                QueueTab.All -> R.string.download_queue_empty_all
-                QueueTab.Active -> R.string.download_queue_empty
-                QueueTab.Completed -> R.string.download_queue_empty_completed
-                QueueTab.Failed -> R.string.download_queue_empty_failed
+                QueueTab.All -> Res.string.download_queue_empty_all
+                QueueTab.Active -> Res.string.download_queue_empty
+                QueueTab.Completed -> Res.string.download_queue_empty_completed
+                QueueTab.Failed -> Res.string.download_queue_empty_failed
             },
         )
     EmptyState(message)
@@ -535,9 +557,9 @@ private fun statusAccent(status: DownloadQueueStatus): Color =
 @Composable
 private fun queueStatusLabel(status: DownloadQueueStatus): String =
     when (status) {
-        DownloadQueueStatus.Waiting -> stringResource(R.string.download_queue_waiting)
-        DownloadQueueStatus.Downloading -> stringResource(R.string.download_queue_downloading)
-        DownloadQueueStatus.Completed -> stringResource(R.string.download_queue_completed)
-        DownloadQueueStatus.Skipped -> stringResource(R.string.download_queue_skipped)
-        DownloadQueueStatus.Failed -> stringResource(R.string.download_queue_failed)
+        DownloadQueueStatus.Waiting -> stringResource(Res.string.download_queue_waiting)
+        DownloadQueueStatus.Downloading -> stringResource(Res.string.download_queue_downloading)
+        DownloadQueueStatus.Completed -> stringResource(Res.string.download_queue_completed)
+        DownloadQueueStatus.Skipped -> stringResource(Res.string.download_queue_skipped)
+        DownloadQueueStatus.Failed -> stringResource(Res.string.download_queue_failed)
     }

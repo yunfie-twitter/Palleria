@@ -19,7 +19,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -27,6 +26,52 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_cancel
+import com.yunfie.illustia.resources.action_change
+import com.yunfie.illustia.resources.action_enable
+import com.yunfie.illustia.resources.action_save
+import com.yunfie.illustia.resources.app_name_dummy
+import com.yunfie.illustia.resources.privacy_auto_lock
+import com.yunfie.illustia.resources.privacy_auto_lock_10m
+import com.yunfie.illustia.resources.privacy_auto_lock_1m
+import com.yunfie.illustia.resources.privacy_auto_lock_30s
+import com.yunfie.illustia.resources.privacy_auto_lock_5m
+import com.yunfie.illustia.resources.privacy_auto_lock_desc
+import com.yunfie.illustia.resources.privacy_auto_lock_disabled
+import com.yunfie.illustia.resources.privacy_auto_lock_immediate
+import com.yunfie.illustia.resources.privacy_change_code
+import com.yunfie.illustia.resources.privacy_change_code_desc
+import com.yunfie.illustia.resources.privacy_change_code_error
+import com.yunfie.illustia.resources.privacy_change_dummy_name
+import com.yunfie.illustia.resources.privacy_code_confirm
+import com.yunfie.illustia.resources.privacy_code_incorrect
+import com.yunfie.illustia.resources.privacy_code_invalid
+import com.yunfie.illustia.resources.privacy_code_mismatch
+import com.yunfie.illustia.resources.privacy_current_code
+import com.yunfie.illustia.resources.privacy_disguise_section
+import com.yunfie.illustia.resources.privacy_dummy_app_name
+import com.yunfie.illustia.resources.privacy_dummy_icon
+import com.yunfie.illustia.resources.privacy_dummy_icon_calculator
+import com.yunfie.illustia.resources.privacy_dummy_icon_desc
+import com.yunfie.illustia.resources.privacy_dummy_name_error
+import com.yunfie.illustia.resources.privacy_dummy_name_field
+import com.yunfie.illustia.resources.privacy_enable_dialog_title
+import com.yunfie.illustia.resources.privacy_enable_enter_code_desc
+import com.yunfie.illustia.resources.privacy_enable_set_code_desc
+import com.yunfie.illustia.resources.privacy_hide_notifications
+import com.yunfie.illustia.resources.privacy_hide_notifications_desc
+import com.yunfie.illustia.resources.privacy_hide_recents
+import com.yunfie.illustia.resources.privacy_hide_recents_desc
+import com.yunfie.illustia.resources.privacy_lock_behavior
+import com.yunfie.illustia.resources.privacy_mode_disabled_desc
+import com.yunfie.illustia.resources.privacy_mode_enabled_desc
+import com.yunfie.illustia.resources.privacy_mode_title
+import com.yunfie.illustia.resources.privacy_new_code
+import com.yunfie.illustia.resources.privacy_reset_code
+import com.yunfie.illustia.resources.privacy_section
+import com.yunfie.illustia.resources.privacy_unlock_code
+import com.yunfie.illustia.resources.privacy_unlock_code_section
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.AppDialog
 import com.yunfie.illustia.ui.components.DividerLine
@@ -39,6 +84,7 @@ import com.yunfie.illustia.ui.components.SettingLinkRow
 import com.yunfie.illustia.ui.components.SettingSwitchRow
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -57,12 +103,12 @@ private val AUTO_LOCK_VALUES = listOf("immediate", "30s", "1m", "5m", "10m", "di
 @Composable
 private fun autoLockLabel(value: String): String =
     when (value) {
-        "immediate" -> stringResource(R.string.privacy_auto_lock_immediate)
-        "30s" -> stringResource(R.string.privacy_auto_lock_30s)
-        "1m" -> stringResource(R.string.privacy_auto_lock_1m)
-        "5m" -> stringResource(R.string.privacy_auto_lock_5m)
-        "10m" -> stringResource(R.string.privacy_auto_lock_10m)
-        "disabled" -> stringResource(R.string.privacy_auto_lock_disabled)
+        "immediate" -> stringResource(Res.string.privacy_auto_lock_immediate)
+        "30s" -> stringResource(Res.string.privacy_auto_lock_30s)
+        "1m" -> stringResource(Res.string.privacy_auto_lock_1m)
+        "5m" -> stringResource(Res.string.privacy_auto_lock_5m)
+        "10m" -> stringResource(Res.string.privacy_auto_lock_10m)
+        "disabled" -> stringResource(Res.string.privacy_auto_lock_disabled)
         else -> value
     }
 
@@ -73,7 +119,7 @@ private val DUMMY_ICON_VALUES = listOf("ic_launcher_dummy")
 @Composable
 private fun dummyIconLabel(value: String): String =
     when (value) {
-        "ic_launcher_dummy" -> stringResource(R.string.privacy_dummy_icon_calculator)
+        "ic_launcher_dummy" -> stringResource(Res.string.privacy_dummy_icon_calculator)
         else -> value
     }
 
@@ -94,7 +140,7 @@ fun PrivacyModeSettingsScreen(
     PredictiveBackGestureHandler(onBack = onBack)
     val scrollBehavior = MiuixScrollBehavior()
     val coroutineScope = rememberCoroutineScope()
-    val defaultDummyAppName = stringResource(R.string.app_name_dummy)
+    val defaultDummyAppName = stringResource(Res.string.app_name_dummy)
 
     // ── Enable privacy mode dialog state ──────────────────────────────────────
     var showEnableCodeDialog by remember { mutableStateOf(false) }
@@ -102,9 +148,9 @@ fun PrivacyModeSettingsScreen(
     var enableCodeInput by remember { mutableStateOf("") }
     var enableCodeConfirm by remember { mutableStateOf("") }
     var enableCodeError by remember { mutableStateOf<String?>(null) }
-    val enableCodeMismatchText = stringResource(R.string.privacy_code_mismatch)
-    val enableCodeInvalidText = stringResource(R.string.privacy_code_invalid)
-    val enableCodeIncorrectText = stringResource(R.string.privacy_code_incorrect)
+    val enableCodeMismatchText = stringResource(Res.string.privacy_code_mismatch)
+    val enableCodeInvalidText = stringResource(Res.string.privacy_code_invalid)
+    val enableCodeIncorrectText = stringResource(Res.string.privacy_code_incorrect)
 
     // ── Change unlock code dialog state ───────────────────────────────────────
     var showChangeCodeDialog by remember { mutableStateOf(false) }
@@ -116,15 +162,15 @@ fun PrivacyModeSettingsScreen(
     var showDummyNameDialog by remember { mutableStateOf(false) }
     var dummyNameDraft by remember { mutableStateOf("") }
     var dummyNameError by remember { mutableStateOf<String?>(null) }
-    val changeCodeErrorText = stringResource(R.string.privacy_change_code_error)
-    val dummyNameErrorText = stringResource(R.string.privacy_dummy_name_error)
+    val changeCodeErrorText = stringResource(Res.string.privacy_change_code_error)
+    val dummyNameErrorText = stringResource(Res.string.privacy_dummy_name_error)
 
     Scaffold(
         containerColor = MiuixTheme.colorScheme.surface,
         topBar = {
             TopAppBar(
-                title = stringResource(R.string.privacy_mode_title),
-                largeTitle = stringResource(R.string.privacy_mode_title),
+                title = stringResource(Res.string.privacy_mode_title),
+                largeTitle = stringResource(Res.string.privacy_mode_title),
                 scrollBehavior = scrollBehavior,
                 navigationIcon = {
                     HeaderIcon(MiuixIcons.Back, onClick = onBack)
@@ -149,11 +195,11 @@ fun PrivacyModeSettingsScreen(
         ) {
             // ── Section 1: Enable / Disable ───────────────────────────────────
             item {
-                Section(stringResource(R.string.privacy_mode_title)) {
+                Section(stringResource(Res.string.privacy_mode_title)) {
                     ElevatedPanel {
                         // 1. Privacy Mode ON/OFF toggle (Req 11.2, 1.1–1.3)
                         SettingSwitchRow(
-                            title = stringResource(R.string.privacy_mode_title),
+                            title = stringResource(Res.string.privacy_mode_title),
                             checked = settings.privacyModeEnabled,
                             onCheckedChange = { enabled ->
                                 if (enabled) {
@@ -168,9 +214,9 @@ fun PrivacyModeSettingsScreen(
                             },
                             summary =
                                 if (settings.privacyModeEnabled) {
-                                    stringResource(R.string.privacy_mode_enabled_desc)
+                                    stringResource(Res.string.privacy_mode_enabled_desc)
                                 } else {
-                                    stringResource(R.string.privacy_mode_disabled_desc)
+                                    stringResource(Res.string.privacy_mode_disabled_desc)
                                 },
                         )
                     }
@@ -179,12 +225,12 @@ fun PrivacyModeSettingsScreen(
 
             // ── Section 2: Unlock code ─────────────────────────────────────────
             item {
-                Section(stringResource(R.string.privacy_unlock_code_section)) {
+                Section(stringResource(Res.string.privacy_unlock_code_section)) {
                     ElevatedPanel {
                         // 2. Change unlock code (Req 5.3, 5.4, 5.7)
                         SettingLinkRow(
-                            title = stringResource(R.string.privacy_change_code),
-                            summary = stringResource(R.string.privacy_change_code_desc),
+                            title = stringResource(Res.string.privacy_change_code),
+                            summary = stringResource(Res.string.privacy_change_code_desc),
                             onClick = {
                                 currentCode = ""
                                 newCode = ""
@@ -198,12 +244,12 @@ fun PrivacyModeSettingsScreen(
 
             // ── Section 3: Lock behaviour ──────────────────────────────────────
             item {
-                Section(stringResource(R.string.privacy_lock_behavior)) {
+                Section(stringResource(Res.string.privacy_lock_behavior)) {
                     ElevatedPanel {
                         // 3. Auto-lock timing selection (Req 6.4–6.6)
                         SettingDropdownRow(
-                            title = stringResource(R.string.privacy_auto_lock),
-                            summary = stringResource(R.string.privacy_auto_lock_desc),
+                            title = stringResource(Res.string.privacy_auto_lock),
+                            summary = stringResource(Res.string.privacy_auto_lock_desc),
                             values = AUTO_LOCK_VALUES,
                             selected = settings.privacyModeAutoLockTiming,
                             label = { autoLockLabel(it) },
@@ -215,22 +261,22 @@ fun PrivacyModeSettingsScreen(
 
             // ── Section 4: Privacy ─────────────────────────────────────────────
             item {
-                Section(stringResource(R.string.privacy_section)) {
+                Section(stringResource(Res.string.privacy_section)) {
                     ElevatedPanel {
                         // 4. Hide Recents toggle (Req 7.1–7.4)
                         SettingSwitchRow(
-                            title = stringResource(R.string.privacy_hide_recents),
+                            title = stringResource(Res.string.privacy_hide_recents),
                             checked = settings.hideRecents,
                             onCheckedChange = { viewModel.updateHideRecents(it) },
-                            summary = stringResource(R.string.privacy_hide_recents_desc),
+                            summary = stringResource(Res.string.privacy_hide_recents_desc),
                         )
                         DividerLine()
                         // 5. Hide Notifications toggle (Req 9.1–9.4)
                         SettingSwitchRow(
-                            title = stringResource(R.string.privacy_hide_notifications),
+                            title = stringResource(Res.string.privacy_hide_notifications),
                             checked = settings.hideNotifications,
                             onCheckedChange = { viewModel.updateHideNotifications(it) },
-                            summary = stringResource(R.string.privacy_hide_notifications_desc),
+                            summary = stringResource(Res.string.privacy_hide_notifications_desc),
                         )
                     }
                 }
@@ -238,11 +284,11 @@ fun PrivacyModeSettingsScreen(
 
             // ── Section 5: Disguise ────────────────────────────────────────────
             item {
-                Section(stringResource(R.string.privacy_disguise_section)) {
+                Section(stringResource(Res.string.privacy_disguise_section)) {
                     ElevatedPanel {
                         // 6. Dummy app name text input (Req 10.1, 10.3)
                         SettingLinkRow(
-                            title = stringResource(R.string.privacy_dummy_app_name),
+                            title = stringResource(Res.string.privacy_dummy_app_name),
                             summary = settings.dummyAppName.ifBlank { defaultDummyAppName },
                             onClick = {
                                 dummyNameDraft = settings.dummyAppName.ifBlank { defaultDummyAppName }
@@ -253,8 +299,8 @@ fun PrivacyModeSettingsScreen(
                         DividerLine()
                         // 7. Dummy icon variant selector (Req 10.2, 10.4)
                         SettingDropdownRow(
-                            title = stringResource(R.string.privacy_dummy_icon),
-                            summary = stringResource(R.string.privacy_dummy_icon_desc),
+                            title = stringResource(Res.string.privacy_dummy_icon),
+                            summary = stringResource(Res.string.privacy_dummy_icon_desc),
                             values = DUMMY_ICON_VALUES,
                             selected = settings.dummyIconVariant,
                             label = { dummyIconLabel(it) },
@@ -271,7 +317,7 @@ fun PrivacyModeSettingsScreen(
         val requiresNewCode = !viewModel.hasUnlockCodeSet() || isResettingCode
         AppDialog(
             show = true,
-            title = stringResource(R.string.privacy_enable_dialog_title),
+            title = stringResource(Res.string.privacy_enable_dialog_title),
             onDismissRequest = {
                 showEnableCodeDialog = false
                 isResettingCode = false
@@ -285,9 +331,9 @@ fun PrivacyModeSettingsScreen(
                     text =
                         stringResource(
                             if (requiresNewCode) {
-                                R.string.privacy_enable_set_code_desc
+                                Res.string.privacy_enable_set_code_desc
                             } else {
-                                R.string.privacy_enable_enter_code_desc
+                                Res.string.privacy_enable_enter_code_desc
                             },
                         ),
                     style = MiuixTheme.textStyles.footnote1,
@@ -301,7 +347,7 @@ fun PrivacyModeSettingsScreen(
                             enableCodeInput = it
                             enableCodeError = null
                         },
-                        label = stringResource(R.string.privacy_new_code),
+                        label = stringResource(Res.string.privacy_new_code),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         visualTransformation = PasswordVisualTransformation(),
@@ -318,7 +364,7 @@ fun PrivacyModeSettingsScreen(
                             enableCodeConfirm = it
                             enableCodeError = null
                         },
-                        label = stringResource(R.string.privacy_code_confirm),
+                        label = stringResource(Res.string.privacy_code_confirm),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         visualTransformation = PasswordVisualTransformation(),
@@ -335,7 +381,7 @@ fun PrivacyModeSettingsScreen(
                             enableCodeInput = it
                             enableCodeError = null
                         },
-                        label = stringResource(R.string.privacy_unlock_code),
+                        label = stringResource(Res.string.privacy_unlock_code),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         visualTransformation = PasswordVisualTransformation(),
@@ -347,7 +393,7 @@ fun PrivacyModeSettingsScreen(
                     )
 
                     Text(
-                        text = stringResource(R.string.privacy_reset_code),
+                        text = stringResource(Res.string.privacy_reset_code),
                         color = MiuixTheme.colorScheme.primary,
                         style = MiuixTheme.textStyles.footnote1,
                         fontWeight = FontWeight.SemiBold,
@@ -386,7 +432,7 @@ fun PrivacyModeSettingsScreen(
                         colors = overlayActionButtonColors(),
                         insideMargin = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
                     ) {
-                        Text(stringResource(R.string.action_cancel))
+                        Text(stringResource(Res.string.action_cancel))
                     }
                     Button(
                         onClick = {
@@ -428,7 +474,7 @@ fun PrivacyModeSettingsScreen(
                         colors = overlayActionButtonColors(),
                         insideMargin = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
                     ) {
-                        Text(stringResource(R.string.action_enable), fontWeight = FontWeight.Bold)
+                        Text(stringResource(Res.string.action_enable), fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -440,7 +486,7 @@ fun PrivacyModeSettingsScreen(
     if (showChangeCodeDialog) {
         AppDialog(
             show = true,
-            title = stringResource(R.string.privacy_change_code),
+            title = stringResource(Res.string.privacy_change_code),
             onDismissRequest = {
                 showChangeCodeDialog = false
                 currentCode = ""
@@ -456,7 +502,7 @@ fun PrivacyModeSettingsScreen(
                         currentCode = it
                         changeCodeError = null
                     },
-                    label = stringResource(R.string.privacy_current_code),
+                    label = stringResource(Res.string.privacy_current_code),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     visualTransformation = PasswordVisualTransformation(),
@@ -474,7 +520,7 @@ fun PrivacyModeSettingsScreen(
                         newCode = it
                         changeCodeError = null
                     },
-                    label = stringResource(R.string.privacy_new_code),
+                    label = stringResource(Res.string.privacy_new_code),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     visualTransformation = PasswordVisualTransformation(),
@@ -511,7 +557,7 @@ fun PrivacyModeSettingsScreen(
                         colors = overlayActionButtonColors(),
                         insideMargin = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
                     ) {
-                        Text(stringResource(R.string.action_cancel))
+                        Text(stringResource(Res.string.action_cancel))
                     }
                     Button(
                         onClick = {
@@ -533,7 +579,7 @@ fun PrivacyModeSettingsScreen(
                         colors = overlayActionButtonColors(),
                         insideMargin = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
                     ) {
-                        Text(stringResource(R.string.action_change), fontWeight = FontWeight.Bold)
+                        Text(stringResource(Res.string.action_change), fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -545,7 +591,7 @@ fun PrivacyModeSettingsScreen(
     if (showDummyNameDialog) {
         AppDialog(
             show = true,
-            title = stringResource(R.string.privacy_change_dummy_name),
+            title = stringResource(Res.string.privacy_change_dummy_name),
             onDismissRequest = {
                 showDummyNameDialog = false
                 dummyNameDraft = ""
@@ -562,7 +608,7 @@ fun PrivacyModeSettingsScreen(
                             dummyNameError = null
                         }
                     },
-                    label = stringResource(R.string.privacy_dummy_name_field),
+                    label = stringResource(Res.string.privacy_dummy_name_field),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions =
@@ -596,7 +642,7 @@ fun PrivacyModeSettingsScreen(
                         colors = overlayActionButtonColors(),
                         insideMargin = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
                     ) {
-                        Text(stringResource(R.string.action_cancel))
+                        Text(stringResource(Res.string.action_cancel))
                     }
                     Button(
                         onClick = {
@@ -614,7 +660,7 @@ fun PrivacyModeSettingsScreen(
                         colors = overlayActionButtonColors(),
                         insideMargin = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
                     ) {
-                        Text(stringResource(R.string.action_save), fontWeight = FontWeight.Bold)
+                        Text(stringResource(Res.string.action_save), fontWeight = FontWeight.Bold)
                     }
                 }
             }
