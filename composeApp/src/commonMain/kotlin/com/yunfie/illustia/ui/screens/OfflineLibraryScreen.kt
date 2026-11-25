@@ -15,21 +15,20 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaUiState
-import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.SavedIllust
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.offline_library_empty
 import com.yunfie.illustia.resources.offline_library_title
 import com.yunfie.illustia.ui.components.AppHapticEffect
+import com.yunfie.illustia.ui.components.BackNavigationHandler
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.IllustGrid
-import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.onTopBarTap
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.smoothScrollToTop
+import com.yunfie.illustia.ui.screens.offline.OfflineLibraryActions
 import com.yunfie.illustia.visibleWithSettings
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
@@ -43,10 +42,10 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 fun OfflineLibraryScreen(
     state: IllustiaUiState,
-    viewModel: IllustiaViewModel,
+    viewModel: OfflineLibraryActions,
     onBack: () -> Unit,
 ) {
-    PredictiveBackGestureHandler(onBack = onBack)
+    BackNavigationHandler(onBack = onBack)
     LaunchedEffect(Unit) { viewModel.loadSavedLibrary() }
 
     val scrollBehavior = MiuixScrollBehavior()
@@ -86,7 +85,7 @@ fun OfflineLibraryScreen(
             illusts = savedIllusts,
             state = gridState,
             emptyMessage = stringResource(Res.string.offline_library_empty),
-            onOpenIllust = { viewModel.openIllust(it) },
+            onOpenIllust = { viewModel.openIllustFromCard(it) },
             modifier =
                 Modifier
                     .fillMaxSize()
