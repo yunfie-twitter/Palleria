@@ -1,7 +1,5 @@
 package com.yunfie.illustia.ui.components
 
-import android.os.SystemClock
-import androidx.compose.foundation.lazy.grid.LazyGridItemScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.MutableState
@@ -32,12 +30,12 @@ private val STATIC_FALSE: State<Boolean> =
         override val value: Boolean = false
     }
 
-internal data class ScrollRenderingResult(
+data class ScrollRenderingResult(
     val connection: NestedScrollConnection,
     val fastScrollingState: MutableState<Boolean>,
 )
 
-internal class ScrollSpeedTracker {
+class ScrollSpeedTracker {
     private var lastMillis = 0L
 
     fun isFast(
@@ -59,7 +57,7 @@ internal class ScrollSpeedTracker {
 }
 
 @Composable
-internal fun rememberScrollRendering(enabled: Boolean): ScrollRenderingResult {
+fun rememberScrollRendering(enabled: Boolean): ScrollRenderingResult {
     val density = LocalDensity.current.density
     val scope = rememberCoroutineScope()
     val fast = remember(enabled) { mutableStateOf(false) }
@@ -77,9 +75,9 @@ internal fun rememberScrollRendering(enabled: Boolean): ScrollRenderingResult {
                     source: NestedScrollSource,
                 ): Offset {
                     if (
-                        enabled && speed.isFast(consumed.y / density, SystemClock.uptimeMillis())
+                        enabled && speed.isFast(consumed.y / density, monotonicMillis())
                     ) {
-                        lastFastScrollAtMillis = SystemClock.uptimeMillis()
+                        lastFastScrollAtMillis = monotonicMillis()
                         if (!fast.value) fast.value = true
                         if (fastResetJob?.isActive != true) {
                             fastResetJob =
@@ -87,7 +85,7 @@ internal fun rememberScrollRendering(enabled: Boolean): ScrollRenderingResult {
                                     while (true) {
                                         val remaining =
                                             SCROLL_SETTLE_MILLIS -
-                                                (SystemClock.uptimeMillis() - lastFastScrollAtMillis)
+                                                (monotonicMillis() - lastFastScrollAtMillis)
                                         if (remaining <= 0L) break
                                         delay(remaining)
                                     }
@@ -110,8 +108,10 @@ internal fun rememberScrollRendering(enabled: Boolean): ScrollRenderingResult {
     )
 }
 
-/** Static zero-cost modifier for grid item placement, avoiding layout animations and recomposition overhead during scroll. */
-@Composable
-fun LazyGridItemScope.animatedGridPlacement(): Modifier = Modifier
-
 private const val SCROLL_SETTLE_MILLIS = 180L
+
+private fun monotonicMillis(): Long =
+    kotlin.time.TimeSource.Monotonic
+        .markNow()
+        .elapsedNow()
+        .inWholeMilliseconds

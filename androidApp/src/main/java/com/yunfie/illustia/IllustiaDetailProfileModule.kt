@@ -385,6 +385,10 @@ abstract class IllustiaDetailProfileModule(
         _uiState.update { it.copy(imageViewerIllust = null, imageViewerStartPage = 0, imageViewerCurrentPage = 0) }
     }
 
+    override fun onIllustLongPressById(illustId: Long) {
+        onIllustLongPress(illustId)
+    }
+
     fun onIllustLongPress(illust: Illust) {
         _uiState.update {
             it.copy(longPressedIllust = illust, longPressedUser = null, longPressedTag = null)

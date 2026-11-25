@@ -11,7 +11,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.structuralEqualityPolicy
 import coil3.compose.LocalPlatformContext
 import com.yunfie.illustia.models.Illust
-import com.yunfie.illustia.platform.PlatformCapabilities
+import com.yunfie.illustia.ui.components.PrefetchPixivImages
 import kotlinx.coroutines.flow.collect
 
 val LocalVelocityLandingPrefetchEnabled = compositionLocalOf { true }

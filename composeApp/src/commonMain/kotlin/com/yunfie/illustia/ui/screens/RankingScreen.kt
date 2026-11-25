@@ -44,11 +44,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaUiState
-import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.isMutedByTags
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.Restrict
+import com.yunfie.illustia.rankingUiState
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.action_load_more
 import com.yunfie.illustia.resources.dialog_reload
@@ -86,6 +86,7 @@ import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import com.yunfie.illustia.ui.components.smoothScrollToTop
+import com.yunfie.illustia.ui.screens.ranking.RankingActions
 import com.yunfie.illustia.ui.scroll.ScrollStateKeys
 import com.yunfie.illustia.ui.scroll.ScrollStateRegistry
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -118,7 +119,7 @@ fun RankingScreen(
     nextUrl: String?,
     mode: String,
     settings: AppSettings,
-    viewModel: IllustiaViewModel,
+    viewModel: RankingActions,
 ) {
     val modes =
         remember {
@@ -133,7 +134,8 @@ fun RankingScreen(
             pageCount = { modes.size },
         )
     val latestMode by rememberUpdatedState(mode)
-    val rankingState by viewModel.rankingState.collectAsStateWithLifecycle()
+    val uiState by viewModel.rankingIllustiaState.collectAsStateWithLifecycle()
+    val rankingState = uiState.rankingUiState
 
     // Commit a ranking change only after the swipe/scroll animation settles. This
     // avoids loading every intermediate tab when jumping across several modes.
@@ -204,7 +206,7 @@ fun RankingScreen(
                 actions = {
                     IconButton(
                         modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
-                        onClick = { viewModel.refreshRanking(modes[pagerState.targetPage]) },
+                        onClick = { viewModel.refreshRanking(modes[pagerState.targetPage], false) },
                     ) {
                         Icon(MiuixIcons.Refresh, contentDescription = stringResource(Res.string.dialog_reload))
                     }
@@ -319,7 +321,7 @@ private fun RankingGridContent(
     nextUrl: String?,
     mode: String,
     settings: com.yunfie.illustia.settings.AppSettings,
-    viewModel: IllustiaViewModel,
+    viewModel: RankingActions,
     isRefreshing: Boolean = false,
     isPaginating: Boolean = false,
     scrollBehavior: ScrollBehavior = MiuixScrollBehavior(),
@@ -407,11 +409,11 @@ private fun RankingGridContent(
 
             gridItems(items, key = { "ranking_${it.id}" }, contentType = { "illust_card" }) { illust ->
                 val illustId = illust.id
-                val onBookmark = remember(illust) { { viewModel.toggleBookmark(illust) } }
+                val onBookmark = remember(illust) { { viewModel.toggleBookmarkFromCard(illust) } }
                 val onBookmarkLongClick =
                     remember(illust) { { viewModel.openBookmarkTagPicker(illust) } }
                 val onClick = remember(illust) { { viewModel.openIllust(illust) } }
-                val onLongClick = remember(illustId) { { viewModel.onIllustLongPress(illustId) } }
+                val onLongClick = remember(illustId) { { viewModel.onIllustLongPressById(illustId) } }
 
                 IllustCard(
                     modifier = animatedGridPlacement(),

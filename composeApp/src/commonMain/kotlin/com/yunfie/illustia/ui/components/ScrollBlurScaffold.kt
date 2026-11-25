@@ -1,6 +1,5 @@
 package com.yunfie.illustia.ui.components
 
-import android.os.Build
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -93,7 +92,7 @@ fun ScrollBlurOverlay(
     val surface = MiuixTheme.colorScheme.surface
     val outline = MiuixTheme.colorScheme.outline
     val backdrop = rememberLayerBackdrop()
-    val supportsBlur = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    val supportsBlur = LocalHardwareBlurSupported.current
     // クイック設定に覆われている間は、覆われたヘッダーのバックドロップ再録画と
     // 追加のぼかし合成を止める（スクロール位置は保持したまま）。
     // スワイプで表に出ていないタブページも同様に止め、2 ページ分のブラー合成を避ける。

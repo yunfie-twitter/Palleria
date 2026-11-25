@@ -1,5 +1,6 @@
 package com.yunfie.illustia.ui.app
 
+import androidx.compose.runtime.compositionLocalOf
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 
@@ -9,7 +10,7 @@ import kotlinx.coroutines.flow.SharedFlow
  * ViewModel とは独立した UI 専用の調整役で、タブ型 ([AppTab]) を ViewModel 層へ
  * 持ち込まないために切り出している。
  */
-internal class TabUiState {
+class TabUiState {
     /** 現在選択中のタブ。 */
     var activeTab: AppTab? = null
 
@@ -23,3 +24,10 @@ internal class TabUiState {
         _scrollToTopRequests.tryEmit(tab)
     }
 }
+
+/**
+ * タブ UI の状態を Compose ツリーへ配る。
+ *
+ * ViewModel から切り離した UI 専用の調整役。
+ */
+val LocalTabUiState = compositionLocalOf<TabUiState> { error("TabUiState not provided") }

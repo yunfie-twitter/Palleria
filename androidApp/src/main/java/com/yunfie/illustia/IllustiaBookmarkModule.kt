@@ -548,6 +548,10 @@ abstract class IllustiaBookmarkModule(
         _watchlistRefreshRequests.tryEmit(Unit)
     }
 
+    override fun toggleBookmarkFromCard(illust: Illust) {
+        toggleBookmark(illust)
+    }
+
     fun toggleBookmark(
         illust: Illust,
         restrict: com.yunfie.illustia.models.Restrict? = null,
@@ -559,7 +563,7 @@ abstract class IllustiaBookmarkModule(
         performToggleBookmark(illust, restrict)
     }
 
-    fun openBookmarkTagPicker(illust: Illust) {
+    override fun openBookmarkTagPicker(illust: Illust) {
         val settings = _uiState.value.settings
         if (settings.refreshToken.isBlank()) {
             _uiState.update { it.copy(message = str(StringKey.ErrorBookmarkFailed)) }

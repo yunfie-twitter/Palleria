@@ -161,7 +161,7 @@ abstract class IllustiaAuthFeedModule(
         }
     }
 
-    fun selectRankingMode(mode: String) {
+    override fun selectRankingMode(mode: String) {
         _uiState.update {
             it.copy(
                 rankingMode = mode,
@@ -485,16 +485,16 @@ abstract class IllustiaAuthFeedModule(
         _uiState.update { it.copy(selectedNovel = null, selectedNovelText = null) }
     }
 
-    fun loadRankingModeIfNeeded(mode: String = _uiState.value.rankingMode) {
+    override fun loadRankingModeIfNeeded(mode: String) {
         val state = _uiState.value
         if (!state.rankingModeItems[mode].isNullOrEmpty()) return
         if (state.rankingModeLoadStates[mode] is LoadState.Loading) return
-        refreshRanking(mode)
+        refreshRanking(mode, false)
     }
 
-    fun refreshRanking(
-        mode: String = _uiState.value.rankingMode,
-        forceRefresh: Boolean = false,
+    override fun refreshRanking(
+        mode: String,
+        forceRefresh: Boolean,
     ) {
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update {
@@ -550,7 +550,7 @@ abstract class IllustiaAuthFeedModule(
         }
     }
 
-    fun loadMoreRanking(mode: String = _uiState.value.rankingMode) {
+    override fun loadMoreRanking(mode: String) {
         val nextUrl = _uiState.value.rankingModeNextUrls[mode] ?: _uiState.value.rankingNextUrl ?: return
         if (_uiState.value.isRankingPaginating[mode] == true) return
         viewModelScope.launch(Dispatchers.IO) {

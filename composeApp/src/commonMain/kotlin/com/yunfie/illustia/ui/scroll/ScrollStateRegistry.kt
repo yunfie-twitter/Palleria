@@ -2,7 +2,6 @@ package com.yunfie.illustia.ui.scroll
 
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState
-import com.yunfie.illustia.ui.scroll.ScrollStateKeys
 
 /**
  * タブ切替などで再利用する固定キー。

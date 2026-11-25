@@ -817,6 +817,8 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         LocalBottomSheetBackgroundColor provides MiuixTheme.colorScheme.surfaceContainerHigh,
         LocalArtworkCardPreferences provides artworkCardPreferences,
         LocalAppHapticMode provides effectiveHapticMode,
+        com.yunfie.illustia.ui.components.LocalHardwareBlurSupported provides
+            (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S),
         com.yunfie.illustia.ui.components.LocalAppHapticEffect provides
             rememberPlatformHapticAction(),
         com.yunfie.illustia.ui.components.LocalAppHapticPerformer provides

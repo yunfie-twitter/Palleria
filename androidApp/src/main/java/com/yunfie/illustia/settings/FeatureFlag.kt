@@ -5,8 +5,6 @@ import com.yunfie.illustia.settings.store.LEGACY_PREFS_NAME
 import com.yunfie.illustia.settings.store.decodeFeatureFlags
 import java.util.concurrent.ConcurrentHashMap
 
-fun AppSettings.isFeatureEnabled(flag: FeatureFlag): Boolean = flag.resolve(this)
-
 private val featureFlagCache = ConcurrentHashMap<String, Boolean>()
 
 fun updateFeatureFlagCache(flags: Map<String, Boolean>) {
