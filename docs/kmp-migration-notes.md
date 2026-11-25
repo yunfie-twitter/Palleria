@@ -39,3 +39,35 @@
 ## 検証コマンド
   gradlew :androidApp:testDebugUnitTest ktlintCheck --console=plain -q
   gradlew :androidApp:compileDebugKotlin --console=plain -q
+
+## ハプティクスの抽象化（プラットフォーム注入）
+Vibrator API は Android 専用のため、共有 UI から直接呼べない。
+composeApp の `HapticContract.kt` に次の 3 つを置き、androidApp 側で実装を提供する。
+
+  enum class AppHapticEffect
+  val LocalAppHapticEffect = compositionLocalOf<(AppHapticEffect) -> Unit>
+  val LocalAppHapticMode / ProvideAppHaptics(...)
+
+`miuixClickable` と `pinchToChangeColumns` は LocalAppHapticEffect 経由で発火する。
+androidApp の `Haptics.kt` は Vibrator 実装本体のみを持つ。
+
+## 現在の到達点
+androidApp (main) のファイル数と、composeApp へ移したもの:
+
+| 移動済み | 移動先 |
+|---|---|
+| models/{CommonLabels,SearchLabels,SearchAgeRestrictionLabels} | composeApp |
+| settings/{AppFont,AppThemeMode,FeatureFlagLabels,PixivNetworkMode} | composeApp |
+| ui/components/{NavigationChrome,MiuixGlass,CommonCore,HeaderComponents,PermissionRationaleDialog} | composeApp |
+| IllustiaUiState.kt, ChromeStates.kt | shared |
+
+Android 側に残した新規ファイル: ui/components/AndroidPlatformCore.kt
+（Context.isActiveNetworkMetered / PredictiveBackGestureHandler / AvatarImage）
+
+## 残っている大きな作業
+- ui.screens の 59 ファイルが `viewModel.<member>` を 510 箇所・224 メンバー分呼ぶ
+  → ViewModel の UI 向け interface 抽出が次の本命（別 PR 規模）
+- ui.components の残りは PixivImage (Coil + Bitmap + NativeImageAnalysis) が
+  ボトルネックで、これが解けないと 5 ファイル前後が動かない
+- PixivImage / Haptics / PlatformCapabilities / CommonCore の Android 部は
+  当面 androidApp に残る
