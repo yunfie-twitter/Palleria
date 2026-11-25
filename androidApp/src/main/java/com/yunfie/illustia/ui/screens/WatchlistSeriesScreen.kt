@@ -239,7 +239,7 @@ fun WatchlistSeriesScreen(
     val bannerCoverUrl = processedSeries.firstOrNull { !it.thumbnailUrl.isNullOrBlank() }?.thumbnailUrl
 
     LaunchedEffect(store) {
-        store.fetch()
+        store.fetch(forceRefresh = false)
     }
 
     val scrollToTop: () -> Unit = {
@@ -294,7 +294,7 @@ fun WatchlistSeriesScreen(
 
         ScrollablePullToRefresh(
             isRefreshing = state.isRefreshing,
-            onRefresh = { scope.launch { store.fetch() } },
+            onRefresh = { scope.launch { store.fetch(forceRefresh = false) } },
             pullToRefreshState = pullToRefreshState,
             modifier = Modifier.fillMaxSize(),
         ) {
@@ -329,7 +329,7 @@ fun WatchlistSeriesScreen(
                         bannerUrl = bannerCoverUrl,
                         seriesCount = processedSeries.size,
                         backgroundColor = backgroundColor,
-                        onRefresh = { scope.launch { store.fetch() } },
+                        onRefresh = { scope.launch { store.fetch(forceRefresh = false) } },
                     )
                 }
 
@@ -451,7 +451,7 @@ fun WatchlistSeriesScreen(
             compact = isContentScrolled,
             onBack = onBack,
             onTitleClick = scrollToTop,
-            onRefresh = { scope.launch { store.fetch() } },
+            onRefresh = { scope.launch { store.fetch(forceRefresh = false) } },
             onMessage = { viewModel.showMessage(it) },
         )
     }

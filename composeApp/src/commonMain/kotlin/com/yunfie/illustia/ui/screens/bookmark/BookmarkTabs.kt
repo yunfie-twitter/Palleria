@@ -1,4 +1,4 @@
-package com.yunfie.illustia.ui.screens
+package com.yunfie.illustia.ui.screens.bookmark
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -41,10 +41,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.BookmarkChromeState
 import com.yunfie.illustia.FollowingUserSort
-import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
 import com.yunfie.illustia.data.pixiv.WatchlistState
-import com.yunfie.illustia.data.pixiv.WatchlistStore
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.Restrict
@@ -69,12 +66,12 @@ import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.AvatarImage
 import com.yunfie.illustia.ui.components.CenteredErrorState
-import com.yunfie.illustia.ui.components.CoilPixivImage
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.IllustCard
 import com.yunfie.illustia.ui.components.IllustCardSkeleton
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.LocalScrollHeaderInset
+import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
 import com.yunfie.illustia.ui.components.ProfileGridHorizontalSpacing
 import com.yunfie.illustia.ui.components.ProfileGridVerticalSpacing
@@ -92,6 +89,8 @@ import com.yunfie.illustia.ui.components.pinchToChangeColumns
 import com.yunfie.illustia.ui.components.profileGridContentPadding
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import com.yunfie.illustia.ui.components.rememberSkeletonShimmer
+import com.yunfie.illustia.ui.screens.bookmark.BookmarkTabsActions
+import com.yunfie.illustia.ui.screens.bookmark.WatchlistPager
 import com.yunfie.illustia.ui.scroll.ScrollStateKeys
 import com.yunfie.illustia.ui.scroll.ScrollStateRegistry
 import kotlinx.coroutines.launch
@@ -113,10 +112,10 @@ import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import androidx.compose.foundation.lazy.grid.items as gridItems
 
 @Composable
-internal fun BookmarkWatchlistTab(
+fun BookmarkWatchlistTab(
     settings: AppSettings,
     watchlistState: WatchlistState,
-    watchlistStore: WatchlistStore,
+    watchlistStore: WatchlistPager,
     onOpenWatchlistSeries: (Long) -> Unit,
     scrollBehavior: ScrollBehavior? = null,
     gridState: LazyGridState = rememberLazyGridState(),
@@ -267,7 +266,7 @@ private fun WatchlistSeriesCard(
             ) {
                 val thumbnailUrl = series.thumbnailUrl
                 if (!thumbnailUrl.isNullOrBlank()) {
-                    CoilPixivImage(
+                    PixivImage(
                         url = thumbnailUrl,
                         contentDescription = series.title,
                         modifier = Modifier.fillMaxSize(),
@@ -394,13 +393,13 @@ private fun WatchlistSeriesCardSkeleton(
 }
 
 @Composable
-internal fun BookmarkMainTab(
+fun BookmarkMainTab(
     bookmarkItems: List<Illust>,
     loadState: LoadState,
     settings: AppSettings,
     feedHighQuality: Boolean,
     showAiBadge: Boolean,
-    viewModel: IllustiaViewModel,
+    viewModel: BookmarkTabsActions,
     chrome: BookmarkChromeState,
     scrollBehavior: ScrollBehavior,
 ) {
@@ -422,14 +421,14 @@ internal fun BookmarkMainTab(
     val columns = adaptiveIllustColumns(settings)
     ScrollablePullToRefresh(
         isRefreshing = chrome.isBookmarkRefreshing,
-        onRefresh = { viewModel.refreshBookmarks(forceRefresh = true) },
+        onRefresh = { viewModel.reloadBookmarks(true) },
         modifier = Modifier.fillMaxSize(),
     ) {
         val emptyError = (loadState as? LoadState.Error)?.takeIf { bookmarkItems.isEmpty() }
         if (emptyError != null) {
             CenteredErrorState(
                 message = emptyError.message,
-                onRetry = { viewModel.refreshBookmarks(forceRefresh = true) },
+                onRetry = { viewModel.reloadBookmarks(true) },
             )
             return@ScrollablePullToRefresh
         }
@@ -450,7 +449,7 @@ internal fun BookmarkMainTab(
                     .pinchToChangeColumns(
                         enabled = pinchEnabled,
                         currentColumns = columns,
-                        onColumnsChange = viewModel::updateVerticalColumnCount,
+                        onColumnsChange = viewModel::updateColumnsFromGrid,
                     ).nestedScroll(scrollBehavior.nestedScrollConnection),
             contentPadding =
                 PaddingValues(
@@ -466,7 +465,7 @@ internal fun BookmarkMainTab(
                 items(6, contentType = { "illust_skeleton" }) { IllustCardSkeleton(shimmerValue = shimmer) }
             } else {
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    StateBanner(loadState, onRetry = { viewModel.refreshBookmarks(forceRefresh = true) })
+                    StateBanner(loadState, onRetry = { viewModel.reloadBookmarks(true) })
                 }
             }
             if (isEmptyAfterLoad(bookmarkItems.isEmpty(), loadState)) {
@@ -476,13 +475,13 @@ internal fun BookmarkMainTab(
             }
             gridItems(bookmarkItems, key = { it.id }, contentType = { "illust_card" }) { illust ->
                 val illustId = illust.id
-                val onBookmark = remember(illustId) { { viewModel.toggleBookmark(illustId) } }
+                val onBookmark = remember(illustId) { { viewModel.toggleBookmarkById(illustId) } }
                 val onBookmarkLongClick =
                     remember(
                         illustId,
-                    ) { { viewModel.openBookmarkTagPicker(illust) } }
-                val onClick = remember(illustId) { { viewModel.openIllust(illustId) } }
-                val onLongClick = remember(illustId) { { viewModel.onIllustLongPress(illustId) } }
+                    ) { { viewModel.openBookmarkTagPickerFor(illust) } }
+                val onClick = remember(illustId) { { viewModel.openIllustById(illustId) } }
+                val onLongClick = remember(illustId) { { viewModel.onIllustLongPressById(illustId) } }
                 IllustCard(
                     modifier = animatedGridPlacement(),
                     illust = illust,
@@ -529,13 +528,13 @@ internal fun BookmarkMainTab(
 }
 
 @Composable
-internal fun BookmarkTimelineTab(
+fun BookmarkTimelineTab(
     timelineItems: List<Illust>,
     loadState: LoadState,
     settings: AppSettings,
     feedHighQuality: Boolean,
     showAiBadge: Boolean,
-    viewModel: IllustiaViewModel,
+    viewModel: BookmarkTabsActions,
     chrome: BookmarkChromeState,
     scrollBehavior: ScrollBehavior,
 ) {
@@ -558,14 +557,14 @@ internal fun BookmarkTimelineTab(
     val columns = adaptiveIllustColumns(settings)
     ScrollablePullToRefresh(
         isRefreshing = chrome.isTimelineRefreshing,
-        onRefresh = { viewModel.refreshTimeline(forceRefresh = true) },
+        onRefresh = { viewModel.refreshTimeline(true) },
         modifier = Modifier.fillMaxSize(),
     ) {
         val emptyError = (loadState as? LoadState.Error)?.takeIf { timelineItems.isEmpty() }
         if (emptyError != null) {
             CenteredErrorState(
                 message = emptyError.message,
-                onRetry = { viewModel.refreshTimeline(forceRefresh = true) },
+                onRetry = { viewModel.refreshTimeline(true) },
             )
             return@ScrollablePullToRefresh
         }
@@ -586,7 +585,7 @@ internal fun BookmarkTimelineTab(
                     .pinchToChangeColumns(
                         enabled = pinchEnabled,
                         currentColumns = columns,
-                        onColumnsChange = viewModel::updateVerticalColumnCount,
+                        onColumnsChange = viewModel::updateColumnsFromGrid,
                     ).nestedScroll(scrollBehavior.nestedScrollConnection),
             contentPadding =
                 PaddingValues(
@@ -602,7 +601,7 @@ internal fun BookmarkTimelineTab(
                 items(6, contentType = { "illust_skeleton" }) { IllustCardSkeleton(shimmerValue = shimmer) }
             } else {
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    StateBanner(loadState, onRetry = { viewModel.refreshTimeline(forceRefresh = true) })
+                    StateBanner(loadState, onRetry = { viewModel.refreshTimeline(true) })
                 }
             }
             if (isEmptyAfterLoad(timelineItems.isEmpty(), loadState)) {
@@ -612,13 +611,13 @@ internal fun BookmarkTimelineTab(
             }
             gridItems(timelineItems, key = { "timeline_${it.id}" }, contentType = { "illust_card" }) { illust ->
                 val illustId = illust.id
-                val onBookmark = remember(illustId) { { viewModel.toggleBookmark(illustId) } }
+                val onBookmark = remember(illustId) { { viewModel.toggleBookmarkById(illustId) } }
                 val onBookmarkLongClick =
                     remember(
                         illustId,
-                    ) { { viewModel.openBookmarkTagPicker(illust) } }
-                val onClick = remember(illustId) { { viewModel.openIllust(illustId) } }
-                val onLongClick = remember(illustId) { { viewModel.onIllustLongPress(illustId) } }
+                    ) { { viewModel.openBookmarkTagPickerFor(illust) } }
+                val onClick = remember(illustId) { { viewModel.openIllustById(illustId) } }
+                val onLongClick = remember(illustId) { { viewModel.onIllustLongPressById(illustId) } }
                 IllustCard(
                     modifier = animatedGridPlacement(),
                     illust = illust,
@@ -665,12 +664,12 @@ internal fun BookmarkTimelineTab(
 }
 
 @Composable
-internal fun BookmarkFollowingTab(
+fun BookmarkFollowingTab(
     settings: AppSettings,
     followingUsers: List<UserPreview>,
     sort: FollowingUserSort,
     loadState: LoadState,
-    viewModel: IllustiaViewModel,
+    viewModel: BookmarkTabsActions,
     chrome: BookmarkChromeState,
     scrollBehavior: ScrollBehavior? = null,
 ) {
@@ -705,14 +704,14 @@ internal fun BookmarkFollowingTab(
 
     ScrollablePullToRefresh(
         isRefreshing = chrome.isFollowingRefreshing,
-        onRefresh = { viewModel.refreshFollowingUsers(forceRefresh = true) },
+        onRefresh = { viewModel.refreshFollowingUsers(true) },
         modifier = Modifier.fillMaxSize(),
     ) {
         val emptyError = (loadState as? LoadState.Error)?.takeIf { followingUsers.isEmpty() }
         if (emptyError != null) {
             CenteredErrorState(
                 message = emptyError.message,
-                onRetry = { viewModel.refreshFollowingUsers(forceRefresh = true) },
+                onRetry = { viewModel.refreshFollowingUsers(true) },
             )
             return@ScrollablePullToRefresh
         }
@@ -750,7 +749,7 @@ internal fun BookmarkFollowingTab(
                 }
             } else {
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    StateBanner(loadState, onRetry = { viewModel.refreshFollowingUsers(forceRefresh = true) })
+                    StateBanner(loadState, onRetry = { viewModel.refreshFollowingUsers(true) })
                 }
             }
             if (isEmptyAfterLoad(followingUsers.isEmpty(), loadState)) {
@@ -762,14 +761,14 @@ internal fun BookmarkFollowingTab(
                 val onLongClick =
                     remember(user, miuixPeekEnabled) {
                         if (miuixPeekEnabled) {
-                            { viewModel.onUserLongPress(user) }
+                            { viewModel.onFollowingUserLongPress(user) }
                         } else {
                             null
                         }
                     }
                 UserResultCard(
                     user = user,
-                    onClick = { viewModel.openUserPage(user) },
+                    onClick = { viewModel.openUserPageFor(user) },
                     onLongClick = onLongClick,
                 )
             }
@@ -808,7 +807,7 @@ internal fun BookmarkFollowingTab(
 }
 
 @Composable
-internal fun CompactBookmarkTabs(
+fun CompactBookmarkTabs(
     selectedTab: Int,
     onSelect: (Int) -> Unit,
     isBlurEnabled: Boolean = false,

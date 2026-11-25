@@ -1110,7 +1110,7 @@ abstract class IllustiaAuthFeedModule(
         }
     }
 
-    fun loadMoreTimeline() {
+    override fun loadMoreTimeline() {
         val state = _uiState.value
         val nextUrl = state.timelineNextUrl ?: return
         if (state.isTimelinePaginating) return
@@ -1317,7 +1317,7 @@ abstract class IllustiaAuthFeedModule(
         }
     }
 
-    fun loadMoreFollowingUsers() {
+    override fun loadMoreFollowingUsers() {
         val state = _uiState.value
         val nextUrl = state.followingUsersNextUrl ?: return
         if (state.isFollowingPaginating) return

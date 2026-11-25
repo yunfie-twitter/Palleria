@@ -58,6 +58,11 @@ import com.yunfie.illustia.ui.components.ScrollBlurScaffold
 import com.yunfie.illustia.ui.components.onTopBarTap
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.smoothScrollToTop
+import com.yunfie.illustia.ui.screens.bookmark.BookmarkFollowingTab
+import com.yunfie.illustia.ui.screens.bookmark.BookmarkMainTab
+import com.yunfie.illustia.ui.screens.bookmark.BookmarkTimelineTab
+import com.yunfie.illustia.ui.screens.bookmark.BookmarkWatchlistTab
+import com.yunfie.illustia.ui.screens.bookmark.CompactBookmarkTabs
 import com.yunfie.illustia.ui.scroll.ScrollStateKeys
 import com.yunfie.illustia.ui.scroll.ScrollStateRegistry
 import com.yunfie.illustia.uiRepository
@@ -102,7 +107,7 @@ fun BookmarkScreen(
     val watchlistStore = remember(repository, context) { WatchlistStore(repository, context) }
     val watchlistState by watchlistStore.state.collectAsStateWithLifecycle()
     LaunchedEffect(viewModel, watchlistStore) {
-        viewModel.watchlistRefreshRequests.collect { watchlistStore.fetch() }
+        viewModel.watchlistRefreshRequests.collect { watchlistStore.fetch(forceRefresh = false) }
     }
     val pagerState =
         rememberPagerState(
@@ -124,7 +129,7 @@ fun BookmarkScreen(
 
     LaunchedEffect(selectedTopTab) {
         if (selectedTopTab == 2 && watchlistState.model == null && !watchlistState.isLoading) {
-            watchlistStore.fetch()
+            watchlistStore.fetch(forceRefresh = false)
         }
     }
 
@@ -164,7 +169,7 @@ fun BookmarkScreen(
         when (selectedTopTab) {
             0 -> if (timelineItems.isEmpty()) viewModel.refreshTimeline()
             1 -> if (bookmarkItems.isEmpty()) viewModel.refreshBookmarks()
-            2 -> if (watchlistState.model == null && !watchlistState.isLoading) watchlistStore.fetch()
+            2 -> if (watchlistState.model == null && !watchlistState.isLoading) watchlistStore.fetch(forceRefresh = false)
             3 -> if (followingUsers.isEmpty()) viewModel.refreshFollowingUsers()
         }
     }
@@ -438,7 +443,7 @@ fun BookmarkScreen(
                         performHaptic(AppHapticEffect.Click)
                         when (selectedTopTab) {
                             0 -> viewModel.refreshTimeline(forceRefresh = true)
-                            2 -> coroutineScope.launch { watchlistStore.fetch() }
+                            2 -> coroutineScope.launch { watchlistStore.fetch(forceRefresh = false) }
                             3 -> viewModel.refreshFollowingUsers(forceRefresh = true)
                             else -> viewModel.refreshBookmarks(forceRefresh = true)
                         }

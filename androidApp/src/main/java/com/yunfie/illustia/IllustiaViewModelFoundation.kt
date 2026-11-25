@@ -44,6 +44,7 @@ import com.yunfie.illustia.ui.app.SearchEntrySnapshot
 import com.yunfie.illustia.ui.screens.account.AccountActions
 import com.yunfie.illustia.ui.screens.account.LoginActions
 import com.yunfie.illustia.ui.screens.bookmark.BookmarkSettingsActions
+import com.yunfie.illustia.ui.screens.bookmark.BookmarkTabsActions
 import com.yunfie.illustia.ui.screens.calculator.CalculatorActions
 import com.yunfie.illustia.ui.screens.favorites.FavoriteTagsActions
 import com.yunfie.illustia.ui.screens.history.ViewHistoryActions
@@ -161,7 +162,8 @@ abstract class IllustiaViewModelFoundation(
     FavoriteTagsActions,
     SearchBrowseActions,
     RelatedUsersActions,
-    OfflineLibraryActions {
+    OfflineLibraryActions,
+    BookmarkTabsActions {
     /**
      * ViewModel の生存期間に紐づくコルーチンスコープ。生成側（ファクトリ）が渡す。
      * 各モジュールの 70 箇所ある `viewModelScope.launch { }` はこのプロパティを指す。

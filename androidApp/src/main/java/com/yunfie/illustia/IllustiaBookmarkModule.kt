@@ -4,6 +4,7 @@ import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.SearchWorkType
+import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.platform.StringKey
 import com.yunfie.illustia.platform.ViewModelDepsApi
 import kotlinx.coroutines.CancellationException
@@ -527,7 +528,7 @@ abstract class IllustiaBookmarkModule(
             }
     }
 
-    fun loadMoreBookmarks() {
+    override fun loadMoreBookmarks() {
         val requestState = _uiState.value
         val nextUrl = requestState.bookmarkNextUrl ?: return
         if (requestState.isBookmarkPaginating) return
@@ -580,6 +581,34 @@ abstract class IllustiaBookmarkModule(
 
     override fun onIllustLongPressById(illustId: Long) {
         onIllustLongPress(illustId)
+    }
+
+    override fun toggleBookmarkById(illustId: Long) {
+        toggleBookmark(illustId)
+    }
+
+    override fun openBookmarkTagPickerFor(illust: Illust) {
+        openBookmarkTagPicker(illust)
+    }
+
+    override fun openIllustById(illustId: Long) {
+        openIllust(illustId)
+    }
+
+    override fun updateColumnsFromGrid(columns: Int) {
+        updateVerticalColumnCount(columns)
+    }
+
+    override fun reloadBookmarks(forceRefresh: Boolean) {
+        refreshBookmarks(forceRefresh)
+    }
+
+    override fun onFollowingUserLongPress(user: UserPreview) {
+        onUserLongPress(user)
+    }
+
+    override fun openUserPageFor(user: UserPreview) {
+        openUserPage(user)
     }
 
     fun toggleBookmark(
