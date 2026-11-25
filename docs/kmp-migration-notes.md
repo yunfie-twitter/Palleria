@@ -58,16 +58,52 @@ androidApp (main) のファイル数と、composeApp へ移したもの:
 |---|---|
 | models/{CommonLabels,SearchLabels,SearchAgeRestrictionLabels} | composeApp |
 | settings/{AppFont,AppThemeMode,FeatureFlagLabels,PixivNetworkMode} | composeApp |
-| ui/components/{NavigationChrome,MiuixGlass,CommonCore,HeaderComponents,PermissionRationaleDialog} | composeApp |
+| ui/components/{NavigationChrome,MiuixGlass,CommonCore,HeaderComponents,PermissionRationaleDialog,FeedbackComponents,SettingsComponents,HapticContract} | composeApp |
+| ui/screens/{CalculatorScreen,CalculatorScreenParts,DetailSectionSettingsScreen,DownloadQueueScreen,SavedIllustViewerScreen,AccountSettingsScreen,NavigationSettingsScreen,NetworkSettingsScreen,FeatureFlagsScreen} | composeApp |
 | IllustiaUiState.kt, ChromeStates.kt | shared |
 
-Android 側に残した新規ファイル: ui/components/AndroidPlatformCore.kt
-（Context.isActiveNetworkMetered / PredictiveBackGestureHandler / AvatarImage）
+画面数の推移: androidApp 250 / composeApp(commonMain) 41 / shared 85
+
+Android 側に残したファイル:
+- ui/components/AndroidPlatformCore.kt
+  （Context.isActiveNetworkMetered / PredictiveBackGestureHandler / AvatarImage）
+- ui/components/CenteredErrorOverlay.kt（DialogWindowProvider 依存）
+- ui/components/Haptics.kt（Vibrator 実装）
 
 ## 残っている大きな作業
-- ui.screens の 59 ファイルが `viewModel.<member>` を 510 箇所・224 メンバー分呼ぶ
-  → ViewModel の UI 向け interface 抽出が次の本命（別 PR 規模）
-- ui.components の残りは PixivImage (Coil + Bitmap + NativeImageAnalysis) が
-  ボトルネックで、これが解けないと 5 ファイル前後が動かない
-- PixivImage / Haptics / PlatformCapabilities / CommonCore の Android 部は
-  当面 androidApp に残る
+
+**ViewModel interface 抽出は稼働中**。画面ごとに「必要な操作だけの
+インターフェース」を composeApp に定義し、Foundation と各 Module に
+override を付け、画面の引数型を差し替える。この手順で移したもの:
+
+  CalculatorActions  -> CalculatorScreen, CalculatorScreenParts
+  SettingsActions    -> DetailSectionSettingsScreen, NavigationSettingsScreen,
+                        FeatureFlagsScreen (+ NetworkActions 経由)
+  LibraryActions     -> DownloadQueueScreen, SavedIllustViewerScreen
+                        (+ NetworkActions 経由)
+  AccountActions     -> AccountSettingsScreen
+
+**新しい画面を移す手順**
+
+1. androidApp 側で `viewModel.<member>` / `viewModel::<member>` を全部洗い出す
+   （grep は `viewModel\.[A-Za-z_]+` と `viewModel::` の両方を見ること。
+   片方だけだと漏れる）
+2. 必要な操作を composeApp の既存 interface に足す（無ければ新設）。
+   引数型が shared にあるものだけインターフェースに出せる。
+   androidApp 側の型（FeatureFlag 拡張など）は出せないので、
+   呼び出し側を `flag.resolve(settings)` のように書き換える。
+3. Module 側の `fun` に `override` を付ける（シグネチャは変えない）。
+4. Foundation のスーパータイプ一覧にインターフェースを追加。
+5. 画面の引数型を差し替え → コンパイル → 移動 → テスト。
+
+**共通の落とし穴（移すと壊れるもの）**
+
+- `SettingsActions` や `FeatureFlag.titleRes` は基本そのまま移せるが、
+  `isFeatureEnabled` 拡張は androidApp の単体テストが import しているため
+  androidApp に残す（app は shared/composeApp を implementation 依存しており、
+  テストからは見えない）
+- `PredictiveBackGestureHandler` を使っている画面は
+  `BackNavigationHandler`（共有側）に置換する。予測型戻るの可否は
+  androidApp の BackHandlerRegistrar 実装が判断する
+- `LocalView` / `DialogWindowProvider` / `Vibrator` / `Coil Bitmap` を
+  使う部品は androidApp に残す（CenteredErrorOverlay, PixivImage, Haptics 等）
