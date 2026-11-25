@@ -22,8 +22,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.action_add
 import com.yunfie.illustia.resources.action_close
@@ -40,12 +38,13 @@ import com.yunfie.illustia.resources.mute_users_empty
 import com.yunfie.illustia.resources.mute_works_empty
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.AppBottomSheet
+import com.yunfie.illustia.ui.components.BackNavigationHandler
 import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
-import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.Section
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
+import com.yunfie.illustia.ui.screens.mute.MuteActions
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Button
@@ -68,10 +67,10 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 @Composable
 fun MuteSettingsScreen(
     settings: AppSettings,
-    viewModel: IllustiaViewModel,
+    viewModel: MuteActions,
     onBack: () -> Unit,
 ) {
-    PredictiveBackGestureHandler(onBack = onBack)
+    BackNavigationHandler(onBack = onBack)
     val scrollBehavior = MiuixScrollBehavior()
     var showAddTagSheet by remember { mutableStateOf(false) }
 

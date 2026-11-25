@@ -778,20 +778,20 @@ abstract class IllustiaDetailProfileModule(
         removeMutedFromVisibleLists()
     }
 
-    fun muteTag(tag: String) {
+    override fun muteTag(tag: String) {
         updateSettings { it.copy(mutedTags = (it.mutedTags + tag).distinct()) }
         removeMutedFromVisibleLists()
     }
 
-    fun unmuteIllust(id: Long) {
+    override fun unmuteIllust(id: Long) {
         updateSettings { it.copy(mutedIllusts = it.mutedIllusts.filterNot { mutedId -> mutedId == id }) }
     }
 
-    fun unmuteUser(id: Long) {
+    override fun unmuteUser(id: Long) {
         updateSettings { it.copy(mutedUsers = it.mutedUsers.filterNot { mutedId -> mutedId == id }) }
     }
 
-    fun unmuteTag(tag: String) {
+    override fun unmuteTag(tag: String) {
         updateSettings { it.copy(mutedTags = it.mutedTags.filterNot { mutedTag -> mutedTag == tag }) }
     }
 

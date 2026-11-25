@@ -192,7 +192,7 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(notchOptimization = value) }
     }
 
-    fun updateConfirmOnLongPressSave(value: Boolean) {
+    override fun updateConfirmOnLongPressSave(value: Boolean) {
         updateSettings { it.copy(confirmOnLongPressSave = value) }
     }
 
@@ -333,7 +333,7 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(detailSectionOrder = normalized.ifEmpty { it.detailSectionOrder }) }
     }
 
-    fun updateSkipConfirmOnDetailSave(value: Boolean) {
+    override fun updateSkipConfirmOnDetailSave(value: Boolean) {
         updateSettings { it.copy(skipConfirmOnDetailSave = value) }
     }
 
@@ -724,19 +724,19 @@ abstract class IllustiaSettingsSecurityModule(
         return ((until - clock.elapsedRealtimeMillis()) / 1000L).coerceAtLeast(0L)
     }
 
-    fun updateFollowOnLike(value: Boolean) {
+    override fun updateFollowOnLike(value: Boolean) {
         updateSettings { it.copy(followOnLike = value) }
     }
 
-    fun updatePrivateBookmarkDefault(value: Boolean) {
+    override fun updatePrivateBookmarkDefault(value: Boolean) {
         updateSettings { it.copy(privateBookmarkDefault = value) }
     }
 
-    fun updateAutoDownloadOnBookmark(value: Boolean) {
+    override fun updateAutoDownloadOnBookmark(value: Boolean) {
         updateSettings { it.copy(autoDownloadOnBookmark = value) }
     }
 
-    fun updateAutoBookmarkOnDownload(value: Boolean) {
+    override fun updateAutoBookmarkOnDownload(value: Boolean) {
         updateSettings { it.copy(autoBookmarkOnDownload = value) }
     }
 
@@ -752,7 +752,7 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(downloadFolderByWork = value) }
     }
 
-    fun updateAutoTagOnBookmark(value: Boolean) {
+    override fun updateAutoTagOnBookmark(value: Boolean) {
         updateSettings { it.copy(autoTagOnBookmark = value) }
     }
 
@@ -945,31 +945,31 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(pixivNetworkMode = value) }
     }
 
-    fun updateInternalProxyEnabled(value: Boolean) {
+    override fun updateInternalProxyEnabled(value: Boolean) {
         updateSettings { it.copy(internalProxyEnabled = value) }
     }
 
-    fun updateInternalProxyType(value: String) {
+    override fun updateInternalProxyType(value: String) {
         updateSettings { it.copy(internalProxyType = value) }
     }
 
-    fun updateInternalProxyHost(value: String) {
+    override fun updateInternalProxyHost(value: String) {
         updateSettings { it.copy(internalProxyHost = value) }
     }
 
-    fun updateInternalProxyPort(value: Int) {
+    override fun updateInternalProxyPort(value: Int) {
         updateSettings { it.copy(internalProxyPort = value) }
     }
 
-    fun updateInternalProxyBypassHosts(value: String) {
+    override fun updateInternalProxyBypassHosts(value: String) {
         updateSettings { it.copy(internalProxyBypassHosts = value) }
     }
 
-    fun updateDohProvider(value: String) {
+    override fun updateDohProvider(value: String) {
         updateSettings { it.copy(dohProvider = value) }
     }
 
-    fun updateDohCustomUrl(value: String) {
+    override fun updateDohCustomUrl(value: String) {
         updateSettings { it.copy(dohCustomUrl = value) }
     }
 
@@ -989,7 +989,7 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(bookmarkRestrict = value) }
     }
 
-    fun updateFollowRestrict(value: Restrict) {
+    override fun updateFollowRestrict(value: Restrict) {
         updateSettings { it.copy(followRestrict = value) }
     }
 

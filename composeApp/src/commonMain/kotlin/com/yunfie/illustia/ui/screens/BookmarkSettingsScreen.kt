@@ -9,8 +9,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.labelResId
 import com.yunfie.illustia.resources.Res
@@ -34,13 +32,14 @@ import com.yunfie.illustia.resources.bookmark_skip_confirm_on_detail
 import com.yunfie.illustia.resources.bookmark_skip_confirm_on_detail_desc
 import com.yunfie.illustia.resources.follow_visibility
 import com.yunfie.illustia.settings.AppSettings
+import com.yunfie.illustia.ui.components.BackNavigationHandler
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
-import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.Section
 import com.yunfie.illustia.ui.components.SettingDropdownRow
 import com.yunfie.illustia.ui.components.SettingSwitchRow
+import com.yunfie.illustia.ui.screens.bookmark.BookmarkSettingsActions
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -52,10 +51,10 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 fun BookmarkSettingsScreen(
     settings: AppSettings,
-    viewModel: IllustiaViewModel,
+    viewModel: BookmarkSettingsActions,
     onBack: () -> Unit,
 ) {
-    PredictiveBackGestureHandler(onBack = onBack)
+    BackNavigationHandler(onBack = onBack)
     val scrollBehavior = MiuixScrollBehavior()
     Scaffold(
         containerColor = MiuixTheme.colorScheme.surface,

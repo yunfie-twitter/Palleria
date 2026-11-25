@@ -1050,7 +1050,7 @@ abstract class IllustiaAuthFeedModule(
         }
     }
 
-    fun refreshTimeline(forceRefresh: Boolean = false) {
+    override fun refreshTimeline(forceRefresh: Boolean) {
         val requestedRestrict = _uiState.value.settings.followRestrict
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update {
@@ -1275,7 +1275,7 @@ abstract class IllustiaAuthFeedModule(
         }
     }
 
-    fun refreshFollowingUsers(forceRefresh: Boolean = false) {
+    override fun refreshFollowingUsers(forceRefresh: Boolean) {
         val requestedRestrict = _uiState.value.settings.followRestrict
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update {
