@@ -2,9 +2,6 @@
 
 package com.yunfie.illustia.ui.components
 
-import android.content.Context
-import android.net.ConnectivityManager
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -37,13 +34,10 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.settings.AppSettings
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
@@ -63,13 +57,11 @@ val MainNavigationContentPadding = 152.dp
 val BottomSheetInsideMargin = DpSize(width = 24.dp, height = 12.dp)
 
 /**
- * ダイアログ内容の下端に確保する余白。
- *
- * アプリのルートは `appNavigationScrim()` で navigationBars を消費し帯も塗り済みだが、miuix の
+ * ダイアログ冁E��の下端に確保する余白、E *
+ * アプリのルート�E `appNavigationScrim()` で navigationBars を消費し帯も塗り済みだが、miuix の
  * `OverlayDialog` は既定で imePadding と navigationBarsPadding を両方適用する。そのため
- * キーボード表示時に両者が積まれ、キーボードとの間に隙間ができる。`OverlayDialog` 側で
- * `defaultWindowInsetsPadding = false` にしたうえで、内側で大きい方だけを確保する。
- */
+ * キーボ�Eド表示時に両老E��積まれ、キーボ�Eドとの間に隙間ができる。`OverlayDialog` 側で
+ * `defaultWindowInsetsPadding = false` にしたぁE��で、�E側で大きい方だけを確保する、E */
 @Composable
 fun dialogBottomInsets(): WindowInsets =
     WindowInsets.navigationBars
@@ -92,21 +84,13 @@ fun overlayActionButtonColors() =
     )
 
 /**
- * 作品画像の上に重ねるボタン用。背景を透かして画像を見せつつ、文字は濃色で読ませる。
- */
+ * 作品画像�E上に重�Eる�Eタン用。背景を透かして画像を見せつつ、文字�E濁E��で読ませる、E */
 @Composable
 fun tagMenuActionButtonColors() =
     ButtonDefaults.buttonColors(
         color = MiuixTheme.colorScheme.surface.copy(alpha = 0.86f),
         contentColor = MiuixTheme.colorScheme.onSurface,
     )
-
-fun Context.isActiveNetworkMetered(): Boolean {
-    val connectivityManager = getSystemService(ConnectivityManager::class.java)
-    return runCatching {
-        connectivityManager?.isActiveNetworkMetered ?: false
-    }.getOrDefault(false)
-}
 
 @Composable
 fun NonAmoledDarkTheme(content: @Composable () -> Unit) {
@@ -119,20 +103,6 @@ fun NonAmoledDarkTheme(content: @Composable () -> Unit) {
         }
     MiuixTheme(controller = controller) {
         content()
-    }
-}
-
-@Composable
-fun PredictiveBackGestureHandler(
-    enabled: Boolean = true,
-    onBack: () -> Unit,
-) {
-    if (PlatformCapabilities.supportsPredictiveBack()) {
-        return
-    }
-
-    BackHandler(enabled = enabled) {
-        onBack()
     }
 }
 
@@ -175,9 +145,7 @@ fun Modifier.pinchToChangeColumns(
     onColumnsChange: (Int) -> Unit,
 ): Modifier {
     if (!enabled) return this
-    val context = LocalContext.current
-    val haptic = LocalHapticFeedback.current
-    val hapticMode = LocalAppHapticMode.current
+    val hapticEffect = LocalAppHapticEffect.current
 
     val currentColumnsState = rememberUpdatedState(currentColumns)
     val onColumnsChangeState = rememberUpdatedState(onColumnsChange)
@@ -195,11 +163,11 @@ fun Modifier.pinchToChangeColumns(
                             val direction = if (scrollAccumulator > 0) 1 else -1
                             val next = (currentColumnsState.value + direction).coerceIn(1, 4)
                             if (next != currentColumnsState.value) {
-                                performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Click)
+                                hapticEffect(AppHapticEffect.Click)
                                 onColumnsChangeState.value(next)
                                 onPinchGestureSuccessState.value?.invoke()
                             } else {
-                                performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.BoundaryLimit)
+                                hapticEffect(AppHapticEffect.BoundaryLimit)
                             }
                             scrollAccumulator = 0f
                         }
@@ -226,11 +194,11 @@ fun Modifier.pinchToChangeColumns(
                     if (update.columnDelta != 0) {
                         val next = (currentColumnsState.value + update.columnDelta).coerceIn(1, 4)
                         if (next != currentColumnsState.value) {
-                            performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Click)
+                            hapticEffect(AppHapticEffect.Click)
                             onColumnsChangeState.value(next)
                             onPinchGestureSuccessState.value?.invoke()
                         } else {
-                            performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.BoundaryLimit)
+                            hapticEffect(AppHapticEffect.BoundaryLimit)
                         }
                     }
                 } while (event.changes.any { it.pressed })
@@ -255,9 +223,7 @@ fun Modifier.miuixClickable(
     onClick: () -> Unit,
 ): Modifier {
     if (!enabled) return this
-    val context = LocalContext.current
-    val hapticFeedback = LocalHapticFeedback.current
-    val hapticMode = LocalAppHapticMode.current
+    val hapticEffect = LocalAppHapticEffect.current
     return pointerHoverIcon(PointerIcon.Hand)
         .pressable(
             interactionSource = null,
@@ -266,48 +232,10 @@ fun Modifier.miuixClickable(
             interactionSource = null,
             indication = null,
             onClick = {
-                if (haptic) performAppHapticFeedback(context, hapticFeedback, hapticMode)
+                if (haptic) hapticEffect(AppHapticEffect.Click)
                 onClick()
             },
         )
-}
-
-@Composable
-fun AvatarImage(
-    url: String?,
-    name: String,
-    size: Dp,
-    modifier: Modifier = Modifier,
-    maxDecodeDimensionPx: Int = AVATAR_IMAGE_MAX_DECODE_DIMENSION_PX,
-) {
-    val commonModifier =
-        modifier
-            .size(size)
-            .clip(CircleShape)
-            .background(MiuixTheme.colorScheme.surfaceContainerHigh)
-
-    if (url != null) {
-        PixivImage(
-            url = url,
-            contentDescription = name,
-            contentScale = ContentScale.Crop,
-            modifier = commonModifier,
-            thumbnail = true,
-            maxDecodeDimensionPx = maxDecodeDimensionPx,
-        )
-    } else {
-        Box(
-            modifier = commonModifier,
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                "no image",
-                color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                style = MiuixTheme.textStyles.footnote2,
-                fontWeight = FontWeight.Black,
-            )
-        }
-    }
 }
 
 const val FAST_SCROLL_THRESHOLD = 20

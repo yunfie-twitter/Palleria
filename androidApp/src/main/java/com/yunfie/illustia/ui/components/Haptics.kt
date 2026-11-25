@@ -6,31 +6,15 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import androidx.annotation.RequiresApi
-import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.settings.AppHapticMode
 
-val LocalAppHapticMode = compositionLocalOf { AppHapticMode.Rich }
-
 val NoOpHapticFeedback =
     object : HapticFeedback {
         override fun performHapticFeedback(hapticFeedbackType: HapticFeedbackType) = Unit
     }
-
-enum class AppHapticEffect {
-    Click,
-    Toggle,
-    Success,
-    Error,
-    BookmarkBurst,
-    BoundaryLimit,
-    ThresholdSnap,
-    WheelTick,
-    Peek,
-    Dismiss,
-}
 
 @androidx.compose.runtime.Composable
 fun rememberHapticFeedbackAction(): (AppHapticEffect) -> Unit {
