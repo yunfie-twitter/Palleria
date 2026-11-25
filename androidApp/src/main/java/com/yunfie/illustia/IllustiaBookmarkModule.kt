@@ -552,6 +552,10 @@ abstract class IllustiaBookmarkModule(
         toggleBookmark(illust)
     }
 
+    override fun openIllustFromCard(illust: Illust) {
+        openIllust(illust)
+    }
+
     fun toggleBookmark(
         illust: Illust,
         restrict: com.yunfie.illustia.models.Restrict? = null,

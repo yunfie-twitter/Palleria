@@ -74,7 +74,7 @@ abstract class IllustiaSettingsSecurityModule(
         }
     }
 
-    fun loadFullViewHistory() {
+    override fun loadFullViewHistory() {
         viewModelScope.launch(Dispatchers.IO) {
             val fullHistory = repository.readFullViewHistory()
             val bookmarkedIds =
@@ -904,7 +904,7 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(startupScreen = value) }
     }
 
-    fun updateVerticalColumnCount(value: Int) {
+    override fun updateVerticalColumnCount(value: Int) {
         updateSettings { it.copy(verticalColumnCount = value.coerceIn(1, 4)) }
     }
 

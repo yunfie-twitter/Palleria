@@ -24,11 +24,8 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaUiState
-import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.action_back
@@ -64,11 +61,11 @@ import com.yunfie.illustia.resources.view_history_selected_count
 import com.yunfie.illustia.resources.view_history_show_search
 import com.yunfie.illustia.resources.view_history_sort_artist
 import com.yunfie.illustia.ui.components.AppHapticEffect
+import com.yunfie.illustia.ui.components.BackNavigationHandler
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.IllustCard
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
-import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.animatedGridPlacement
@@ -76,6 +73,7 @@ import com.yunfie.illustia.ui.components.onTopBarTap
 import com.yunfie.illustia.ui.components.pinchToChangeColumns
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.smoothScrollToTop
+import com.yunfie.illustia.ui.screens.history.ViewHistoryActions
 import com.yunfie.illustia.visibleWithSettings
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
@@ -120,11 +118,11 @@ private enum class ViewHistoryTypeFilter {
 @Composable
 fun ViewHistoryScreen(
     state: IllustiaUiState,
-    viewModel: IllustiaViewModel,
+    viewModel: ViewHistoryActions,
     onBack: () -> Unit,
 ) {
     val performHaptic = rememberHapticFeedbackAction()
-    PredictiveBackGestureHandler(onBack = onBack)
+    BackNavigationHandler(onBack = onBack)
     LaunchedEffect(Unit) { viewModel.loadFullViewHistory() }
     var deleteTarget by remember { mutableStateOf<ViewHistoryDeleteTarget?>(null) }
     var selectedIds by remember { mutableStateOf(emptySet<Long>()) }
@@ -309,7 +307,7 @@ fun ViewHistoryScreen(
                                         selectedIds.forEach { id ->
                                             visibleHistory.firstOrNull { it.id == id }?.let { illust ->
                                                 if (!illust.isBookmarked) {
-                                                    viewModel.toggleBookmark(illust)
+                                                    viewModel.toggleBookmarkFromCard(illust)
                                                 }
                                             }
                                         }
@@ -588,14 +586,14 @@ fun ViewHistoryScreen(
                     isSelected = isSelected,
                     onBookmark = {
                         performHaptic(AppHapticEffect.Toggle)
-                        viewModel.toggleBookmark(illust)
+                        viewModel.toggleBookmarkFromCard(illust)
                     },
                     onClick = {
                         if (hasSelection) {
                             performHaptic(AppHapticEffect.Toggle)
                             selectedIds = if (isSelected) selectedIds - illust.id else selectedIds + illust.id
                         } else {
-                            viewModel.openIllust(illust)
+                            viewModel.openIllustFromCard(illust)
                         }
                     },
                     onLongClick = {

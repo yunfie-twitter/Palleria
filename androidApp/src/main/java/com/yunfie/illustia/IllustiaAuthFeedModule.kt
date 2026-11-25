@@ -1353,11 +1353,11 @@ abstract class IllustiaAuthFeedModule(
         }
     }
 
-    fun clearViewHistory() {
+    override fun clearViewHistory() {
         updateSettings { it.copy(viewHistory = emptyList()) }
     }
 
-    fun removeViewHistory(ids: Collection<Long>) {
+    override fun removeViewHistory(ids: Collection<Long>) {
         val targetIds = ids.toSet()
         if (targetIds.isEmpty()) return
         updateSettings { settings ->
