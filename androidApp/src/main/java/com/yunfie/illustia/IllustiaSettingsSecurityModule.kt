@@ -361,7 +361,7 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(doubleTapToBookmark = value) }
     }
 
-    fun updateHideAiWorks(value: Boolean) {
+    override fun updateHideAiWorks(value: Boolean) {
         updateSettings { it.copy(hideAiWorks = value) }
         refreshActiveSearch()
     }
@@ -1009,32 +1009,32 @@ abstract class IllustiaSettingsSecurityModule(
         _uiState.update { it.copy(searchSelectedTab = index) }
     }
 
-    fun updateSearchSort(value: SearchSort) {
+    override fun updateSearchSort(value: SearchSort) {
         updateSettings { it.copy(searchSort = value) }
         refreshActiveSearch()
     }
 
-    fun updateSearchTarget(value: SearchTarget) {
+    override fun updateSearchTarget(value: SearchTarget) {
         updateSettings { it.copy(searchTarget = value) }
         refreshActiveSearch()
     }
 
-    fun updateSearchWorkType(value: SearchWorkType) {
+    override fun updateSearchWorkType(value: SearchWorkType) {
         updateSettings { it.copy(searchWorkType = value) }
         refreshActiveSearch()
     }
 
-    fun updateSearchDuration(value: SearchDuration) {
+    override fun updateSearchDuration(value: SearchDuration) {
         updateSettings { it.copy(searchDuration = value) }
         refreshActiveSearch()
     }
 
-    fun updateSearchBookmarkFilter(value: SearchBookmarkFilter) {
+    override fun updateSearchBookmarkFilter(value: SearchBookmarkFilter) {
         updateSettings { it.copy(searchBookmarkFilter = value) }
         refreshActiveSearch()
     }
 
-    fun updateSearchAgeRestriction(value: SearchAgeRestriction) {
+    override fun updateSearchAgeRestriction(value: SearchAgeRestriction) {
         updateSettings { it.copy(searchAgeRestriction = value) }
         refreshActiveSearch()
     }

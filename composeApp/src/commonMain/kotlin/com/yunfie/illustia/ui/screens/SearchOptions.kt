@@ -11,8 +11,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaUiState
-import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
 import com.yunfie.illustia.SearchUiState
 import com.yunfie.illustia.models.SearchAgeRestriction
 import com.yunfie.illustia.models.SearchBookmarkFilter
@@ -39,6 +37,7 @@ import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.ChoiceRow
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
 import com.yunfie.illustia.ui.components.SettingSwitchRow
+import com.yunfie.illustia.ui.screens.search.SearchOptionsActions
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
@@ -57,10 +56,10 @@ private val SearchDurationOptions = SearchDuration.entries.toList()
 private val SearchBookmarkFilterOptions = SearchBookmarkFilter.entries.toList()
 
 @Composable
-internal fun SearchOptionsSheet(
+fun SearchOptionsSheet(
     show: Boolean,
     state: SearchUiState,
-    viewModel: IllustiaViewModel,
+    viewModel: SearchOptionsActions,
     onDismiss: () -> Unit,
 ) {
     if (!show) return
@@ -95,10 +94,10 @@ internal fun SearchOptionsSheet(
 }
 
 @Composable
-internal fun SearchOptionsSheet(
+fun SearchOptionsSheet(
     show: Boolean,
     state: IllustiaUiState,
-    viewModel: IllustiaViewModel,
+    viewModel: SearchOptionsActions,
     onDismiss: () -> Unit,
 ) {
     SearchOptionsSheet(
@@ -110,9 +109,9 @@ internal fun SearchOptionsSheet(
 }
 
 @Composable
-internal fun SearchOptionsContent(
+fun SearchOptionsContent(
     state: SearchUiState,
-    viewModel: IllustiaViewModel,
+    viewModel: SearchOptionsActions,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -209,9 +208,9 @@ internal fun SearchOptionsContent(
 }
 
 @Composable
-internal fun SearchOptionsContent(
+fun SearchOptionsContent(
     state: IllustiaUiState,
-    viewModel: IllustiaViewModel,
+    viewModel: SearchOptionsActions,
     modifier: Modifier = Modifier,
 ) {
     SearchOptionsContent(
