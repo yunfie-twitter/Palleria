@@ -35,8 +35,8 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.ui.components.AppHapticEffect
+import com.yunfie.illustia.ui.components.CoilPixivImage
 import com.yunfie.illustia.ui.components.LoadingIndicator
-import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -236,7 +236,7 @@ internal fun ZoomablePixivImage(
                     )
                 },
     ) {
-        PixivImage(
+        CoilPixivImage(
             url = url,
             contentDescription = contentDescription,
             contentScale = ContentScale.Fit,

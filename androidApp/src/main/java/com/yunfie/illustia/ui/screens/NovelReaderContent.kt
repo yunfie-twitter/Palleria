@@ -71,8 +71,8 @@ import com.yunfie.illustia.resources.novel_theme_black
 import com.yunfie.illustia.resources.novel_theme_dark
 import com.yunfie.illustia.resources.novel_theme_sepia
 import com.yunfie.illustia.resources.novel_theme_system
+import com.yunfie.illustia.ui.components.CoilPixivImage
 import com.yunfie.illustia.ui.components.ElevatedPanel
-import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.miuixClickable
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -644,7 +644,7 @@ private fun NovelArtworkCard(
                             .background(MiuixTheme.colorScheme.surfaceContainer),
                     contentAlignment = Alignment.Center,
                 ) {
-                    PixivImage(
+                    CoilPixivImage(
                         url = currentPreviewUrl,
                         contentDescription = stringResource(Res.string.novel_inline_illust_label),
                         contentScale = ContentScale.Crop,

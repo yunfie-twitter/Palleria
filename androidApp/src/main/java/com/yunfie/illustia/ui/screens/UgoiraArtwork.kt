@@ -56,9 +56,9 @@ import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.ugoira_load_failed
 import com.yunfie.illustia.ui.components.AppHapticEffect
+import com.yunfie.illustia.ui.components.CoilPixivImage
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.LocalSystemUiCovered
-import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -540,7 +540,7 @@ internal fun UgoiraArtwork(
                         modifier = Modifier.fillMaxSize(),
                     )
                 } else {
-                    PixivImage(
+                    CoilPixivImage(
                         url = previewUrl,
                         contentDescription = contentDescription,
                         contentScale = contentScale,

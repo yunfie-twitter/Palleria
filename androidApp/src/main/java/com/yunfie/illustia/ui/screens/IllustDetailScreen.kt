@@ -96,6 +96,7 @@ import com.yunfie.illustia.resources.detail_unfollow_title
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.AvatarImage
 import com.yunfie.illustia.ui.components.BookmarkHeartButton
+import com.yunfie.illustia.ui.components.CoilPixivImage
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.FlowButtons
 import com.yunfie.illustia.ui.components.FollowPill
@@ -104,7 +105,6 @@ import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.LocalAppHapticMode
 import com.yunfie.illustia.ui.components.LocalArtworkCardPreferences
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
-import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.ProvideAppNavigationScrimColor
 import com.yunfie.illustia.ui.components.ScrollablePullToRefresh
@@ -464,7 +464,7 @@ fun IllustDetailScreen(
                         .background(MiuixTheme.colorScheme.surface),
             ) {
                 if (isActive && isPulling && PlatformCapabilities.supportsHardwareBlur(context)) {
-                    PixivImage(
+                    CoilPixivImage(
                         url = illust.thumbnailUrl.ifBlank { illust.squareImageUrl.ifBlank { illust.previewUrl } },
                         contentDescription = null,
                         contentScale = ContentScale.Crop,

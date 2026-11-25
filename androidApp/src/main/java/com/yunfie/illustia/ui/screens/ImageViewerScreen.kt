@@ -97,7 +97,7 @@ import com.yunfie.illustia.resources.copied_image_to_clipboard
 import com.yunfie.illustia.resources.copy_image_failed
 import com.yunfie.illustia.resources.viewer_share_failed
 import com.yunfie.illustia.ui.components.AppHapticEffect
-import com.yunfie.illustia.ui.components.PixivImage
+import com.yunfie.illustia.ui.components.CoilPixivImage
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.resolveProgressivePlaceholderUrls
@@ -665,7 +665,7 @@ fun ImageViewerScreen(
         ) {
             if (ambientLightEnabled && ambientUrls.isNotEmpty() && PlatformCapabilities.supportsHardwareBlur(context)) {
                 val ambientUrl = ambientUrls.getOrNull(currentPageState.value) ?: ambientUrls.first()
-                PixivImage(
+                CoilPixivImage(
                     url = ambientUrl,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
@@ -724,7 +724,7 @@ fun ImageViewerScreen(
                             key = { index, _ -> index },
                             contentType = { _, _ -> "comic_page" },
                         ) { page, url ->
-                            PixivImage(
+                            CoilPixivImage(
                                 url = url,
                                 contentDescription = "${illust.title} ${page + 1}",
                                 contentScale = ContentScale.FillWidth,

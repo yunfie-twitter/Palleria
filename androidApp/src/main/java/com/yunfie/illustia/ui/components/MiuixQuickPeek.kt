@@ -70,7 +70,7 @@ fun MiuixArtworkQuickPeek(
                 insideMargin = PaddingValues(0.dp),
             ) {
                 Box(modifier = Modifier.fillMaxWidth().height(260.dp)) {
-                    PixivImage(
+                    CoilPixivImage(
                         url = illust.imageUrl,
                         contentDescription = illust.title,
                         contentScale = ContentScale.Crop,
@@ -188,7 +188,7 @@ fun MiuixUserQuickPeek(
                     }
                 }
                 user.previewIllusts.firstOrNull()?.let { illust ->
-                    PixivImage(
+                    CoilPixivImage(
                         url = illust.squareImageUrl.ifBlank { illust.imageUrl },
                         contentDescription = illust.title,
                         contentScale = ContentScale.Crop,

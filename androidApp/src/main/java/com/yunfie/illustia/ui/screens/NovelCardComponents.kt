@@ -48,9 +48,9 @@ import com.yunfie.illustia.resources.novel_resume_reading
 import com.yunfie.illustia.resources.novel_status_completed
 import com.yunfie.illustia.resources.novel_status_later
 import com.yunfie.illustia.resources.novel_status_reading
+import com.yunfie.illustia.ui.components.CoilPixivImage
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.LocalArtworkCardPreferences
-import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.cachedVerticalGradient
 import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
@@ -156,7 +156,7 @@ internal fun NovelCard(
                         .aspectRatio(0.72f)
                         .clip(RoundedCornerShape(14.dp)),
             ) {
-                PixivImage(
+                CoilPixivImage(
                     url = novel.coverUrl,
                     contentDescription = novel.title,
                     contentScale = ContentScale.Crop,

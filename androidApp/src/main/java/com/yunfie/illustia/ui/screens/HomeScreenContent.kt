@@ -43,13 +43,13 @@ import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.CenteredErrorState
+import com.yunfie.illustia.ui.components.CoilPixivImage
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.IllustCard
 import com.yunfie.illustia.ui.components.IllustCardSkeleton
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.LocalScrollHeaderInset
 import com.yunfie.illustia.ui.components.OfflineCachedChip
-import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
 import com.yunfie.illustia.ui.components.ScrollablePullToRefresh
 import com.yunfie.illustia.ui.components.StateBanner
@@ -86,7 +86,7 @@ internal fun HomeAccountAvatar(account: UserProfile?) {
     ) {
         val avatarUrl = account?.profileImageUrl
         if (account != null && !avatarUrl.isNullOrBlank()) {
-            PixivImage(
+            CoilPixivImage(
                 url = avatarUrl,
                 contentDescription = account.name,
                 contentScale = ContentScale.Crop,

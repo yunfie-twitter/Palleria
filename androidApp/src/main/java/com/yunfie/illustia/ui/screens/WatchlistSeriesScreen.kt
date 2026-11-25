@@ -97,10 +97,10 @@ import com.yunfie.illustia.settings.resolvePageBackgroundColor
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.AvatarImage
 import com.yunfie.illustia.ui.components.CenteredErrorState
+import com.yunfie.illustia.ui.components.CoilPixivImage
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.HeaderOverlayIcon
 import com.yunfie.illustia.ui.components.LoadingIndicator
-import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.ProfileGridHorizontalSpacing
 import com.yunfie.illustia.ui.components.ProfileGridVerticalSpacing
@@ -263,7 +263,7 @@ fun WatchlistSeriesScreen(
             derivedStateOf { pullToRefreshState.pullProgress > 0.06f }
         }
         if (showPullCover && !bannerCoverUrl.isNullOrBlank()) {
-            PixivImage(
+            CoilPixivImage(
                 url = bannerCoverUrl.orEmpty(),
                 contentDescription = null,
                 thumbnail = true,
@@ -489,7 +489,7 @@ private fun WatchlistHeader(
                     .background(MiuixTheme.colorScheme.surfaceContainerHigh),
         ) {
             if (!bannerUrl.isNullOrBlank()) {
-                PixivImage(
+                CoilPixivImage(
                     url = bannerUrl,
                     contentDescription = null,
                     thumbnail = true,
@@ -698,7 +698,7 @@ private fun WatchlistSmallTopAppBar(
 
     Box(Modifier.fillMaxWidth()) {
         if (compact && !bannerUrl.isNullOrBlank()) {
-            PixivImage(
+            CoilPixivImage(
                 url = bannerUrl,
                 contentDescription = null,
                 thumbnail = true,
@@ -804,7 +804,7 @@ private fun WatchlistSeriesCard(
             ) {
                 val thumbnailUrl = series.thumbnailUrl
                 if (!thumbnailUrl.isNullOrBlank()) {
-                    PixivImage(
+                    CoilPixivImage(
                         url = thumbnailUrl,
                         contentDescription = series.title,
                         modifier = Modifier.fillMaxSize(),

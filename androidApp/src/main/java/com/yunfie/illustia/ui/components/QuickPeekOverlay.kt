@@ -185,7 +185,7 @@ fun QuickPeekOverlay(
                                     .heightIn(min = 240.dp, max = 460.dp),
                             contentAlignment = Alignment.Center,
                         ) {
-                            PixivImage(
+                            CoilPixivImage(
                                 url = illust.imageUrl,
                                 contentDescription = illust.title,
                                 contentScale = ContentScale.Crop,

@@ -48,8 +48,8 @@ import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.action_open
 import com.yunfie.illustia.resources.novel_inline_illust_label
 import com.yunfie.illustia.resources.novel_open_illust
+import com.yunfie.illustia.ui.components.CoilPixivImage
 import com.yunfie.illustia.ui.components.ElevatedPanel
-import com.yunfie.illustia.ui.components.PixivImage
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
@@ -499,7 +499,7 @@ private fun NovelVerticalArtworkCard(
             ) {
                 val currentPreviewUrl = previewUrl
                 if (currentPreviewUrl != null) {
-                    PixivImage(
+                    CoilPixivImage(
                         url = currentPreviewUrl,
                         contentDescription = stringResource(Res.string.novel_inline_illust_label),
                         contentScale = ContentScale.Crop,

@@ -76,7 +76,7 @@ fun TagTile(
     ) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
             if (imageUrl != null) {
-                PixivImage(
+                CoilPixivImage(
                     url = imageUrl,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,

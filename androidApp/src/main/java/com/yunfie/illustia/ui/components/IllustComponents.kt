@@ -386,7 +386,7 @@ private fun IllustCardThumbnail(
                 .background(MiuixTheme.colorScheme.surfaceContainer),
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            PixivImage(
+            CoilPixivImage(
                 url = previewUrl,
                 contentDescription = title,
                 contentScale = ContentScale.Crop,
@@ -619,7 +619,7 @@ fun IllustListRow(
                         .clip(IllustRowCornerShape)
                         .background(MiuixTheme.colorScheme.surfaceContainerHigh),
             ) {
-                PixivImage(
+                CoilPixivImage(
                     url = illust.thumbnailUrl,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
@@ -706,7 +706,7 @@ fun HighlightCard(
         onClick = onClick,
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            PixivImage(
+            CoilPixivImage(
                 url = illust.previewUrl,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,

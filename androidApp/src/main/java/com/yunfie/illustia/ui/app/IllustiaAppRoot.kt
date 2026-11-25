@@ -838,7 +838,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
             },
         com.yunfie.illustia.ui.components.LocalAvatarImageRenderer provides
             com.yunfie.illustia.ui.components.AvatarImageRenderer { url, contentDescription, modifier, maxDecodeDimensionPx ->
-                com.yunfie.illustia.ui.components.PixivImage(
+                com.yunfie.illustia.ui.components.CoilPixivImage(
                     url = url,
                     contentDescription = contentDescription,
                     contentScale = androidx.compose.ui.layout.ContentScale.Crop,
@@ -846,6 +846,33 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                     thumbnail = true,
                     maxDecodeDimensionPx = maxDecodeDimensionPx,
                 )
+            },
+        com.yunfie.illustia.ui.components.LocalPixivImageRenderer provides
+            com.yunfie.illustia.ui.components.PixivImageRenderer { spec ->
+                com.yunfie.illustia.ui.components.CoilPixivImage(
+                    url = spec.url,
+                    contentDescription = spec.contentDescription,
+                    contentScale = spec.contentScale,
+                    modifier = spec.modifier,
+                    crossfade = spec.crossfade,
+                    thumbnail = spec.thumbnail,
+                    maxDecodeDimensionPx = spec.maxDecodeDimensionPx,
+                    allowRgb565 = spec.allowRgb565,
+                    showLoadingSpinner = spec.showLoadingSpinner,
+                    placeholderUrl = spec.placeholderUrl,
+                    retryToken = spec.retryToken,
+                )
+            },
+        com.yunfie.illustia.ui.components.LocalPixivPrefetchRenderer provides
+            object : com.yunfie.illustia.ui.components.PixivPrefetchRenderer {
+                @androidx.compose.runtime.Composable
+                override fun Prefetch(
+                    urls: List<String>,
+                    limit: Int,
+                ) {
+                    com.yunfie.illustia.ui.components
+                        .CoilPrefetchPixivImages(urls = urls, limit = limit)
+                }
             },
         LocalHapticFeedback provides
             if (effectiveHapticMode == AppHapticMode.Off) {

@@ -118,7 +118,7 @@ private suspend fun analyzeDarkHeaderIcons(
 }
 
 @Composable
-fun PixivImage(
+internal fun CoilPixivImage(
     url: String,
     contentDescription: String?,
     contentScale: ContentScale,
@@ -338,9 +338,8 @@ fun PixivImage(
 }
 
 @Composable
-fun PrefetchPixivImages(
+internal fun CoilPrefetchPixivImages(
     urls: List<String>,
-    enabled: Boolean,
     limit: Int = 12,
 ) {
     val context = LocalPlatformContext.current
@@ -359,8 +358,8 @@ fun PrefetchPixivImages(
 
     val activeRequests = remember { mutableMapOf<String, () -> Unit>() }
 
-    LaunchedEffect(enabled, prefetchUrls) {
-        if (!enabled || prefetchUrls.isEmpty()) {
+    LaunchedEffect(prefetchUrls) {
+        if (prefetchUrls.isEmpty()) {
             activeRequests.values.forEach { cancel -> cancel() }
             activeRequests.clear()
             return@LaunchedEffect

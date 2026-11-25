@@ -70,11 +70,11 @@ import com.yunfie.illustia.resources.page_count_short
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.ArtworkCardPreferences
 import com.yunfie.illustia.ui.components.AvatarImage
+import com.yunfie.illustia.ui.components.CoilPixivImage
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.FlowButtons
 import com.yunfie.illustia.ui.components.FollowPill
 import com.yunfie.illustia.ui.components.LocalArtworkCardPreferences
-import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.adaptiveRelatedIllustColumns
 import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
@@ -706,7 +706,7 @@ internal fun RelatedIllustCard(
                     onLongClick = onLongClick,
                 ),
     ) {
-        PixivImage(
+        CoilPixivImage(
             url = related.squareImageUrl.ifBlank { related.mediumImageUrl.ifBlank { related.imageUrl } },
             contentDescription = related.title,
             contentScale = ContentScale.Crop,

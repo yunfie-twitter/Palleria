@@ -13,7 +13,7 @@ fun ProvideAvatarImageRenderer(content: @Composable () -> Unit) {
     CompositionLocalProvider(
         LocalAvatarImageRenderer provides
             AvatarImageRenderer { url, contentDescription, modifier, maxDecodeDimensionPx ->
-                PixivImage(
+                CoilPixivImage(
                     url = url,
                     contentDescription = contentDescription,
                     contentScale = ContentScale.Crop,

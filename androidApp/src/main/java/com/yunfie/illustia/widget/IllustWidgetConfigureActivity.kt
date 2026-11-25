@@ -57,8 +57,8 @@ import com.yunfie.illustia.resources.widget_illust_pick_page
 import com.yunfie.illustia.resources.widget_illust_title
 import com.yunfie.illustia.ui.components.AppBottomSheet
 import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
+import com.yunfie.illustia.ui.components.CoilPixivImage
 import com.yunfie.illustia.ui.components.LoadingIndicator
-import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.screens.OnboardingScreen
 import com.yunfie.illustia.ui.screens.RefreshTokenLoginBottomSheet
 import com.yunfie.illustia.ui.screens.SearchScreen
@@ -393,7 +393,7 @@ private fun WidgetPagePickerSheet(
         insideMargin = BottomSheetInsideMargin,
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-            PixivImage(
+            CoilPixivImage(
                 url = urls[selected],
                 contentDescription = illust.title,
                 contentScale = ContentScale.Crop,
@@ -418,7 +418,7 @@ private fun WidgetPagePickerSheet(
                                     onPageSelected(index)
                                 },
                     ) {
-                        PixivImage(
+                        CoilPixivImage(
                             url = url,
                             contentDescription = "${illust.title} $index",
                             contentScale = ContentScale.Crop,

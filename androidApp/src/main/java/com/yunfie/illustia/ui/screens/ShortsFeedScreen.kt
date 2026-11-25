@@ -43,7 +43,7 @@ import com.yunfie.illustia.resources.shorts_loading
 import com.yunfie.illustia.ui.app.AppTab
 import com.yunfie.illustia.ui.app.LocalTabUiState
 import com.yunfie.illustia.ui.components.AppHapticEffect
-import com.yunfie.illustia.ui.components.PixivImage
+import com.yunfie.illustia.ui.components.CoilPixivImage
 import com.yunfie.illustia.ui.components.RequestErrorState
 import com.yunfie.illustia.ui.components.cachedVerticalGradient
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
@@ -174,7 +174,7 @@ fun ShortsFeedScreen(
                                 },
                             ),
                 ) {
-                    PixivImage(
+                    CoilPixivImage(
                         url = illust.imageUrl.ifBlank { illust.previewUrl },
                         contentDescription = illust.title,
                         contentScale = ContentScale.Fit,

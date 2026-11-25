@@ -69,12 +69,12 @@ import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.AvatarImage
 import com.yunfie.illustia.ui.components.CenteredErrorState
+import com.yunfie.illustia.ui.components.CoilPixivImage
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.IllustCard
 import com.yunfie.illustia.ui.components.IllustCardSkeleton
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.LocalScrollHeaderInset
-import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
 import com.yunfie.illustia.ui.components.ProfileGridHorizontalSpacing
 import com.yunfie.illustia.ui.components.ProfileGridVerticalSpacing
@@ -266,7 +266,7 @@ private fun WatchlistSeriesCard(
             ) {
                 val thumbnailUrl = series.thumbnailUrl
                 if (!thumbnailUrl.isNullOrBlank()) {
-                    PixivImage(
+                    CoilPixivImage(
                         url = thumbnailUrl,
                         contentDescription = series.title,
                         modifier = Modifier.fillMaxSize(),

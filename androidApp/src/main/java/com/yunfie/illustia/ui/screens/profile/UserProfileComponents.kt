@@ -107,6 +107,7 @@ import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.AvatarImage
 import com.yunfie.illustia.ui.components.CenteredErrorState
+import com.yunfie.illustia.ui.components.CoilPixivImage
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.EmptyState
@@ -116,7 +117,6 @@ import com.yunfie.illustia.ui.components.IllustCard
 import com.yunfie.illustia.ui.components.IllustCardSkeleton
 import com.yunfie.illustia.ui.components.LiquidGlassIconButton
 import com.yunfie.illustia.ui.components.LoadingIndicator
-import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PixivReportDialog
 import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
 import com.yunfie.illustia.ui.components.ProfileGridHorizontalSpacing
@@ -361,7 +361,7 @@ private fun UserProfileHeader(
                     .background(MiuixTheme.colorScheme.surfaceContainerHigh),
         ) {
             user.backgroundImageUrl?.let {
-                PixivImage(
+                CoilPixivImage(
                     url = it,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
@@ -587,7 +587,7 @@ internal fun UserProfileSmallTopAppBar(
     Box(Modifier.fillMaxWidth()) {
         val backgroundUrl = user.backgroundImageUrl
         if (blurAlpha > 0.005f && backgroundUrl != null) {
-            PixivImage(
+            CoilPixivImage(
                 url = backgroundUrl,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
@@ -1205,7 +1205,7 @@ internal fun UserProfileAvatarPreviewOverlay(
             ) {
                 val profileUrl = user.profileImageUrl
                 if (!profileUrl.isNullOrBlank()) {
-                    PixivImage(
+                    CoilPixivImage(
                         url = profileUrl,
                         contentDescription = user.name,
                         contentScale = ContentScale.Crop,
