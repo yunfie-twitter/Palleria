@@ -1030,7 +1030,7 @@ abstract class IllustiaAuthFeedModule(
         _uiState.update { it.copy(message = str(StringKey.MsgMuteDataDeleted)) }
     }
 
-    fun toggleFavoriteTag(rawTag: String) {
+    override fun toggleFavoriteTag(rawTag: String) {
         val tag = rawTag.trim().removePrefix("#")
         if (tag.isBlank()) return
         val current = _uiState.value.settings.favoriteTags
@@ -1194,9 +1194,9 @@ abstract class IllustiaAuthFeedModule(
         }
     }
 
-    fun loadWatchlistTag(
+    override fun loadWatchlistTag(
         tag: String,
-        forceRefresh: Boolean = false,
+        forceRefresh: Boolean,
     ) {
         val normalized = tag.trim().removePrefix("#")
         if (normalized.isBlank()) return
@@ -1243,7 +1243,7 @@ abstract class IllustiaAuthFeedModule(
         }
     }
 
-    fun loadMoreWatchlist() {
+    override fun loadMoreWatchlist() {
         val nextUrl = _uiState.value.watchlistNextUrl ?: return
         if (_uiState.value.isWatchlistPaginating) return
         viewModelScope.launch(Dispatchers.IO) {

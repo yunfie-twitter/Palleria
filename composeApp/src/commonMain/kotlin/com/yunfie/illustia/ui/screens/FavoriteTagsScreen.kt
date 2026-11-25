@@ -40,8 +40,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.yunfie.illustia.IllustiaUiState
-import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.isEmptyAfterLoad
 import com.yunfie.illustia.resources.Res
@@ -58,6 +56,7 @@ import com.yunfie.illustia.resources.favorite_tags_title
 import com.yunfie.illustia.resources.favorite_tags_works_not_found
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
+import com.yunfie.illustia.ui.components.BackNavigationHandler
 import com.yunfie.illustia.ui.components.CenteredErrorState
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -65,7 +64,6 @@ import com.yunfie.illustia.ui.components.IllustCard
 import com.yunfie.illustia.ui.components.IllustCardSkeleton
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
-import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
 import com.yunfie.illustia.ui.components.ScrollablePullToRefresh
 import com.yunfie.illustia.ui.components.StateBanner
@@ -77,6 +75,7 @@ import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import com.yunfie.illustia.ui.components.smoothScrollToTop
+import com.yunfie.illustia.ui.screens.favorites.FavoriteTagsActions
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
@@ -102,10 +101,10 @@ import androidx.compose.foundation.lazy.grid.items as gridItems
 @Composable
 fun FavoriteTagsScreen(
     state: IllustiaUiState,
-    viewModel: IllustiaViewModel,
+    viewModel: FavoriteTagsActions,
     onBack: () -> Unit,
 ) {
-    PredictiveBackGestureHandler(onBack = onBack)
+    BackNavigationHandler(onBack = onBack)
 
     val gridState = rememberLazyGridState()
     val feedHighQuality = state.settings.useHighQualityFeedImages
@@ -128,7 +127,7 @@ fun FavoriteTagsScreen(
     LaunchedEffect(selectedTag) {
         val tag = selectedTag ?: return@LaunchedEffect
         if (state.watchlistItems.isEmpty() || state.activeWatchlistTag != tag) {
-            viewModel.loadWatchlistTag(tag)
+            viewModel.loadWatchlistTag(tag, false)
         }
     }
 
@@ -291,9 +290,9 @@ fun FavoriteTagsScreen(
                     ) { illust ->
                         IllustCard(
                             illust = illust,
-                            onBookmark = { viewModel.toggleBookmark(illust) },
-                            onClick = { viewModel.openIllust(illust) },
-                            onLongClick = { viewModel.onIllustLongPress(illust) },
+                            onBookmark = { viewModel.toggleBookmarkFromCard(illust) },
+                            onClick = { viewModel.openIllustFromCard(illust) },
+                            onLongClick = { viewModel.onIllustLongPressById(illust.id) },
                             highQualityImages = feedHighQuality,
                             showAiBadge = showAiBadge,
                         )

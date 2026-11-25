@@ -556,6 +556,10 @@ abstract class IllustiaBookmarkModule(
         openIllust(illust)
     }
 
+    override fun onIllustLongPressById(illustId: Long) {
+        onIllustLongPress(illustId)
+    }
+
     fun toggleBookmark(
         illust: Illust,
         restrict: com.yunfie.illustia.models.Restrict? = null,
