@@ -21,13 +21,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
 import com.yunfie.illustia.models.StoredAccount
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.account_remove_summary
@@ -39,11 +36,12 @@ import com.yunfie.illustia.resources.action_close
 import com.yunfie.illustia.resources.action_delete
 import com.yunfie.illustia.resources.active
 import com.yunfie.illustia.ui.components.AppBottomSheet
+import com.yunfie.illustia.ui.components.AvatarImage
 import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
-import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.miuixClickable
+import com.yunfie.illustia.ui.screens.library.LibraryActions
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -63,7 +61,7 @@ fun AccountSwitchSheet(
     show: Boolean,
     accounts: List<StoredAccount>,
     activeAccountIndex: Int,
-    viewModel: IllustiaViewModel,
+    viewModel: LibraryActions,
     onDismiss: () -> Unit,
     onAddAccount: () -> Unit,
 ) {
@@ -162,12 +160,11 @@ private fun AccountRow(
         ) {
             val avatarUrl = account.profileImageUrl
             if (!avatarUrl.isNullOrBlank()) {
-                PixivImage(
+                AvatarImage(
                     url = avatarUrl,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
+                    name = account.name.ifBlank { "@${account.account}" },
+                    size = 44.dp,
                     modifier = Modifier.fillMaxSize(),
-                    thumbnail = true,
                 )
             } else {
                 Icon(

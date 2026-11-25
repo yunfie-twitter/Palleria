@@ -58,11 +58,28 @@ androidApp (main) のファイル数と、composeApp へ移したもの:
 |---|---|
 | models/{CommonLabels,SearchLabels,SearchAgeRestrictionLabels} | composeApp |
 | settings/{AppFont,AppThemeMode,FeatureFlagLabels,PixivNetworkMode} | composeApp |
-| ui/components/{NavigationChrome,MiuixGlass,CommonCore,HeaderComponents,PermissionRationaleDialog,FeedbackComponents,SettingsComponents,HapticContract} | composeApp |
-| ui/screens/{CalculatorScreen,CalculatorScreenParts,DetailSectionSettingsScreen,DownloadQueueScreen,SavedIllustViewerScreen,AccountSettingsScreen,NavigationSettingsScreen,NetworkSettingsScreen,FeatureFlagsScreen} | composeApp |
-| IllustiaUiState.kt, ChromeStates.kt | shared |
+| ui/components/{NavigationChrome,MiuixGlass,CommonCore,HeaderComponents,PermissionRationaleDialog,FeedbackComponents,SettingsComponents,HapticContract,AvatarContract} | composeApp |
+| ui/screens/{CalculatorScreen,CalculatorScreenParts,DetailSectionSettingsScreen,DownloadQueueScreen,SavedIllustViewerScreen,AccountSettingsScreen,NavigationSettingsScreen,NetworkSettingsScreen,FeatureFlagsScreen,UserProfileEditScreen,AccountSwitchSheet} | composeApp |
+| IllustiaUiState.kt, ChromeStates.kt, IllustListExtensions.kt | shared |
 
-画面数の推移: androidApp 250 / composeApp(commonMain) 41 / shared 85
+画面数の推移: androidApp 249 / composeApp(commonMain) 46 / shared 86
+
+## アバター画像も CompositionLocal で注入する
+`AvatarImage` は Coil / Bitmap デコード（Android 専用）を使うため描画部を
+プラットフォームに委ねる。composeApp の `AvatarContract.kt` に
+
+  fun interface AvatarImageRenderer
+  val LocalAvatarImageRenderer = compositionLocalOf<AvatarImageRenderer?> { null }
+  @Composable fun AvatarImage(url, name, size, ...)   // 未注入時はプレースホルダ
+
+を置き、androidApp の `AvatarPlatform.kt` が PixivImage で実装する。
+`IllustiaAppRoot` で `LocalAvatarImageRenderer provides ...` を 1 回だけ宣言する。
+
+## インターフェースに override を足すと detekt ベースラインの ID が変わる
+baseline は `<Class>$fun foo` 形式で記録されているため、`override fun foo` に
+変えると一致しなくなり detekt が落ちる。`detekt-baseline.xml` の該当 ID を
+`$override fun foo` に更新すること（エントリ数は増えないので予算チェックは通る）。
+
 
 Android 側に残したファイル:
 - ui/components/AndroidPlatformCore.kt
@@ -79,9 +96,10 @@ override を付け、画面の引数型を差し替える。この手順で移�
   CalculatorActions  -> CalculatorScreen, CalculatorScreenParts
   SettingsActions    -> DetailSectionSettingsScreen, NavigationSettingsScreen,
                         FeatureFlagsScreen (+ NetworkActions 経由)
-  LibraryActions     -> DownloadQueueScreen, SavedIllustViewerScreen
-                        (+ NetworkActions 経由)
+  LibraryActions     -> DownloadQueueScreen, SavedIllustViewerScreen,
+                        AccountSwitchSheet (+ NetworkActions 経由)
   AccountActions     -> AccountSettingsScreen
+  ProfileEditActions -> UserProfileEditScreen
 
 **新しい画面を移す手順**
 

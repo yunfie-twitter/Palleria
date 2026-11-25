@@ -836,6 +836,17 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                     }
                 }
             },
+        com.yunfie.illustia.ui.components.LocalAvatarImageRenderer provides
+            com.yunfie.illustia.ui.components.AvatarImageRenderer { url, contentDescription, modifier, maxDecodeDimensionPx ->
+                com.yunfie.illustia.ui.components.PixivImage(
+                    url = url,
+                    contentDescription = contentDescription,
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                    modifier = modifier,
+                    thumbnail = true,
+                    maxDecodeDimensionPx = maxDecodeDimensionPx,
+                )
+            },
         LocalHapticFeedback provides
             if (effectiveHapticMode == AppHapticMode.Off) {
                 NoOpHapticFeedback
