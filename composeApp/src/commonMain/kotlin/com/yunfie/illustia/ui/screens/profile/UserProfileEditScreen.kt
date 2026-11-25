@@ -21,8 +21,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
 import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.models.pixiv.UserProfileEdit
 import com.yunfie.illustia.resources.Res
@@ -36,12 +34,13 @@ import com.yunfie.illustia.resources.user_profile_edit_title
 import com.yunfie.illustia.resources.user_profile_edit_twitter
 import com.yunfie.illustia.resources.user_profile_edit_user_name
 import com.yunfie.illustia.resources.user_profile_edit_webpage
+import com.yunfie.illustia.ui.components.BackNavigationHandler
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.LoadingIndicator
-import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.Section
+import com.yunfie.illustia.ui.screens.profile.ProfileEditActions
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
@@ -58,12 +57,12 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 fun UserProfileEditScreen(
     user: UserProfile,
-    viewModel: IllustiaViewModel,
+    viewModel: ProfileEditActions,
     onBack: () -> Unit,
     onSaveSuccess: () -> Unit = onBack,
     modifier: Modifier = Modifier,
 ) {
-    PredictiveBackGestureHandler(onBack = onBack)
+    BackNavigationHandler(onBack = onBack)
     val scrollBehavior = MiuixScrollBehavior()
     val scope = rememberCoroutineScope()
 

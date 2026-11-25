@@ -300,7 +300,7 @@ abstract class IllustiaLibraryNavigationModule(
         }
     }
 
-    fun loadSavedLibrary() {
+    override fun loadSavedLibrary() {
         if (savedLibraryJob?.isActive == true) return
         savedLibraryJob =
             viewModelScope.launch(Dispatchers.IO) {
@@ -852,7 +852,7 @@ abstract class IllustiaLibraryNavigationModule(
         _uiState.update { it.copy(showAccountSwitcher = false) }
     }
 
-    fun switchAccount(index: Int) {
+    override fun switchAccount(index: Int) {
         val current = _uiState.value.settings
         val accounts = current.accounts
         if (index < 0 || index >= accounts.size) return
@@ -879,7 +879,7 @@ abstract class IllustiaLibraryNavigationModule(
         }
     }
 
-    fun removeAccount(index: Int) {
+    override fun removeAccount(index: Int) {
         val current = _uiState.value.settings
         val mutable = current.accounts.toMutableList()
         if (index < 0 || index >= mutable.size) return

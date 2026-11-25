@@ -6,13 +6,13 @@ import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.NovelPreview
 import com.yunfie.illustia.settings.AppSettings
 
-internal fun List<Illust>.replaceIllustIfPresent(updated: Illust): List<Illust> {
+fun List<Illust>.replaceIllustIfPresent(updated: Illust): List<Illust> {
     val index = indexOfFirst { it.id == updated.id }
     if (index < 0 || this[index] == updated) return this
     return toMutableList().also { it[index] = updated }
 }
 
-internal fun List<Illust>.replaceOrAppend(updated: Illust): List<Illust> {
+fun List<Illust>.replaceOrAppend(updated: Illust): List<Illust> {
     val index = indexOfFirst { it.id == updated.id }
     return when {
         index < 0 -> {
@@ -32,13 +32,13 @@ internal fun List<Illust>.replaceOrAppend(updated: Illust): List<Illust> {
     }
 }
 
-internal fun List<Illust>.removeIllustIfPresent(id: Long): List<Illust> {
+fun List<Illust>.removeIllustIfPresent(id: Long): List<Illust> {
     val index = indexOfFirst { it.id == id }
     if (index < 0) return this
     return toMutableList().also { it.removeAt(index) }
 }
 
-internal fun List<Illust>.appendIllusts(next: List<Illust>): List<Illust> {
+fun List<Illust>.appendIllusts(next: List<Illust>): List<Illust> {
     if (next.isEmpty()) return this
     val existingIds = HashSet<Long>(this.size + next.size)
     this.forEach { existingIds.add(it.id) }
@@ -50,7 +50,7 @@ internal fun List<Illust>.appendIllusts(next: List<Illust>): List<Illust> {
     }
 }
 
-internal fun newHomeItemsToStage(
+fun newHomeItemsToStage(
     refreshedItems: List<Illust>,
     currentItems: List<Illust>,
     pendingItems: List<Illust>,
@@ -107,7 +107,7 @@ private fun List<NovelPreview>.filterRestrictedNovels(
 }
 
 /** True when every setting that affects list filtering is unchanged, so [withSettings] work can be skipped. */
-internal fun AppSettings.filtersMatch(other: AppSettings): Boolean =
+fun AppSettings.filtersMatch(other: AppSettings): Boolean =
     mutedIllusts == other.mutedIllusts &&
         mutedUsers == other.mutedUsers &&
         mutedTags == other.mutedTags &&
@@ -118,7 +118,7 @@ internal fun AppSettings.filtersMatch(other: AppSettings): Boolean =
         showRelatedR18 == other.showRelatedR18
 
 @Suppress("CyclomaticComplexMethod")
-internal fun IllustiaUiState.withSettings(settings: AppSettings): IllustiaUiState {
+fun IllustiaUiState.withSettings(settings: AppSettings): IllustiaUiState {
     val filter = settings.toMuteFilter()
     val updated =
         copy(
@@ -164,7 +164,7 @@ internal fun IllustiaUiState.withSettings(settings: AppSettings): IllustiaUiStat
 }
 
 @Suppress("LongMethod", "CyclomaticComplexMethod")
-internal fun IllustiaUiState.withUpdatedIllust(updated: Illust): IllustiaUiState {
+fun IllustiaUiState.withUpdatedIllust(updated: Illust): IllustiaUiState {
     val updatedHome = homeItems.replaceIllustIfPresent(updated)
     val updatedPendingHome = pendingHomeItems.replaceIllustIfPresent(updated)
     val updatedSearch = searchItems.replaceIllustIfPresent(updated)
@@ -240,7 +240,7 @@ internal fun IllustiaUiState.withUpdatedIllust(updated: Illust): IllustiaUiState
     )
 }
 
-internal fun List<Illust>.visibleWith(filter: MuteFilter): List<Illust> {
+fun List<Illust>.visibleWith(filter: MuteFilter): List<Illust> {
     if (filter.isEmpty) {
         return this
     }
@@ -251,7 +251,7 @@ internal fun List<Illust>.visibleWith(filter: MuteFilter): List<Illust> {
     }
 }
 
-internal fun List<Illust>.visibleWith(state: IllustiaUiState): List<Illust> =
+fun List<Illust>.visibleWith(state: IllustiaUiState): List<Illust> =
     visibleWith(
         MuteFilter(
             illustIds = state.mutedIllustsSet,
@@ -261,7 +261,7 @@ internal fun List<Illust>.visibleWith(state: IllustiaUiState): List<Illust> =
     )
 
 @JvmName("visibleIllustsWithSettings")
-internal fun List<Illust>.visibleWithSettings(settings: AppSettings): List<Illust> {
+fun List<Illust>.visibleWithSettings(settings: AppSettings): List<Illust> {
     val list = visibleWith(settings.toMuteFilter())
     val r18Filtered =
         if (!settings.allowR18) {
@@ -274,7 +274,7 @@ internal fun List<Illust>.visibleWithSettings(settings: AppSettings): List<Illus
     return if (settings.hideAiWorks) r18Filtered.filterNot { it.isAi } else r18Filtered
 }
 
-internal fun List<Illust>.visibleRelatedWithSettings(settings: AppSettings): List<Illust> {
+fun List<Illust>.visibleRelatedWithSettings(settings: AppSettings): List<Illust> {
     val base = visibleWithSettings(settings)
     return if (settings.showR18Badge && settings.showRelatedR18) {
         base
@@ -284,7 +284,7 @@ internal fun List<Illust>.visibleRelatedWithSettings(settings: AppSettings): Lis
 }
 
 @JvmName("visibleNovelsWithSettings")
-internal fun List<NovelPreview>.visibleWithSettings(settings: AppSettings): List<NovelPreview> {
+fun List<NovelPreview>.visibleWithSettings(settings: AppSettings): List<NovelPreview> {
     val filter = settings.toMuteFilter()
     val userFiltered = if (filter.userIds.isEmpty()) this else filterNot { it.userId in filter.userIds }
     return if (!settings.allowR18) {
@@ -296,7 +296,7 @@ internal fun List<NovelPreview>.visibleWithSettings(settings: AppSettings): List
     }
 }
 
-internal fun List<Illust>.visibleWithMutedTagsVisible(settings: AppSettings): List<Illust> {
+fun List<Illust>.visibleWithMutedTagsVisible(settings: AppSettings): List<Illust> {
     val filter = settings.toMuteFilter()
     val list =
         if (filter.illustIds.isEmpty() && filter.userIds.isEmpty()) {
@@ -318,12 +318,12 @@ internal fun List<Illust>.visibleWithMutedTagsVisible(settings: AppSettings): Li
     return if (settings.hideAiWorks) r18Filtered.filterNot { it.isAi } else r18Filtered
 }
 
-internal fun Illust.isMutedByTags(mutedTags: Set<String>): Boolean {
+fun Illust.isMutedByTags(mutedTags: Set<String>): Boolean {
     if (mutedTags.isEmpty()) return false
     return tags.any { it in mutedTags }
 }
 
-internal fun Illust.isMutedByTags(settings: AppSettings): Boolean {
+fun Illust.isMutedByTags(settings: AppSettings): Boolean {
     if (settings.mutedTags.isEmpty()) return false
     return tags.any { it in settings.mutedTags }
 }

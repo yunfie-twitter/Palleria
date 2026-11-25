@@ -45,6 +45,7 @@ import com.yunfie.illustia.ui.screens.account.AccountActions
 import com.yunfie.illustia.ui.screens.calculator.CalculatorActions
 import com.yunfie.illustia.ui.screens.library.LibraryActions
 import com.yunfie.illustia.ui.screens.network.NetworkActions
+import com.yunfie.illustia.ui.screens.profile.ProfileEditActions
 import com.yunfie.illustia.ui.screens.settings.SettingsActions
 import com.yunfie.illustia.ui.scroll.ScrollPositionProbe
 import com.yunfie.illustia.updater.AppReleaseInfo
@@ -133,7 +134,8 @@ abstract class IllustiaViewModelFoundation(
     SettingsActions,
     LibraryActions,
     AccountActions,
-    NetworkActions {
+    NetworkActions,
+    ProfileEditActions {
     /**
      * ViewModel の生存期間に紐づくコルーチンスコープ。生成側（ファクトリ）が渡す。
      * 各モジュールの 70 箇所ある `viewModelScope.launch { }` はこのプロパティを指す。

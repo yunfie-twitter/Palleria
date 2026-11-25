@@ -29,7 +29,7 @@ import java.net.HttpURLConnection
 abstract class IllustiaDetailProfileModule(
     deps: ViewModelDepsApi,
 ) : IllustiaAuthFeedModule(deps) {
-    fun openIllust(illust: Illust) {
+    override fun openIllust(illust: Illust) {
         captureProfileReturnDetail()
         recordViewHistory(illust)
         val cached = detailSnapshots[illust.id]
@@ -534,7 +534,7 @@ abstract class IllustiaDetailProfileModule(
         }
     }
 
-    suspend fun updateUserProfile(profile: UserProfileEdit): AccountEditResult =
+    override suspend fun updateUserProfile(profile: UserProfileEdit): AccountEditResult =
         withContext(Dispatchers.IO) {
             val result = repository.setUserProfile(profile)
             if (result.isSucceeded) {
