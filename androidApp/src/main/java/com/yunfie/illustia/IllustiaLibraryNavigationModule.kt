@@ -287,7 +287,7 @@ abstract class IllustiaLibraryNavigationModule(
         _navigationRequests.tryEmit(IllustiaNavigationRequest.DownloadQueue)
     }
 
-    fun clearFinishedDownloads() {
+    override fun clearFinishedDownloads() {
         _uiState.update { state ->
             state.copy(
                 downloadQueue =
@@ -317,7 +317,7 @@ abstract class IllustiaLibraryNavigationModule(
         }
     }
 
-    fun closeSavedIllustViewer() {
+    override fun closeSavedIllustViewer() {
         _uiState.update { it.copy(selectedSavedIllustId = null) }
     }
 
@@ -650,7 +650,7 @@ abstract class IllustiaLibraryNavigationModule(
         _navigationRequests.tryEmit(IllustiaNavigationRequest.AccountSettings)
     }
 
-    fun openAccountLoginMethod() {
+    override fun openAccountLoginMethod() {
         closeAccountSwitcher()
         _navigationRequests.tryEmit(IllustiaNavigationRequest.AccountLoginMethod)
     }

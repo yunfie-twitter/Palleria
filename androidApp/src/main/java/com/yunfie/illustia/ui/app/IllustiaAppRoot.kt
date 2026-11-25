@@ -58,7 +58,7 @@ import com.yunfie.illustia.ui.components.NoOpHapticFeedback
 import com.yunfie.illustia.ui.components.appNavigationScrim
 import com.yunfie.illustia.ui.components.isActiveNetworkMetered
 import com.yunfie.illustia.ui.components.isAppHapticsSupported
-import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
+import com.yunfie.illustia.ui.components.rememberPlatformHapticAction
 import com.yunfie.illustia.ui.components.rememberScrollRendering
 import com.yunfie.illustia.ui.screens.CalculatorScreen
 import kotlinx.coroutines.Dispatchers
@@ -818,7 +818,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         LocalArtworkCardPreferences provides artworkCardPreferences,
         LocalAppHapticMode provides effectiveHapticMode,
         com.yunfie.illustia.ui.components.LocalAppHapticEffect provides
-            rememberHapticFeedbackAction(),
+            rememberPlatformHapticAction(),
         com.yunfie.illustia.ui.components.LocalBackHandler provides
             remember {
                 object : com.yunfie.illustia.ui.components.BackHandlerRegistrar {
@@ -827,6 +827,11 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                         enabled: Boolean,
                         onBack: () -> Unit,
                     ) {
+                        if (com.yunfie.illustia.platform.PlatformCapabilities
+                                .supportsPredictiveBack()
+                        ) {
+                            return
+                        }
                         BackHandler(enabled = enabled) { onBack() }
                     }
                 }

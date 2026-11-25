@@ -15,13 +15,12 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.yunfie.illustia.IllustiaUiState
-import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.data_items_count
 import com.yunfie.illustia.resources.offline_library_title
+import com.yunfie.illustia.ui.components.BackNavigationHandler
 import com.yunfie.illustia.ui.components.HeaderIcon
-import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
+import com.yunfie.illustia.ui.screens.library.LibraryActions
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -34,10 +33,10 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 fun SavedIllustViewerScreen(
     state: IllustiaUiState,
-    viewModel: IllustiaViewModel,
+    viewModel: LibraryActions,
     onBack: () -> Unit,
 ) {
-    PredictiveBackGestureHandler(onBack = {
+    BackNavigationHandler(onBack = {
         viewModel.closeSavedIllustViewer()
         onBack()
     })

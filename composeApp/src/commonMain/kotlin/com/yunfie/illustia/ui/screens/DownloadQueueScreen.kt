@@ -46,7 +46,6 @@ import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.DownloadQueueEntry
 import com.yunfie.illustia.DownloadQueueStatus
 import com.yunfie.illustia.IllustiaUiState
-import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.action_back
 import com.yunfie.illustia.resources.download_queue_clear
@@ -70,13 +69,14 @@ import com.yunfie.illustia.resources.download_queue_title
 import com.yunfie.illustia.resources.download_queue_waiting
 import com.yunfie.illustia.resources.user_filter_category
 import com.yunfie.illustia.ui.components.AppHapticEffect
+import com.yunfie.illustia.ui.components.BackNavigationHandler
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
-import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.onTopBarTap
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.smoothScrollToTop
+import com.yunfie.illustia.ui.screens.library.LibraryActions
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -119,10 +119,10 @@ private data class QueueGroups(
 @Composable
 fun DownloadQueueScreen(
     state: IllustiaUiState,
-    viewModel: IllustiaViewModel,
+    viewModel: LibraryActions,
     onBack: () -> Unit,
 ) {
-    PredictiveBackGestureHandler(onBack = onBack)
+    BackNavigationHandler(onBack = onBack)
     val scrollBehavior = MiuixScrollBehavior()
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()

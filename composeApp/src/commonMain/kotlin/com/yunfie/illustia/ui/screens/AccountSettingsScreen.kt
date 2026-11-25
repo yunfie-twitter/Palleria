@@ -14,8 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.account_logged_in
 import com.yunfie.illustia.resources.account_login_status
@@ -31,14 +29,15 @@ import com.yunfie.illustia.resources.discord_status_connected
 import com.yunfie.illustia.resources.discord_status_disconnected
 import com.yunfie.illustia.resources.settings_account
 import com.yunfie.illustia.settings.AppSettings
+import com.yunfie.illustia.ui.components.BackNavigationHandler
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
-import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.Section
 import com.yunfie.illustia.ui.components.SettingLinkRow
 import com.yunfie.illustia.ui.components.SettingRow
+import com.yunfie.illustia.ui.screens.account.AccountActions
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -51,11 +50,12 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 fun AccountSettingsScreen(
     settings: AppSettings,
-    viewModel: IllustiaViewModel,
+    viewModel: AccountActions,
+    onLogout: () -> Unit,
     onBack: () -> Unit,
     onOpenDiscordSettings: () -> Unit,
 ) {
-    PredictiveBackGestureHandler(onBack = onBack)
+    BackNavigationHandler(onBack = onBack)
     val scrollBehavior = MiuixScrollBehavior()
     var showLogoutConfirm by remember { mutableStateOf(false) }
 
@@ -68,7 +68,7 @@ fun AccountSettingsScreen(
             destructive = true,
             onConfirm = {
                 showLogoutConfirm = false
-                viewModel.logout()
+                onLogout()
             },
             onDismiss = { showLogoutConfirm = false },
         )

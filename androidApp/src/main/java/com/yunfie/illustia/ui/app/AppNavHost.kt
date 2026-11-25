@@ -579,6 +579,7 @@ internal fun AppNavHost(
                 AccountSettingsScreen(
                     settings = appState.state.settings,
                     viewModel = viewModel,
+                    onLogout = viewModel::logout,
                     onBack = onPopRoute,
                     onOpenDiscordSettings = { onNavigate(AppRoute.DiscordSettings) },
                 )

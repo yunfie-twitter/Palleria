@@ -288,13 +288,13 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(appIconVariant = value) }
     }
 
-    fun updateNavigationOrder(value: List<String>) {
+    override fun updateNavigationOrder(value: List<String>) {
         val allowed = setOf("home", "search", "shorts", "bookmarks", "ranking", "more")
         val normalized = value.filter { it in allowed }.distinct()
         updateSettings { it.copy(navigationOrder = normalized.ifEmpty { it.navigationOrder }) }
     }
 
-    fun updateHiddenNavigationTabs(value: List<String>) {
+    override fun updateHiddenNavigationTabs(value: List<String>) {
         val allowed = setOf("home", "search", "shorts", "bookmarks", "ranking", "more")
         updateSettings { it.copy(hiddenNavigationTabs = value.filter { id -> id in allowed }.distinct()) }
     }
@@ -327,7 +327,7 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(showCardBookmarkButton = value) }
     }
 
-    fun updateDetailSectionOrder(value: List<String>) {
+    override fun updateDetailSectionOrder(value: List<String>) {
         val allowed = setOf("artist", "tags", "description", "related")
         val normalized = value.filter { it in allowed }.distinct()
         updateSettings { it.copy(detailSectionOrder = normalized.ifEmpty { it.detailSectionOrder }) }
@@ -375,7 +375,7 @@ abstract class IllustiaSettingsSecurityModule(
         }
     }
 
-    fun resetFeatureFlags() {
+    override fun resetFeatureFlags() {
         updateSettings {
             it.copy(featureFlags = emptyMap())
         }
@@ -1044,7 +1044,7 @@ abstract class IllustiaSettingsSecurityModule(
         refreshActiveSearch()
     }
 
-    fun resetSearchOptions() {
+    override fun resetSearchOptions() {
         updateSettings {
             it.copy(
                 searchSort = SearchSort.DateDesc,

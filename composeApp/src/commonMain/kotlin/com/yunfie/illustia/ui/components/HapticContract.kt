@@ -26,6 +26,15 @@ val LocalAppHapticEffect = compositionLocalOf<(AppHapticEffect) -> Unit> { { } }
 
 val LocalAppHapticMode = compositionLocalOf { com.yunfie.illustia.settings.AppHapticMode.Rich }
 
+/**
+ * 共有 UI からハプティクスを発火するための入口。
+ *
+ * 実装 (Vibrator) は androidApp が [LocalAppHapticEffect] に注入する。
+ * 未注入の環境では何もしない。
+ */
+@Composable
+fun rememberHapticFeedbackAction(): (AppHapticEffect) -> Unit = LocalAppHapticEffect.current
+
 @Composable
 fun ProvideAppHaptics(
     mode: com.yunfie.illustia.settings.AppHapticMode,
@@ -59,4 +68,15 @@ val LocalBackHandler = compositionLocalOf<BackHandlerRegistrar?> { null }
 @Composable
 fun BlockBackNavigation() {
     LocalBackHandler.current?.Register(enabled = true, onBack = {})
+}
+
+/**
+ * 戻る操作を [onBack] に繋ぐ。予測型戻るジェスチャの可否は実装側が判断する。
+ */
+@Composable
+fun BackNavigationHandler(
+    enabled: Boolean = true,
+    onBack: () -> Unit,
+) {
+    LocalBackHandler.current?.Register(enabled = enabled, onBack = onBack)
 }

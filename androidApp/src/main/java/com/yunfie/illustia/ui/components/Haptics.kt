@@ -17,7 +17,7 @@ val NoOpHapticFeedback =
     }
 
 @androidx.compose.runtime.Composable
-fun rememberHapticFeedbackAction(): (AppHapticEffect) -> Unit {
+fun rememberPlatformHapticAction(): (AppHapticEffect) -> Unit {
     val context = androidx.compose.ui.platform.LocalContext.current
     val hapticFeedback = androidx.compose.ui.platform.LocalHapticFeedback.current
     val hapticMode = LocalAppHapticMode.current
