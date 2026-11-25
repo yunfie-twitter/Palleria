@@ -220,7 +220,25 @@ abstract class IllustiaBookmarkModule(
         }
     }
 
+    override fun loadSelectedRelatedUsers(
+        targetUserId: Long,
+        force: Boolean,
+    ) {
+        loadSelectedRelatedUsersInternal(targetUserId = targetUserId, force = force)
+    }
+
+    override fun loadMoreSelectedRelatedUsers(targetUserId: Long) {
+        loadMoreSelectedRelatedUsersInternal(targetUserId = targetUserId)
+    }
+
     fun loadSelectedRelatedUsers(
+        targetUserId: Long? = null,
+        force: Boolean = false,
+    ) {
+        loadSelectedRelatedUsersInternal(targetUserId = targetUserId, force = force)
+    }
+
+    private fun loadSelectedRelatedUsersInternal(
         targetUserId: Long? = null,
         force: Boolean = false,
     ) {
@@ -304,6 +322,10 @@ abstract class IllustiaBookmarkModule(
     }
 
     fun loadMoreSelectedRelatedUsers(targetUserId: Long? = null) {
+        loadMoreSelectedRelatedUsersInternal(targetUserId)
+    }
+
+    private fun loadMoreSelectedRelatedUsersInternal(targetUserId: Long? = null) {
         val userId = targetUserId ?: _uiState.value.selectedUser?.id ?: return
         val nextUrl = _uiState.value.selectedRelatedUsersNextUrl
         if (nextUrl == null || _uiState.value.selectedRelatedUsersPaginating || _uiState.value.selectedRelatedUsersLoading) return

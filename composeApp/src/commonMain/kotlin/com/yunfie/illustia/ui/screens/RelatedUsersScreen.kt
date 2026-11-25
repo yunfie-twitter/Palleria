@@ -27,8 +27,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaUiState
-import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
 import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.action_load_more
@@ -38,18 +36,19 @@ import com.yunfie.illustia.resources.user_related_summary
 import com.yunfie.illustia.resources.user_tab_related
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
+import com.yunfie.illustia.ui.components.BackNavigationHandler
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.LoadingIndicator
-import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.RequestErrorState
+import com.yunfie.illustia.ui.components.UserResultCard
 import com.yunfie.illustia.ui.components.UserResultCardSkeleton
 import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
 import com.yunfie.illustia.ui.components.onTopBarTap
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import com.yunfie.illustia.ui.components.smoothScrollToTop
-import com.yunfie.illustia.ui.screens.UserResultCard
+import com.yunfie.illustia.ui.screens.relatedusers.RelatedUsersActions
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -91,19 +90,24 @@ private val IllustiaUiState.relatedUsersScreenState: RelatedUsersScreenState
 fun RelatedUsersScreen(
     userId: Long,
     userName: String = "",
-    viewModel: IllustiaViewModel,
+    viewModel: RelatedUsersActions,
     onBack: () -> Unit,
     onOpenUser: (Long) -> Unit,
 ) {
-    PredictiveBackGestureHandler(onBack = onBack)
+    BackNavigationHandler(onBack = onBack)
     // Collect only the related-users slice. Observing the whole uiState made this screen
     // recompose for unrelated changes such as feed loads or download progress updates.
     val relatedUsersUiState by remember(viewModel) {
-        viewModel.uiState
+        viewModel.relatedUsersIllustiaState
             .map { it.relatedUsersScreenState }
             .distinctUntilChanged()
-    }.collectAsStateWithLifecycle(initialValue = viewModel.uiState.value.relatedUsersScreenState)
-    val settings by viewModel.settingsState.collectAsStateWithLifecycle()
+    }.collectAsStateWithLifecycle(initialValue = viewModel.relatedUsersIllustiaState.value.relatedUsersScreenState)
+    val settings =
+        remember(viewModel) {
+            viewModel.relatedUsersIllustiaState
+                .map { it.settings }
+                .distinctUntilChanged()
+        }.collectAsStateWithLifecycle(initialValue = viewModel.relatedUsersIllustiaState.value.settings).value
     val listState = rememberLazyListState()
     val scrollBehavior = MiuixScrollBehavior()
     val coroutineScope = rememberCoroutineScope()
@@ -112,7 +116,7 @@ fun RelatedUsersScreen(
     val relatedUsersNextUrl = if (relatedUsersUiState.loadedUserId == userId) relatedUsersUiState.nextUrl else null
 
     LaunchedEffect(userId) {
-        viewModel.loadSelectedRelatedUsers(targetUserId = userId)
+        viewModel.loadSelectedRelatedUsers(userId, false)
     }
 
     AutoLoadMoreEffect(
@@ -162,7 +166,7 @@ fun RelatedUsersScreen(
         val shimmer = if (showInitialSkeletons || showPaginationSkeletons) rememberIllustSkeletonShimmer() else null
         PullToRefresh(
             isRefreshing = relatedUsersUiState.refreshing,
-            onRefresh = { viewModel.loadSelectedRelatedUsers(targetUserId = userId, force = true) },
+            onRefresh = { viewModel.loadSelectedRelatedUsers(userId, true) },
             modifier =
                 Modifier
                     .fillMaxSize()
@@ -232,11 +236,11 @@ fun RelatedUsersScreen(
                             if (relatedUsersError != null && relatedUsersUiState.loadedUserId == userId) {
                                 RequestErrorState(
                                     message = relatedUsersError,
-                                    onRetry = { viewModel.loadSelectedRelatedUsers(targetUserId = userId, force = true) },
+                                    onRetry = { viewModel.loadSelectedRelatedUsers(userId, true) },
                                 )
                             } else {
                                 EmptyState(stringResource(Res.string.user_related_empty))
-                                Button(onClick = { viewModel.loadSelectedRelatedUsers(targetUserId = userId, force = true) }) {
+                                Button(onClick = { viewModel.loadSelectedRelatedUsers(userId, true) }) {
                                     Text(stringResource(Res.string.action_reload))
                                 }
                             }

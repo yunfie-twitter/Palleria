@@ -52,6 +52,7 @@ import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
 import com.yunfie.illustia.ui.components.PrefetchPixivImages
 import com.yunfie.illustia.ui.components.RequestErrorState
+import com.yunfie.illustia.ui.components.UserResultCard
 import com.yunfie.illustia.ui.components.UserResultCardSkeleton
 import com.yunfie.illustia.ui.components.adaptiveIllustColumns
 import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
@@ -373,74 +374,6 @@ private fun SearchErrorState(
     onRetry: () -> Unit,
 ) {
     RequestErrorState(message = message, onRetry = onRetry)
-}
-
-@Composable
-internal fun UserResultCard(
-    user: UserPreview,
-    onClick: () -> Unit,
-    onLongClick: (() -> Unit)? = null,
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        cornerRadius = 16.dp,
-        insideMargin = PaddingValues(0.dp),
-        colors =
-            CardDefaults.defaultColors(
-                color = MiuixTheme.colorScheme.surfaceContainer,
-                contentColor = MiuixTheme.colorScheme.onSurfaceContainer,
-            ),
-        pressFeedbackType = PressFeedbackType.Sink,
-        onClick = onClick,
-        onLongPress = onLongClick,
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            if (user.previewIllusts.isNotEmpty()) {
-                val previewCount = minOf(3, user.previewIllusts.size)
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    for (i in 0 until previewCount) {
-                        val illust = user.previewIllusts[i]
-                        CoilPixivImage(
-                            url = illust.squareImageUrl.ifBlank { illust.mediumImageUrl.ifBlank { illust.imageUrl } },
-                            contentDescription = illust.title,
-                            contentScale = ContentScale.Crop,
-                            thumbnail = true,
-                            maxDecodeDimensionPx = 384,
-                            modifier = Modifier.weight(1f).height(118.dp),
-                        )
-                    }
-                    repeat(3 - previewCount) {
-                        Spacer(modifier = Modifier.weight(1f).height(118.dp))
-                    }
-                }
-            }
-            Row(
-                modifier = Modifier.padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
-            ) {
-                AvatarImage(url = user.profileImageUrl, name = user.name, size = 62.dp)
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                    Text(
-                        user.name,
-                        color = MiuixTheme.colorScheme.onBackground,
-                        style = MiuixTheme.textStyles.title4,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        "@${user.account}",
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        style = MiuixTheme.textStyles.footnote1,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                FollowPill(isFollowed = user.isFollowed)
-            }
-        }
-    }
 }
 
 @Composable

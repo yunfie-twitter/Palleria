@@ -54,6 +54,7 @@ import com.yunfie.illustia.ui.screens.network.NetworkActions
 import com.yunfie.illustia.ui.screens.privacy.PrivacyModeActions
 import com.yunfie.illustia.ui.screens.profile.ProfileEditActions
 import com.yunfie.illustia.ui.screens.ranking.RankingActions
+import com.yunfie.illustia.ui.screens.relatedusers.RelatedUsersActions
 import com.yunfie.illustia.ui.screens.search.SearchBrowseActions
 import com.yunfie.illustia.ui.screens.search.SearchOptionsActions
 import com.yunfie.illustia.ui.screens.settings.CardCustomizationActions
@@ -157,7 +158,8 @@ abstract class IllustiaViewModelFoundation(
     RankingActions,
     ViewHistoryActions,
     FavoriteTagsActions,
-    SearchBrowseActions {
+    SearchBrowseActions,
+    RelatedUsersActions {
     /**
      * ViewModel の生存期間に紐づくコルーチンスコープ。生成側（ファクトリ）が渡す。
      * 各モジュールの 70 箇所ある `viewModelScope.launch { }` はこのプロパティを指す。
@@ -266,6 +268,8 @@ abstract class IllustiaViewModelFoundation(
     val uiState: StateFlow<IllustiaUiState> = appStateStore.state
 
     override val rankingIllustiaState: StateFlow<IllustiaUiState> get() = uiState
+
+    override val relatedUsersIllustiaState: StateFlow<IllustiaUiState> get() = uiState
 
     val searchState: StateFlow<SearchUiState> =
         uiState
