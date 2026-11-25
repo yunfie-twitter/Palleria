@@ -173,6 +173,7 @@ fun BookmarkTagPickerBottomSheet(
                 }
             }
 
+            val pickerError = state.bookmarkTagPickerError
             LazyColumn(
                 modifier = Modifier.fillMaxWidth().weight(1f),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
@@ -184,11 +185,11 @@ fun BookmarkTagPickerBottomSheet(
                         }
                     }
 
-                    state.bookmarkTagPickerError != null -> {
+                    pickerError != null -> {
                         item(key = "error") {
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Text(
-                                    text = state.bookmarkTagPickerError,
+                                    text = pickerError,
                                     color = MiuixTheme.colorScheme.error,
                                     modifier = Modifier.padding(vertical = 8.dp),
                                 )

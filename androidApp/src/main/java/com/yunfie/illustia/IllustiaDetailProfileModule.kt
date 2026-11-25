@@ -90,10 +90,11 @@ abstract class IllustiaDetailProfileModule(
                             val related = relatedDeferred.await()
                             val user = userDeferred?.await()
                             _uiState.update {
-                                if (it.selectedIllust?.id != illust.id) {
+                                val currentIllust = it.selectedIllust
+                                if (currentIllust?.id != illust.id) {
                                     it
                                 } else {
-                                    val mergedIllust = fullIllust.copy(isBookmarked = it.selectedIllust.isBookmarked)
+                                    val mergedIllust = fullIllust.copy(isBookmarked = currentIllust.isBookmarked)
                                     it.copy(
                                         selectedIllust = mergedIllust,
                                         relatedIllusts = related.items.visibleRelatedWithSettings(it.settings),

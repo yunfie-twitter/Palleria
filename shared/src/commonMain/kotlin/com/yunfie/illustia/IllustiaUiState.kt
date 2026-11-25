@@ -13,6 +13,8 @@ import com.yunfie.illustia.models.pixiv.BookmarkTag
 import com.yunfie.illustia.models.pixiv.Comment
 import com.yunfie.illustia.models.pixiv.PixivNotification
 import com.yunfie.illustia.settings.AppSettings
+import kotlin.time.Clock
+import kotlin.uuid.Uuid
 
 @Immutable
 data class IllustiaUiState(
@@ -166,10 +168,7 @@ enum class PermissionRationaleType {
 data class CalculatorHistoryEntry(
     val expression: String,
     val result: String,
-    val id: String =
-        java.util.UUID
-            .randomUUID()
-            .toString(),
+    val id: String = Uuid.random().toString(),
 )
 
 @Immutable
@@ -270,7 +269,7 @@ data class TagPreview(
     val imageUrl: String? = null,
 )
 
-internal data class MuteFilter(
+data class MuteFilter(
     val illustIds: Set<Long> = emptySet(),
     val userIds: Set<Long> = emptySet(),
     val tags: Set<String> = emptySet(),
@@ -285,7 +284,7 @@ data class DownloadQueueEntry(
     val title: String,
     val subtitle: String,
     val status: DownloadQueueStatus,
-    val timestampMillis: Long = System.currentTimeMillis(),
+    val timestampMillis: Long = Clock.System.now().toEpochMilliseconds(),
 )
 
 @Immutable
@@ -297,7 +296,7 @@ enum class DownloadQueueStatus {
     Failed,
 }
 
-internal fun AppSettings.toMuteFilter(): MuteFilter =
+fun AppSettings.toMuteFilter(): MuteFilter =
     MuteFilter(
         illustIds = mutedIllusts.toSet(),
         userIds = mutedUsers.toSet(),

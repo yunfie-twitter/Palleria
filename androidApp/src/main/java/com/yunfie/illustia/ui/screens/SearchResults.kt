@@ -201,14 +201,15 @@ internal fun SearchResultGrid(
                     }
                 }
                 if (state.searchNovelItems.isEmpty()) {
-                    if (state.loadState is LoadState.Error) {
+                    val loadState = state.loadState
+                    if (loadState is LoadState.Error) {
                         item(key = "search_novel_error_state", span = { GridItemSpan(maxLineSpan) }, contentType = "error_state") {
                             SearchErrorState(
-                                message = state.loadState.message,
+                                message = loadState.message,
                                 onRetry = { viewModel.submitSearch(forceRefresh = true) },
                             )
                         }
-                    } else if (state.loadState == LoadState.Loading) {
+                    } else if (loadState == LoadState.Loading) {
                         items(
                             count = 4,
                             key = { "search_novel_initial_skeleton_$it" },
@@ -275,14 +276,15 @@ internal fun SearchResultGrid(
                     }
                 }
                 if (state.searchItems.isEmpty()) {
-                    if (state.loadState is LoadState.Error) {
+                    val illustLoadState = state.loadState
+                    if (illustLoadState is LoadState.Error) {
                         item(key = "search_illust_error_state", span = { GridItemSpan(maxLineSpan) }, contentType = "error_state") {
                             SearchErrorState(
-                                message = state.loadState.message,
+                                message = illustLoadState.message,
                                 onRetry = { viewModel.submitSearch(forceRefresh = true) },
                             )
                         }
-                    } else if (state.loadState == LoadState.Loading) {
+                    } else if (illustLoadState == LoadState.Loading) {
                         items(
                             count = illustColumns * 3,
                             key = { "search_illust_initial_skeleton_$it" },
@@ -338,14 +340,15 @@ internal fun SearchResultGrid(
                 }
             }
             if (state.userSearchItems.isEmpty()) {
-                if (state.loadState is LoadState.Error) {
+                val userLoadState = state.loadState
+                if (userLoadState is LoadState.Error) {
                     item(key = "search_user_error_state", span = { GridItemSpan(maxLineSpan) }, contentType = "error_state") {
                         SearchErrorState(
-                            message = state.loadState.message,
+                            message = userLoadState.message,
                             onRetry = { viewModel.submitSearch(forceRefresh = true) },
                         )
                     }
-                } else if (state.loadState == LoadState.Loading) {
+                } else if (userLoadState == LoadState.Loading) {
                     items(
                         count = 4,
                         key = { "search_user_initial_skeleton_$it" },

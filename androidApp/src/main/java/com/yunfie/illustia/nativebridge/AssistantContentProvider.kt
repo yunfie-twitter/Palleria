@@ -22,15 +22,15 @@ object AssistantContentProvider {
     /** Nothing is exposed while the app is locked or in privacy mode. */
     fun resolve(state: IllustiaUiState): AssistantSnapshot? {
         if (state.appLocked || state.privacyLocked) return null
+        val selectedIllust = state.selectedIllust
+        val selectedUser = state.selectedUser
         return when {
-            state.selectedIllust != null -> {
-                val illust = state.selectedIllust
-                AssistantSnapshot(webUri = artworkUrl(illust.id), structuredData = artworkJson(illust))
+            selectedIllust != null -> {
+                AssistantSnapshot(webUri = artworkUrl(selectedIllust.id), structuredData = artworkJson(selectedIllust))
             }
 
-            state.showUserPage && state.selectedUser != null -> {
-                val user = state.selectedUser
-                AssistantSnapshot(webUri = userUrl(user.id), structuredData = userJson(user))
+            state.showUserPage && selectedUser != null -> {
+                AssistantSnapshot(webUri = userUrl(selectedUser.id), structuredData = userJson(selectedUser))
             }
 
             else -> {

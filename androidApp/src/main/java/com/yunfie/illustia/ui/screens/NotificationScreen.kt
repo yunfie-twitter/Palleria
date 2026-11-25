@@ -147,9 +147,10 @@ fun NotificationScreen(
                 }
             } else if (state.notifications.isEmpty()) {
                 item(contentType = "notification_empty") {
-                    if (state.notificationsError != null) {
+                    val notificationsError = state.notificationsError
+                    if (notificationsError != null) {
                         RequestErrorState(
-                            message = state.notificationsError,
+                            message = notificationsError,
                             onRetry = viewModel::refreshNotifications,
                         )
                     } else {

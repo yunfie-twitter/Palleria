@@ -181,11 +181,12 @@ internal fun BrowseArea(
                     }
                 }
             if (recommendedTags.isEmpty()) {
+                val recommendedTagsError = state.recommendedTagsError
                 when {
-                    state.recommendedTagsError != null -> {
+                    recommendedTagsError != null -> {
                         Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                             RequestErrorState(
-                                message = state.recommendedTagsError,
+                                message = recommendedTagsError,
                                 onRetry = { viewModel.refreshRecommendedTags(force = true) },
                             )
                         }

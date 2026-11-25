@@ -601,19 +601,22 @@ class MainActivity : FragmentActivity() {
 
     private fun currentHandoffUri(state: IllustiaUiState): Uri? {
         if (state.appLocked || state.privacyLocked) return null
+        val selectedUser = state.selectedUser
+        val imageViewerIllust = state.imageViewerIllust
+        val selectedIllust = state.selectedIllust
         return when {
-            state.showUserPage && state.selectedUser != null -> {
-                Uri.parse("pixiv://users/${state.selectedUser.id}")
+            state.showUserPage && selectedUser != null -> {
+                Uri.parse("pixiv://users/${selectedUser.id}")
             }
 
-            state.imageViewerIllust != null -> {
+            imageViewerIllust != null -> {
                 Uri.parse(
-                    "pixiv://illusts/${state.imageViewerIllust.id}?page=${state.imageViewerCurrentPage}",
+                    "pixiv://illusts/${imageViewerIllust.id}?page=${state.imageViewerCurrentPage}",
                 )
             }
 
-            state.selectedIllust != null -> {
-                Uri.parse("pixiv://illusts/${state.selectedIllust.id}")
+            selectedIllust != null -> {
+                Uri.parse("pixiv://illusts/${selectedIllust.id}")
             }
 
             else -> {
