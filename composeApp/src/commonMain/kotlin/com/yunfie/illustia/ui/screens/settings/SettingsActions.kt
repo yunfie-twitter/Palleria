@@ -21,4 +21,8 @@ interface SettingsActions {
     fun updateShortsFeedEnabled(value: Boolean)
 
     fun updateHideHomeNovelButton(value: Boolean)
+
+    fun updatePixivImageProxyBaseUrl(value: String)
+
+    fun updatePixivNetworkMode(value: String)
 }

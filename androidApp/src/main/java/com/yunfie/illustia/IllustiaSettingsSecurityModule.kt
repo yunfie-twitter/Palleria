@@ -937,11 +937,11 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(relatedIllustColumnCount = count) }
     }
 
-    fun updatePixivImageProxyBaseUrl(value: String) {
+    override fun updatePixivImageProxyBaseUrl(value: String) {
         updateSettings { it.copy(pixivImageProxyBaseUrl = value) }
     }
 
-    fun updatePixivNetworkMode(value: String) {
+    override fun updatePixivNetworkMode(value: String) {
         updateSettings { it.copy(pixivNetworkMode = value) }
     }
 

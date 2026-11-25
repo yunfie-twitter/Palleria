@@ -18,8 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
 import com.yunfie.illustia.data.PixivImageProxyOptions
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.action_add
@@ -43,15 +41,16 @@ import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.pixivNetworkModeLabel
 import com.yunfie.illustia.settings.pixivNetworkModeOptions
 import com.yunfie.illustia.ui.components.AppDialog
+import com.yunfie.illustia.ui.components.BackNavigationHandler
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
-import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.Section
 import com.yunfie.illustia.ui.components.SettingDropdownRow
 import com.yunfie.illustia.ui.components.SettingLinkRow
 import com.yunfie.illustia.ui.components.dialogBottomInsets
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
+import com.yunfie.illustia.ui.screens.network.NetworkActions
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -66,11 +65,11 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 fun NetworkSettingsScreen(
     settings: AppSettings,
-    viewModel: IllustiaViewModel,
+    viewModel: NetworkActions,
     onBack: () -> Unit,
     onOpenInternalProxySettings: () -> Unit = { viewModel.openInternalProxySettings() },
 ) {
-    PredictiveBackGestureHandler(onBack = onBack)
+    BackNavigationHandler(onBack = onBack)
     val scrollBehavior = MiuixScrollBehavior()
 
     val currentProxy = settings.pixivImageProxyBaseUrl

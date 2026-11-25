@@ -695,7 +695,7 @@ abstract class IllustiaLibraryNavigationModule(
         _navigationRequests.tryEmit(IllustiaNavigationRequest.NetworkSettings)
     }
 
-    fun openInternalProxySettings() {
+    override fun openInternalProxySettings() {
         _navigationRequests.tryEmit(IllustiaNavigationRequest.InternalProxySettings)
     }
 

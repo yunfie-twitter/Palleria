@@ -7,4 +7,6 @@ interface LibraryActions {
     fun clearFinishedDownloads()
 
     fun closeSavedIllustViewer()
+
+    fun openInternalProxySettings()
 }
