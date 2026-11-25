@@ -180,7 +180,7 @@ fun SearchScreen(
 
     LaunchedEffect(state.sessionReady, state.settings.refreshToken, state.recommendedTagsFetchedAtMillis) {
         if (state.sessionReady) {
-            viewModel.refreshRecommendedTags()
+            viewModel.refreshRecommendedTags(force = false)
         }
     }
 

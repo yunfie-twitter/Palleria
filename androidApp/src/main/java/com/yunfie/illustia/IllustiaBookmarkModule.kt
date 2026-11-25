@@ -403,7 +403,7 @@ abstract class IllustiaBookmarkModule(
         refreshBookmarks()
     }
 
-    fun refreshRecommendedTags(force: Boolean = false) {
+    override fun refreshRecommendedTags(force: Boolean) {
         val state = _uiState.value
         val now = System.currentTimeMillis()
         val cacheAge = now - state.recommendedTagsFetchedAtMillis

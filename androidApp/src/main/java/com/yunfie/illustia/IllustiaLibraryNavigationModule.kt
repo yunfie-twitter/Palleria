@@ -699,7 +699,7 @@ abstract class IllustiaLibraryNavigationModule(
         _navigationRequests.tryEmit(IllustiaNavigationRequest.InternalProxySettings)
     }
 
-    fun openViewHistory() {
+    override fun openViewHistory() {
         loadFullViewHistory()
         _navigationRequests.tryEmit(IllustiaNavigationRequest.ViewHistory)
     }

@@ -50,7 +50,7 @@ fun TagTile(
         modifier =
             modifier
                 .aspectRatio(1f)
-                .pointerHoverIcon(PointerIcon.Hand)
+                .pointerHoverIcon(androidx.compose.ui.input.pointer.PointerIcon.Hand)
                 .combinedClickable(
                     onClick = {
                         performHaptic(AppHapticEffect.Click)
@@ -76,7 +76,7 @@ fun TagTile(
     ) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
             if (imageUrl != null) {
-                CoilPixivImage(
+                PixivImage(
                     url = imageUrl,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,

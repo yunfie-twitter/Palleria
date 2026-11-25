@@ -443,9 +443,9 @@ abstract class IllustiaDetailProfileModule(
         }
     }
 
-    fun openTagOptions(
+    override fun openTagOptions(
         rawTag: String,
-        imageUrl: String? = null,
+        imageUrl: String?,
     ) {
         val tag = rawTag.trim().removePrefix("#").trim()
         if (tag.isBlank()) return

@@ -43,6 +43,10 @@ abstract class IllustiaSettingsSecurityModule(
         forceRefresh: Boolean = false,
     )
 
+    final override fun submitSearchFromBrowse(query: String) {
+        submitSearch(word = query, forceRefresh = false)
+    }
+
     fun loadDeferredStartupData() {
         if (!deferredStartupDataStarted.compareAndSet(false, true)) return
         observeAppUpdateDownloadWorkerProgress()

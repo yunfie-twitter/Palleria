@@ -34,7 +34,7 @@ import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-internal fun rememberSkeletonShimmer(externalValue: State<Float>? = null): Modifier {
+fun rememberSkeletonShimmer(externalValue: State<Float>? = null): Modifier {
     val shimmer = externalValue ?: rememberIllustSkeletonShimmer()
     val base = MiuixTheme.colorScheme.surfaceContainer
     val highlight = MiuixTheme.colorScheme.surfaceContainerHigh

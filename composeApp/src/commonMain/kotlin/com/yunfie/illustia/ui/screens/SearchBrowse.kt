@@ -24,8 +24,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaUiState
-import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
 import com.yunfie.illustia.RecommendedTagTile
 import com.yunfie.illustia.SearchUiState
 import com.yunfie.illustia.isMutedByTags
@@ -49,6 +47,7 @@ import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
 import com.yunfie.illustia.ui.components.adaptiveProfileGridColumns
 import com.yunfie.illustia.ui.components.adaptiveRecommendedTagColumns
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
+import com.yunfie.illustia.ui.screens.search.SearchBrowseActions
 import com.yunfie.illustia.ui.scroll.ScrollStateKeys
 import com.yunfie.illustia.ui.scroll.ScrollStateRegistry
 import com.yunfie.illustia.visibleWithMutedTagsVisible
@@ -59,9 +58,9 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-internal fun BrowseArea(
+fun BrowseArea(
     state: SearchUiState,
-    viewModel: IllustiaViewModel,
+    viewModel: SearchBrowseActions,
     showHeader: Boolean = false,
     onIllustSelected: ((Illust) -> Unit)? = null,
     onSearch: ((String) -> Unit)? = null,
@@ -151,8 +150,8 @@ internal fun BrowseArea(
                         Box(modifier = Modifier.width(130.dp)) {
                             IllustCard(
                                 illust = illust,
-                                onBookmark = { viewModel.toggleBookmark(illust) },
-                                onClick = { onIllustSelected?.invoke(illust) ?: viewModel.openIllust(illust) },
+                                onBookmark = { viewModel.toggleBookmarkFromCard(illust) },
+                                onClick = { onIllustSelected?.invoke(illust) ?: viewModel.openIllustFromCard(illust) },
                                 highQualityImages = feedHighQuality,
                                 showAiBadge = showAiBadge,
                                 isMutedByTag = illust.isMutedByTags(state.settings),
@@ -214,7 +213,7 @@ internal fun BrowseArea(
                                                 .removePrefix("#")
                                                 .removePrefix("＃")
                                                 .trim()
-                                        onSearch?.invoke(query) ?: viewModel.submitSearch(query)
+                                        onSearch?.invoke(query) ?: viewModel.submitSearchFromBrowse(query)
                                     },
                                     onLongClick = {
                                         viewModel.openTagOptions(
@@ -235,9 +234,9 @@ internal fun BrowseArea(
 }
 
 @Composable
-internal fun BrowseArea(
+fun BrowseArea(
     state: IllustiaUiState,
-    viewModel: IllustiaViewModel,
+    viewModel: SearchBrowseActions,
     showHeader: Boolean = false,
     onIllustSelected: ((Illust) -> Unit)? = null,
     onSearch: ((String) -> Unit)? = null,
