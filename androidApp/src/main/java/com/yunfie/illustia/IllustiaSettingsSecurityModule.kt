@@ -366,7 +366,7 @@ abstract class IllustiaSettingsSecurityModule(
         refreshActiveSearch()
     }
 
-    fun updateFeatureFlag(
+    override fun updateFeatureFlag(
         flag: FeatureFlag,
         enabled: Boolean,
     ) {
