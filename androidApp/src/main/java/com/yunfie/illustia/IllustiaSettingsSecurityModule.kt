@@ -107,7 +107,7 @@ abstract class IllustiaSettingsSecurityModule(
         refreshHome()
     }
 
-    fun updateRefreshToken(value: String) {
+    override fun updateRefreshToken(value: String) {
         updateSettings { it.copy(refreshToken = value) }
     }
 
@@ -218,7 +218,7 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(hideNotifications = value) }
     }
 
-    fun updateSendTelemetry(value: Boolean) {
+    override fun updateSendTelemetry(value: Boolean) {
         updateSettings { it.copy(sendTelemetry = value) }
         telemetryControl.setEnabled(value)
     }

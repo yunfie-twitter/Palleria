@@ -38,7 +38,7 @@ abstract class IllustiaAuthFeedModule(
 
     abstract fun openUserPage(userId: Long)
 
-    fun login() {
+    override fun login() {
         val refreshToken = _uiState.value.settings.refreshToken
         runLoading {
             val session = repository.login(refreshToken)
@@ -47,7 +47,7 @@ abstract class IllustiaAuthFeedModule(
         }
     }
 
-    fun openWebLogin() {
+    override fun openWebLogin() {
         appLockRecoveryLogin = false
         _uiState.update {
             it.copy(

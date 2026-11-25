@@ -42,6 +42,7 @@ import com.yunfie.illustia.settings.SettingsFacade
 import com.yunfie.illustia.ui.app.DetailEntrySnapshot
 import com.yunfie.illustia.ui.app.SearchEntrySnapshot
 import com.yunfie.illustia.ui.screens.account.AccountActions
+import com.yunfie.illustia.ui.screens.account.LoginActions
 import com.yunfie.illustia.ui.screens.bookmark.BookmarkSettingsActions
 import com.yunfie.illustia.ui.screens.calculator.CalculatorActions
 import com.yunfie.illustia.ui.screens.library.LibraryActions
@@ -145,7 +146,8 @@ abstract class IllustiaViewModelFoundation(
     MuteActions,
     InternalProxyActions,
     CardCustomizationActions,
-    PrivacyModeActions {
+    PrivacyModeActions,
+    LoginActions {
     /**
      * ViewModel の生存期間に紐づくコルーチンスコープ。生成側（ファクトリ）が渡す。
      * 各モジュールの 70 箇所ある `viewModelScope.launch { }` はこのプロパティを指す。

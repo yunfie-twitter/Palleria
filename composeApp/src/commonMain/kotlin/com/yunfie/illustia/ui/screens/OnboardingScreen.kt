@@ -26,8 +26,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.yunfie.illustia.IllustiaUiState
-import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.about_title
 import com.yunfie.illustia.resources.action_close
@@ -43,6 +41,7 @@ import com.yunfie.illustia.resources.login_web_description
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.AppDialog
 import com.yunfie.illustia.ui.components.miuixClickable
+import com.yunfie.illustia.ui.screens.account.LoginActions
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -52,9 +51,9 @@ import top.yukonga.miuix.kmp.preference.CheckboxPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-internal fun OnboardingLoginScreen(
+fun OnboardingLoginScreen(
     state: IllustiaUiState,
-    viewModel: IllustiaViewModel,
+    viewModel: LoginActions,
     onRefreshTokenLogin: () -> Unit,
     showTokenLogin: Boolean = false,
     onTokenLoginDismiss: () -> Unit = {},
@@ -156,7 +155,7 @@ internal fun OnboardingLoginScreen(
 @Composable
 private fun OnboardingActions(
     settings: AppSettings,
-    viewModel: IllustiaViewModel,
+    viewModel: LoginActions,
     onShowDetails: () -> Unit,
     onRefreshTokenLogin: () -> Unit,
     modifier: Modifier = Modifier,
