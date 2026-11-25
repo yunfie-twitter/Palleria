@@ -9,8 +9,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.card_customization_section_actions
 import com.yunfie.illustia.resources.card_customization_section_elements
@@ -33,14 +31,13 @@ import com.yunfie.illustia.resources.setting_quick_peek_shared_element_transitio
 import com.yunfie.illustia.resources.setting_quick_peek_shared_element_transition_title
 import com.yunfie.illustia.resources.setting_quick_peek_title
 import com.yunfie.illustia.settings.AppSettings
-import com.yunfie.illustia.settings.FeatureFlag
-import com.yunfie.illustia.settings.isFeatureEnabled
+import com.yunfie.illustia.ui.components.BackNavigationHandler
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
-import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.Section
 import com.yunfie.illustia.ui.components.SettingSwitchRow
+import com.yunfie.illustia.ui.screens.settings.CardCustomizationActions
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -52,10 +49,10 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 fun CardCustomizationSettingsScreen(
     settings: AppSettings,
-    viewModel: IllustiaViewModel,
+    viewModel: CardCustomizationActions,
     onBack: () -> Unit,
 ) {
-    PredictiveBackGestureHandler(onBack = onBack)
+    BackNavigationHandler(onBack = onBack)
     val scrollBehavior = MiuixScrollBehavior()
 
     Scaffold(

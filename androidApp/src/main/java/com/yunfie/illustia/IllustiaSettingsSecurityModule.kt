@@ -307,23 +307,23 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(artworkThemeEnabled = value) }
     }
 
-    fun updateShowCardTitle(value: Boolean) {
+    override fun updateShowCardTitle(value: Boolean) {
         updateSettings { it.copy(showCardTitle = value) }
     }
 
-    fun updateShowCardArtist(value: Boolean) {
+    override fun updateShowCardArtist(value: Boolean) {
         updateSettings { it.copy(showCardArtist = value) }
     }
 
-    fun updateShowCardTags(value: Boolean) {
+    override fun updateShowCardTags(value: Boolean) {
         updateSettings { it.copy(showCardTags = value) }
     }
 
-    fun updateShowCardBookmarkCount(value: Boolean) {
+    override fun updateShowCardBookmarkCount(value: Boolean) {
         updateSettings { it.copy(showCardBookmarkCount = value) }
     }
 
-    fun updateShowCardBookmarkButton(value: Boolean) {
+    override fun updateShowCardBookmarkButton(value: Boolean) {
         updateSettings { it.copy(showCardBookmarkButton = value) }
     }
 
@@ -345,19 +345,19 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(hideHomeNovelButton = value) }
     }
 
-    fun updateShowAiBadge(value: Boolean) {
+    override fun updateShowAiBadge(value: Boolean) {
         updateSettings { it.copy(showAiBadge = value) }
     }
 
-    fun updateShowR18Badge(value: Boolean) {
+    override fun updateShowR18Badge(value: Boolean) {
         updateSettings { it.copy(showR18Badge = value) }
     }
 
-    fun updateShowRelatedR18(value: Boolean) {
+    override fun updateShowRelatedR18(value: Boolean) {
         updateSettings { it.copy(showRelatedR18 = value) }
     }
 
-    fun updateDoubleTapToBookmark(value: Boolean) {
+    override fun updateDoubleTapToBookmark(value: Boolean) {
         updateSettings { it.copy(doubleTapToBookmark = value) }
     }
 
@@ -912,7 +912,7 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(gridPinchToZoom = enabled) }
     }
 
-    fun updateQuickPeekSharedElementTransition(enabled: Boolean) {
+    override fun updateQuickPeekSharedElementTransition(enabled: Boolean) {
         updateSettings { it.copy(quickPeekSharedElementTransition = enabled) }
     }
 
@@ -981,7 +981,7 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(imageViewerSwipeToDismissEnabled = value) }
     }
 
-    fun updateQuickPeekEnabled(value: Boolean) {
+    override fun updateQuickPeekEnabled(value: Boolean) {
         updateSettings { it.copy(quickPeekEnabled = value) }
     }
 
