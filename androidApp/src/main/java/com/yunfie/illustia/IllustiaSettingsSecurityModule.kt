@@ -206,15 +206,15 @@ abstract class IllustiaSettingsSecurityModule(
 
     // ─── Privacy Mode 設定値更新 ────────────────────────────────────────────────
 
-    fun updatePrivacyModeAutoLockTiming(value: String) {
+    override fun updatePrivacyModeAutoLockTiming(value: String) {
         updateSettings { it.copy(privacyModeAutoLockTiming = value) }
     }
 
-    fun updateHideRecents(value: Boolean) {
+    override fun updateHideRecents(value: Boolean) {
         updateSettings { it.copy(hideRecents = value) }
     }
 
-    fun updateHideNotifications(value: Boolean) {
+    override fun updateHideNotifications(value: Boolean) {
         updateSettings { it.copy(hideNotifications = value) }
     }
 
@@ -247,24 +247,24 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(discordRpcShowLogs = value) }
     }
 
-    fun updateDummyAppName(value: String) {
+    override fun updateDummyAppName(value: String) {
         if (value.isNotBlank() && value.length <= 30) {
             updateSettings { it.copy(dummyAppName = value) }
         }
     }
 
-    fun updateDummyIconVariant(value: String) {
+    override fun updateDummyIconVariant(value: String) {
         updateSettings { it.copy(dummyIconVariant = value) }
     }
 
-    suspend fun verifyCurrentUnlockCode(code: String): Boolean = settingsStore.verifyUnlockCode(code)
+    override suspend fun verifyCurrentUnlockCode(code: String): Boolean = settingsStore.verifyUnlockCode(code)
 
     fun applyDummyIconSettings() {
         val settings = _uiState.value.settings
         applyDummyAppIcon(settings.privacyModeEnabled, settings.appIconVariant)
     }
 
-    suspend fun changeUnlockCode(
+    override suspend fun changeUnlockCode(
         currentCode: String,
         newCode: String,
     ): Boolean {
@@ -464,15 +464,15 @@ abstract class IllustiaSettingsSecurityModule(
 
     // ─── Privacy Mode 制御 ─────────────────────────────────────────────────────
 
-    fun hasUnlockCodeSet(): Boolean = settingsStore.hasUnlockCodeSet()
+    override fun hasUnlockCodeSet(): Boolean = settingsStore.hasUnlockCodeSet()
 
-    fun isValidUnlockCode(code: String): Boolean = settingsStore.isValidUnlockCode(code)
+    override fun isValidUnlockCode(code: String): Boolean = settingsStore.isValidUnlockCode(code)
 
     /**
      * 指定した解除コードを設定してプライバシーモードを有効化する。
      * @return 解除コードが有効な形式であれば true
      */
-    suspend fun enablePrivacyModeWithCode(code: String): Boolean {
+    override suspend fun enablePrivacyModeWithCode(code: String): Boolean {
         if (!settingsStore.isValidUnlockCode(code)) return false
         settingsStore.saveUnlockCodeHash(code)
         enablePrivacyMode()
@@ -483,7 +483,7 @@ abstract class IllustiaSettingsSecurityModule(
      * プライバシーモードを有効化する。
      * 解除コードが未設定なら初期コード "168" を保存する。
      */
-    suspend fun enablePrivacyMode() {
+    override suspend fun enablePrivacyMode() {
         if (!settingsStore.hasUnlockCodeSet()) {
             // Seeding the default code hashes with PBKDF2; never do that on the UI thread.
             settingsStore.saveUnlockCodeHash("168")
@@ -496,7 +496,7 @@ abstract class IllustiaSettingsSecurityModule(
     /**
      * プライバシーモードを無効化する。ロック状態をリセットし、電卓画面を非表示にする。
      */
-    fun disablePrivacyMode() {
+    override fun disablePrivacyMode() {
         updateSettings { it.copy(privacyModeEnabled = false) }
         _calculatorState.update { it.copy(buffer = "") }
         _uiState.update { it.copy(privacyLocked = false, calculatorBuffer = "", isTransitioningToIllustia = false) }
