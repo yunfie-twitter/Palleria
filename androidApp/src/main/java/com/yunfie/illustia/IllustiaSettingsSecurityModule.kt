@@ -299,7 +299,7 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(hiddenNavigationTabs = value.filter { id -> id in allowed }.distinct()) }
     }
 
-    fun updateNavigationStyle(value: String) {
+    override fun updateNavigationStyle(value: String) {
         updateSettings { it.copy(navigationStyle = value.takeIf { style -> style in setOf("standard", "floating", "auto") } ?: "standard") }
     }
 
@@ -337,11 +337,11 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(skipConfirmOnDetailSave = value) }
     }
 
-    fun updateShortsFeedEnabled(value: Boolean) {
+    override fun updateShortsFeedEnabled(value: Boolean) {
         updateSettings { it.copy(shortsFeedEnabled = value) }
     }
 
-    fun updateHideHomeNovelButton(value: Boolean) {
+    override fun updateHideHomeNovelButton(value: Boolean) {
         updateSettings { it.copy(hideHomeNovelButton = value) }
     }
 
@@ -900,7 +900,7 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(liveWallpaperExcludeSensitive = value) }
     }
 
-    fun updateStartupScreen(value: String) {
+    override fun updateStartupScreen(value: String) {
         updateSettings { it.copy(startupScreen = value) }
     }
 

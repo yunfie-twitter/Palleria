@@ -11,8 +11,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.action_move_down
 import com.yunfie.illustia.resources.action_move_up
@@ -40,11 +38,10 @@ import com.yunfie.illustia.resources.navigation_section_tabs
 import com.yunfie.illustia.resources.navigation_settings_title
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.FeatureFlag
-import com.yunfie.illustia.settings.isFeatureEnabled
+import com.yunfie.illustia.ui.components.BackNavigationHandler
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
-import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.Section
 import com.yunfie.illustia.ui.components.SettingDropdownRow
 import com.yunfie.illustia.ui.components.SettingSwitchRow
@@ -64,15 +61,15 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 fun NavigationSettingsScreen(
     settings: AppSettings,
-    viewModel: IllustiaViewModel,
+    viewModel: com.yunfie.illustia.ui.screens.settings.SettingsActions,
     onBack: () -> Unit,
 ) {
-    PredictiveBackGestureHandler(onBack = onBack)
+    BackNavigationHandler(onBack = onBack)
     val scrollBehavior = MiuixScrollBehavior()
 
-    val navigationCustomizationFlag = settings.isFeatureEnabled(FeatureFlag.NavigationCustomization)
-    val shortsFeedFlag = settings.isFeatureEnabled(FeatureFlag.ShortsFeed)
-    val hideHomeNovelButtonFlag = settings.isFeatureEnabled(FeatureFlag.HideHomeNovelButton)
+    val navigationCustomizationFlag = FeatureFlag.NavigationCustomization.resolve(settings)
+    val shortsFeedFlag = FeatureFlag.ShortsFeed.resolve(settings)
+    val hideHomeNovelButtonFlag = FeatureFlag.HideHomeNovelButton.resolve(settings)
 
     val activeIds = activeNavigationIds(settings.shortsFeedEnabled)
     val orderedIds = normalizeNavigationOrder(settings.navigationOrder, activeIds)

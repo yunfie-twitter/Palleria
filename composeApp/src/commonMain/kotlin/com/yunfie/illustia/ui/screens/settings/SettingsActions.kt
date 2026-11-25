@@ -13,4 +13,12 @@ interface SettingsActions {
     fun updateHiddenNavigationTabs(value: List<String>)
 
     fun updateNavigationOrder(value: List<String>)
+
+    fun updateNavigationStyle(value: String)
+
+    fun updateStartupScreen(value: String)
+
+    fun updateShortsFeedEnabled(value: Boolean)
+
+    fun updateHideHomeNovelButton(value: Boolean)
 }
