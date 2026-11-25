@@ -819,6 +819,9 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         LocalAppHapticMode provides effectiveHapticMode,
         com.yunfie.illustia.ui.components.LocalAppHapticEffect provides
             rememberPlatformHapticAction(),
+        com.yunfie.illustia.ui.components.LocalAppHapticPerformer provides
+            com.yunfie.illustia.ui.components
+                .AppHapticPerformer(rememberPlatformHapticAction()),
         com.yunfie.illustia.ui.components.LocalBackHandler provides
             remember {
                 object : com.yunfie.illustia.ui.components.BackHandlerRegistrar {
@@ -846,6 +849,37 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                     thumbnail = true,
                     maxDecodeDimensionPx = maxDecodeDimensionPx,
                 )
+            },
+        com.yunfie.illustia.ui.components.LocalIllustCardBookmarkButtonRenderer provides
+            object : com.yunfie.illustia.ui.components.IllustCardBookmarkButtonRenderer {
+                @Composable
+                override fun Render(
+                    isBookmarked: Boolean,
+                    onClick: () -> Unit,
+                    modifier: Modifier,
+                    onLongClick: (() -> Unit)?,
+                    size: androidx.compose.ui.unit.Dp,
+                    iconSize: androidx.compose.ui.unit.Dp,
+                ) {
+                    com.yunfie.illustia.ui.components.BookmarkHeartButton(
+                        isBookmarked = isBookmarked,
+                        onClick = onClick,
+                        modifier = modifier,
+                        onLongClick = onLongClick,
+                        size = size,
+                        iconSize = iconSize,
+                    )
+                }
+            },
+        com.yunfie.illustia.ui.components.LocalArtworkCardDecorator provides
+            object : com.yunfie.illustia.ui.components.ArtworkCardDecorator {
+                @Composable
+                override fun decorate(
+                    illust: com.yunfie.illustia.models.Illust,
+                    modifier: Modifier,
+                ): Modifier =
+                    com.yunfie.illustia.ui.components
+                        .artworkDesktopMenuDecoration(illust, modifier)
             },
         com.yunfie.illustia.ui.components.LocalPixivImageRenderer provides
             com.yunfie.illustia.ui.components.PixivImageRenderer { spec ->

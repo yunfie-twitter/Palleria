@@ -93,11 +93,14 @@ internal fun rememberArtworkDesktopActions(viewModel: IllustiaViewModel): Artwor
 }
 
 @Composable
-internal fun Modifier.artworkDesktopMenu(illust: Illust): Modifier {
+internal fun artworkDesktopMenuDecoration(
+    illust: Illust,
+    modifier: Modifier,
+): Modifier {
     // Every grid cell calls this. Return before taking any hooks when the desktop menu isn't
     // mounted so phones don't pay for a coroutine scope, state holders and an animation per card.
-    if (LocalArtworkDesktopActions.current == null) return this
-    return artworkDesktopMenuEnabled(illust)
+    if (LocalArtworkDesktopActions.current == null) return modifier
+    return modifier.artworkDesktopMenuEnabled(illust)
 }
 
 @Composable

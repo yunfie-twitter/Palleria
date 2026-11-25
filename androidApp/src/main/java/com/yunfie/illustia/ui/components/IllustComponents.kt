@@ -182,363 +182,67 @@ fun IllustGridSkeleton(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun IllustCard(
+fun HighlightCard(
     illust: Illust,
-    onBookmark: () -> Unit,
     onClick: () -> Unit,
-    onLongClick: (() -> Unit)? = null,
-    modifier: Modifier = Modifier,
-    onBookmarkLongClick: (() -> Unit)? = null,
-    isSelected: Boolean = false,
-    highQualityImages: Boolean = true,
-    showAiBadge: Boolean = true,
-    showBookmarkButton: Boolean = true,
-    isMutedByTag: Boolean = false,
 ) {
     val cardPreferences = LocalArtworkCardPreferences.current
-    val preferLowDataImages = LocalPreferLowDataImages.current
-    val previewUrl =
-        remember(illust.id, highQualityImages, preferLowDataImages) {
-            if (highQualityImages && !preferLowDataImages) {
-                illust.previewUrl
-            } else {
-                illust.thumbnailUrl
-            }
-        }
-    val cardBadgeText =
-        remember(illust.id, showAiBadge, cardPreferences.showAiBadge) {
-            if (illust.isAi && (!showAiBadge || !cardPreferences.showAiBadge)) null else illust.cardBadgeText
-        }
-    val ageRestrictionBadgeText =
-        remember(illust.id, illust.isR18, illust.isR18G, cardPreferences.showR18Badge) {
-            if (cardPreferences.showR18Badge) illust.ageRestrictionBadgeText else null
-        }
-
-    IllustCardImpl(
-        previewUrl = previewUrl,
-        title = illust.title,
-        illustId = illust.id,
-        artistName = illust.artistName,
-        tags = illust.tags,
-        totalBookmarks = illust.totalBookmarks,
-        isBookmarked = illust.isBookmarked,
-        cardBadgeText = cardBadgeText,
-        ageRestrictionBadgeText = ageRestrictionBadgeText,
-        onBookmark = onBookmark,
-        onBookmarkLongClick = onBookmarkLongClick,
-        onClick = onClick,
-        onLongClick = onLongClick,
-        showBookmarkButton = showBookmarkButton && cardPreferences.showBookmarkButton,
-        modifier = modifier.artworkDesktopMenu(illust),
-        isSelected = isSelected,
-        isMutedByTag = isMutedByTag,
-        preferences = cardPreferences,
-    )
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun IllustCardImpl(
-    previewUrl: String,
-    title: String,
-    illustId: Long,
-    artistName: String,
-    tags: List<String>,
-    totalBookmarks: Int,
-    isBookmarked: Boolean,
-    cardBadgeText: String?,
-    ageRestrictionBadgeText: String?,
-    onBookmark: () -> Unit,
-    onClick: () -> Unit,
-    onLongClick: (() -> Unit)?,
-    showBookmarkButton: Boolean,
-    modifier: Modifier = Modifier,
-    isSelected: Boolean,
-    isMutedByTag: Boolean,
-    preferences: ArtworkCardPreferences,
-    onBookmarkLongClick: (() -> Unit)? = null,
-) {
-    val haptic = LocalHapticFeedback.current
-    val context = LocalContext.current
-    val hapticMode = LocalAppHapticMode.current
-    val cardModifier =
-        if (isSelected) {
-            modifier.border(2.dp, MiuixTheme.colorScheme.primary, RoundedCornerShape(14.dp))
-        } else {
-            modifier
-        }
-    val finalModifier =
-        if (preferences.doubleTapToBookmark) {
-            cardModifier
-                .clip(RoundedCornerShape(14.dp))
-                .combinedClickable(
-                    onClick = onClick,
-                    onDoubleClick = {
-                        performAppHapticFeedback(context, haptic, hapticMode)
-                        onBookmark()
-                    },
-                    onLongClick =
-                        if (onLongClick != null) {
-                            {
-                                performAppHapticFeedback(context, haptic, hapticMode)
-                                onLongClick()
-                            }
-                        } else {
-                            null
-                        },
-                )
-        } else {
-            cardModifier
-        }
     Card(
-        modifier = finalModifier,
-        cornerRadius = 14.dp,
+        modifier = Modifier.width(232.dp).height(128.dp),
+        cornerRadius = 16.dp,
         insideMargin = PaddingValues(0.dp),
-        colors = CardDefaults.defaultColors(color = Color.Transparent, contentColor = MiuixTheme.colorScheme.onBackground),
-        pressFeedbackType = PressFeedbackType.Sink,
-        onClick = if (preferences.doubleTapToBookmark) null else onClick,
-        onLongPress =
-            if (!preferences.doubleTapToBookmark && onLongClick != null) {
-                {
-                    performAppHapticFeedback(context, haptic, hapticMode)
-                    onLongClick()
-                }
-            } else {
-                null
-            },
-    ) {
-        Box {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                IllustCardThumbnail(
-                    previewUrl = previewUrl,
-                    title = title,
-                    illustId = illustId,
-                    badgeText = cardBadgeText,
-                    ageRestrictionBadgeText = ageRestrictionBadgeText,
-                    isMutedByTag = isMutedByTag,
-                )
-
-                if (
-                    preferences.showTitle || preferences.showArtist || preferences.showTags ||
-                    preferences.showBookmarkCount || showBookmarkButton
-                ) {
-                    IllustCardInfo(
-                        title = title,
-                        artistName = artistName,
-                        tags = tags,
-                        totalBookmarks = totalBookmarks,
-                        isBookmarked = isBookmarked,
-                        onBookmark = onBookmark,
-                        onBookmarkLongClick = onBookmarkLongClick,
-                        showBookmarkButton = showBookmarkButton,
-                        preferences = preferences,
-                    )
-                }
-            }
-
-            if (isSelected) {
-                Box(
-                    modifier =
-                        Modifier
-                            .matchParentSize()
-                            .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.08f)),
-                )
-                Box(
-                    modifier =
-                        Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(8.dp)
-                            .size(24.dp)
-                            .clip(CircleShape)
-                            .background(MiuixTheme.colorScheme.primary),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = "✓",
-                        color = Color.White,
-                        style = MiuixTheme.textStyles.footnote2,
-                        fontWeight = FontWeight.Black,
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun IllustCardThumbnail(
-    previewUrl: String,
-    title: String,
-    illustId: Long,
-    badgeText: String?,
-    ageRestrictionBadgeText: String?,
-    isMutedByTag: Boolean,
-) {
-    Box(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .aspectRatio(0.75f)
-                .sharedArtworkElement(illustId)
-                .clip(IllustCardCornerShape)
-                .background(MiuixTheme.colorScheme.surfaceContainer),
+        colors =
+            CardDefaults.defaultColors(
+                color = MiuixTheme.colorScheme.surfaceContainer,
+                contentColor = MiuixTheme.colorScheme.onBackground,
+            ),
+        pressFeedbackType = PressFeedbackType.Tilt,
+        onClick = onClick,
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             CoilPixivImage(
-                url = previewUrl,
-                contentDescription = title,
+                url = illust.previewUrl,
+                contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
                 thumbnail = true,
             )
-            // A scrim hides muted artwork without Modifier.blur's per-item RenderEffect, which
-            // would force an offscreen blur pass for every muted card in the scrolling grid.
-            if (isMutedByTag) {
-                Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.55f)))
+            val badgeText = illust.ageRestrictionBadgeText
+            if (cardPreferences.showR18Badge && badgeText != null) {
+                Text(
+                    text = badgeText,
+                    color = Color.White,
+                    style = MiuixTheme.textStyles.footnote2,
+                    fontWeight = FontWeight.Black,
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopStart)
+                            .padding(8.dp)
+                            .squircleBackground(Color(0xFFFA383E), 6.dp)
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                )
             }
-        }
-        if (ageRestrictionBadgeText != null) {
-            Text(
-                text = ageRestrictionBadgeText,
-                color = Color.White,
-                style = MiuixTheme.textStyles.footnote2,
-                fontWeight = FontWeight.Black,
+            Box(
                 modifier =
                     Modifier
-                        .align(Alignment.TopStart)
-                        .padding(8.dp)
-                        .squircleBackground(Color(0xFFFA383E), 6.dp)
-                        .padding(horizontal = 6.dp, vertical = 2.dp),
+                        .align(Alignment.BottomStart)
+                        .fillMaxWidth()
+                        .height(64.dp)
+                        .cachedVerticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f))),
             )
-        }
-        if (badgeText != null) {
             Text(
-                text = badgeText,
+                text = illust.title,
                 color = Color.White,
-                style = MiuixTheme.textStyles.footnote2,
-                fontWeight = FontWeight.Black,
-                modifier =
-                    Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp)
-                        .squircleBackground(Color.Black.copy(alpha = 0.4f), 6.dp)
-                        .padding(horizontal = 6.dp, vertical = 2.dp),
+                style = MiuixTheme.textStyles.body1,
+                fontWeight = FontWeight.Bold,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.align(Alignment.BottomStart).padding(14.dp),
             )
         }
     }
 }
-
-@Composable
-private fun IllustCardInfo(
-    title: String,
-    artistName: String,
-    tags: List<String>,
-    totalBookmarks: Int,
-    isBookmarked: Boolean,
-    onBookmark: () -> Unit,
-    showBookmarkButton: Boolean,
-    preferences: ArtworkCardPreferences,
-    onBookmarkLongClick: (() -> Unit)? = null,
-) {
-    // These are shown per grid cell and would otherwise be re-built on every recomposition,
-    // allocating a Formatter/String per card in the hot scroll path.
-    val tagLine =
-        remember(tags) {
-            when {
-                tags.size >= 2 -> "#${tags[0]}  #${tags[1]}"
-                tags.size == 1 -> "#${tags[0]}"
-                else -> ""
-            }
-        }
-    val bookmarkLine = remember(totalBookmarks) { "♥ ${formatCompactCount(totalBookmarks)}" }
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 4.dp, vertical = 4.dp),
-    ) {
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            if (preferences.showTitle) {
-                Text(
-                    text = title,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    fontWeight = FontWeight.Bold,
-                    color = MiuixTheme.colorScheme.onBackground,
-                    style = MiuixTheme.textStyles.subtitle,
-                )
-            }
-            if (preferences.showArtist) {
-                Text(
-                    text = artistName,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    style = MiuixTheme.textStyles.footnote1,
-                )
-            }
-            if (preferences.showTags || preferences.showBookmarkCount) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    if (preferences.showTags && tags.isNotEmpty()) {
-                        Text(
-                            text = tagLine,
-                            modifier = Modifier.weight(1f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            style = MiuixTheme.textStyles.footnote2,
-                        )
-                    }
-                    if (preferences.showBookmarkCount) {
-                        Text(
-                            text = bookmarkLine,
-                            maxLines = 1,
-                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                            style = MiuixTheme.textStyles.footnote2,
-                            fontWeight = FontWeight.Bold,
-                        )
-                    }
-                }
-            }
-        }
-        if (showBookmarkButton) {
-            BookmarkHeartButton(
-                isBookmarked = isBookmarked,
-                onClick = onBookmark,
-                onLongClick = onBookmarkLongClick,
-                size = 32.dp,
-                iconSize = 22.dp,
-            )
-        }
-    }
-}
-
-private const val COMPACT_COUNT_THOUSAND = 1_000
-private const val COMPACT_COUNT_MILLION = 1_000_000
-private const val COMPACT_COUNT_TENTH_THOUSAND = 100
-private const val COMPACT_COUNT_TENTH_MILLION = 100_000
-
-private fun formatCompactCount(value: Int): String =
-    when {
-        value >= COMPACT_COUNT_MILLION -> {
-            "${value / COMPACT_COUNT_MILLION}.${(value % COMPACT_COUNT_MILLION) / COMPACT_COUNT_TENTH_MILLION}M"
-        }
-
-        value >= COMPACT_COUNT_THOUSAND -> {
-            "${value / COMPACT_COUNT_THOUSAND}.${(value % COMPACT_COUNT_THOUSAND) / COMPACT_COUNT_TENTH_THOUSAND}K"
-        }
-
-        else -> {
-            value.toString()
-        }
-    }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -562,7 +266,7 @@ fun IllustListRow(
             if (cardPreferences.showR18Badge) illust.ageRestrictionBadgeText else null
         }
 
-    val baseModifier = Modifier.fillMaxWidth().artworkDesktopMenu(illust)
+    val baseModifier = Modifier.fillMaxWidth().let { artworkDesktopMenuDecoration(illust, it) }
     val finalModifier =
         if (cardPreferences.doubleTapToBookmark) {
             baseModifier
@@ -683,68 +387,6 @@ fun IllustListRow(
                     iconSize = 26.dp,
                 )
             }
-        }
-    }
-}
-
-@Composable
-fun HighlightCard(
-    illust: Illust,
-    onClick: () -> Unit,
-) {
-    val cardPreferences = LocalArtworkCardPreferences.current
-    Card(
-        modifier = Modifier.width(232.dp).height(128.dp),
-        cornerRadius = 16.dp,
-        insideMargin = PaddingValues(0.dp),
-        colors =
-            CardDefaults.defaultColors(
-                color = MiuixTheme.colorScheme.surfaceContainer,
-                contentColor = MiuixTheme.colorScheme.onBackground,
-            ),
-        pressFeedbackType = PressFeedbackType.Tilt,
-        onClick = onClick,
-    ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            CoilPixivImage(
-                url = illust.previewUrl,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize(),
-                thumbnail = true,
-            )
-            val badgeText = illust.ageRestrictionBadgeText
-            if (cardPreferences.showR18Badge && badgeText != null) {
-                Text(
-                    text = badgeText,
-                    color = Color.White,
-                    style = MiuixTheme.textStyles.footnote2,
-                    fontWeight = FontWeight.Black,
-                    modifier =
-                        Modifier
-                            .align(Alignment.TopStart)
-                            .padding(8.dp)
-                            .squircleBackground(Color(0xFFFA383E), 6.dp)
-                            .padding(horizontal = 6.dp, vertical = 2.dp),
-                )
-            }
-            Box(
-                modifier =
-                    Modifier
-                        .align(Alignment.BottomStart)
-                        .fillMaxWidth()
-                        .height(64.dp)
-                        .cachedVerticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f))),
-            )
-            Text(
-                text = illust.title,
-                color = Color.White,
-                style = MiuixTheme.textStyles.body1,
-                fontWeight = FontWeight.Bold,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.align(Alignment.BottomStart).padding(14.dp),
-            )
         }
     }
 }
