@@ -1,5 +1,4 @@
 package com.yunfie.illustia.ui.screens
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -53,15 +52,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.CalculatorHistoryEntry
-import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.action_cancel
 import com.yunfie.illustia.resources.action_confirm
 import com.yunfie.illustia.resources.privacy_enter_unlock_code
 import com.yunfie.illustia.resources.privacy_unlock_code
 import com.yunfie.illustia.ui.components.AppDialog
+import com.yunfie.illustia.ui.components.BlockBackNavigation
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
+import com.yunfie.illustia.ui.screens.calculator.CalculatorActions
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
@@ -72,7 +71,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun CalculatorScreen(
-    viewModel: IllustiaViewModel,
+    viewModel: CalculatorActions,
     isTransitioning: Boolean = false,
     buffer: String? = null,
     history: List<CalculatorHistoryEntry>? = null,
@@ -82,7 +81,7 @@ fun CalculatorScreen(
     val activeBuffer = buffer ?: calcState.buffer
     val activeHistory = history ?: calcState.history
     // ロック中はバックナビゲーションを無効にする
-    BackHandler(enabled = true) {}
+    BlockBackNavigation()
 
     val buttonsEnabled = !isTransitioning
 

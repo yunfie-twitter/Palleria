@@ -514,7 +514,7 @@ abstract class IllustiaSettingsSecurityModule(
      * 解除コードを検証し、成功なら遷移アニメーションを開始する。
      * @return 照合成功なら true
      */
-    suspend fun verifyAndUnlockPrivacy(code: String): Boolean =
+    override suspend fun verifyAndUnlockPrivacy(code: String): Boolean =
         if (settingsStore.verifyUnlockCode(code)) {
             _uiState.update { it.copy(isTransitioningToIllustia = true) }
             true
@@ -526,7 +526,7 @@ abstract class IllustiaSettingsSecurityModule(
      * 遷移アニメーション完了を通知する（CalculatorScreen から呼ぶ）。
      * privacyLocked を false にして Illustia 本体を表示する。
      */
-    fun confirmPrivacyUnlock() {
+    override fun confirmPrivacyUnlock() {
         privacyUnlockJob?.cancel()
         privacyUnlockJob =
             viewModelScope.launch {
@@ -558,7 +558,7 @@ abstract class IllustiaSettingsSecurityModule(
 
     // ─── 電卓バッファ操作 ───────────────────────────────────────────────────────
 
-    fun appendToCalculatorBuffer(char: Char) {
+    override fun appendToCalculatorBuffer(char: Char) {
         _calculatorState.update { state ->
             if (state.buffer.length < 50) {
                 state.copy(buffer = state.buffer + char)
@@ -568,11 +568,11 @@ abstract class IllustiaSettingsSecurityModule(
         }
     }
 
-    fun clearCalculatorBuffer() {
+    override fun clearCalculatorBuffer() {
         _calculatorState.update { it.copy(buffer = "") }
     }
 
-    fun deleteLastCalculatorBuffer() {
+    override fun deleteLastCalculatorBuffer() {
         _calculatorState.update { state ->
             if (state.buffer.isNotEmpty()) {
                 state.copy(buffer = state.buffer.dropLast(1))
@@ -582,7 +582,7 @@ abstract class IllustiaSettingsSecurityModule(
         }
     }
 
-    fun evaluateCalculatorExpression() {
+    override fun evaluateCalculatorExpression() {
         val buffer = _calculatorState.value.buffer
         if (buffer.isBlank()) return
 

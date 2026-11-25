@@ -41,6 +41,7 @@ import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.SettingsFacade
 import com.yunfie.illustia.ui.app.DetailEntrySnapshot
 import com.yunfie.illustia.ui.app.SearchEntrySnapshot
+import com.yunfie.illustia.ui.screens.calculator.CalculatorActions
 import com.yunfie.illustia.ui.scroll.ScrollPositionProbe
 import com.yunfie.illustia.updater.AppReleaseInfo
 import com.yunfie.illustia.updater.AppUpdateService
@@ -123,7 +124,8 @@ internal fun AppSettings.withHydratedRoomCollections(full: AppSettings): AppSett
 abstract class IllustiaViewModelFoundation(
     protected val deps: ViewModelDepsApi,
     protected val strings: StringProvider = deps.strings,
-) : ViewModel() {
+) : ViewModel(),
+    CalculatorActions {
     /**
      * ViewModel の生存期間に紐づくコルーチンスコープ。生成側（ファクトリ）が渡す。
      * 各モジュールの 70 箇所ある `viewModelScope.launch { }` はこのプロパティを指す。
@@ -253,7 +255,7 @@ abstract class IllustiaViewModelFoundation(
 
     @Suppress("VariableNaming")
     internal val _calculatorState = MutableStateFlow(CalculatorUiState())
-    val calculatorState: StateFlow<CalculatorUiState> = _calculatorState.asStateFlow()
+    override val calculatorState: StateFlow<CalculatorUiState> = _calculatorState.asStateFlow()
     protected val deferredStartupDataStarted = AtomicBoolean(false)
 
     protected fun str(key: StringKey): String = strings.get(key)

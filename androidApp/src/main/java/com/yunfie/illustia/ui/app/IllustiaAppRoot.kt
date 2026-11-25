@@ -3,6 +3,7 @@ package com.yunfie.illustia.ui.app
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -57,6 +58,7 @@ import com.yunfie.illustia.ui.components.NoOpHapticFeedback
 import com.yunfie.illustia.ui.components.appNavigationScrim
 import com.yunfie.illustia.ui.components.isActiveNetworkMetered
 import com.yunfie.illustia.ui.components.isAppHapticsSupported
+import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.rememberScrollRendering
 import com.yunfie.illustia.ui.screens.CalculatorScreen
 import kotlinx.coroutines.Dispatchers
@@ -815,6 +817,20 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         LocalBottomSheetBackgroundColor provides MiuixTheme.colorScheme.surfaceContainerHigh,
         LocalArtworkCardPreferences provides artworkCardPreferences,
         LocalAppHapticMode provides effectiveHapticMode,
+        com.yunfie.illustia.ui.components.LocalAppHapticEffect provides
+            rememberHapticFeedbackAction(),
+        com.yunfie.illustia.ui.components.LocalBackHandler provides
+            remember {
+                object : com.yunfie.illustia.ui.components.BackHandlerRegistrar {
+                    @Composable
+                    override fun Register(
+                        enabled: Boolean,
+                        onBack: () -> Unit,
+                    ) {
+                        BackHandler(enabled = enabled) { onBack() }
+                    }
+                }
+            },
         LocalHapticFeedback provides
             if (effectiveHapticMode == AppHapticMode.Off) {
                 NoOpHapticFeedback

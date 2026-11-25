@@ -50,7 +50,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.yunfie.illustia.CalculatorHistoryEntry
-import com.yunfie.illustia.R
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.action_cancel
 import com.yunfie.illustia.resources.action_confirm
