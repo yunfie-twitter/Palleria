@@ -26,7 +26,7 @@ import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-internal data class OnboardingSlide(
+data class OnboardingSlide(
     val title: Int,
     val body: Int,
     val accent: Color,
@@ -34,7 +34,7 @@ internal data class OnboardingSlide(
     val scene: OnboardingScene,
 )
 
-internal enum class OnboardingScene {
+enum class OnboardingScene {
     Discovery,
     Bookmarks,
     Sync,

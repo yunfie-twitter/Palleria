@@ -52,7 +52,7 @@ private const val SKELETON_SHIMMER_START_X_TARGET = 2f
  * ヒーローの比率、アイコンの位置とサイズ、情報ブロックの余白を実画面に合わせる。
  */
 @Composable
-fun IllustDetailSkeletonScreen(
+internal fun IllustDetailSkeletonScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     backgroundColor: Color = MiuixTheme.colorScheme.background,

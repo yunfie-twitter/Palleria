@@ -60,7 +60,7 @@ private const val SKELETON_SHIMMER_START_X_INITIAL = -1f
 private const val SKELETON_SHIMMER_START_X_TARGET = 2f
 
 @Composable
-fun UserProfileSkeletonScreen(
+internal fun UserProfileSkeletonScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     backgroundColor: Color = MiuixTheme.colorScheme.background,
@@ -223,7 +223,7 @@ fun UserProfileSkeletonScreen(
 }
 
 @Composable
-fun UserProfileErrorScreen(
+internal fun UserProfileErrorScreen(
     message: String,
     onBack: () -> Unit,
     onRetry: (() -> Unit)? = null,

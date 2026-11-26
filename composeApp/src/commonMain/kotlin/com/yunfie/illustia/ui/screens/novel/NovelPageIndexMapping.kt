@@ -1,4 +1,6 @@
-package com.yunfie.illustia.ui.screens
+package com.yunfie.illustia.ui.screens.novel
+
+import com.yunfie.illustia.ui.screens.novel.NovelPage
 
 /**
  * 連続スクロール（[NovelLayoutMode.Scroll]）での「ページ ⇔ LazyList のアイテムインデックス」変換。
@@ -10,7 +12,7 @@ package com.yunfie.illustia.ui.screens
  * この計算は以前 [NovelScreen.kt] 内に 4 箇所コピーされていた。
  * オフバイワンが起きやすいので、ここに集約して全呼び出しをこの純関数に寄せる。
  */
-internal object NovelPageIndexMapping {
+object NovelPageIndexMapping {
     /** 1 ページが LazyColumn 上で占めるアイテム数。 */
     fun itemCountForPage(
         pages: List<NovelPage>,

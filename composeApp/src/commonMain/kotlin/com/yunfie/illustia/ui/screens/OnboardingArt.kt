@@ -29,7 +29,7 @@ import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-internal fun DeviceFrame(
+fun DeviceFrame(
     accent: Color,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
@@ -68,7 +68,7 @@ internal fun DeviceFrame(
 }
 
 @Composable
-internal fun FeedCard(
+fun FeedCard(
     widthFactor: Float,
     accent: Color,
     tint: Color,
@@ -133,7 +133,7 @@ internal fun FeedCard(
 }
 
 @Composable
-internal fun CardHeader(accent: Color) {
+fun CardHeader(accent: Color) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -169,7 +169,7 @@ internal fun CardHeader(accent: Color) {
 }
 
 @Composable
-internal fun BookStack(accent: Color) {
+fun BookStack(accent: Color) {
     Box(
         modifier =
             Modifier
@@ -224,7 +224,7 @@ internal fun BookStack(accent: Color) {
 }
 
 @Composable
-internal fun SyncPanel(accent: Color) {
+fun SyncPanel(accent: Color) {
     Row(
         modifier =
             Modifier
@@ -281,7 +281,7 @@ internal fun SyncPanel(accent: Color) {
 }
 
 @Composable
-internal fun RepeatRow(
+fun RepeatRow(
     count: Int,
     accent: Color,
 ) {
@@ -304,7 +304,7 @@ internal fun RepeatRow(
 }
 
 @Composable
-internal fun FloatingBadge(
+fun FloatingBadge(
     icon: ImageVector,
     accent: Color,
     tint: Color = Color.White,
@@ -330,7 +330,7 @@ internal fun FloatingBadge(
 }
 
 @Composable
-internal fun BookmarkRibbon(
+fun BookmarkRibbon(
     accent: Color,
     modifier: Modifier = Modifier,
 ) {
@@ -354,7 +354,7 @@ internal fun BookmarkRibbon(
 }
 
 @Composable
-internal fun CircleGlow(
+fun CircleGlow(
     color: Color,
     size: Dp,
     modifier: Modifier = Modifier,
@@ -368,7 +368,7 @@ internal fun CircleGlow(
 }
 
 @Composable
-internal fun PagerDots(
+fun PagerDots(
     pageCount: Int,
     currentPage: Int,
 ) {

@@ -39,7 +39,7 @@ internal fun processUserWorksSync(
         .toList()
 }
 
-internal suspend fun processUserWorks(
+suspend fun processUserWorks(
     items: List<Illust>,
     sortOrder: UserWorkSortOrder,
     typeFilter: UserWorkTypeFilter,
@@ -67,7 +67,7 @@ internal suspend fun processUserWorks(
             }.toList()
     }
 
-internal data class UserWorkList(
+data class UserWorkList(
     val items: List<Illust>,
     val processing: Boolean,
 )

@@ -1,12 +1,18 @@
-package com.yunfie.illustia.ui.screens
+package com.yunfie.illustia.ui.screens.novel
 
-internal data class NovelTtsParagraphLocation(
+import com.yunfie.illustia.ui.screens.novel.NovelChapterBlock
+import com.yunfie.illustia.ui.screens.novel.NovelInlineItem
+import com.yunfie.illustia.ui.screens.novel.NovelPage
+import com.yunfie.illustia.ui.screens.novel.NovelParagraphBlock
+import com.yunfie.illustia.ui.screens.novel.parseNovelPages
+
+data class NovelTtsParagraphLocation(
     val pageIndex: Int,
     val blockIndexInPage: Int,
     val text: String,
 )
 
-internal object NovelTtsTextSanitizer {
+object NovelTtsTextSanitizer {
     private val RUBY_REGEX = Regex("""\[\[rb:[^>]*>(.*?)\]\]""")
     private val JUMP_REGEX = Regex("""\[jump:\d+\]""")
     private val PIXIV_IMAGE_REGEX = Regex("""\[pixivimage:\d+\]""")

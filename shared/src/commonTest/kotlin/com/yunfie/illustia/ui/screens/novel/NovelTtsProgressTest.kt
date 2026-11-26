@@ -1,5 +1,7 @@
-package com.yunfie.illustia.ui.screens
+package com.yunfie.illustia.ui.screens.novel
 
+import com.yunfie.illustia.ui.screens.novel.NovelTtsProgress
+import com.yunfie.illustia.ui.screens.novel.NovelTtsTextSanitizer
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe

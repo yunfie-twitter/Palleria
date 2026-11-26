@@ -1,7 +1,7 @@
-package com.yunfie.illustia.ui.screens
+package com.yunfie.illustia.ui.screens.novel
 
 /** Tracks positions in sanitized speech text, rather than offsets in the original novel. */
-internal class NovelTtsProgress {
+class NovelTtsProgress {
     private var offset = 0
     private var utteranceOffset = 0
     private var utteranceLength = 0

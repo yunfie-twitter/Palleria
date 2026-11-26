@@ -20,6 +20,8 @@ import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.settings.store.decodeStringMap
 import com.yunfie.illustia.settings.store.encodeStringMap
+import com.yunfie.illustia.ui.screens.novel.NovelTtsProgress
+import com.yunfie.illustia.ui.screens.novel.NovelTtsTextSanitizer
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

@@ -50,6 +50,14 @@ import com.yunfie.illustia.resources.novel_inline_illust_label
 import com.yunfie.illustia.resources.novel_open_illust
 import com.yunfie.illustia.ui.components.CoilPixivImage
 import com.yunfie.illustia.ui.components.ElevatedPanel
+import com.yunfie.illustia.ui.screens.novel.NovelBlock
+import com.yunfie.illustia.ui.screens.novel.NovelChapterBlock
+import com.yunfie.illustia.ui.screens.novel.NovelInlineItem
+import com.yunfie.illustia.ui.screens.novel.NovelJumpBlock
+import com.yunfie.illustia.ui.screens.novel.NovelPage
+import com.yunfie.illustia.ui.screens.novel.NovelParagraphBlock
+import com.yunfie.illustia.ui.screens.novel.NovelPixivImageBlock
+import com.yunfie.illustia.ui.screens.novel.NovelSpacerBlock
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon

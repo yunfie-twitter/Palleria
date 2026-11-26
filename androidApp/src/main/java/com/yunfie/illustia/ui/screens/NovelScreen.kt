@@ -89,6 +89,13 @@ import com.yunfie.illustia.ui.components.pinchToChangeColumns
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import com.yunfie.illustia.ui.components.smoothScrollToTop
+import com.yunfie.illustia.ui.screens.novel.NovelPage
+import com.yunfie.illustia.ui.screens.novel.NovelPageIndexMapping
+import com.yunfie.illustia.ui.screens.novel.NovelParagraphBlock
+import com.yunfie.illustia.ui.screens.novel.NovelTtsParagraphLocation
+import com.yunfie.illustia.ui.screens.novel.NovelTtsTextSanitizer
+import com.yunfie.illustia.ui.screens.novel.extractChapters
+import com.yunfie.illustia.ui.screens.novel.parseNovelPages
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
