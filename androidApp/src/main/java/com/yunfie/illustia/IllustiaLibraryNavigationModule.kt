@@ -1,6 +1,11 @@
 package com.yunfie.illustia
 
+import com.yunfie.illustia.buildCustomDownloadPath
+import com.yunfie.illustia.buildDownloadPath
+import com.yunfie.illustia.buildSmartDownloadFilename
 import com.yunfie.illustia.data.proxyPixivImageUrl
+import com.yunfie.illustia.extractIllustId
+import com.yunfie.illustia.hasImageUrl
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.Restrict
@@ -13,6 +18,7 @@ import com.yunfie.illustia.nativebridge.NativeIntentRouter
 import com.yunfie.illustia.platform.StringKey
 import com.yunfie.illustia.platform.ViewModelDepsApi
 import com.yunfie.illustia.settings.FeatureFlag
+import com.yunfie.illustia.withImageExtension
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update

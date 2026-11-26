@@ -4,7 +4,7 @@ import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.settings.AppSettings
 
-internal data class CachedUserProfile(
+data class CachedUserProfile(
     val user: UserProfile,
     val works: List<Illust>,
     val nextUrl: String?,
@@ -31,7 +31,7 @@ private const val PROFILE_CACHE_TTL_MILLIS = 300_000L
 private const val NANOS_PER_MILLI = 1_000_000L
 
 /** Bounded, account/filter-specific cache of complete pages, including their continuation URLs. */
-internal class UserProfileCache(
+class UserProfileCache(
     private val ttlMillis: Long = PROFILE_CACHE_TTL_MILLIS,
     private val maxProfiles: Int = 8,
     private val maxItems: Int = 2_000,

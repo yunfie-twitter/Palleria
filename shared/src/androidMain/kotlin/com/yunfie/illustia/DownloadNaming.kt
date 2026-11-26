@@ -3,7 +3,7 @@ package com.yunfie.illustia
 import com.yunfie.illustia.models.Illust
 import java.util.Locale
 
-internal fun buildDownloadPath(
+fun buildDownloadPath(
     filename: String,
     illust: Illust?,
     groupByArtist: Boolean,
@@ -25,7 +25,7 @@ internal fun buildDownloadPath(
     return (folders + filename.sanitizeDownloadSegment()).joinToString("/")
 }
 
-internal fun buildCustomDownloadPath(
+fun buildCustomDownloadPath(
     filename: String,
     illust: Illust?,
     template: String = "{artist}/{tag}/{filename}",
@@ -61,7 +61,7 @@ internal fun buildCustomDownloadPath(
     return if (joined.endsWith(ext) || ext.isEmpty()) joined else "$joined$ext"
 }
 
-internal fun buildSmartDownloadFilename(
+fun buildSmartDownloadFilename(
     illust: Illust,
     page: Int = 0,
     pageCount: Int = 1,
@@ -72,7 +72,7 @@ internal fun buildSmartDownloadFilename(
     return "[$artist] $title$pageSuffix"
 }
 
-internal fun String.withImageExtension(
+fun String.withImageExtension(
     sourceUrl: String,
     responseMimeType: String?,
 ): String {
@@ -97,14 +97,14 @@ private fun String.extractUrlExtension(): String? =
         .substringAfterLast('.', "")
         .takeIf { it.length in MIN_EXTENSION_LENGTH..MAX_EXTENSION_LENGTH }
 
-internal fun extractIllustId(filename: String): Long? =
+fun extractIllustId(filename: String): Long? =
     ILLUST_ID_PATTERN
         .find(filename)
         ?.groupValues
         ?.getOrNull(1)
         ?.toLongOrNull()
 
-internal fun Illust.hasImageUrl(url: String): Boolean =
+fun Illust.hasImageUrl(url: String): Boolean =
     imageUrl == url ||
         mediumImageUrl == url ||
         originalImageUrl == url ||

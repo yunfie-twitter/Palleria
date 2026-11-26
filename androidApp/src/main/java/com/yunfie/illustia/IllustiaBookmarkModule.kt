@@ -1,5 +1,6 @@
 package com.yunfie.illustia
 
+import com.yunfie.illustia.UserProfileCache
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.Restrict

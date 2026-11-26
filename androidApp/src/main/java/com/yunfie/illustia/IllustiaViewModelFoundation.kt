@@ -1,6 +1,7 @@
 package com.yunfie.illustia
 
 import androidx.lifecycle.ViewModel
+import com.yunfie.illustia.UserProfileCache
 import com.yunfie.illustia.data.IllustiaRepositoryApi
 import com.yunfie.illustia.data.PixivApiException
 import com.yunfie.illustia.data.isPixivRateLimited
