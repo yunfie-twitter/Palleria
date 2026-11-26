@@ -9,6 +9,20 @@ import com.yunfie.illustia.resources.app_lock_biometric_verify_subtitle
 import com.yunfie.illustia.resources.app_lock_biometric_verify_title
 import com.yunfie.illustia.resources.app_lock_recovery_account_mismatch
 import com.yunfie.illustia.resources.app_name
+import com.yunfie.illustia.resources.app_name_dummy
+import com.yunfie.illustia.resources.command_palette_ai_hidden
+import com.yunfie.illustia.resources.command_palette_ai_shown
+import com.yunfie.illustia.resources.command_palette_cache_cleared
+import com.yunfie.illustia.resources.command_palette_feeds_refreshed
+import com.yunfie.illustia.resources.command_palette_grid_columns_changed
+import com.yunfie.illustia.resources.command_palette_high_quality_disabled
+import com.yunfie.illustia.resources.command_palette_high_quality_enabled
+import com.yunfie.illustia.resources.command_palette_invalid_link
+import com.yunfie.illustia.resources.command_palette_no_clipboard_content
+import com.yunfie.illustia.resources.command_palette_r18_disabled
+import com.yunfie.illustia.resources.command_palette_r18_enabled
+import com.yunfie.illustia.resources.command_palette_ugoira_autoplay_disabled
+import com.yunfie.illustia.resources.command_palette_ugoira_autoplay_enabled
 import com.yunfie.illustia.resources.data_delete_cache
 import com.yunfie.illustia.resources.data_delete_cache_desc
 import com.yunfie.illustia.resources.data_delete_mute_data
@@ -21,11 +35,18 @@ import com.yunfie.illustia.resources.data_delete_watchlist_tags
 import com.yunfie.illustia.resources.data_delete_watchlist_tags_desc
 import com.yunfie.illustia.resources.data_items_count
 import com.yunfie.illustia.resources.detail_save_offline
+import com.yunfie.illustia.resources.discord_button_download
+import com.yunfie.illustia.resources.discord_button_view_artwork
 import com.yunfie.illustia.resources.discord_login_success
+import com.yunfie.illustia.resources.discord_presence_browsing_illust
+import com.yunfie.illustia.resources.discord_presence_viewing_artwork
 import com.yunfie.illustia.resources.download_queue_waiting
 import com.yunfie.illustia.resources.error_bad_request
 import com.yunfie.illustia.resources.error_bookmark_failed
+import com.yunfie.illustia.resources.error_browser_failed
 import com.yunfie.illustia.resources.error_cache_delete_failed
+import com.yunfie.illustia.resources.error_crash_resource_loading
+import com.yunfie.illustia.resources.error_crash_storage_permission
 import com.yunfie.illustia.resources.error_data_export_failed
 import com.yunfie.illustia.resources.error_data_import_failed
 import com.yunfie.illustia.resources.error_forbidden
@@ -33,6 +54,7 @@ import com.yunfie.illustia.resources.error_generic
 import com.yunfie.illustia.resources.error_illust_not_found
 import com.yunfie.illustia.resources.error_load_artist_failed
 import com.yunfie.illustia.resources.error_load_detail_failed
+import com.yunfie.illustia.resources.error_load_failed
 import com.yunfie.illustia.resources.error_not_found
 import com.yunfie.illustia.resources.error_notification_open_failed
 import com.yunfie.illustia.resources.error_notifications_load_failed
@@ -40,10 +62,14 @@ import com.yunfie.illustia.resources.error_novel_load_failed
 import com.yunfie.illustia.resources.error_pixiv_user_id_not_set
 import com.yunfie.illustia.resources.error_rate_limited
 import com.yunfie.illustia.resources.error_related_users_load_failed
+import com.yunfie.illustia.resources.error_request_failed
 import com.yunfie.illustia.resources.error_save_failed
 import com.yunfie.illustia.resources.error_server_error
+import com.yunfie.illustia.resources.error_server_unreachable
 import com.yunfie.illustia.resources.error_timeout
 import com.yunfie.illustia.resources.flag_novel_tts_audiobook_title
+import com.yunfie.illustia.resources.image_save_media_store_failed
+import com.yunfie.illustia.resources.image_save_write_failed
 import com.yunfie.illustia.resources.live_wallpaper_folder_permission_failed
 import com.yunfie.illustia.resources.more_about
 import com.yunfie.illustia.resources.more_download_list
@@ -71,6 +97,8 @@ import com.yunfie.illustia.resources.msg_watchlist_tag_removed
 import com.yunfie.illustia.resources.msg_watchlist_tags_deleted
 import com.yunfie.illustia.resources.msg_web_login_complete
 import com.yunfie.illustia.resources.nav_novel
+import com.yunfie.illustia.resources.notification_channel_app_updates
+import com.yunfie.illustia.resources.notification_channel_app_updates_desc
 import com.yunfie.illustia.resources.notifications_target_unsupported
 import com.yunfie.illustia.resources.offline_cache_displayed
 import com.yunfie.illustia.resources.offline_capacity_limit_desc
@@ -87,6 +115,14 @@ import com.yunfie.illustia.resources.settings_image
 import com.yunfie.illustia.resources.settings_image_summary
 import com.yunfie.illustia.resources.settings_logged_in
 import com.yunfie.illustia.resources.settings_not_logged_in
+import com.yunfie.illustia.resources.shortcut_bookmarks
+import com.yunfie.illustia.resources.shortcut_bookmarks_long
+import com.yunfie.illustia.resources.shortcut_history
+import com.yunfie.illustia.resources.shortcut_history_long
+import com.yunfie.illustia.resources.shortcut_ranking
+import com.yunfie.illustia.resources.shortcut_ranking_long
+import com.yunfie.illustia.resources.shortcut_search
+import com.yunfie.illustia.resources.shortcut_search_long
 import com.yunfie.illustia.resources.tts_channel_description
 import com.yunfie.illustia.resources.tts_channel_name
 import com.yunfie.illustia.resources.tts_next_paragraph
@@ -95,14 +131,36 @@ import com.yunfie.illustia.resources.tts_play
 import com.yunfie.illustia.resources.tts_prev_paragraph
 import com.yunfie.illustia.resources.tts_stop
 import com.yunfie.illustia.resources.ugoira_load_failed
+import com.yunfie.illustia.resources.update_cancel_download
 import com.yunfie.illustia.resources.update_check_failed
 import com.yunfie.illustia.resources.update_download_failed
+import com.yunfie.illustia.resources.update_download_progress_title
+import com.yunfie.illustia.resources.update_eta_minutes_seconds
+import com.yunfie.illustia.resources.update_eta_seconds
+import com.yunfie.illustia.resources.update_in_app_updater
+import com.yunfie.illustia.resources.update_install_button
 import com.yunfie.illustia.resources.update_install_failed
+import com.yunfie.illustia.resources.update_installing
 import com.yunfie.illustia.resources.update_method_shizuku
 import com.yunfie.illustia.resources.update_method_standard
 import com.yunfie.illustia.resources.update_notification_downloaded_desc
+import com.yunfie.illustia.resources.update_notification_downloaded_title
+import com.yunfie.illustia.resources.update_notification_installed_desc
+import com.yunfie.illustia.resources.update_notification_installed_title
+import com.yunfie.illustia.resources.update_notification_new_version_desc
+import com.yunfie.illustia.resources.update_notification_new_version_title
+import com.yunfie.illustia.resources.update_ready_to_install
+import com.yunfie.illustia.resources.update_retry_download
 import com.yunfie.illustia.resources.update_settings_summary
 import com.yunfie.illustia.resources.update_settings_title
+import com.yunfie.illustia.resources.widget_illust_image_missing
+import com.yunfie.illustia.resources.widget_illust_pick_prompt
+import com.yunfie.illustia.resources.widget_ranking_error
+import com.yunfie.illustia.resources.widget_ranking_login_button
+import com.yunfie.illustia.resources.widget_ranking_login_subtitle
+import com.yunfie.illustia.resources.widget_ranking_login_title
+import com.yunfie.illustia.resources.widget_ranking_refresh
+import com.yunfie.illustia.resources.widget_ranking_title
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.getString
 import java.util.concurrent.ConcurrentHashMap
@@ -245,6 +303,64 @@ class ComposeStringProvider : StringProvider {
                 StringKey.UpdateMethodStandard to Res.string.update_method_standard,
                 StringKey.UpdateSettingsSummary to Res.string.update_settings_summary,
                 StringKey.UpdateSettingsTitle to Res.string.update_settings_title,
+                StringKey.CommandPaletteCacheCleared to Res.string.command_palette_cache_cleared,
+                StringKey.CommandPaletteFeedsRefreshed to Res.string.command_palette_feeds_refreshed,
+                StringKey.CommandPaletteAiHidden to Res.string.command_palette_ai_hidden,
+                StringKey.CommandPaletteAiShown to Res.string.command_palette_ai_shown,
+                StringKey.CommandPaletteR18Enabled to Res.string.command_palette_r18_enabled,
+                StringKey.CommandPaletteR18Disabled to Res.string.command_palette_r18_disabled,
+                StringKey.CommandPaletteGridColumnsChanged to Res.string.command_palette_grid_columns_changed,
+                StringKey.CommandPaletteHighQualityEnabled to Res.string.command_palette_high_quality_enabled,
+                StringKey.CommandPaletteHighQualityDisabled to Res.string.command_palette_high_quality_disabled,
+                StringKey.CommandPaletteUgoiraAutoplayEnabled to Res.string.command_palette_ugoira_autoplay_enabled,
+                StringKey.CommandPaletteUgoiraAutoplayDisabled to Res.string.command_palette_ugoira_autoplay_disabled,
+                StringKey.CommandPaletteNoClipboardContent to Res.string.command_palette_no_clipboard_content,
+                StringKey.CommandPaletteInvalidLink to Res.string.command_palette_invalid_link,
+                StringKey.ErrorBrowserFailed to Res.string.error_browser_failed,
+                StringKey.ErrorRequestFailed to Res.string.error_request_failed,
+                StringKey.ErrorServerUnreachable to Res.string.error_server_unreachable,
+                StringKey.ErrorLoadFailed to Res.string.error_load_failed,
+                StringKey.ErrorCrashResourceLoading to Res.string.error_crash_resource_loading,
+                StringKey.ErrorCrashStoragePermission to Res.string.error_crash_storage_permission,
+                StringKey.AppNameDummy to Res.string.app_name_dummy,
+                StringKey.ImageSaveMediaStoreFailed to Res.string.image_save_media_store_failed,
+                StringKey.ImageSaveWriteFailed to Res.string.image_save_write_failed,
+                StringKey.ShortcutSearch to Res.string.shortcut_search,
+                StringKey.ShortcutSearchLong to Res.string.shortcut_search_long,
+                StringKey.ShortcutRanking to Res.string.shortcut_ranking,
+                StringKey.ShortcutRankingLong to Res.string.shortcut_ranking_long,
+                StringKey.ShortcutBookmarks to Res.string.shortcut_bookmarks,
+                StringKey.ShortcutBookmarksLong to Res.string.shortcut_bookmarks_long,
+                StringKey.ShortcutHistory to Res.string.shortcut_history,
+                StringKey.ShortcutHistoryLong to Res.string.shortcut_history_long,
+                StringKey.WidgetIllustPickPrompt to Res.string.widget_illust_pick_prompt,
+                StringKey.WidgetIllustImageMissing to Res.string.widget_illust_image_missing,
+                StringKey.WidgetRankingTitle to Res.string.widget_ranking_title,
+                StringKey.WidgetRankingRefresh to Res.string.widget_ranking_refresh,
+                StringKey.WidgetRankingLoginTitle to Res.string.widget_ranking_login_title,
+                StringKey.WidgetRankingLoginSubtitle to Res.string.widget_ranking_login_subtitle,
+                StringKey.WidgetRankingLoginButton to Res.string.widget_ranking_login_button,
+                StringKey.WidgetRankingError to Res.string.widget_ranking_error,
+                StringKey.NotificationChannelAppUpdates to Res.string.notification_channel_app_updates,
+                StringKey.NotificationChannelAppUpdatesDesc to Res.string.notification_channel_app_updates_desc,
+                StringKey.UpdateNotificationNewVersionTitle to Res.string.update_notification_new_version_title,
+                StringKey.UpdateNotificationNewVersionDesc to Res.string.update_notification_new_version_desc,
+                StringKey.UpdateNotificationDownloadedTitle to Res.string.update_notification_downloaded_title,
+                StringKey.UpdateReadyToInstall to Res.string.update_ready_to_install,
+                StringKey.UpdateInstallButton to Res.string.update_install_button,
+                StringKey.UpdateInstalling to Res.string.update_installing,
+                StringKey.UpdateNotificationInstalledTitle to Res.string.update_notification_installed_title,
+                StringKey.UpdateNotificationInstalledDesc to Res.string.update_notification_installed_desc,
+                StringKey.UpdateEtaMinutesSeconds to Res.string.update_eta_minutes_seconds,
+                StringKey.UpdateEtaSeconds to Res.string.update_eta_seconds,
+                StringKey.UpdateInAppUpdater to Res.string.update_in_app_updater,
+                StringKey.UpdateDownloadProgressTitle to Res.string.update_download_progress_title,
+                StringKey.UpdateCancelDownload to Res.string.update_cancel_download,
+                StringKey.UpdateRetryDownload to Res.string.update_retry_download,
+                StringKey.DiscordPresenceBrowsingIllust to Res.string.discord_presence_browsing_illust,
+                StringKey.DiscordPresenceViewingArtwork to Res.string.discord_presence_viewing_artwork,
+                StringKey.DiscordButtonViewArtwork to Res.string.discord_button_view_artwork,
+                StringKey.DiscordButtonDownload to Res.string.discord_button_download,
             )
     }
 }

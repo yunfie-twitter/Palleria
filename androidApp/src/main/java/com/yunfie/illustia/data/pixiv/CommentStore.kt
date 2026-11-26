@@ -104,7 +104,7 @@ class CommentStore(
                 it.copy(
                     isLoading = false,
                     isRefreshing = false,
-                    errorMessage = expectedFailure.toUserMessage(context),
+                    errorMessage = expectedFailure.toUserMessage(),
                 )
             }
         }
@@ -123,7 +123,7 @@ class CommentStore(
             _state.update {
                 it.copy(
                     isPaginating = false,
-                    errorMessage = expectedFailure.toUserMessage(context),
+                    errorMessage = expectedFailure.toUserMessage(),
                 )
             }
         }

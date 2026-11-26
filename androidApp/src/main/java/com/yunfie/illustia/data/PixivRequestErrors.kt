@@ -1,7 +1,8 @@
 package com.yunfie.illustia.data
 
 import android.content.Context
-import com.yunfie.illustia.R
+import com.yunfie.illustia.platform.AppStrings
+import com.yunfie.illustia.platform.StringKey
 
 internal fun Throwable.isPixivAuthExpired(): Boolean {
     var current: Throwable? = this
@@ -48,7 +49,7 @@ internal fun Throwable.isTransientConnectionIssue(): Boolean {
  * language instead of hardcoding Japanese, and so a raw `PixivApiException: ...` never
  * leaks into an error card.
  */
-internal fun Throwable.toUserMessage(context: Context): String {
+internal fun Throwable.toUserMessage(): String {
     var current: Throwable? = this
     var statusCode: Int? = null
     while (current != null) {
@@ -59,13 +60,13 @@ internal fun Throwable.toUserMessage(context: Context): String {
         current = current.cause
     }
     return when {
-        statusCode == HTTP_UNAUTHORIZED || statusCode == HTTP_FORBIDDEN -> context.getString(R.string.error_forbidden)
-        statusCode == HTTP_NOT_FOUND -> context.getString(R.string.error_not_found)
-        statusCode == HTTP_TOO_MANY_REQUESTS -> context.getString(R.string.error_rate_limited)
-        statusCode != null && statusCode in HTTP_SERVER_ERROR_RANGE -> context.getString(R.string.error_server_error)
-        statusCode != null -> context.getString(R.string.error_request_failed)
-        this is java.io.IOException -> context.getString(R.string.error_server_unreachable)
-        else -> context.getString(R.string.error_load_failed)
+        statusCode == HTTP_UNAUTHORIZED || statusCode == HTTP_FORBIDDEN -> AppStrings.get(StringKey.ErrorForbidden)
+        statusCode == HTTP_NOT_FOUND -> AppStrings.get(StringKey.ErrorNotFound)
+        statusCode == HTTP_TOO_MANY_REQUESTS -> AppStrings.get(StringKey.ErrorRateLimited)
+        statusCode != null && statusCode in HTTP_SERVER_ERROR_RANGE -> AppStrings.get(StringKey.ErrorServerError)
+        statusCode != null -> AppStrings.get(StringKey.ErrorRequestFailed)
+        this is java.io.IOException -> AppStrings.get(StringKey.ErrorServerUnreachable)
+        else -> AppStrings.get(StringKey.ErrorLoadFailed)
     }
 }
 

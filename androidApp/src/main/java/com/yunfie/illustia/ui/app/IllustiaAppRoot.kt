@@ -44,6 +44,7 @@ import com.yunfie.illustia.platform.DesktopCommand
 import com.yunfie.illustia.platform.DesktopEnvironment
 import com.yunfie.illustia.platform.LocalStringProvider
 import com.yunfie.illustia.platform.PlatformCapabilities
+import com.yunfie.illustia.platform.StringKey
 import com.yunfie.illustia.platform.WindowSizeClass
 import com.yunfie.illustia.settings.AppHapticMode
 import com.yunfie.illustia.settings.FeatureFlag
@@ -160,7 +161,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                 .build()
                 .launchUrl(context, Uri.parse(request.authorizationUrl))
         }.onFailure {
-            viewModel.failWebLogin(context.getString(R.string.error_browser_failed))
+            viewModel.failWebLogin(AppStrings.get(StringKey.ErrorBrowserFailed))
         }
     }
 

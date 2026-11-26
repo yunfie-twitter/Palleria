@@ -56,7 +56,7 @@ class IllustSeriesStore(
                 it.copy(
                     isLoading = false,
                     isRefreshing = false,
-                    errorMessage = expectedFailure.toUserMessage(context),
+                    errorMessage = expectedFailure.toUserMessage(),
                     watchlistAdded = false,
                 )
             }
@@ -83,7 +83,7 @@ class IllustSeriesStore(
             _state.update {
                 it.copy(
                     isPaginating = false,
-                    errorMessage = expectedFailure.toUserMessage(context),
+                    errorMessage = expectedFailure.toUserMessage(),
                 )
             }
         }

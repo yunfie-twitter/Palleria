@@ -65,7 +65,9 @@ import com.yunfie.illustia.data.proxyPixivImageUrl
 import com.yunfie.illustia.nativebridge.AssistantContentProvider
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
 import com.yunfie.illustia.nativebridge.toIncomingLink
+import com.yunfie.illustia.platform.AppStrings
 import com.yunfie.illustia.platform.PlatformCapabilities
+import com.yunfie.illustia.platform.StringKey
 import com.yunfie.illustia.settings.AppFont
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.appLanguageLocaleList
@@ -369,7 +371,7 @@ class MainActivity : FragmentActivity() {
                 uiState.showUserPage,
             ) {
                 if (!settingsLoaded) return@LaunchedEffect
-                val appName = getString(R.string.app_name)
+                val appName = AppStrings.get(StringKey.AppName)
                 val pageTitle =
                     when {
                         uiState.selectedIllust != null -> {
@@ -825,9 +827,9 @@ class MainActivity : FragmentActivity() {
 
         val title =
             if (settings.hideRecents) {
-                settings.dummyAppName.ifBlank { getString(R.string.app_name_dummy) }
+                settings.dummyAppName.ifBlank { AppStrings.get(StringKey.AppNameDummy) }
             } else {
-                getString(R.string.app_name)
+                AppStrings.get(StringKey.AppName)
             }
 
         val iconRes =

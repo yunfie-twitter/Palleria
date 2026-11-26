@@ -19,6 +19,8 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.yunfie.illustia.MainActivity
 import com.yunfie.illustia.R
+import com.yunfie.illustia.platform.AppStrings
+import com.yunfie.illustia.platform.StringKey
 import java.io.File
 import java.util.Locale
 
@@ -54,8 +56,8 @@ object AppUpdateNotificationHelper {
 
     fun createNotificationChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val name = context.getString(R.string.notification_channel_app_updates)
-            val descriptionText = context.getString(R.string.notification_channel_app_updates_desc)
+            val name = AppStrings.get(StringKey.NotificationChannelAppUpdates)
+            val descriptionText = AppStrings.get(StringKey.NotificationChannelAppUpdatesDesc)
             val importance = NotificationManager.IMPORTANCE_DEFAULT
             val channel =
                 NotificationChannel(CHANNEL_ID, name, importance).apply {
@@ -125,8 +127,8 @@ object AppUpdateNotificationHelper {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
 
-        val title = context.getString(R.string.update_notification_new_version_title, release.versionName)
-        val text = context.getString(R.string.update_notification_new_version_desc)
+        val title = AppStrings.get(StringKey.UpdateNotificationNewVersionTitle, release.versionName)
+        val text = AppStrings.get(StringKey.UpdateNotificationNewVersionDesc)
 
         val notification =
             baseNotificationBuilder(context, title, text)
@@ -162,19 +164,19 @@ object AppUpdateNotificationHelper {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE,
             )
 
-        val title = context.getString(R.string.update_notification_downloaded_title, release.versionName)
-        val text = context.getString(R.string.update_notification_downloaded_desc)
+        val title = AppStrings.get(StringKey.UpdateNotificationDownloadedTitle, release.versionName)
+        val text = AppStrings.get(StringKey.UpdateNotificationDownloadedDesc)
 
         val notification =
             baseNotificationBuilder(context, title, text)
-                .setSubText(context.getString(R.string.update_ready_to_install))
+                .setSubText(AppStrings.get(StringKey.UpdateReadyToInstall))
                 .setStyle(NotificationCompat.BigTextStyle().bigText(text))
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true)
                 .addAction(
                     android.R.drawable.ic_menu_upload,
-                    context.getString(R.string.update_install_button),
+                    AppStrings.get(StringKey.UpdateInstallButton),
                     pendingIntent,
                 ).build()
 
@@ -203,7 +205,7 @@ object AppUpdateNotificationHelper {
             )
 
         val notification =
-            baseNotificationBuilder(context, context.getString(R.string.update_installing), release.versionName)
+            baseNotificationBuilder(context, AppStrings.get(StringKey.UpdateInstalling), release.versionName)
                 .setProgress(0, 0, true)
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
@@ -236,8 +238,8 @@ object AppUpdateNotificationHelper {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
 
-        val title = context.getString(R.string.update_notification_installed_title, release.versionName)
-        val text = context.getString(R.string.update_notification_installed_desc)
+        val title = AppStrings.get(StringKey.UpdateNotificationInstalledTitle, release.versionName)
+        val text = AppStrings.get(StringKey.UpdateNotificationInstalledDesc)
 
         val notification =
             baseNotificationBuilder(context, title, text)
@@ -279,7 +281,6 @@ object AppUpdateNotificationHelper {
     }
 
     private fun computeProgressSubText(
-        context: Context,
         downloadedBytes: Long,
         totalBytes: Long,
     ): String {
@@ -294,12 +295,12 @@ object AppUpdateNotificationHelper {
             if (remainingSec >= SECONDS_PER_MINUTE) {
                 val mins = remainingSec / SECONDS_PER_MINUTE
                 val secs = remainingSec % SECONDS_PER_MINUTE
-                context.getString(R.string.update_eta_minutes_seconds, mins, secs)
+                AppStrings.get(StringKey.UpdateEtaMinutesSeconds, mins, secs)
             } else {
-                context.getString(R.string.update_eta_seconds, remainingSec)
+                AppStrings.get(StringKey.UpdateEtaSeconds, remainingSec)
             }
         } else {
-            context.getString(R.string.update_in_app_updater)
+            AppStrings.get(StringKey.UpdateInAppUpdater)
         }
     }
 
@@ -360,12 +361,12 @@ object AppUpdateNotificationHelper {
         updateSpeedEstimate(downloadedBytes)
 
         val contentText = formatProgressContentText(downloadedBytes, totalBytes, progress)
-        val subText = computeProgressSubText(context, downloadedBytes, totalBytes)
+        val subText = computeProgressSubText(downloadedBytes, totalBytes)
 
         val builder =
             baseNotificationBuilder(
                 context = context,
-                title = context.getString(R.string.update_download_progress_title, release.versionName),
+                title = AppStrings.get(StringKey.UpdateDownloadProgressTitle, release.versionName),
                 text = contentText,
             ).setSubText(subText)
                 .setProgress(100, progress, progress <= 0 && downloadedBytes <= 0)
@@ -382,7 +383,7 @@ object AppUpdateNotificationHelper {
         if (cancelPendingIntent != null) {
             builder.addAction(
                 android.R.drawable.ic_menu_close_clear_cancel,
-                context.getString(R.string.update_cancel_download),
+                AppStrings.get(StringKey.UpdateCancelDownload),
                 cancelPendingIntent,
             )
         }
@@ -431,7 +432,7 @@ object AppUpdateNotificationHelper {
         if (!hasNotificationPermission(context)) return
         createNotificationChannel(context)
 
-        val title = context.getString(R.string.update_download_failed)
+        val title = AppStrings.get(StringKey.UpdateDownloadFailed)
         val text = release.versionName
 
         val builder =
@@ -442,7 +443,7 @@ object AppUpdateNotificationHelper {
         if (retryPendingIntent != null) {
             builder.addAction(
                 android.R.drawable.ic_menu_rotate,
-                context.getString(R.string.update_retry_download),
+                AppStrings.get(StringKey.UpdateRetryDownload),
                 retryPendingIntent,
             )
         }

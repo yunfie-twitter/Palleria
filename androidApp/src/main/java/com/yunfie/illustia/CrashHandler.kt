@@ -7,6 +7,8 @@ import android.os.Process
 import android.view.Gravity
 import android.view.InflateException
 import android.widget.Toast
+import com.yunfie.illustia.platform.AppStrings
+import com.yunfie.illustia.platform.StringKey
 import java.io.PrintWriter
 import java.io.StringWriter
 import kotlin.concurrent.thread
@@ -71,11 +73,11 @@ class CrashHandler : Thread.UncaughtExceptionHandler {
         val message = ex.message.orEmpty()
         return when {
             ex is Resources.NotFoundException || ex is InflateException || message.contains("XML") -> {
-                context?.getString(R.string.error_crash_resource_loading, message) ?: message
+                AppStrings.get(StringKey.ErrorCrashResourceLoading, message)
             }
 
             message.contains("document", ignoreCase = true) -> {
-                context?.getString(R.string.error_crash_storage_permission, message) ?: message
+                AppStrings.get(StringKey.ErrorCrashStoragePermission, message)
             }
 
             else -> {

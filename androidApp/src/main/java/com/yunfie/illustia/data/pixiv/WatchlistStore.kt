@@ -47,7 +47,7 @@ class WatchlistStore(
                 it.copy(
                     isLoading = false,
                     isRefreshing = false,
-                    errorMessage = expectedFailure.toUserMessage(context),
+                    errorMessage = expectedFailure.toUserMessage(),
                     hasLoaded = true,
                 )
             }
@@ -74,7 +74,7 @@ class WatchlistStore(
             _state.update {
                 it.copy(
                     isPaginating = false,
-                    errorMessage = expectedFailure.toUserMessage(context),
+                    errorMessage = expectedFailure.toUserMessage(),
                 )
             }
         }

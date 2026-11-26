@@ -46,9 +46,10 @@ import com.yunfie.illustia.GlitchTipTelemetry
 import com.yunfie.illustia.IllustiaApplication
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.IllustiaViewModelFactory
-import com.yunfie.illustia.R
 import com.yunfie.illustia.data.proxyPixivImageUrl
 import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.platform.AppStrings
+import com.yunfie.illustia.platform.StringKey
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.action_close
 import com.yunfie.illustia.resources.widget_illust_apply
@@ -223,7 +224,7 @@ class IllustWidgetConfigureActivity : FragmentActivity() {
                                                     throw cancelled
                                                 } catch (expectedFailure: Exception) {
                                                     GlitchTipTelemetry.recordException(expectedFailure, tag = "configure_illust_widget")
-                                                    saveError = getString(R.string.error_save_failed)
+                                                    saveError = AppStrings.get(StringKey.ErrorSaveFailed)
                                                 } finally {
                                                     isSaving = false
                                                 }

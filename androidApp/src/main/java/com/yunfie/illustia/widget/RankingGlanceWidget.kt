@@ -43,10 +43,11 @@ import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.yunfie.illustia.IllustiaApplication
 import com.yunfie.illustia.MainActivity
-import com.yunfie.illustia.R
 import com.yunfie.illustia.data.IllustiaRepository
 import com.yunfie.illustia.data.proxyPixivImageUrl
 import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.platform.AppStrings
+import com.yunfie.illustia.platform.StringKey
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.SettingsStore
 import kotlinx.coroutines.Dispatchers
@@ -77,11 +78,11 @@ class RankingGlanceWidget : GlanceAppWidget() {
                         .padding(14.dp),
             ) {
                 Column(modifier = GlanceModifier.fillMaxSize()) {
-                    RankingHeader(context = context)
+                    RankingHeader()
                     Spacer(modifier = GlanceModifier.height(8.dp))
                     when (state) {
                         is RankingWidgetState.LoggedOut -> LoggedOutView(context = context)
-                        is RankingWidgetState.Error -> ErrorView(context = context)
+                        is RankingWidgetState.Error -> ErrorView()
                         is RankingWidgetState.Success -> SuccessView(context = context, entries = state.entries)
                     }
                 }
@@ -117,7 +118,7 @@ class RankingGlanceWidget : GlanceAppWidget() {
                                     RankingWidgetEntry(
                                         rank = index + 1,
                                         id = illust.id,
-                                        title = illust.title.ifBlank { context.getString(R.string.widget_ranking_title) },
+                                        title = illust.title.ifBlank { AppStrings.get(StringKey.WidgetRankingTitle) },
                                         artistName = illust.artistName.ifBlank { "Pixiv" },
                                         bitmap = bitmap,
                                     )
@@ -165,13 +166,13 @@ class RankingGlanceWidget : GlanceAppWidget() {
 }
 
 @Composable
-private fun RankingHeader(context: Context) {
+private fun RankingHeader() {
     Row(
         modifier = GlanceModifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = context.getString(R.string.widget_ranking_title),
+            text = AppStrings.get(StringKey.WidgetRankingTitle),
             style =
                 TextStyle(
                     color = ColorProvider(Color(0xFFF5F7FA)),
@@ -181,7 +182,7 @@ private fun RankingHeader(context: Context) {
             modifier = GlanceModifier.defaultWeight(),
         )
         Text(
-            text = context.getString(R.string.widget_ranking_refresh),
+            text = AppStrings.get(StringKey.WidgetRankingRefresh),
             style =
                 TextStyle(
                     color = ColorProvider(Color(0xFFE8ECF4)),
@@ -206,7 +207,7 @@ private fun ColumnScope.LoggedOutView(context: Context) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = context.getString(R.string.widget_ranking_login_title),
+            text = AppStrings.get(StringKey.WidgetRankingLoginTitle),
             style =
                 TextStyle(
                     color = ColorProvider(Color(0xFFF5F7FA)),
@@ -217,7 +218,7 @@ private fun ColumnScope.LoggedOutView(context: Context) {
         )
         Spacer(modifier = GlanceModifier.height(6.dp))
         Text(
-            text = context.getString(R.string.widget_ranking_login_subtitle),
+            text = AppStrings.get(StringKey.WidgetRankingLoginSubtitle),
             style =
                 TextStyle(
                     color = ColorProvider(Color(0xFFAAB2C0)),
@@ -231,7 +232,7 @@ private fun ColumnScope.LoggedOutView(context: Context) {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             }
         Text(
-            text = context.getString(R.string.widget_ranking_login_button),
+            text = AppStrings.get(StringKey.WidgetRankingLoginButton),
             style =
                 TextStyle(
                     color = ColorProvider(Color.White),
@@ -249,14 +250,14 @@ private fun ColumnScope.LoggedOutView(context: Context) {
 }
 
 @Composable
-private fun ColumnScope.ErrorView(context: Context) {
+private fun ColumnScope.ErrorView() {
     Column(
         modifier = GlanceModifier.fillMaxSize().defaultWeight(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = context.getString(R.string.widget_ranking_error),
+            text = AppStrings.get(StringKey.WidgetRankingError),
             style =
                 TextStyle(
                     color = ColorProvider(Color(0xFFF5F7FA)),
@@ -267,7 +268,7 @@ private fun ColumnScope.ErrorView(context: Context) {
         )
         Spacer(modifier = GlanceModifier.height(6.dp))
         Text(
-            text = context.getString(R.string.widget_ranking_login_subtitle),
+            text = AppStrings.get(StringKey.WidgetRankingLoginSubtitle),
             style =
                 TextStyle(
                     color = ColorProvider(Color(0xFFAAB2C0)),
@@ -277,7 +278,7 @@ private fun ColumnScope.ErrorView(context: Context) {
         )
         Spacer(modifier = GlanceModifier.height(12.dp))
         Text(
-            text = context.getString(R.string.widget_ranking_refresh),
+            text = AppStrings.get(StringKey.WidgetRankingRefresh),
             style =
                 TextStyle(
                     color = ColorProvider(Color.White),
