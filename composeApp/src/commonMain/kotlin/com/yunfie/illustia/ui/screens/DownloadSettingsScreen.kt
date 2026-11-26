@@ -1,7 +1,5 @@
 package com.yunfie.illustia.ui.screens
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
@@ -9,16 +7,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.nativebridge.NativeImageStore
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.data_items_count
 import com.yunfie.illustia.resources.download_section_rules
@@ -43,13 +34,14 @@ import com.yunfie.illustia.resources.image_ugoira_format_mp4
 import com.yunfie.illustia.resources.image_ugoira_save_format
 import com.yunfie.illustia.resources.image_ugoira_save_format_desc
 import com.yunfie.illustia.settings.AppSettings
+import com.yunfie.illustia.ui.components.BackNavigationHandler
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
-import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.Section
 import com.yunfie.illustia.ui.components.SettingDropdownRow
 import com.yunfie.illustia.ui.components.SettingSwitchRow
+import com.yunfie.illustia.ui.screens.download.DownloadSettingsActions
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -58,27 +50,17 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import org.jetbrains.compose.resources.stringResource as resString
 
 @Composable
 fun DownloadSettingsScreen(
     settings: AppSettings,
-    viewModel: IllustiaViewModel,
+    viewModel: DownloadSettingsActions,
     onBack: () -> Unit,
+    saveLocation: String,
+    onPickSaveLocation: () -> Unit,
 ) {
-    PredictiveBackGestureHandler(onBack = onBack)
+    BackNavigationHandler(onBack = onBack)
     val scrollBehavior = MiuixScrollBehavior()
-    val context = LocalContext.current
-    val imageStore = remember(context) { NativeImageStore(context.applicationContext) }
-    var saveLocation by remember(imageStore) { mutableStateOf(imageStore.currentPathLabel()) }
-
-    val folderPicker =
-        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
-            uri?.let {
-                imageStore.persistTreeUri(it)
-                saveLocation = imageStore.currentPathLabel()
-            }
-        }
 
     Scaffold(
         containerColor = MiuixTheme.colorScheme.surface,
@@ -129,7 +111,7 @@ fun DownloadSettingsScreen(
                             title = stringResource(Res.string.image_default_save_location),
                             summary = saveLocation.ifBlank { stringResource(Res.string.image_default_save_location_fallback) },
                             modifier = Modifier.fillMaxWidth(),
-                            onClick = { folderPicker.launch(null) },
+                            onClick = onPickSaveLocation,
                         )
                     }
                 }
@@ -165,10 +147,10 @@ fun DownloadSettingsScreen(
                         )
                         DividerLine()
                         SettingSwitchRow(
-                            title = resString(Res.string.flag_embed_metadata_title),
+                            title = stringResource(Res.string.flag_embed_metadata_title),
                             checked = settings.embedMetadata,
                             onCheckedChange = viewModel::updateEmbedMetadata,
-                            summary = resString(Res.string.flag_embed_metadata_desc),
+                            summary = stringResource(Res.string.flag_embed_metadata_desc),
                         )
                     }
                 }

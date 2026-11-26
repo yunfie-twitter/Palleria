@@ -43,6 +43,7 @@ import com.yunfie.illustia.ui.components.ProvideEntrySharedTransitionScope
 import com.yunfie.illustia.ui.screens.AboutScreen
 import com.yunfie.illustia.ui.screens.AccountLoginMethodScreen
 import com.yunfie.illustia.ui.screens.AccountSettingsScreen
+import com.yunfie.illustia.ui.screens.AndroidDownloadSettingsScreen
 import com.yunfie.illustia.ui.screens.AppDataScreen
 import com.yunfie.illustia.ui.screens.AppLockSetupScreen
 import com.yunfie.illustia.ui.screens.BookmarkSettingsScreen
@@ -540,7 +541,7 @@ internal fun AppNavHost(
                 DetailSectionSettingsScreen(settings = appState.state.settings, viewModel = viewModel, onBack = onPopRoute)
             }
             entry(AppRoute.DownloadSettings) {
-                DownloadSettingsScreen(settings = appState.state.settings, viewModel = viewModel, onBack = onPopRoute)
+                AndroidDownloadSettingsScreen(settings = appState.state.settings, viewModel = viewModel, onBack = onPopRoute)
             }
             entry(AppRoute.NetworkSettings) {
                 NetworkSettingsScreen(
