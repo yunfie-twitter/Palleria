@@ -13,33 +13,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 
-private fun Comment.isPixivCommentDisabledNotice(): Boolean = comment?.contains("コメントがオフにされています") == true
-
-/** キャッシュ済みのレスポンスを初期表示用の状態へ変換する（スケルトン表示を挟まないため）。 */
-internal fun CommentResponse.toCommentState(): CommentState =
-    CommentState(
-        comments = comments,
-        hasDisabledNotice = comments.any { it.isPixivCommentDisabledNotice() },
-        nextUrl = nextUrl,
-        isEmpty = comments.isEmpty(),
-    )
-
-enum class CommentArtworkType {
-    ILLUST,
-    NOVEL,
-}
-
-data class CommentState(
-    val comments: List<Comment> = emptyList(),
-    val hasDisabledNotice: Boolean = false,
-    val nextUrl: String? = null,
-    val errorMessage: String? = null,
-    val isEmpty: Boolean = false,
-    val isLoading: Boolean = false,
-    val isRefreshing: Boolean = false,
-    val isPaginating: Boolean = false,
-)
-
 class CommentStore(
     private val repository: IllustiaRepository,
     private val id: Long,
