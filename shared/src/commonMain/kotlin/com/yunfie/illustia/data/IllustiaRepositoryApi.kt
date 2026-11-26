@@ -127,6 +127,40 @@ interface IllustiaRepositoryApi {
         forceRefresh: Boolean = false,
     ): CommentResponse
 
+    /** 期限内キャッシュ済みのコメント先頭ページ（未取得・期限切れなら null）。 */
+    fun illustCommentsSnapshot(illustId: Long): CommentResponse?
+
+    suspend fun illustCommentReplies(
+        commentId: Long,
+        offset: Int? = null,
+        forceRefresh: Boolean = false,
+    ): CommentResponse
+
+    suspend fun novelCommentReplies(
+        commentId: Long,
+        forceRefresh: Boolean = false,
+    ): CommentResponse
+
+    suspend fun nextCommentPage(nextUrl: String): CommentResponse
+
+    suspend fun addIllustComment(
+        illustId: Long,
+        comment: String,
+        parentCommentId: Long? = null,
+    )
+
+    suspend fun addIllustStampComment(
+        illustId: Long,
+        stampId: Long,
+        parentCommentId: Long? = null,
+    )
+
+    suspend fun addNovelComment(
+        novelId: Long,
+        comment: String,
+        parentCommentId: Long? = null,
+    )
+
     suspend fun novelComments(
         novelId: Long,
         forceRefresh: Boolean = false,

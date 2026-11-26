@@ -37,6 +37,7 @@ import com.yunfie.illustia.AppShortcutRouter
 import com.yunfie.illustia.IllustiaNavigationRequest
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.data.RequestErrorStrings
 import com.yunfie.illustia.data.pixiv.CommentArtworkType
 import com.yunfie.illustia.platform.AndroidStringProvider
 import com.yunfie.illustia.platform.AppStrings
@@ -813,6 +814,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         remember(context) {
             AndroidStringProvider(context).apply {
                 AppStrings.install(this)
+                RequestErrorStrings.install(this)
             }
         }
     CompositionLocalProvider(

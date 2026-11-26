@@ -438,12 +438,12 @@ class IllustiaRepository(
         }
 
     /** 期限内キャッシュ済みのコメント先頭ページ（未取得・期限切れなら null）。UI スレッドから即時に確認する用途。 */
-    fun illustCommentsSnapshot(illustId: Long): CommentResponse? = apiCache.get("comments:illust:$illustId:0")
+    override fun illustCommentsSnapshot(illustId: Long): CommentResponse? = apiCache.get("comments:illust:$illustId:0")
 
-    suspend fun illustCommentReplies(
+    override suspend fun illustCommentReplies(
         commentId: Long,
-        offset: Int? = null,
-        forceRefresh: Boolean = false,
+        offset: Int?,
+        forceRefresh: Boolean,
     ): CommentResponse =
         withApiCache("comments:illust_replies:$commentId:${offset ?: 0}", CACHE_TTL_SHORT_MILLIS, forceRefresh) {
             withSessionRetry { session -> apiClient.illustCommentReplies(session, commentId, offset) }
@@ -457,31 +457,31 @@ class IllustiaRepository(
             withSessionRetry { session -> apiClient.novelComments(session, novelId) }
         }
 
-    suspend fun novelCommentReplies(
+    override suspend fun novelCommentReplies(
         commentId: Long,
-        forceRefresh: Boolean = false,
+        forceRefresh: Boolean,
     ): CommentResponse =
         withApiCache("comments:novel_replies:$commentId", CACHE_TTL_SHORT_MILLIS, forceRefresh) {
             withSessionRetry { session -> apiClient.novelCommentReplies(session, commentId) }
         }
 
-    suspend fun nextCommentPage(nextUrl: String): CommentResponse =
+    override suspend fun nextCommentPage(nextUrl: String): CommentResponse =
         withSessionRetry { session -> apiClient.nextCommentPage(session, nextUrl) }
 
-    suspend fun addIllustComment(
+    override suspend fun addIllustComment(
         illustId: Long,
         comment: String,
-        parentCommentId: Long? = null,
+        parentCommentId: Long?,
     ) {
         withSessionRetry { session -> apiClient.addIllustComment(session, illustId, comment, parentCommentId) }
         apiCache.remove("comments:illust:$illustId:0")
         parentCommentId?.let { apiCache.remove("comments:illust_replies:$it:0") }
     }
 
-    suspend fun addIllustStampComment(
+    override suspend fun addIllustStampComment(
         illustId: Long,
         stampId: Long,
-        parentCommentId: Long? = null,
+        parentCommentId: Long?,
     ) {
         withSessionRetry { session ->
             apiClient.addIllustStampComment(session, illustId, stampId, parentCommentId)
@@ -502,10 +502,10 @@ class IllustiaRepository(
         withSessionRetry { session -> apiClient.setAiContentVisible(session, visible) }
     }
 
-    suspend fun addNovelComment(
+    override suspend fun addNovelComment(
         novelId: Long,
         comment: String,
-        parentCommentId: Long? = null,
+        parentCommentId: Long?,
     ) {
         withSessionRetry { session -> apiClient.addNovelComment(session, novelId, comment, parentCommentId) }
         apiCache.remove("comments:novel:$novelId")
