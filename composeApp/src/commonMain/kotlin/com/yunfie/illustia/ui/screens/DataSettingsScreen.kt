@@ -1,8 +1,5 @@
 package com.yunfie.illustia.ui.screens
 
-import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
@@ -17,7 +14,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.action_delete
 import com.yunfie.illustia.resources.data_delete_cache
@@ -39,14 +35,15 @@ import com.yunfie.illustia.resources.data_send_telemetry
 import com.yunfie.illustia.resources.data_send_telemetry_desc
 import com.yunfie.illustia.resources.data_settings_title
 import com.yunfie.illustia.settings.AppSettings
+import com.yunfie.illustia.ui.components.BackNavigationHandler
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.MiuixConfirmDialog
-import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.Section
 import com.yunfie.illustia.ui.components.SettingLinkRow
 import com.yunfie.illustia.ui.components.SettingSwitchRow
+import com.yunfie.illustia.ui.screens.data.DataSettingsActions
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -55,28 +52,21 @@ import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import java.time.LocalDate
 
 @Composable
 fun DataSettingsScreen(
     settings: AppSettings,
-    viewModel: IllustiaViewModel,
+    viewModel: DataSettingsActions,
     onBack: () -> Unit,
+    onExportData: () -> Unit,
+    onImportData: () -> Unit,
+    importUri: String?,
+    onImportConfirmed: () -> Unit,
+    onImportDismissed: () -> Unit,
 ) {
-    PredictiveBackGestureHandler(onBack = onBack)
+    BackNavigationHandler(onBack = onBack)
     val scrollBehavior = MiuixScrollBehavior()
     var showCacheDeleteConfirm by remember { mutableStateOf(false) }
-    var pendingImportUri by remember { mutableStateOf<Uri?>(null) }
-    val exportLauncher =
-        rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.CreateDocument("application/json"),
-            onResult = { uri -> uri?.let { viewModel.exportManagedData(it.toString()) } },
-        )
-    val importLauncher =
-        rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.OpenDocument(),
-            onResult = { uri -> pendingImportUri = uri },
-        )
 
     if (showCacheDeleteConfirm) {
         MiuixConfirmDialog(
@@ -93,17 +83,17 @@ fun DataSettingsScreen(
         )
     }
 
-    pendingImportUri?.let { uri ->
+    if (importUri != null) {
         MiuixConfirmDialog(
             show = true,
             title = stringResource(Res.string.data_import_confirm_title),
             summary = stringResource(Res.string.data_import_confirm_desc),
             confirmText = stringResource(Res.string.data_import),
             onConfirm = {
-                pendingImportUri = null
-                viewModel.importManagedData(uri.toString())
+                viewModel.importManagedData(importUri)
+                onImportConfirmed()
             },
-            onDismiss = { pendingImportUri = null },
+            onDismiss = onImportDismissed,
         )
     }
 
@@ -158,13 +148,9 @@ fun DataSettingsScreen(
             item {
                 Section(stringResource(Res.string.data_section_transfer)) {
                     ElevatedPanel(contentPadding = PaddingValues(0.dp)) {
-                        SettingLinkRow(stringResource(Res.string.data_export)) {
-                            exportLauncher.launch("illustia-data-${LocalDate.now()}.json")
-                        }
+                        SettingLinkRow(stringResource(Res.string.data_export), onClick = onExportData)
                         DividerLine()
-                        SettingLinkRow(stringResource(Res.string.data_import)) {
-                            importLauncher.launch(arrayOf("application/json", "text/json", "text/plain"))
-                        }
+                        SettingLinkRow(stringResource(Res.string.data_import), onClick = onImportData)
                     }
                     Text(
                         text = stringResource(Res.string.data_import_export_note),

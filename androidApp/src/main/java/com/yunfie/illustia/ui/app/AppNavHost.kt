@@ -43,13 +43,13 @@ import com.yunfie.illustia.ui.components.ProvideEntrySharedTransitionScope
 import com.yunfie.illustia.ui.screens.AboutScreen
 import com.yunfie.illustia.ui.screens.AccountLoginMethodScreen
 import com.yunfie.illustia.ui.screens.AccountSettingsScreen
+import com.yunfie.illustia.ui.screens.AndroidDataSettingsScreen
 import com.yunfie.illustia.ui.screens.AndroidDownloadSettingsScreen
 import com.yunfie.illustia.ui.screens.AppDataScreen
 import com.yunfie.illustia.ui.screens.AppLockSetupScreen
 import com.yunfie.illustia.ui.screens.BookmarkSettingsScreen
 import com.yunfie.illustia.ui.screens.BookmarkTagSortScreen
 import com.yunfie.illustia.ui.screens.CardCustomizationSettingsScreen
-import com.yunfie.illustia.ui.screens.DataSettingsScreen
 import com.yunfie.illustia.ui.screens.DetailSectionSettingsScreen
 import com.yunfie.illustia.ui.screens.DiscordLoginScreen
 import com.yunfie.illustia.ui.screens.DiscordSettingsScreen
@@ -607,7 +607,7 @@ internal fun AppNavHost(
                 )
             }
             entry(AppRoute.DataSettings) {
-                DataSettingsScreen(settings = appState.state.settings, viewModel = viewModel, onBack = onPopRoute)
+                AndroidDataSettingsScreen(settings = appState.state.settings, viewModel = viewModel, onBack = onPopRoute)
             }
             entry(AppRoute.ViewHistory) {
                 ProvideEntrySharedTransitionScope {
