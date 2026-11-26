@@ -1,22 +1,8 @@
 package com.yunfie.illustia
 
-import android.util.Base64
 import com.yunfie.illustia.models.Illust
 import org.json.JSONArray
 import org.json.JSONObject
-import java.security.MessageDigest
-import java.security.SecureRandom
-
-internal fun randomUrlSafeString(byteCount: Int): String {
-    val bytes = ByteArray(byteCount)
-    SecureRandom().nextBytes(bytes)
-    return Base64.encodeToString(bytes, Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
-}
-
-internal fun String.sha256Base64Url(): String {
-    val digest = MessageDigest.getInstance("SHA-256").digest(toByteArray())
-    return Base64.encodeToString(digest, Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
-}
 
 internal fun JSONObject.requireArray(name: String): JSONArray {
     require(has(name))

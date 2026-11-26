@@ -37,6 +37,8 @@ import com.yunfie.illustia.platform.StringProvider
 import com.yunfie.illustia.platform.Telemetry
 import com.yunfie.illustia.platform.TelemetryControl
 import com.yunfie.illustia.platform.ViewModelDepsApi
+import com.yunfie.illustia.platform.randomUrlSafeString
+import com.yunfie.illustia.platform.sha256Base64Url
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.settings.SettingsFacade
 import com.yunfie.illustia.ui.app.DetailEntrySnapshot

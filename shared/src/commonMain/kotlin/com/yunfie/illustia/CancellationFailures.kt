@@ -1,6 +1,6 @@
 package com.yunfie.illustia
 
-import java.util.concurrent.CancellationException
+import kotlinx.coroutines.CancellationException
 
 fun Throwable.isCancellationFailure(): Boolean {
     var current: Throwable? = this
