@@ -40,6 +40,8 @@ import com.yunfie.illustia.resources.discord_button_view_artwork
 import com.yunfie.illustia.resources.discord_login_success
 import com.yunfie.illustia.resources.discord_presence_browsing_illust
 import com.yunfie.illustia.resources.discord_presence_viewing_artwork
+import com.yunfie.illustia.resources.download_queue_downloading
+import com.yunfie.illustia.resources.download_queue_title
 import com.yunfie.illustia.resources.download_queue_waiting
 import com.yunfie.illustia.resources.error_bad_request
 import com.yunfie.illustia.resources.error_bookmark_failed
@@ -361,6 +363,8 @@ class ComposeStringProvider : StringProvider {
                 StringKey.DiscordPresenceViewingArtwork to Res.string.discord_presence_viewing_artwork,
                 StringKey.DiscordButtonViewArtwork to Res.string.discord_button_view_artwork,
                 StringKey.DiscordButtonDownload to Res.string.discord_button_download,
+                StringKey.DownloadQueueTitle to Res.string.download_queue_title,
+                StringKey.DownloadQueueDownloading to Res.string.download_queue_downloading,
             )
     }
 }

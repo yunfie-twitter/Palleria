@@ -28,6 +28,9 @@ enum class StringKey {
     ErrorRateLimited,
     ErrorRelatedUsersLoadFailed,
     ErrorSaveFailed,
+    DownloadQueueTitle,
+    DownloadQueueDownloading,
+
     ErrorServerError,
     ErrorTimeout,
     MsgBookmarkAdded,

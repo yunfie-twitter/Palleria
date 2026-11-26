@@ -180,6 +180,8 @@ class AndroidStringProvider(
                 StringKey.DiscordPresenceViewingArtwork to R.string.discord_presence_viewing_artwork,
                 StringKey.DiscordButtonViewArtwork to R.string.discord_button_view_artwork,
                 StringKey.DiscordButtonDownload to R.string.discord_button_download,
+                StringKey.DownloadQueueTitle to R.string.download_queue_title,
+                StringKey.DownloadQueueDownloading to R.string.download_queue_downloading,
             )
     }
 }
