@@ -888,7 +888,7 @@ abstract class IllustiaAuthFeedModule(
         }
     }
 
-    internal fun restoreSearchResults(snapshot: SearchEntrySnapshot) {
+    fun restoreSearchResults(snapshot: SearchEntrySnapshot) {
         searchJob?.cancel()
         searchSnapshot = null
         _uiState.update {

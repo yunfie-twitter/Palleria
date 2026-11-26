@@ -246,9 +246,9 @@ abstract class IllustiaViewModelFoundation(
      */
     @Volatile
     var homeScrollProbe: ScrollPositionProbe = ScrollPositionProbe.Never
-    internal val detailSnapshots = androidx.compose.runtime.mutableStateMapOf<Long, DetailEntrySnapshot>()
-    internal val searchSnapshots = androidx.compose.runtime.mutableStateMapOf<String, SearchEntrySnapshot>()
-    internal val selectedWatchlistSeriesIds = androidx.compose.runtime.mutableStateListOf<Long>()
+    val detailSnapshots = androidx.compose.runtime.mutableStateMapOf<Long, DetailEntrySnapshot>()
+    val searchSnapshots = androidx.compose.runtime.mutableStateMapOf<String, SearchEntrySnapshot>()
+    val selectedWatchlistSeriesIds = androidx.compose.runtime.mutableStateListOf<Long>()
 
     abstract fun loadInitialHomeIfNeeded()
 
