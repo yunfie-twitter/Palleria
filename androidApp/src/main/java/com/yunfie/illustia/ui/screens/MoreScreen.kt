@@ -35,8 +35,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
 import com.yunfie.illustia.models.UserProfile
+import com.yunfie.illustia.platform.AppStrings
+import com.yunfie.illustia.platform.StringKey
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.account_switch_title
 import com.yunfie.illustia.resources.more_connected_pixiv
@@ -169,14 +170,14 @@ private fun rememberQuickActions(
         buildList {
             add(
                 MoreAction(
-                    title = context.getString(R.string.more_settings),
+                    title = AppStrings.get(StringKey.MoreSettings),
                     icon = MiuixIcons.Settings,
                     onClick = viewModel::openSettings,
                 ),
             )
             add(
                 MoreAction(
-                    title = context.getString(R.string.more_view_history),
+                    title = AppStrings.get(StringKey.MoreViewHistory),
                     icon = MiuixIcons.Timer,
                     onClick = viewModel::openViewHistory,
                 ),
@@ -184,7 +185,7 @@ private fun rememberQuickActions(
             if (!state.settings.hideHomeNovelButton) {
                 add(
                     MoreAction(
-                        title = context.getString(R.string.more_notifications),
+                        title = AppStrings.get(StringKey.MoreNotifications),
                         icon = MiuixIcons.Messages,
                         onClick = viewModel::openNotifications,
                     ),
@@ -192,7 +193,7 @@ private fun rememberQuickActions(
             }
             add(
                 MoreAction(
-                    title = context.getString(R.string.more_favorite_tags),
+                    title = AppStrings.get(StringKey.MoreFavoriteTags),
                     icon = MiuixIcons.FavoritesFill,
                     badge =
                         state.settings.favoriteTags.size
@@ -203,7 +204,7 @@ private fun rememberQuickActions(
             if (state.settings.hideHomeNovelButton) {
                 add(
                     MoreAction(
-                        title = context.getString(R.string.nav_novel),
+                        title = AppStrings.get(StringKey.NavNovel),
                         icon = MiuixIcons.Photos,
                         onClick = viewModel::openNovels,
                     ),
@@ -211,14 +212,14 @@ private fun rememberQuickActions(
             }
             add(
                 MoreAction(
-                    title = context.getString(R.string.more_mute_settings),
+                    title = AppStrings.get(StringKey.MoreMuteSettings),
                     icon = MiuixIcons.Filter,
                     onClick = viewModel::openMuteSettings,
                 ),
             )
             add(
                 MoreAction(
-                    title = context.getString(R.string.more_download_list),
+                    title = AppStrings.get(StringKey.MoreDownloadList),
                     icon = MiuixIcons.Download,
                     onClick = viewModel::openDownloadQueue,
                 ),
@@ -241,7 +242,7 @@ private fun rememberUtilityActions(viewModel: IllustiaViewModel): List<MoreActio
     return remember(viewModel, appVersion) {
         listOf(
             MoreAction(
-                title = context.getString(R.string.more_about),
+                title = AppStrings.get(StringKey.MoreAbout),
                 icon = MiuixIcons.More,
                 onClick = viewModel::openAbout,
             ),

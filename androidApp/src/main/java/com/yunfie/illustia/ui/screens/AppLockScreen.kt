@@ -47,7 +47,8 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
+import com.yunfie.illustia.platform.AppStrings
+import com.yunfie.illustia.platform.StringKey
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.app_lock_attempts_remaining
 import com.yunfie.illustia.resources.app_lock_cooldown
@@ -159,9 +160,9 @@ fun AppLockScreen(
         val promptInfo =
             BiometricPrompt.PromptInfo
                 .Builder()
-                .setTitle(context.getString(R.string.app_lock_biometric_title))
-                .setSubtitle(context.getString(R.string.app_lock_biometric_subtitle))
-                .setNegativeButtonText(context.getString(R.string.action_cancel))
+                .setTitle(AppStrings.get(StringKey.AppLockBiometricTitle))
+                .setSubtitle(AppStrings.get(StringKey.AppLockBiometricSubtitle))
+                .setNegativeButtonText(AppStrings.get(StringKey.ActionCancel))
                 .setAllowedAuthenticators(
                     BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.BIOMETRIC_WEAK,
                 ).build()

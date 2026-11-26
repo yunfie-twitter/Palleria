@@ -25,6 +25,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.platform.AppStrings
+import com.yunfie.illustia.platform.StringKey
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.app_name
 import com.yunfie.illustia.resources.feature_flags_summary
@@ -101,8 +103,8 @@ fun SettingsScreen(
             buildList {
                 add(
                     SettingsCategory(
-                        context.getString(R.string.settings_general),
-                        context.getString(R.string.settings_general_summary),
+                        AppStrings.get(StringKey.SettingsGeneral),
+                        AppStrings.get(StringKey.SettingsGeneralSummary),
                         MiuixIcons.More,
                     ) {
                         viewModel.openGeneralSettings()
@@ -110,8 +112,8 @@ fun SettingsScreen(
                 )
                 add(
                     SettingsCategory(
-                        context.getString(R.string.settings_image),
-                        context.getString(R.string.settings_image_summary),
+                        AppStrings.get(StringKey.SettingsImage),
+                        AppStrings.get(StringKey.SettingsImageSummary),
                         MiuixIcons.Photos,
                     ) {
                         viewModel.openImageSettings()
@@ -119,8 +121,8 @@ fun SettingsScreen(
                 )
                 add(
                     SettingsCategory(
-                        context.getString(R.string.settings_bookmark),
-                        context.getString(R.string.settings_bookmark_summary),
+                        AppStrings.get(StringKey.SettingsBookmark),
+                        AppStrings.get(StringKey.SettingsBookmarkSummary),
                         MiuixIcons.FavoritesFill,
                     ) {
                         viewModel.openBookmarkSettings()
@@ -128,13 +130,11 @@ fun SettingsScreen(
                 )
                 add(
                     SettingsCategory(
-                        context.getString(R.string.settings_account),
+                        AppStrings.get(StringKey.SettingsAccount),
                         if (settings.refreshToken.isNotBlank()) {
-                            context.getString(
-                                R.string.settings_logged_in,
-                            )
+                            AppStrings.get(StringKey.SettingsLoggedIn)
                         } else {
-                            context.getString(R.string.settings_not_logged_in)
+                            AppStrings.get(StringKey.SettingsNotLoggedIn)
                         },
                         MiuixIcons.Contacts,
                     ) {
@@ -143,13 +143,11 @@ fun SettingsScreen(
                 )
                 add(
                     SettingsCategory(
-                        context.getString(R.string.settings_data),
-                        "${context.getString(
-                            R.string.more_view_history,
-                        )} ${context.getString(
-                            R.string.data_items_count,
+                        AppStrings.get(StringKey.SettingsData),
+                        "${AppStrings.get(StringKey.MoreViewHistory)} ${AppStrings.get(
+                            StringKey.DataItemsCount,
                             settings.viewHistory.size,
-                        )} / ${context.getString(R.string.more_mute_settings)} ${context.getString(R.string.data_items_count, mutedTotal)}",
+                        )} / ${AppStrings.get(StringKey.MoreMuteSettings)} ${AppStrings.get(StringKey.DataItemsCount, mutedTotal)}",
                         MiuixIcons.Timer,
                     ) {
                         viewModel.openDataSettings()
@@ -157,8 +155,8 @@ fun SettingsScreen(
                 )
                 add(
                     SettingsCategory(
-                        context.getString(R.string.update_settings_title),
-                        context.getString(R.string.update_settings_summary),
+                        AppStrings.get(StringKey.UpdateSettingsTitle),
+                        AppStrings.get(StringKey.UpdateSettingsSummary),
                         MiuixIcons.TopDownloads,
                     ) {
                         viewModel.openUpdateSettings()

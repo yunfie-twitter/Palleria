@@ -75,7 +75,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
 import com.yunfie.illustia.data.pixiv.WatchlistStore
 import com.yunfie.illustia.models.pixiv.MangaSeriesModel
 import com.yunfie.illustia.resources.Res

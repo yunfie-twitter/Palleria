@@ -21,7 +21,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.R
 import com.yunfie.illustia.data.IllustiaRepository
 import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.pixiv.BookmarkTag

@@ -20,8 +20,9 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
 import com.yunfie.illustia.nativebridge.NativeImageStore
+import com.yunfie.illustia.platform.AppStrings
+import com.yunfie.illustia.platform.StringKey
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.live_wallpaper_background
 import com.yunfie.illustia.resources.live_wallpaper_background_black
@@ -115,7 +116,7 @@ fun WallpaperPlaylistSettingsScreen(
                     viewModel.updateLiveWallpaperSourceFolder(it.toString())
                     viewModel.updateLiveWallpaperSource("selected_folder")
                 } else {
-                    viewModel.showMessage(context.getString(R.string.live_wallpaper_folder_permission_failed))
+                    viewModel.showMessage(AppStrings.get(StringKey.LiveWallpaperFolderPermissionFailed))
                 }
             }
         }

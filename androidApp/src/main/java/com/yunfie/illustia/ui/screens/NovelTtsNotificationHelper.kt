@@ -12,6 +12,8 @@ import android.media.session.MediaSession
 import android.os.Build
 import com.yunfie.illustia.MainActivity
 import com.yunfie.illustia.R
+import com.yunfie.illustia.platform.AppStrings
+import com.yunfie.illustia.platform.StringKey
 
 internal object NovelTtsNotificationHelper {
     const val CHANNEL_ID = "novel_tts_channel"
@@ -29,8 +31,8 @@ internal object NovelTtsNotificationHelper {
 
     fun createNotificationChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val name = context.getString(R.string.tts_channel_name)
-            val descriptionText = context.getString(R.string.tts_channel_description)
+            val name = AppStrings.get(StringKey.TtsChannelName)
+            val descriptionText = AppStrings.get(StringKey.TtsChannelDescription)
             val importance = NotificationManager.IMPORTANCE_LOW
             val channel =
                 NotificationChannel(CHANNEL_ID, name, importance).apply {
@@ -50,7 +52,7 @@ internal object NovelTtsNotificationHelper {
         isPlaying: Boolean,
         mediaSession: MediaSession?,
     ): Notification {
-        val title = novelTitle.ifBlank { service.getString(R.string.flag_novel_tts_audiobook_title) }
+        val title = novelTitle.ifBlank { AppStrings.get(StringKey.FlagNovelTtsAudiobookTitle) }
         val progressText = if (totalParagraphs > 0) "${currentParagraphIndex + 1}/$totalParagraphs" else ""
         val contentText =
             when {
@@ -71,7 +73,7 @@ internal object NovelTtsNotificationHelper {
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(contentText)
-            .setSubText(service.getString(R.string.app_name))
+            .setSubText(AppStrings.get(StringKey.AppName))
             .setContentIntent(createContentPendingIntent(service))
             .setVisibility(Notification.VISIBILITY_PUBLIC)
             .setOngoing(isPlaying)
@@ -99,7 +101,7 @@ internal object NovelTtsNotificationHelper {
         Notification.Action
             .Builder(
                 Icon.createWithResource(context, android.R.drawable.ic_media_previous),
-                context.getString(R.string.tts_prev_paragraph),
+                AppStrings.get(StringKey.TtsPrevParagraph),
                 createServicePendingIntent(context, NovelTtsService.ACTION_PREV, REQUEST_CODE_PREV),
             ).build()
 
@@ -108,7 +110,7 @@ internal object NovelTtsNotificationHelper {
         isPlaying: Boolean,
     ): Notification.Action {
         val iconRes = if (isPlaying) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play
-        val title = context.getString(if (isPlaying) R.string.tts_pause else R.string.tts_play)
+        val title = AppStrings.get(if (isPlaying) StringKey.TtsPause else StringKey.TtsPlay)
         return Notification.Action
             .Builder(
                 Icon.createWithResource(context, iconRes),
@@ -121,7 +123,7 @@ internal object NovelTtsNotificationHelper {
         Notification.Action
             .Builder(
                 Icon.createWithResource(context, android.R.drawable.ic_media_next),
-                context.getString(R.string.tts_next_paragraph),
+                AppStrings.get(StringKey.TtsNextParagraph),
                 createServicePendingIntent(context, NovelTtsService.ACTION_NEXT, REQUEST_CODE_NEXT),
             ).build()
 
@@ -129,7 +131,7 @@ internal object NovelTtsNotificationHelper {
         Notification.Action
             .Builder(
                 Icon.createWithResource(context, android.R.drawable.ic_menu_close_clear_cancel),
-                context.getString(R.string.tts_stop),
+                AppStrings.get(StringKey.TtsStop),
                 createServicePendingIntent(context, NovelTtsService.ACTION_STOP, REQUEST_CODE_STOP),
             ).build()
 

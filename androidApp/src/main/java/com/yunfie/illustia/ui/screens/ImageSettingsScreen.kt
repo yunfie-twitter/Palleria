@@ -12,7 +12,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
 import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.ambient_light_viewer_desc

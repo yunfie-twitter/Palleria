@@ -28,8 +28,9 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
 import com.yunfie.illustia.discord.DiscordRpcManager
+import com.yunfie.illustia.platform.AppStrings
+import com.yunfie.illustia.platform.StringKey
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.account_status
 import com.yunfie.illustia.resources.action_cancel
@@ -162,7 +163,7 @@ fun DiscordSettingsScreen(
                         onClick = {
                             viewModel.updateDiscordToken(tempToken.trim())
                             showTokenDialog = false
-                            Toast.makeText(context, R.string.action_save, Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, AppStrings.get(StringKey.ActionSave), Toast.LENGTH_SHORT).show()
                         },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.textButtonColorsPrimary(),
@@ -217,7 +218,7 @@ fun DiscordSettingsScreen(
                             val id = tempAppId.trim().ifBlank { DiscordRpcManager.DEFAULT_APP_ID }
                             viewModel.updateDiscordApplicationId(id)
                             showAppIdDialog = false
-                            Toast.makeText(context, R.string.action_save, Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, AppStrings.get(StringKey.ActionSave), Toast.LENGTH_SHORT).show()
                         },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.textButtonColorsPrimary(),

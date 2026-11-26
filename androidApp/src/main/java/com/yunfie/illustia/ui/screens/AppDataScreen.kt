@@ -26,9 +26,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
 import com.yunfie.illustia.data.AppStorageUsage
 import com.yunfie.illustia.data.readAppStorageUsage
+import com.yunfie.illustia.platform.AppStrings
+import com.yunfie.illustia.platform.StringKey
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.action_delete
 import com.yunfie.illustia.resources.app_data_section_overview
@@ -120,8 +121,8 @@ fun AppDataScreen(
     deleteTarget?.let { target ->
         MiuixConfirmDialog(
             show = true,
-            title = target.confirmTitle(context),
-            summary = target.confirmSummary(context),
+            title = target.confirmTitle(),
+            summary = target.confirmSummary(),
             confirmText = stringResource(Res.string.action_delete),
             destructive = true,
             onConfirm = {
@@ -335,22 +336,22 @@ private fun StorageDetailRow(
     }
 }
 
-private fun AppDataDeleteTarget.confirmTitle(context: Context): String =
+private fun AppDataDeleteTarget.confirmTitle(): String =
     when (this) {
-        AppDataDeleteTarget.Cache -> context.getString(R.string.data_delete_cache)
-        AppDataDeleteTarget.ViewHistory -> context.getString(R.string.data_delete_view_history)
-        AppDataDeleteTarget.SearchHistory -> context.getString(R.string.data_delete_search_history)
-        AppDataDeleteTarget.FavoriteTags -> context.getString(R.string.data_delete_watchlist_tags)
-        AppDataDeleteTarget.MuteData -> context.getString(R.string.data_delete_mute_data)
+        AppDataDeleteTarget.Cache -> AppStrings.get(StringKey.DataDeleteCache)
+        AppDataDeleteTarget.ViewHistory -> AppStrings.get(StringKey.DataDeleteViewHistory)
+        AppDataDeleteTarget.SearchHistory -> AppStrings.get(StringKey.DataDeleteSearchHistory)
+        AppDataDeleteTarget.FavoriteTags -> AppStrings.get(StringKey.DataDeleteWatchlistTags)
+        AppDataDeleteTarget.MuteData -> AppStrings.get(StringKey.DataDeleteMuteData)
     }
 
-private fun AppDataDeleteTarget.confirmSummary(context: Context): String =
+private fun AppDataDeleteTarget.confirmSummary(): String =
     when (this) {
-        AppDataDeleteTarget.Cache -> context.getString(R.string.data_delete_cache_desc)
-        AppDataDeleteTarget.ViewHistory -> context.getString(R.string.data_delete_view_history_desc)
-        AppDataDeleteTarget.SearchHistory -> context.getString(R.string.data_delete_search_history_desc)
-        AppDataDeleteTarget.FavoriteTags -> context.getString(R.string.data_delete_watchlist_tags_desc)
-        AppDataDeleteTarget.MuteData -> context.getString(R.string.data_delete_mute_data_desc)
+        AppDataDeleteTarget.Cache -> AppStrings.get(StringKey.DataDeleteCacheDesc)
+        AppDataDeleteTarget.ViewHistory -> AppStrings.get(StringKey.DataDeleteViewHistoryDesc)
+        AppDataDeleteTarget.SearchHistory -> AppStrings.get(StringKey.DataDeleteSearchHistoryDesc)
+        AppDataDeleteTarget.FavoriteTags -> AppStrings.get(StringKey.DataDeleteWatchlistTagsDesc)
+        AppDataDeleteTarget.MuteData -> AppStrings.get(StringKey.DataDeleteMuteDataDesc)
     }
 
 private fun Long.readableBytes(): String {

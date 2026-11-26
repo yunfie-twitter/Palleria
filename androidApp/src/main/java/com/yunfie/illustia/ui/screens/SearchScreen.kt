@@ -53,7 +53,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
 import com.yunfie.illustia.SearchUiState
 import com.yunfie.illustia.data.pixiv.SuggestionStore
 import com.yunfie.illustia.models.Illust

@@ -20,8 +20,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
 import com.yunfie.illustia.data.isDiscordAppUrl
+import com.yunfie.illustia.platform.AppStrings
+import com.yunfie.illustia.platform.StringKey
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.discord_login_title
 import com.yunfie.illustia.ui.components.HeaderIcon
@@ -153,7 +154,12 @@ fun DiscordLoginScreen(
                                         if (!token.isNullOrBlank() && token != "null" && token != "undefined") {
                                             completed = true
                                             viewModel.updateDiscordToken(token)
-                                            Toast.makeText(context, R.string.discord_login_success, Toast.LENGTH_SHORT).show()
+                                            Toast
+                                                .makeText(
+                                                    context,
+                                                    AppStrings.get(StringKey.DiscordLoginSuccess),
+                                                    Toast.LENGTH_SHORT,
+                                                ).show()
                                             scope.launch(Dispatchers.Main) { onBack() }
                                         }
                                     }

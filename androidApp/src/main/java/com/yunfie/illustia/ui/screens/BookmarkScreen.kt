@@ -29,7 +29,6 @@ import com.yunfie.illustia.BookmarkChromeState
 import com.yunfie.illustia.BookmarkSort
 import com.yunfie.illustia.FollowingUserSort
 import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
 import com.yunfie.illustia.data.pixiv.WatchlistStore
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState

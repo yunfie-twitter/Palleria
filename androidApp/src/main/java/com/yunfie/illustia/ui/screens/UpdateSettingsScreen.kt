@@ -20,7 +20,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
+import com.yunfie.illustia.platform.AppStrings
+import com.yunfie.illustia.platform.StringKey
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.about_section_links
 import com.yunfie.illustia.resources.update_auto_check_startup
@@ -124,11 +125,11 @@ fun UpdateSettingsScreen(
     val installMethods =
         remember(isDesktop) {
             if (isDesktop) {
-                listOf(context.getString(R.string.update_method_standard))
+                listOf(AppStrings.get(StringKey.UpdateMethodStandard))
             } else {
                 listOf(
-                    context.getString(R.string.update_method_standard),
-                    context.getString(R.string.update_method_shizuku),
+                    AppStrings.get(StringKey.UpdateMethodStandard),
+                    AppStrings.get(StringKey.UpdateMethodShizuku),
                 )
             }
         }

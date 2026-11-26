@@ -36,8 +36,9 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.yunfie.illustia.IllustiaUiState
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.PixivWebLoginRequest
-import com.yunfie.illustia.R
 import com.yunfie.illustia.data.pixivLoginCodeOrNull
+import com.yunfie.illustia.platform.AppStrings
+import com.yunfie.illustia.platform.StringKey
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.action_close
 import com.yunfie.illustia.resources.dialog_reload
@@ -158,8 +159,8 @@ fun PixivWebLoginScreen(
                                     }
                                     if (request.isForMainFrame && !completed) {
                                         isLoading = false
-                                        webError = error.description?.toString()?.ifBlank { context.getString(R.string.error_generic) }
-                                            ?: context.getString(R.string.error_generic)
+                                        webError = error.description?.toString()?.ifBlank { AppStrings.get(StringKey.ErrorGeneric) }
+                                            ?: AppStrings.get(StringKey.ErrorGeneric)
                                     }
                                 }
                             }

@@ -38,8 +38,11 @@ import com.yunfie.illustia.IllustiaNavigationRequest
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
 import com.yunfie.illustia.data.pixiv.CommentArtworkType
+import com.yunfie.illustia.platform.AndroidStringProvider
+import com.yunfie.illustia.platform.AppStrings
 import com.yunfie.illustia.platform.DesktopCommand
 import com.yunfie.illustia.platform.DesktopEnvironment
+import com.yunfie.illustia.platform.LocalStringProvider
 import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.platform.WindowSizeClass
 import com.yunfie.illustia.settings.AppHapticMode
@@ -805,10 +808,17 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         } else {
             null
         }
+    val appStringProvider =
+        remember(context) {
+            AndroidStringProvider(context).apply {
+                AppStrings.install(this)
+            }
+        }
     CompositionLocalProvider(
+        com.yunfie.illustia.ui.components.LocalArtworkDesktopActions provides desktopActions,
+        LocalStringProvider provides appStringProvider,
         LocalTabUiState provides tabUiState,
         LocalFastScrolling provides fastScrollingState,
-        com.yunfie.illustia.ui.components.LocalArtworkDesktopActions provides desktopActions,
         LocalPixivImageProxyBaseUrl provides state.settings.pixivImageProxyBaseUrl,
         LocalPreferLowDataImages provides preferLowDataImages,
         com.yunfie.illustia.ui.components.LocalWideColorGamutEnabled provides settings.wideColorGamutEnabled,

@@ -33,7 +33,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
 import com.yunfie.illustia.data.pixiv.CommentArtworkType
 import com.yunfie.illustia.data.pixiv.CommentStore
 import com.yunfie.illustia.data.proxyPixivImageUrl
