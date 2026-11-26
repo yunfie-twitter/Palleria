@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.platform.rememberAppInfo
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.msg_double_back_exit
 import com.yunfie.illustia.settings.FeatureFlag
@@ -355,7 +356,7 @@ internal fun MainSurface(
                                         MoreScreen(
                                             state = appState.state,
                                             viewModel = viewModel,
-                                            onOpenWatchlistSeries = onOpenWatchlistSeries,
+                                            appInfo = rememberAppInfo(),
                                         )
                                     }
                                 }
