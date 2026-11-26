@@ -15,7 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.R
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.action_delete
 import com.yunfie.illustia.resources.app_lock_biometric_title
@@ -28,7 +27,7 @@ import top.yukonga.miuix.kmp.icon.extended.Unlock
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-internal fun NumberPad(
+fun NumberPad(
     onDigit: (Char) -> Unit,
     onDelete: () -> Unit,
     onBiometric: (() -> Unit)?,
@@ -104,7 +103,7 @@ internal fun NumberPad(
 }
 
 @Composable
-internal fun PadButton(
+fun PadButton(
     label: String,
     onClick: () -> Unit,
     enabled: Boolean,

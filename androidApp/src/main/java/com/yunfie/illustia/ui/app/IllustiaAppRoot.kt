@@ -897,6 +897,9 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                     showLoadingSpinner = spec.showLoadingSpinner,
                     placeholderUrl = spec.placeholderUrl,
                     retryToken = spec.retryToken,
+                    onSuccess = spec.onSuccess?.let { callback -> { _: android.graphics.Bitmap -> callback() } },
+                    onError = spec.onError,
+                    onLoadingStateChanged = spec.onLoadingStateChanged,
                 )
             },
         com.yunfie.illustia.ui.components.LocalPixivPrefetchRenderer provides

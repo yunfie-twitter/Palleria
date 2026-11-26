@@ -35,13 +35,13 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.ui.components.AppHapticEffect
-import com.yunfie.illustia.ui.components.CoilPixivImage
 import com.yunfie.illustia.ui.components.LoadingIndicator
+import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
-internal suspend fun PointerInputScope.detectZoomAndPanGestures(
+suspend fun PointerInputScope.detectZoomAndPanGestures(
     isZoomed: () -> Boolean,
     onGesture: (centroid: Offset, pan: Offset, zoom: Float) -> Unit,
     onGestureEnd: () -> Unit,
@@ -86,7 +86,7 @@ internal suspend fun PointerInputScope.detectZoomAndPanGestures(
 }
 
 @Composable
-internal fun ZoomablePixivImage(
+fun ZoomablePixivImage(
     url: String,
     contentDescription: String,
     isActive: Boolean,
@@ -236,7 +236,7 @@ internal fun ZoomablePixivImage(
                     )
                 },
     ) {
-        CoilPixivImage(
+        PixivImage(
             url = url,
             contentDescription = contentDescription,
             contentScale = ContentScale.Fit,

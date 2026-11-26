@@ -24,6 +24,9 @@ data class PixivImageSpec(
     val showLoadingSpinner: Boolean,
     val placeholderUrl: String?,
     val retryToken: Int,
+    val onSuccess: (() -> Unit)? = null,
+    val onError: (() -> Unit)? = null,
+    val onLoadingStateChanged: ((Boolean) -> Unit)? = null,
 )
 
 /**
@@ -66,6 +69,9 @@ fun PixivImage(
     showLoadingSpinner: Boolean = false,
     placeholderUrl: String? = null,
     retryToken: Int = 0,
+    onSuccess: (() -> Unit)? = null,
+    onError: (() -> Unit)? = null,
+    onLoadingStateChanged: ((Boolean) -> Unit)? = null,
 ) {
     val renderer = LocalPixivImageRenderer.current
     if (renderer == null) {
@@ -85,6 +91,9 @@ fun PixivImage(
             showLoadingSpinner = showLoadingSpinner,
             placeholderUrl = placeholderUrl,
             retryToken = retryToken,
+            onSuccess = onSuccess,
+            onError = onError,
+            onLoadingStateChanged = onLoadingStateChanged,
         ),
     )
 }

@@ -54,13 +54,13 @@ import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.AvatarImage
 import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.CenteredErrorState
-import com.yunfie.illustia.ui.components.CoilPixivImage
 import com.yunfie.illustia.ui.components.CommentItemSkeleton
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
 import com.yunfie.illustia.ui.components.LocalPixivImageProxyBaseUrl
+import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.RequestErrorState
 import com.yunfie.illustia.ui.components.ScrollablePullToRefresh
 import com.yunfie.illustia.ui.components.miuixClickable
@@ -396,7 +396,7 @@ fun CommentScreen(
                                                 }.padding(4.dp),
                                         contentAlignment = Alignment.Center,
                                     ) {
-                                        CoilPixivImage(
+                                        PixivImage(
                                             url = stamp.url,
                                             contentDescription = null,
                                             modifier = Modifier.fillMaxSize(),
@@ -468,7 +468,7 @@ private fun CommentRow(
             }
             val stampUrl = comment.stamp?.stampUrl
             if (!stampUrl.isNullOrBlank()) {
-                CoilPixivImage(
+                PixivImage(
                     url = stampUrl,
                     contentDescription = null,
                     modifier =

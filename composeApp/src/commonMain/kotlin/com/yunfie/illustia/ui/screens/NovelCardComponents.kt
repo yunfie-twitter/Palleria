@@ -38,7 +38,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.R
 import com.yunfie.illustia.models.NovelPreview
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.action_bookmark
@@ -48,9 +47,9 @@ import com.yunfie.illustia.resources.novel_resume_reading
 import com.yunfie.illustia.resources.novel_status_completed
 import com.yunfie.illustia.resources.novel_status_later
 import com.yunfie.illustia.resources.novel_status_reading
-import com.yunfie.illustia.ui.components.CoilPixivImage
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.LocalArtworkCardPreferences
+import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.cachedVerticalGradient
 import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
@@ -69,7 +68,7 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 
 @Composable
-internal fun NovelCardSkeleton(
+fun NovelCardSkeleton(
     modifier: Modifier = Modifier,
     shimmerValue: State<Float>? = null,
 ) {
@@ -124,7 +123,7 @@ internal fun NovelCardSkeleton(
 }
 
 @Composable
-internal fun NovelCard(
+fun NovelCard(
     novel: NovelPreview,
     progress: com.yunfie.illustia.models.NovelReadingProgress? = null,
     onClick: () -> Unit,
@@ -156,7 +155,7 @@ internal fun NovelCard(
                         .aspectRatio(0.72f)
                         .clip(RoundedCornerShape(14.dp)),
             ) {
-                CoilPixivImage(
+                PixivImage(
                     url = novel.coverUrl,
                     contentDescription = novel.title,
                     contentScale = ContentScale.Crop,
@@ -323,7 +322,7 @@ internal fun NovelCard(
  * 以前は各画面で [NovelMetaPill] を forEach で並べる同型コードが散在していたため、ここに集約する。
  */
 @Composable
-internal fun <T> FilterPillRow(
+fun <T> FilterPillRow(
     entries: List<T>,
     selected: T,
     label: @Composable (T) -> String,
@@ -357,7 +356,7 @@ internal fun <T> FilterPillRow(
 }
 
 @Composable
-internal fun NovelMetaPill(
+fun NovelMetaPill(
     text: String,
     modifier: Modifier = Modifier,
     backgroundColor: Color = MiuixTheme.colorScheme.surfaceContainerHighest,

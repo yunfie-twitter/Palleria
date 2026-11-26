@@ -18,7 +18,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.R
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.account_add_description
 import com.yunfie.illustia.resources.account_add_recommended
@@ -45,7 +44,7 @@ import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-fun AccountLoginMethodScreen(
+internal fun AccountLoginMethodScreen(
     onBack: () -> Unit,
     onWebLogin: () -> Unit,
     onRefreshTokenLogin: () -> Unit,

@@ -14,7 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.R
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.action_cancel
 import com.yunfie.illustia.resources.action_delete
@@ -26,7 +25,7 @@ import top.yukonga.miuix.kmp.icon.extended.Remove
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-internal fun VerifyNumberPad(
+fun VerifyNumberPad(
     onDigit: (Char) -> Unit,
     onDelete: () -> Unit,
     onCancel: () -> Unit,
@@ -91,7 +90,7 @@ internal fun VerifyNumberPad(
 }
 
 @Composable
-internal fun VerifyPadButton(
+fun VerifyPadButton(
     label: String,
     onClick: () -> Unit,
     enabled: Boolean,

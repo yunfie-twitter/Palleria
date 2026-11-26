@@ -1,6 +1,5 @@
 package com.yunfie.illustia.ui.screens
 
-import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -20,7 +19,7 @@ import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.squircle.squircleBorder
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-internal enum class HomeTab(
+enum class HomeTab(
     val labelResId: StringResource,
 ) {
     Feed(Res.string.home_tab_feed),
@@ -28,7 +27,7 @@ internal enum class HomeTab(
 }
 
 @Composable
-internal fun HomeTabRow(
+fun HomeTabRow(
     selectedTabIndex: Int,
     onTabSelected: (Int) -> Unit,
     isBlurEnabled: Boolean = false,

@@ -163,7 +163,7 @@ fun TagMenuBottomSheet(
 private fun TagMenuBackdrop(preview: TagPreview) {
     Box(modifier = Modifier.fillMaxSize()) {
         preview.imageUrl?.let { imageUrl ->
-            CoilPixivImage(
+            PixivImage(
                 url = imageUrl,
                 contentDescription = preview.tag,
                 contentScale = ContentScale.Crop,

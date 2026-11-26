@@ -42,11 +42,11 @@ import com.yunfie.illustia.resources.notifications_load_more
 import com.yunfie.illustia.resources.notifications_unread
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.CenteredErrorState
-import com.yunfie.illustia.ui.components.CoilPixivImage
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.components.NotificationCardSkeleton
+import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.RequestErrorState
 import com.yunfie.illustia.ui.components.miuixClickable
@@ -256,7 +256,7 @@ private fun NotificationImage(notification: PixivNotification) {
         contentAlignment = Alignment.Center,
     ) {
         if (!image.isNullOrBlank()) {
-            CoilPixivImage(
+            PixivImage(
                 url = image,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,

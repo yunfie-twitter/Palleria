@@ -51,7 +51,6 @@ import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
@@ -70,11 +69,11 @@ import com.yunfie.illustia.resources.page_count_short
 import com.yunfie.illustia.ui.components.AppHapticEffect
 import com.yunfie.illustia.ui.components.ArtworkCardPreferences
 import com.yunfie.illustia.ui.components.AvatarImage
-import com.yunfie.illustia.ui.components.CoilPixivImage
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.FlowButtons
 import com.yunfie.illustia.ui.components.FollowPill
 import com.yunfie.illustia.ui.components.LocalArtworkCardPreferences
+import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.adaptiveRelatedIllustColumns
 import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
@@ -94,13 +93,13 @@ import top.yukonga.miuix.kmp.squircle.squircleBackground
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import org.jetbrains.compose.resources.stringResource as resString
 
-internal fun formatIllustDimensions(
+fun formatIllustDimensions(
     width: Int,
     height: Int,
 ): String? = if (width > 0 && height > 0) "$width × $height" else null
 
 @Composable
-internal fun IllustDetailInfo(
+fun IllustDetailInfo(
     illust: Illust,
     isArtistFollowed: Boolean,
     isArtistFollowKnown: Boolean = true,
@@ -503,7 +502,7 @@ private fun CommentEntryButton(
 }
 
 @Composable
-internal fun DetailMutedUserPill(modifier: Modifier = Modifier) {
+fun DetailMutedUserPill(modifier: Modifier = Modifier) {
     Box(
         modifier =
             modifier
@@ -530,7 +529,7 @@ internal fun DetailMutedUserPill(modifier: Modifier = Modifier) {
  * near the viewport instead of building every card up front.
  */
 @Composable
-internal fun RelatedIllustRow(
+fun RelatedIllustRow(
     rowItems: List<Illust>,
     columns: Int,
     cardPreferences: ArtworkCardPreferences,
@@ -564,7 +563,7 @@ internal fun RelatedIllustRow(
  * Prefer [RelatedIllustRow] inside the paged detail list so off-screen rows stay uncomposed.
  */
 @Composable
-internal fun RelatedIllustsList(
+fun RelatedIllustsList(
     relatedIllusts: List<Illust>,
     onOpenIllust: (Illust) -> Unit,
     onLongPressIllust: (Illust) -> Unit,
@@ -659,20 +658,20 @@ private const val RELATED_ROWS_COMPOSED_IMMEDIATELY = 2
 private val RELATED_GRID_SPACING = 4.dp
 
 /** Resolves the configured detail section order, keeping newly added sections at the end. */
-internal fun orderedDetailSections(sectionOrder: List<String>): List<String> {
+fun orderedDetailSections(sectionOrder: List<String>): List<String> {
     val defaults = listOf("artist", "tags", "description", "related")
     return sectionOrder.filter { it in defaults }.distinct() + defaults.filterNot { it in sectionOrder }
 }
 
 /** Splits the related list into grid rows for the given column count. */
-internal fun <T> relatedIllustRows(
+fun <T> relatedIllustRows(
     relatedIllusts: List<T>,
     columns: Int,
 ): List<List<T>> = if (columns <= 0) emptyList() else relatedIllusts.chunked(columns)
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-internal fun RelatedIllustCard(
+fun RelatedIllustCard(
     related: Illust,
     showR18Badge: Boolean,
     showRelatedR18: Boolean,
@@ -706,7 +705,7 @@ internal fun RelatedIllustCard(
                     onLongClick = onLongClick,
                 ),
     ) {
-        CoilPixivImage(
+        PixivImage(
             url = related.squareImageUrl.ifBlank { related.mediumImageUrl.ifBlank { related.imageUrl } },
             contentDescription = related.title,
             contentScale = ContentScale.Crop,

@@ -47,8 +47,8 @@ import com.yunfie.illustia.resources.nav_more
 import com.yunfie.illustia.ui.app.AppTab
 import com.yunfie.illustia.ui.app.LocalTabUiState
 import com.yunfie.illustia.ui.components.AppHapticEffect
-import com.yunfie.illustia.ui.components.CoilPixivImage
 import com.yunfie.illustia.ui.components.MainNavigationContentPadding
+import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.onTopBarTap
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
@@ -354,7 +354,7 @@ private fun AccountAvatar(account: UserProfile?) {
     ) {
         val avatarUrl = account?.profileImageUrl
         if (!avatarUrl.isNullOrBlank()) {
-            CoilPixivImage(
+            PixivImage(
                 url = avatarUrl,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,

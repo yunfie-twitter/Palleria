@@ -83,12 +83,12 @@ import com.yunfie.illustia.resources.sort_date_desc
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
 import com.yunfie.illustia.ui.components.AvatarImage
 import com.yunfie.illustia.ui.components.CenteredErrorState
-import com.yunfie.illustia.ui.components.CoilPixivImage
 import com.yunfie.illustia.ui.components.EmptyState
 import com.yunfie.illustia.ui.components.HeaderOverlayIcon
 import com.yunfie.illustia.ui.components.IllustCard
 import com.yunfie.illustia.ui.components.IllustCardSkeleton
 import com.yunfie.illustia.ui.components.LoadingIndicator
+import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
 import com.yunfie.illustia.ui.components.PrefetchPixivImages
@@ -255,7 +255,7 @@ fun IllustSeriesScreen(
             derivedStateOf { pullToRefreshState.pullProgress > 0.06f }
         }
         if (showPullCover && !coverUrl.isNullOrBlank()) {
-            CoilPixivImage(
+            PixivImage(
                 url = coverUrl.orEmpty(),
                 contentDescription = null,
                 thumbnail = true,
@@ -501,7 +501,7 @@ private fun SeriesProfileHeader(
                     .background(MiuixTheme.colorScheme.surfaceContainerHigh),
         ) {
             if (!coverUrl.isNullOrBlank()) {
-                CoilPixivImage(
+                PixivImage(
                     url = coverUrl,
                     contentDescription = null,
                     maxDecodeDimensionPx = 1080,
@@ -728,7 +728,7 @@ private fun SeriesSmallTopAppBar(
 
     Box(Modifier.fillMaxWidth()) {
         if (compact && !coverUrl.isNullOrBlank()) {
-            CoilPixivImage(
+            PixivImage(
                 url = coverUrl,
                 contentDescription = null,
                 thumbnail = true,

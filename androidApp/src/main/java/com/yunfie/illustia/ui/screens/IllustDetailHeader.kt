@@ -79,7 +79,6 @@ import com.yunfie.illustia.resources.error_browser_failed
 import com.yunfie.illustia.resources.error_share_failed
 import com.yunfie.illustia.resources.msg_url_copied
 import com.yunfie.illustia.ui.components.AppHapticEffect
-import com.yunfie.illustia.ui.components.CoilPixivImage
 import com.yunfie.illustia.ui.components.HeaderOverlayIcon
 import com.yunfie.illustia.ui.components.LiquidGlassIconButton
 import com.yunfie.illustia.ui.components.LiquidGlassOverflowMenu
@@ -90,6 +89,7 @@ import com.yunfie.illustia.ui.components.LocalNavSharedTransitionScope
 import com.yunfie.illustia.ui.components.LocalPixivImageProxyBaseUrl
 import com.yunfie.illustia.ui.components.LocalSystemUiCovered
 import com.yunfie.illustia.ui.components.OverlayIconCascadingDropdownMenu
+import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PixivReportDialog
 import com.yunfie.illustia.ui.components.QUALITY_LOW
 import com.yunfie.illustia.ui.components.miuixClickable
@@ -350,7 +350,7 @@ internal fun IllustDetailHeader(
                                     .fillMaxSize()
                                     .then(if (matchesCardThumbnail) Modifier.clipToBounds() else Modifier),
                         ) {
-                            CoilPixivImage(
+                            PixivImage(
                                 // While the shared element flies, page 0 shows the exact bitmap the
                                 // card was already painting. The shared element carries bounds only,
                                 // so loading a different tier here would pop the resolution in the

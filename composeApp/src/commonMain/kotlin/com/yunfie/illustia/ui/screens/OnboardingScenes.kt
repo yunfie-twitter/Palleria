@@ -19,7 +19,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.yunfie.illustia.R
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
 import top.yukonga.miuix.kmp.icon.extended.Ok
@@ -41,7 +40,7 @@ enum class OnboardingScene {
 }
 
 @Composable
-internal fun OnboardingPage(slide: OnboardingSlide) {
+fun OnboardingPage(slide: OnboardingSlide) {
     Column(
         modifier =
             Modifier
