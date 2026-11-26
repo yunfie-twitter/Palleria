@@ -33,6 +33,7 @@ import com.yunfie.illustia.data.pixiv.CommentArtworkType
 import com.yunfie.illustia.isMutedByTags
 import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.platform.PlatformCapabilities
+import com.yunfie.illustia.platform.rememberAppInfo
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.LoadingIndicator
@@ -506,7 +507,12 @@ internal fun AppNavHost(
                 )
             }
             entry(AppRoute.Settings) {
-                SettingsScreen(settings = appState.state.settings, viewModel = viewModel, onBack = onPopRoute)
+                SettingsScreen(
+                    settings = appState.state.settings,
+                    viewModel = viewModel,
+                    appInfo = rememberAppInfo(),
+                    onBack = onPopRoute,
+                )
             }
             entry(AppRoute.GeneralSettings) {
                 GeneralSettingsScreen(
