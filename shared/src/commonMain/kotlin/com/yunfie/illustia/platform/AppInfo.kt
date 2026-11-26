@@ -11,4 +11,7 @@ interface AppInfo {
 
     /** 現在の versionCode。取得できなければ null。 */
     fun versionCode(): Int?
+
+    /** 表示用の versionName。取得できなければ null。 */
+    fun versionName(): String?
 }

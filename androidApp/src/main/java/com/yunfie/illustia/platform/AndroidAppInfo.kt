@@ -16,4 +16,12 @@ class AndroidAppInfo(
         } catch (_: Exception) {
             null
         }
+
+    @Suppress("TooGenericExceptionCaught")
+    override fun versionName(): String? =
+        try {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName
+        } catch (_: Exception) {
+            null
+        }
 }
