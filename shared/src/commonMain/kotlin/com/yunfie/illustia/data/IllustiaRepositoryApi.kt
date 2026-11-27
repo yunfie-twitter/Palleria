@@ -78,6 +78,12 @@ interface IllustiaRepositoryApi {
 
     suspend fun trendingTags(forceRefresh: Boolean = false): List<String>
 
+    /** 検索語のオートコンプリート候補。 */
+    suspend fun searchAutocomplete(
+        word: String,
+        forceRefresh: Boolean = false,
+    ): List<String>
+
     /** 直近の [trendingTags] がオフラインの古いキャッシュで返されたか。 */
     fun trendingTagsServedStale(): Boolean
 

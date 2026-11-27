@@ -396,9 +396,9 @@ class IllustiaRepository(
             withSessionRetry { session -> apiClient.popularPreview(session, word) }
         }
 
-    suspend fun searchAutocomplete(
+    override suspend fun searchAutocomplete(
         word: String,
-        forceRefresh: Boolean = false,
+        forceRefresh: Boolean,
     ): List<String> {
         val trimmed = word.trim()
         if (trimmed.isBlank()) return emptyList()

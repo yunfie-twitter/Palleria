@@ -1,28 +1,33 @@
 package com.yunfie.illustia.data.pixiv
 
-import com.yunfie.illustia.data.IllustiaRepository
+import com.yunfie.illustia.data.IllustiaRepositoryApi
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import java.util.concurrent.atomic.AtomicLong
 
+/**
+ * 検索語のオートコンプリート候補を保持する。
+ *
+ * 取得処理は関数として注入し、リポジトリ実装へ直接依存しない。
+ */
 class SuggestionStore(
     private val searchAutocomplete: suspend (String) -> List<String>,
 ) {
-    constructor(repository: IllustiaRepository) : this({ query -> repository.searchAutocomplete(query, forceRefresh = true) })
+    constructor(repository: IllustiaRepositoryApi) : this({ query -> repository.searchAutocomplete(query, forceRefresh = true) })
 
     private val _autoWords = MutableStateFlow<List<String>>(emptyList())
     val autoWords: StateFlow<List<String>> = _autoWords.asStateFlow()
-    private val requestVersion = AtomicLong()
+    private var requestVersion = 0L
 
     suspend fun fetch(
         query: String,
         debounceMillis: Long = 0L,
     ) {
         val normalizedQuery = query.trim()
-        val version = requestVersion.incrementAndGet()
+        requestVersion++
+        val version = requestVersion
         if (normalizedQuery.isEmpty()) {
             _autoWords.value = emptyList()
             return
@@ -36,7 +41,7 @@ class SuggestionStore(
         if (debounceMillis > 0) delay(debounceMillis)
         try {
             val suggestions = searchAutocomplete(normalizedQuery)
-            if (requestVersion.get() == version) {
+            if (requestVersion == version) {
                 _autoWords.value = suggestions
             }
         } catch (error: CancellationException) {
