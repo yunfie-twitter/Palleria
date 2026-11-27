@@ -1,0 +1,311 @@
+package com.yunfie.illustia.ui.screens
+
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.updateTransition
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.yunfie.illustia.IllustiaUiState
+import com.yunfie.illustia.data.PixivImageProxyOptions
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.app_name
+import com.yunfie.illustia.resources.general_language
+import com.yunfie.illustia.resources.image_pixiv_network_mode
+import com.yunfie.illustia.resources.image_proxy_custom
+import com.yunfie.illustia.resources.image_proxy_title
+import com.yunfie.illustia.resources.setup_compat
+import com.yunfie.illustia.resources.setup_compat_desc
+import com.yunfie.illustia.resources.setup_ech
+import com.yunfie.illustia.resources.setup_ech_desc
+import com.yunfie.illustia.resources.setup_help
+import com.yunfie.illustia.resources.setup_help_title
+import com.yunfie.illustia.resources.setup_intro
+import com.yunfie.illustia.resources.setup_language_title
+import com.yunfie.illustia.resources.setup_network_title
+import com.yunfie.illustia.resources.setup_next
+import com.yunfie.illustia.resources.setup_official_images
+import com.yunfie.illustia.resources.setup_previous
+import com.yunfie.illustia.resources.setup_progress
+import com.yunfie.illustia.resources.setup_standard
+import com.yunfie.illustia.resources.setup_standard_desc
+import com.yunfie.illustia.resources.setup_welcome
+import com.yunfie.illustia.settings.AppLanguage
+import com.yunfie.illustia.settings.AppSettings
+import com.yunfie.illustia.settings.appLanguageLabelRes
+import com.yunfie.illustia.ui.components.BackNavigationHandler
+import com.yunfie.illustia.ui.screens.account.LoginActions
+import org.jetbrains.compose.resources.stringResource
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.preference.RadioButtonPreference
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+private const val SETUP_TRANSITION_MILLIS = 300
+
+@Composable
+fun OnboardingScreen(
+    state: IllustiaUiState,
+    actions: OnboardingActions,
+    loginActions: LoginActions,
+    appLogo: Painter,
+    onRefreshTokenLogin: () -> Unit,
+    showTokenLogin: Boolean = false,
+    onTokenLoginDismiss: () -> Unit = {},
+) {
+    // この画面だけはトークンログインのシートに状態全体を渡すため state を受け取り続ける。
+    // 言語・ネットワーク設定の子は設定だけを必要とするので settings に絞って渡す。
+    val settings = state.settings
+    // Start each new onboarding visit at language selection, even after settings migration.
+    // Save only the current visit so rotation and language changes do not reset progress.
+    var page by rememberSaveable { mutableIntStateOf(0) }
+    val transition = updateTransition(page, label = "onboarding-page")
+    val pageState = rememberSaveableStateHolder()
+    val canNavigate = transition.currentState == page && !transition.isRunning
+    val goBack: () -> Unit = {
+        if (transition.currentState == page && !transition.isRunning) page = (page - 1).coerceAtLeast(0)
+    }
+    BackNavigationHandler(enabled = page > 0 && !showTokenLogin, onBack = goBack)
+    Column(Modifier.fillMaxSize().background(MiuixTheme.colorScheme.background)) {
+        transition.AnimatedContent(
+            modifier = Modifier.weight(1f).fillMaxWidth().clipToBounds(),
+            transitionSpec = {
+                val direction =
+                    if (targetState > initialState) {
+                        AnimatedContentTransitionScope.SlideDirection.Start
+                    } else {
+                        AnimatedContentTransitionScope.SlideDirection.End
+                    }
+                (
+                    slideIntoContainer(direction, tween(SETUP_TRANSITION_MILLIS, easing = FastOutSlowInEasing)) +
+                        fadeIn(tween(SETUP_TRANSITION_MILLIS))
+                ) togetherWith
+                    (
+                        slideOutOfContainer(direction, tween(SETUP_TRANSITION_MILLIS, easing = FastOutSlowInEasing)) +
+                            fadeOut(tween(SETUP_TRANSITION_MILLIS))
+                    )
+            },
+        ) { displayedPage ->
+            pageState.SaveableStateProvider(displayedPage) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+                    if (displayedPage == 2) {
+                        OnboardingLoginScreen(state, loginActions, onRefreshTokenLogin, showTokenLogin, onTokenLoginDismiss)
+                    } else {
+                        Column(
+                            Modifier
+                                .widthIn(max = 680.dp)
+                                .fillMaxSize()
+                                .statusBarsPadding()
+                                .verticalScroll(rememberScrollState())
+                                .padding(horizontal = 20.dp, vertical = 24.dp),
+                            verticalArrangement = Arrangement.spacedBy(24.dp),
+                        ) {
+                            Text(
+                                stringResource(if (displayedPage == 0) Res.string.setup_language_title else Res.string.setup_network_title),
+                                fontSize = 32.sp,
+                                lineHeight = 40.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MiuixTheme.colorScheme.onBackground,
+                            )
+                            if (displayedPage == 0) LanguageSetup(settings, actions, appLogo) else NetworkSetup(settings, actions)
+                        }
+                    }
+                }
+            }
+        }
+        SetupNavigation(page, enabled = canNavigate, onBack = goBack, onNext = {
+            if (transition.currentState == page && !transition.isRunning && page < 2) {
+                if (page == 1) actions.completeOnboardingSetup()
+                page++
+            }
+        })
+    }
+}
+
+@Composable
+private fun LanguageSetup(
+    settings: AppSettings,
+    actions: OnboardingActions,
+    appLogo: Painter,
+) {
+    Column(
+        Modifier.fillMaxWidth().padding(vertical = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Image(appLogo, contentDescription = null, modifier = Modifier.size(88.dp))
+        Text(
+            stringResource(Res.string.setup_welcome, stringResource(Res.string.app_name)),
+            style = MiuixTheme.textStyles.title3,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+        )
+        Text(
+            stringResource(Res.string.setup_intro),
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+            textAlign = TextAlign.Center,
+            style = MiuixTheme.textStyles.body1,
+        )
+    }
+    SetupSectionLabel(stringResource(Res.string.general_language))
+    Card(Modifier.fillMaxWidth(), cornerRadius = 24.dp, insideMargin = PaddingValues(0.dp)) {
+        AppLanguage.entries.forEach { language ->
+            RadioButtonPreference(
+                title = stringResource(appLanguageLabelRes(language.value)),
+                summary = language.languageTag,
+                selected = settings.appLanguage == language.value,
+                onClick = { actions.updateAppLanguage(language.value) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun NetworkSetup(
+    settings: AppSettings,
+    actions: OnboardingActions,
+) {
+    SetupSectionLabel(stringResource(Res.string.image_proxy_title))
+    Card(Modifier.fillMaxWidth(), cornerRadius = 24.dp, insideMargin = PaddingValues(0.dp)) {
+        RadioButtonPreference(
+            title = stringResource(Res.string.setup_official_images),
+            summary = "i.pximg.net",
+            selected = settings.pixivImageProxyBaseUrl.isEmpty(),
+            onClick = { actions.updatePixivImageProxyBaseUrl("") },
+        )
+        PixivImageProxyOptions.forEach { proxy ->
+            RadioButtonPreference(
+                title = proxy.name,
+                summary = proxy.baseUrl,
+                selected = settings.pixivImageProxyBaseUrl == proxy.baseUrl,
+                onClick = { actions.updatePixivImageProxyBaseUrl(proxy.baseUrl) },
+            )
+        }
+        val current = settings.pixivImageProxyBaseUrl
+        if (current.isNotBlank() && PixivImageProxyOptions.none { it.baseUrl == current }) {
+            RadioButtonPreference(
+                title = stringResource(Res.string.image_proxy_custom),
+                summary = current,
+                selected = true,
+                onClick = {},
+            )
+        }
+    }
+    SetupSectionLabel(stringResource(Res.string.image_pixiv_network_mode))
+    Card(Modifier.fillMaxWidth(), cornerRadius = 24.dp, insideMargin = PaddingValues(0.dp)) {
+        listOf(
+            Triple("standard", Res.string.setup_standard, Res.string.setup_standard_desc),
+            Triple("compat", Res.string.setup_compat, Res.string.setup_compat_desc),
+            Triple("ech", Res.string.setup_ech, Res.string.setup_ech_desc),
+        ).forEach { (mode, title, summary) ->
+            RadioButtonPreference(
+                title = stringResource(title),
+                summary = stringResource(summary),
+                selected = settings.pixivNetworkMode == mode,
+                onClick = { actions.updatePixivNetworkMode(mode) },
+            )
+        }
+    }
+    Card(Modifier.fillMaxWidth(), cornerRadius = 24.dp, insideMargin = PaddingValues(20.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(stringResource(Res.string.setup_help_title), fontWeight = FontWeight.Bold, style = MiuixTheme.textStyles.title4)
+            Text(stringResource(Res.string.setup_help), color = MiuixTheme.colorScheme.onSurfaceVariantSummary)
+        }
+    }
+}
+
+@Composable
+private fun SetupSectionLabel(title: String) {
+    Text(
+        title,
+        modifier = Modifier.fillMaxWidth(),
+        textAlign = TextAlign.Center,
+        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+        fontWeight = FontWeight.SemiBold,
+    )
+}
+
+@Composable
+private fun SetupNavigation(
+    page: Int,
+    enabled: Boolean,
+    onBack: () -> Unit,
+    onNext: () -> Unit,
+) {
+    val progress = stringResource(Res.string.setup_progress, page + 1, 3)
+    Row(
+        Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 20.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Box(Modifier.weight(1f)) {
+            if (page > 0) Button(onClick = onBack, enabled = enabled) { Text(stringResource(Res.string.setup_previous)) }
+        }
+        Row(Modifier.semantics { contentDescription = progress }, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            repeat(3) { index ->
+                val indicatorWidth by animateDpAsState(
+                    targetValue = if (page == index) 24.dp else 8.dp,
+                    animationSpec = tween(SETUP_TRANSITION_MILLIS),
+                    label = "onboarding-indicator-width",
+                )
+                val indicatorColor by animateColorAsState(
+                    targetValue =
+                        if (page == index) {
+                            MiuixTheme.colorScheme.primary
+                        } else {
+                            MiuixTheme.colorScheme.surfaceContainerHighest
+                        },
+                    animationSpec = tween(SETUP_TRANSITION_MILLIS),
+                    label = "onboarding-indicator-color",
+                )
+                Box(Modifier.size(width = indicatorWidth, height = 8.dp).background(indicatorColor, CircleShape))
+            }
+        }
+        Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
+            if (page < 2) {
+                Button(onClick = onNext, enabled = enabled, colors = ButtonDefaults.buttonColorsPrimary()) {
+                    Text(stringResource(Res.string.setup_next))
+                }
+            }
+        }
+    }
+}
