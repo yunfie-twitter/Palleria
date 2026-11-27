@@ -45,6 +45,20 @@ val LocalDynamicColorAvailable = compositionLocalOf { false }
 fun isDynamicColorSupported(): Boolean = LocalDynamicColorAvailable.current
 
 /**
+ * 端末の画面が広色域 (Wide Color Gamut) を表示できるか。実装はプラットフォーム側が注入する。
+ */
+val LocalDisplayWideColorGamut = compositionLocalOf { false }
+
+/** デスクトップ環境で動作しているか。実装はプラットフォーム側が注入する。 */
+val LocalIsDesktopEnvironment = compositionLocalOf { false }
+
+@Composable
+fun isWideColorGamutDisplaySupported(): Boolean = LocalDisplayWideColorGamut.current
+
+@Composable
+fun isRunningOnDesktop(): Boolean = LocalIsDesktopEnvironment.current
+
+/**
  * 共有 UI からハプティクスを発火するための入口。
  *
  * 実装 (Vibrator) は androidApp が [LocalAppHapticEffect] に注入する。

@@ -838,6 +838,10 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         com.yunfie.illustia.ui.components.LocalDynamicColorAvailable provides
             com.yunfie.illustia.settings
                 .isDynamicColorAvailable(),
+        com.yunfie.illustia.ui.components.LocalDisplayWideColorGamut provides
+            PlatformCapabilities.supportsWideColorGamut(context),
+        com.yunfie.illustia.ui.components.LocalIsDesktopEnvironment provides
+            DesktopEnvironment.isDesktop(context),
         com.yunfie.illustia.ui.components.LocalAppHapticPerformer provides
             com.yunfie.illustia.ui.components
                 .AppHapticPerformer(rememberPlatformHapticAction()),
