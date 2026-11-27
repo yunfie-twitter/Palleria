@@ -50,4 +50,40 @@ interface UserProfilePlatform {
     ) {
         Box(modifier)
     }
+
+    /** 全画面表示の切り替え。システムバーの表示制御はプラットフォーム側が持つ。 */
+    @Composable
+    fun FullscreenEffect(
+        enabled: Boolean,
+        darkTheme: Boolean,
+        transparentNavigationBar: Boolean = true,
+    ) = Unit
+
+    /**
+     * キーボードショートカットを解釈する。
+     * ビューアは F の全画面切り替えと Ctrl+S の保存を扱い、未対応環境では null。
+     */
+    fun viewerShortcut(keyEvent: Any): ViewerShortcut? = null
+
+    /** ビューアのページ送り方向 (-1/0/1) を解決する。未対応環境では 0。 */
+    fun readerPageDirection(
+        keyEvent: Any,
+        volumeKeysEnabled: Boolean,
+    ): Int = 0
+
+    /** ビューア用のうごイラ再生（ズームとタップ連動）。未対応環境では静止画のみ。 */
+    @Composable
+    fun ViewerUgoira(
+        previewUrl: String,
+        contentDescription: String,
+        loadPlayback: suspend () -> UgoiraPlayback,
+        powerSaveEnabled: Boolean,
+        onZoomChanged: (Boolean) -> Unit,
+        onTap: () -> Unit,
+        modifier: Modifier = Modifier,
+    ) {
+        Box(modifier)
+    }
 }
+
+enum class ViewerShortcut { ToggleFullscreen, SaveCurrentPage }
