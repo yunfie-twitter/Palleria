@@ -59,6 +59,17 @@ fun isWideColorGamutDisplaySupported(): Boolean = LocalDisplayWideColorGamut.cur
 fun isRunningOnDesktop(): Boolean = LocalIsDesktopEnvironment.current
 
 /**
+ * テキストを共有シートへ渡す入口。
+ *
+ * Android の Intent は専用 API のため、共有 UI からは [LocalTextSharing] 経由で呼ぶ。
+ * 実装は androidApp が注入し、未注入の環境では何もしない。
+ */
+val LocalTextSharing = compositionLocalOf<(text: String) -> Unit> { { } }
+
+@Composable
+fun rememberTextSharing(): (String) -> Unit = LocalTextSharing.current
+
+/**
  * 共有 UI からハプティクスを発火するための入口。
  *
  * 実装 (Vibrator) は androidApp が [LocalAppHapticEffect] に注入する。
