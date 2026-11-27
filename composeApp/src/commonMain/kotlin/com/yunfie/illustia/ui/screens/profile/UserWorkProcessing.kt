@@ -13,7 +13,7 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 
-internal fun processUserWorksSync(
+fun processUserWorksSync(
     items: List<Illust>,
     sortOrder: UserWorkSortOrder,
     typeFilter: UserWorkTypeFilter,
@@ -86,11 +86,11 @@ private class WorkSourceIdentity(
 ) {
     override fun equals(other: Any?): Boolean = other is WorkSourceIdentity && source === other.source
 
-    override fun hashCode(): Int = System.identityHashCode(source)
+    override fun hashCode(): Int = source.hashCode() + 31
 }
 
 @Composable
-internal fun rememberUserWorks(
+fun rememberUserWorks(
     userId: Long,
     items: List<Illust>,
     sortOrder: UserWorkSortOrder,

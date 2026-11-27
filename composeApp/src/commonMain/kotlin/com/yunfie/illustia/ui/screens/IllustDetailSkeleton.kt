@@ -31,8 +31,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.yunfie.illustia.ui.components.BackNavigationHandler
 import com.yunfie.illustia.ui.components.HeaderOverlayIcon
-import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.screens.profile.UserProfileErrorScreen
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
@@ -52,7 +52,7 @@ private const val SKELETON_SHIMMER_START_X_TARGET = 2f
  * ヒーローの比率、アイコンの位置とサイズ、情報ブロックの余白を実画面に合わせる。
  */
 @Composable
-internal fun IllustDetailSkeletonScreen(
+fun IllustDetailSkeletonScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     backgroundColor: Color = MiuixTheme.colorScheme.background,
@@ -64,7 +64,7 @@ internal fun IllustDetailSkeletonScreen(
         return
     }
 
-    PredictiveBackGestureHandler(onBack = onBack)
+    BackNavigationHandler(onBack = onBack)
 
     val transition = rememberInfiniteTransition(label = "illustDetailSkeletonTransition")
     val shimmer =

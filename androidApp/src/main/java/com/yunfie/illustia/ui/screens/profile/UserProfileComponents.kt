@@ -150,18 +150,6 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 import androidx.compose.foundation.lazy.items as lazyListItems
 import org.jetbrains.compose.resources.stringResource as resString
 
-enum class UserWorkSortOrder {
-    Newest,
-    Oldest,
-    MostBookmarks,
-}
-
-enum class UserWorkTypeFilter {
-    All,
-    IllustOnly,
-    MangaOnly,
-}
-
 @Composable
 internal fun UserProfilePagerContent(
     user: UserProfile,

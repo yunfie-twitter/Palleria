@@ -37,9 +37,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.yunfie.illustia.ui.components.BackNavigationHandler
 import com.yunfie.illustia.ui.components.HeaderOverlayIcon
 import com.yunfie.illustia.ui.components.IllustCardSkeleton
-import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.ProfileGridHorizontalSpacing
 import com.yunfie.illustia.ui.components.ProfileGridVerticalSpacing
 import com.yunfie.illustia.ui.components.RequestErrorState
@@ -60,12 +60,12 @@ private const val SKELETON_SHIMMER_START_X_INITIAL = -1f
 private const val SKELETON_SHIMMER_START_X_TARGET = 2f
 
 @Composable
-internal fun UserProfileSkeletonScreen(
+fun UserProfileSkeletonScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     backgroundColor: Color = MiuixTheme.colorScheme.background,
 ) {
-    PredictiveBackGestureHandler(onBack = onBack)
+    BackNavigationHandler(onBack = onBack)
 
     val transition = rememberInfiniteTransition(label = "userProfileSkeletonTransition")
     val shimmer =
@@ -223,14 +223,14 @@ internal fun UserProfileSkeletonScreen(
 }
 
 @Composable
-internal fun UserProfileErrorScreen(
+fun UserProfileErrorScreen(
     message: String,
     onBack: () -> Unit,
     onRetry: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     backgroundColor: Color = MiuixTheme.colorScheme.surface,
 ) {
-    PredictiveBackGestureHandler(onBack = onBack)
+    BackNavigationHandler(onBack = onBack)
 
     Box(
         modifier =
@@ -269,7 +269,7 @@ internal fun UserProfileErrorScreen(
 }
 
 @Composable
-internal fun UserProfileStatusPlaceholder(
+fun UserProfileStatusPlaceholder(
     message: String,
     isError: Boolean = true,
     onClick: (() -> Unit)? = null,

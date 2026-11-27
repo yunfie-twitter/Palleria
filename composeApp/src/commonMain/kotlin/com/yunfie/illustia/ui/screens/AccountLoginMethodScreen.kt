@@ -26,8 +26,8 @@ import com.yunfie.illustia.resources.account_add_token_description
 import com.yunfie.illustia.resources.account_add_web_description
 import com.yunfie.illustia.resources.account_token_login
 import com.yunfie.illustia.resources.account_web_login
+import com.yunfie.illustia.ui.components.BackNavigationHandler
 import com.yunfie.illustia.ui.components.HeaderIcon
-import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.miuixClickable
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Icon
@@ -44,12 +44,12 @@ import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-internal fun AccountLoginMethodScreen(
+fun AccountLoginMethodScreen(
     onBack: () -> Unit,
     onWebLogin: () -> Unit,
     onRefreshTokenLogin: () -> Unit,
 ) {
-    PredictiveBackGestureHandler(onBack = onBack)
+    BackNavigationHandler(onBack = onBack)
     val scrollBehavior = MiuixScrollBehavior()
 
     Scaffold(

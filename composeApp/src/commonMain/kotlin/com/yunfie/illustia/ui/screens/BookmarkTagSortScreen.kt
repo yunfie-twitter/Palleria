@@ -21,7 +21,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.data.IllustiaRepository
+import com.yunfie.illustia.data.IllustiaRepositoryApi
 import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.pixiv.BookmarkTag
 import com.yunfie.illustia.resources.Res
@@ -36,9 +36,9 @@ import com.yunfie.illustia.resources.dialog_reload
 import com.yunfie.illustia.resources.restrict_private
 import com.yunfie.illustia.resources.restrict_public
 import com.yunfie.illustia.settings.AppSettings
+import com.yunfie.illustia.ui.components.BackNavigationHandler
 import com.yunfie.illustia.ui.components.HeaderIcon
 import com.yunfie.illustia.ui.components.LoadingIndicator
-import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
@@ -52,14 +52,14 @@ import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-internal fun BookmarkTagSortScreen(
+fun BookmarkTagSortScreen(
     settings: AppSettings,
-    repository: IllustiaRepository,
+    repository: IllustiaRepositoryApi,
     selectedTag: String?,
     onBack: () -> Unit,
     onSelect: (Restrict, String?) -> Unit,
 ) {
-    PredictiveBackGestureHandler(onBack = onBack)
+    BackNavigationHandler(onBack = onBack)
     val pagerState =
         rememberPagerState(
             initialPage = if (settings.bookmarkRestrict == Restrict.Public) 0 else 1,
@@ -120,7 +120,7 @@ internal fun BookmarkTagSortScreen(
 private fun BookmarkTagSortPage(
     restrict: Restrict,
     settings: AppSettings,
-    repository: IllustiaRepository,
+    repository: IllustiaRepositoryApi,
     query: String,
     selectedTag: String?,
     onSelect: (Restrict, String?) -> Unit,
