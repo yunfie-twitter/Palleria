@@ -844,6 +844,8 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
             DesktopEnvironment.isDesktop(context),
         com.yunfie.illustia.ui.components.LocalTextSharing provides
             remember(context) { { text -> startTextShare(context, text) } },
+        com.yunfie.illustia.ui.components.LocalUrlOpener provides
+            remember(context) { { url -> openExternalUrl(context, url) } },
         com.yunfie.illustia.ui.components.LocalAppHapticPerformer provides
             com.yunfie.illustia.ui.components
                 .AppHapticPerformer(rememberPlatformHapticAction()),
