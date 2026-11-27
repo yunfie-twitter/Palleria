@@ -1,6 +1,5 @@
 package com.yunfie.illustia.ui.screens.profile
 
-import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -62,13 +61,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.models.UserProfile
@@ -130,6 +126,8 @@ import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.pinchToChangeColumns
 import com.yunfie.illustia.ui.components.profileGridContentPadding
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
+import com.yunfie.illustia.ui.components.rememberTextSharing
+import com.yunfie.illustia.ui.screens.profile.LocalProfileEditIcon
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -392,9 +390,9 @@ internal fun UserProfileSmallTopAppBar(
     compact: Boolean,
     liquidGlassBackdrop: LayerBackdrop? = null,
 ) {
-    val context = LocalContext.current
     val shareLabel = resString(Res.string.detail_share)
     val shareFailedMessage = stringResource(Res.string.error_share_failed)
+    val share = rememberTextSharing()
     val sortLabel = stringResource(Res.string.action_sort)
     val sortNewestLabel = stringResource(Res.string.user_sort_newest)
     val sortOldestLabel = stringResource(Res.string.user_sort_oldest)
@@ -518,12 +516,7 @@ internal fun UserProfileSmallTopAppBar(
                                 text = shareLabel,
                                 onClick = {
                                     runCatching {
-                                        val intent =
-                                            Intent(Intent.ACTION_SEND).apply {
-                                                type = "text/plain"
-                                                putExtra(Intent.EXTRA_TEXT, "$shareTitle\n$profileUrl")
-                                            }
-                                        context.startActivity(Intent.createChooser(intent, shareLabel))
+                                        share("$shareTitle\n$profileUrl")
                                     }.onFailure { onMessage(shareFailedMessage) }
                                 },
                             ),
@@ -831,6 +824,7 @@ private fun MutedUserPill() {
 
 @Composable
 private fun EditUserPill() {
+    val editIcon = LocalProfileEditIcon.current
     val scheme = MiuixTheme.colorScheme
     Box(
         modifier =
@@ -849,14 +843,14 @@ private fun EditUserPill() {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            androidx.compose.foundation.Image(
-                painter = painterResource(R.drawable.ic_edit_pen),
-                contentDescription = stringResource(Res.string.user_profile_edit_title),
-                modifier = Modifier.size(16.dp),
-                colorFilter =
-                    androidx.compose.ui.graphics.ColorFilter
-                        .tint(scheme.onSurface),
-            )
+            editIcon?.let { icon ->
+                Icon(
+                    painter = icon,
+                    contentDescription = stringResource(Res.string.user_profile_edit_title),
+                    modifier = Modifier.size(16.dp),
+                    tint = scheme.onSurface,
+                )
+            }
             Text(
                 text = stringResource(Res.string.user_profile_edit_title),
                 color = scheme.onSurface,

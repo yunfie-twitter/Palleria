@@ -1,6 +1,5 @@
 package com.yunfie.illustia.ui.components
 
-import android.os.Build
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -33,7 +32,7 @@ fun rememberLiquidGlassBackdrop(
     enabled: Boolean,
     backgroundColor: Color,
 ): LayerBackdrop? =
-    if (enabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+    if (enabled && LocalHardwareBlurSupported.current) {
         val onDraw: ContentDrawScope.() -> Unit =
             remember(backgroundColor) {
                 {

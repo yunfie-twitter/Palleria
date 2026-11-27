@@ -1,7 +1,5 @@
 package com.yunfie.illustia.ui.components
 
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,9 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.R
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.action_cancel
 import com.yunfie.illustia.resources.action_submit_report
@@ -30,6 +26,7 @@ import com.yunfie.illustia.resources.report_dialog_title
 import com.yunfie.illustia.resources.report_message_hint
 import com.yunfie.illustia.resources.report_submitting
 import com.yunfie.illustia.ui.components.AppDialog
+import com.yunfie.illustia.ui.components.rememberUrlOpener
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Text
@@ -39,7 +36,7 @@ import org.jetbrains.compose.resources.stringResource as resString
 
 /** The caller owns authentication and displays the API result through the app message UI. */
 @Composable
-internal fun PixivReportDialog(
+fun PixivReportDialog(
     target: String,
     targetUrl: String,
     onSubmit: (String?, (Boolean) -> Unit) -> Unit,
@@ -49,7 +46,7 @@ internal fun PixivReportDialog(
     var message by rememberSaveable(targetUrl) { mutableStateOf("") }
     var submitting by remember(targetUrl) { mutableStateOf(false) }
     var failed by rememberSaveable(targetUrl) { mutableStateOf(false) }
-    val context = LocalContext.current
+    val openUrl = rememberUrlOpener()
     val browserFailedMessage = stringResource(Res.string.error_browser_failed)
     AppDialog(
         show = true,
@@ -77,12 +74,7 @@ internal fun PixivReportDialog(
                 Button(
                     onClick = {
                         runCatching {
-                            // Resolve a browser, rather than reopening Palleria through its app links.
-                            val intent =
-                                Intent(Intent.ACTION_VIEW, Uri.parse(targetUrl)).apply {
-                                    selector = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_APP_BROWSER)
-                                }
-                            context.startActivity(intent)
+                            openUrl(targetUrl)
                         }.onFailure { onMessage(browserFailedMessage) }
                     },
                     enabled = !submitting,
