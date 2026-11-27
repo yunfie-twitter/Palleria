@@ -629,7 +629,7 @@ class IllustiaRepository(
     override suspend fun nextNotificationPage(nextUrl: String): NotificationListResult =
         withSessionRetry { session -> apiClient.nextNotificationPage(session, nextUrl) }
 
-    suspend fun stamps(): List<PixivStamp> = withSessionRetry { session -> apiClient.stamps(session) }
+    override suspend fun stamps(): List<PixivStamp> = withSessionRetry { session -> apiClient.stamps(session) }
 
     override suspend fun userIllusts(userId: Long): PageResult<Illust> =
         withSessionRetry { session -> apiClient.userIllusts(session, userId) }

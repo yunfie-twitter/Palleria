@@ -18,6 +18,7 @@ import com.yunfie.illustia.models.pixiv.BookmarkTag
 import com.yunfie.illustia.models.pixiv.CommentResponse
 import com.yunfie.illustia.models.pixiv.CurrentUserProfile
 import com.yunfie.illustia.models.pixiv.NotificationListResult
+import com.yunfie.illustia.models.pixiv.PixivStamp
 import com.yunfie.illustia.models.pixiv.RelatedUsersResult
 import com.yunfie.illustia.models.pixiv.UgoiraFrame
 import com.yunfie.illustia.models.pixiv.UgoiraMetadataResponse
@@ -222,6 +223,8 @@ interface IllustiaRepositoryApi {
         illustId: Long,
         forceRefresh: Boolean = false,
     ): Illust
+
+    suspend fun stamps(): List<PixivStamp>
 
     suspend fun watchlistManga(forceRefresh: Boolean = false): WatchlistMangaModel
 
