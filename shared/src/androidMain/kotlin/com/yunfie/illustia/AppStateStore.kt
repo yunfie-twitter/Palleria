@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.update
  * The public state remains the flat [IllustiaUiState] for source compatibility. Controllers use
  * feature snapshots to keep their read/write boundary explicit while migration is incremental.
  */
-internal class AppStateStore(
+class AppStateStore(
     initialState: IllustiaUiState = IllustiaUiState(),
 ) {
     private val mutableState = MutableStateFlow(initialState)
@@ -35,7 +35,7 @@ internal class AppStateStore(
     fun slices(): AppStateSlices = mutableState.value.toSlices()
 }
 
-internal data class AppStateSlices(
+data class AppStateSlices(
     val session: SessionState,
     val feedSearch: FeedSearchState,
     val detailProfile: DetailProfileState,
@@ -43,12 +43,12 @@ internal data class AppStateSlices(
     val settingsSecurity: SettingsSecurityState,
 )
 
-internal data class SessionState(
+data class SessionState(
     val ready: Boolean,
     val currentAccount: UserProfile?,
 )
 
-internal data class FeedSearchState(
+data class FeedSearchState(
     val homeItems: List<Illust>,
     val searchDraft: String,
     val activeSearchWord: String,
@@ -57,19 +57,19 @@ internal data class FeedSearchState(
     val searchUsers: List<UserPreview>,
 )
 
-internal data class DetailProfileState(
+data class DetailProfileState(
     val selectedIllust: Illust?,
     val selectedUser: UserProfile?,
     val selectedUserIllusts: List<Illust>,
 )
 
-internal data class BookmarkLibraryState(
+data class BookmarkLibraryState(
     val bookmarks: List<Illust>,
     val savedIllusts: List<SavedIllust>,
     val notifications: List<PixivNotification>,
 )
 
-internal data class SettingsSecurityState(
+data class SettingsSecurityState(
     val settings: AppSettings,
     val settingsLoaded: Boolean,
     val appLocked: Boolean,

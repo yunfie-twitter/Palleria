@@ -1,10 +1,5 @@
 package com.yunfie.illustia.ui.screens
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.spring
@@ -47,14 +42,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.buildSmartDownloadFilename
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.pixiv.UgoiraPlayback
-import com.yunfie.illustia.platform.ImageClipboardHelper
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.action_back
 import com.yunfie.illustia.resources.action_copy_image
@@ -93,14 +86,17 @@ import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.PixivReportDialog
 import com.yunfie.illustia.ui.components.QUALITY_LOW
 import com.yunfie.illustia.ui.components.miuixClickable
-import com.yunfie.illustia.ui.components.performAppHapticFeedback
+import com.yunfie.illustia.ui.components.rememberClipboardServices
+import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.rememberLiquidGlassBackdrop
-import com.yunfie.illustia.ui.components.resolveDarkHeaderIcons
+import com.yunfie.illustia.ui.components.rememberTextSharing
+import com.yunfie.illustia.ui.components.rememberUrlOpener
 import com.yunfie.illustia.ui.components.resolveProgressivePlaceholderUrls
 import com.yunfie.illustia.ui.components.resolveQualityImageUrls
 import com.yunfie.illustia.ui.components.resolveSaveImageUrl
 import com.yunfie.illustia.ui.components.resolveSaveImageUrls
 import com.yunfie.illustia.ui.components.sharedArtworkElement
+import com.yunfie.illustia.ui.screens.profile.UserProfilePlatform
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
@@ -120,7 +116,7 @@ import org.jetbrains.compose.resources.stringResource as resString
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-internal fun IllustDetailHeader(
+fun IllustDetailHeader(
     illust: Illust,
     highQualityImages: Boolean,
     detailQuality: String,
@@ -154,13 +150,14 @@ internal fun IllustDetailHeader(
     initialPage: Int = 0,
     onPageChanged: (Int) -> Unit = {},
     progressiveQuality: Boolean = false,
+    platform: UserProfilePlatform,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
-    val context = LocalContext.current
-    val haptic = LocalHapticFeedback.current
-    val hapticMode = LocalAppHapticMode.current
-    val clipboard = remember(context) { context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager }
+    val haptic: (AppHapticEffect) -> Unit = rememberHapticFeedbackAction()
+    val openUrl = rememberUrlOpener()
+    val shareText = rememberTextSharing()
+    val clipboard = rememberClipboardServices()
     val openInBrowserLabel = resString(Res.string.detail_open_in_browser)
     val shareLabel = resString(Res.string.detail_share)
     val isUgoira = illust.type == "ugoira"
@@ -260,7 +257,7 @@ internal fun IllustDetailHeader(
         if (!isActive) return@LaunchedEffect
         val thumbUrl = illust.thumbnailUrl.ifBlank { illust.squareImageUrl.ifBlank { illust.previewUrl } }
         if (thumbUrl.isNotBlank()) {
-            val isDark = runCatching { resolveDarkHeaderIcons(context, thumbUrl, proxyBaseUrl) }.getOrDefault(false)
+            val isDark = runCatching { platform.resolveDarkHeaderIcons(thumbUrl, proxyBaseUrl) }.getOrDefault(false)
             useDarkHeaderIcons = isDark
             onHeaderIconsThemeChanged(isDark)
         }
@@ -294,7 +291,7 @@ internal fun IllustDetailHeader(
                             },
                         contentAlignment = Alignment.Center,
                     ) {
-                        UgoiraArtwork(
+                        platform.UgoiraPlayer(
                             previewUrl = previewUrl,
                             contentDescription = illust.title,
                             loadPlayback = { loadUgoiraPlayback(illust.id) },
@@ -391,7 +388,7 @@ internal fun IllustDetailHeader(
                                             onClick = { onOpenImage(page) },
                                             onDoubleClick = onDoubleTapImage,
                                             onLongClick = {
-                                                performAppHapticFeedback(context, haptic, hapticMode)
+                                                haptic(AppHapticEffect.Click)
                                                 val saveName =
                                                     if (smartDownloadNaming) {
                                                         com.yunfie.illustia.buildSmartDownloadFilename(illust, page, imageUrls.size)
@@ -551,7 +548,7 @@ internal fun IllustDetailHeader(
                                         text = openInBrowserLabel,
                                         onClick = {
                                             runCatching {
-                                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(pixivUrl)))
+                                                openUrl(pixivUrl)
                                             }.onFailure { onMessage(browserFailedMessage) }
                                         },
                                     ),
@@ -559,12 +556,7 @@ internal fun IllustDetailHeader(
                                         text = shareLabel,
                                         onClick = {
                                             runCatching {
-                                                val shareIntent =
-                                                    Intent(Intent.ACTION_SEND).apply {
-                                                        type = "text/plain"
-                                                        putExtra(Intent.EXTRA_TEXT, "${illust.title} by ${illust.artistName}\n$pixivUrl")
-                                                    }
-                                                context.startActivity(Intent.createChooser(shareIntent, shareLabel))
+                                                shareText("${illust.title} by ${illust.artistName}\n$pixivUrl")
                                             }.onFailure { onMessage(shareFailedMessage) }
                                         },
                                     ),
@@ -581,7 +573,8 @@ internal fun IllustDetailHeader(
                                                     ?: imageUrls.getOrNull(currentPage)
                                                     ?: (illust.originalImageUrl ?: illust.imageUrl)
                                             coroutineScope.launch {
-                                                val success = ImageClipboardHelper.copyImageToClipboard(context, targetUrl)
+                                                val copy = clipboard?.copyImage(targetUrl)
+                                                val success = copy?.invoke() ?: false
                                                 if (success) {
                                                     onMessage(copiedImageMessage)
                                                 } else {
@@ -598,7 +591,7 @@ internal fun IllustDetailHeader(
                                                     DropdownItem(
                                                         text = saveThisPageLabel,
                                                         onClick = {
-                                                            performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Click)
+                                                            haptic(AppHapticEffect.Click)
                                                             val currentPage =
                                                                 pagerState.currentPage.coerceIn(
                                                                     0,
@@ -628,7 +621,7 @@ internal fun IllustDetailHeader(
                                                     DropdownItem(
                                                         text = saveAllPagesLabel,
                                                         onClick = {
-                                                            performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Click)
+                                                            haptic(AppHapticEffect.Click)
                                                             val allPrefix =
                                                                 if (smartDownloadNaming) {
                                                                     com.yunfie.illustia.buildSmartDownloadFilename(illust, 0, 1)
@@ -644,7 +637,7 @@ internal fun IllustDetailHeader(
                                         DropdownItem(
                                             text = saveActionLabel,
                                             onClick = {
-                                                performAppHapticFeedback(context, haptic, hapticMode, AppHapticEffect.Click)
+                                                haptic(AppHapticEffect.Click)
                                                 val saveName =
                                                     if (smartDownloadNaming) {
                                                         com.yunfie.illustia.buildSmartDownloadFilename(illust, 0, 1)
@@ -662,7 +655,7 @@ internal fun IllustDetailHeader(
                                     DropdownItem(
                                         text = copyUrlLabel,
                                         onClick = {
-                                            clipboard.setPrimaryClip(ClipData.newPlainText("Pixiv URL", pixivUrl))
+                                            clipboard?.copyText("Pixiv URL", pixivUrl)
                                             onMessage(urlCopiedMessage)
                                         },
                                     ),

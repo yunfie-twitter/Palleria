@@ -6,7 +6,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 
 /** Owned by the main-thread ViewModel; each visit has a distinct cancellation/generation token. */
-internal class UserProfileRequests(
+class UserProfileRequests(
     private val parentScope: CoroutineScope,
 ) {
     class Session(

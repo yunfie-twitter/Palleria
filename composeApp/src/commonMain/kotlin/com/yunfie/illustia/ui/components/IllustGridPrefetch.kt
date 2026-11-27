@@ -18,7 +18,7 @@ val LocalVelocityLandingPrefetchEnabled = compositionLocalOf { true }
 val LocalNavigationPrefetchEnabled = androidx.compose.runtime.staticCompositionLocalOf { true }
 
 /** Keys keep banners, loading rows and sorted lists out of artwork index calculations. */
-internal fun upcomingArtworkIndices(
+fun upcomingArtworkIndices(
     indexByKey: Map<Any, Int>,
     visibleKeys: Iterable<Any>,
     itemCount: Int,
@@ -40,7 +40,7 @@ internal const val FAST_SCROLL_LANDING_OFFSET = 8
 internal const val FAST_SCROLL_INDEX_DELTA_THRESHOLD = 2
 internal const val INITIAL_PREFETCH_DELAY_MS = 500L
 
-internal fun nextFastScrollLandingState(
+fun nextFastScrollLandingState(
     previousFastScroll: Boolean,
     wasScrolling: Boolean,
     previousIndex: Int,
@@ -53,7 +53,7 @@ internal fun nextFastScrollLandingState(
 }
 
 /** Keys keep banners, loading rows and sorted lists out of artwork index calculations. */
-internal fun calculatePrefetchRange(
+fun calculatePrefetchRange(
     lastVisibleIndex: Int,
     itemCount: Int,
     limit: Int,

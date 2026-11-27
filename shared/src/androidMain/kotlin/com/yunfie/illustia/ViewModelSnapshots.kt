@@ -6,7 +6,7 @@ import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.models.pixiv.Comment
 
-internal data class DetailSnapshot(
+data class DetailSnapshot(
     val illust: Illust,
     val user: UserProfile?,
     val firstComment: Comment?,
@@ -14,7 +14,7 @@ internal data class DetailSnapshot(
     val relatedIllustsLoaded: Boolean = false,
 )
 
-internal data class SearchSnapshot(
+data class SearchSnapshot(
     val searchDraft: String,
     val activeSearchWord: String,
     val searchItems: List<Illust>,
@@ -26,7 +26,7 @@ internal data class SearchSnapshot(
     val searchSelectedTab: Int = 0,
 )
 
-internal data class UserPageSnapshot(
+data class UserPageSnapshot(
     val selectedUserId: Long?,
     val selectedUser: UserProfile?,
     val selectedUserError: String? = null,
@@ -46,7 +46,7 @@ internal data class UserPageSnapshot(
     val userPageDismissed: Boolean,
 )
 
-internal fun IllustiaUiState.toSearchSnapshot(): SearchSnapshot =
+fun IllustiaUiState.toSearchSnapshot(): SearchSnapshot =
     SearchSnapshot(
         searchDraft = searchDraft,
         activeSearchWord = activeSearchWord,
@@ -59,7 +59,7 @@ internal fun IllustiaUiState.toSearchSnapshot(): SearchSnapshot =
         searchSelectedTab = searchSelectedTab,
     )
 
-internal fun IllustiaUiState.toUserPageSnapshot(): UserPageSnapshot =
+fun IllustiaUiState.toUserPageSnapshot(): UserPageSnapshot =
     UserPageSnapshot(
         selectedUserId = selectedUserId,
         selectedUser = selectedUser,
@@ -80,7 +80,7 @@ internal fun IllustiaUiState.toUserPageSnapshot(): UserPageSnapshot =
         userPageDismissed = userPageDismissed,
     )
 
-internal fun IllustiaUiState.restore(snapshot: UserPageSnapshot): IllustiaUiState =
+fun IllustiaUiState.restore(snapshot: UserPageSnapshot): IllustiaUiState =
     copy(
         selectedUserId = snapshot.selectedUserId,
         selectedUser = snapshot.selectedUser,

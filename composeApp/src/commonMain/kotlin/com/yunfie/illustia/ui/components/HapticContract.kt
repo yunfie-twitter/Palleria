@@ -81,6 +81,26 @@ val LocalUrlOpener = compositionLocalOf<(url: String) -> Unit> { { } }
 fun rememberUrlOpener(): (String) -> Unit = LocalUrlOpener.current
 
 /**
+ * クリップボード操作の入口。
+ *
+ * Android の ClipboardManager は専用 API のため、共有 UI からはこの CompositionLocal 経由で呼ぶ。
+ * [copyImage] は画像のクリップボード保存に対応する環境だけが実装し、未対応なら null。
+ */
+interface ClipboardServices {
+    fun copyText(
+        label: String,
+        text: String,
+    )
+
+    fun copyImage(url: String): suspend () -> Boolean
+}
+
+val LocalClipboardServices = compositionLocalOf<ClipboardServices?> { null }
+
+@Composable
+fun rememberClipboardServices(): ClipboardServices? = LocalClipboardServices.current
+
+/**
  * 共有 UI からハプティクスを発火するための入口。
  *
  * 実装 (Vibrator) は androidApp が [LocalAppHapticEffect] に注入する。

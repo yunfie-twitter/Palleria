@@ -1,6 +1,6 @@
 package com.yunfie.illustia
 
-internal fun IllustiaUiState.clearClosedUserPage(): IllustiaUiState =
+fun IllustiaUiState.clearClosedUserPage(): IllustiaUiState =
     // RelatedUsers is a separate destination and may be revealed by closing this profile.
     // Keep its cached results, pagination and in-flight loading state together.
     copy(
