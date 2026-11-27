@@ -46,8 +46,15 @@ interface AppServices {
     )
 
     /**
+     * アプリ自身が占めるストレージ容量を読み取る。
+     *
+     * プラットフォームの統計取得は数秒かかることがあるため suspend にしてある。
+     */
+    suspend fun readStorageUsage(): com.yunfie.illustia.data.AppStorageUsage
+
+    /**
      * 作品保存の間、フォアグラウンドサービスを維持する。
-     * 返り値の `close()` で解放する。
+     * 戻り値は `close()` で解放する。
      */
     fun acquireArtworkDownloadService(): AutoCloseable
 }

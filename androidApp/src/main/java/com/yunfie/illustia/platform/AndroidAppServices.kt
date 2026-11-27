@@ -3,8 +3,10 @@ package com.yunfie.illustia.platform
 import android.content.Context
 import android.content.Intent
 import com.yunfie.illustia.account.PalleriaAccount
+import com.yunfie.illustia.data.AppStorageUsage
 import com.yunfie.illustia.data.BookmarkToggleScheduler
 import com.yunfie.illustia.data.FollowDeltaSyncManager
+import com.yunfie.illustia.data.readAppStorageUsage
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.StoredAccount
@@ -76,6 +78,9 @@ class AndroidAppServices(
             proxyBaseUrl = proxyBaseUrl,
         )
     }
+
+    override suspend fun readStorageUsage(): AppStorageUsage =
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { appContext.readAppStorageUsage() }
 
     override fun acquireArtworkDownloadService(): AutoCloseable = ArtworkDownloadService.acquire(appContext)
 }

@@ -91,6 +91,7 @@ import com.yunfie.illustia.ui.screens.profile.UserProfileErrorScreen
 import com.yunfie.illustia.ui.screens.profile.UserProfileSkeletonScreen
 import com.yunfie.illustia.ui.scroll.ScrollStateKeys
 import com.yunfie.illustia.ui.scroll.ScrollStateRegistry
+import com.yunfie.illustia.uiAppServices
 import com.yunfie.illustia.uiRepository
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -631,7 +632,12 @@ internal fun AppNavHost(
                 MuteSettingsScreen(settings = appState.state.settings, viewModel = viewModel, onBack = onPopRoute)
             }
             entry(AppRoute.AppData) {
-                AppDataScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
+                AppDataScreen(
+                    state = appState.state,
+                    services = LocalContext.current.uiAppServices(),
+                    viewModel = viewModel,
+                    onBack = onPopRoute,
+                )
             }
             entry(AppRoute.DownloadQueue) {
                 DownloadQueueScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
