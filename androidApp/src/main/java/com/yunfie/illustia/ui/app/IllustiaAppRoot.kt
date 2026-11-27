@@ -834,6 +834,10 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
             (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S),
         com.yunfie.illustia.ui.components.LocalAppHapticEffect provides
             rememberPlatformHapticAction(),
+        com.yunfie.illustia.ui.components.LocalHapticsSupported provides hapticsSupported,
+        com.yunfie.illustia.ui.components.LocalDynamicColorAvailable provides
+            com.yunfie.illustia.settings
+                .isDynamicColorAvailable(),
         com.yunfie.illustia.ui.components.LocalAppHapticPerformer provides
             com.yunfie.illustia.ui.components
                 .AppHapticPerformer(rememberPlatformHapticAction()),

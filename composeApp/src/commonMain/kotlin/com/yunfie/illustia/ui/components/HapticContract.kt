@@ -27,6 +27,24 @@ val LocalAppHapticEffect = compositionLocalOf<(AppHapticEffect) -> Unit> { { } }
 val LocalAppHapticMode = compositionLocalOf { com.yunfie.illustia.settings.AppHapticMode.Rich }
 
 /**
+ * 端末がハプティクスを持っているか。実装はプラットフォーム側が注入する。
+ * 未注入の環境では false として扱い、設定項目を隠す。
+ */
+val LocalHapticsSupported = compositionLocalOf { false }
+
+@Composable
+fun isHapticsSupported(): Boolean = LocalHapticsSupported.current
+
+/**
+ * 端末が動的カラー (Monet 等) をサポートしているか。
+ * 実装はプラットフォーム側が注入し、未注入の環境では false。
+ */
+val LocalDynamicColorAvailable = compositionLocalOf { false }
+
+@Composable
+fun isDynamicColorSupported(): Boolean = LocalDynamicColorAvailable.current
+
+/**
  * 共有 UI からハプティクスを発火するための入口。
  *
  * 実装 (Vibrator) は androidApp が [LocalAppHapticEffect] に注入する。
@@ -38,12 +56,14 @@ fun rememberHapticFeedbackAction(): (AppHapticEffect) -> Unit = LocalAppHapticEf
 @Composable
 fun ProvideAppHaptics(
     mode: com.yunfie.illustia.settings.AppHapticMode,
+    hapticsSupported: Boolean,
     effect: (AppHapticEffect) -> Unit,
     content: @Composable () -> Unit,
 ) {
     CompositionLocalProvider(
         LocalAppHapticMode provides mode,
         LocalAppHapticEffect provides effect,
+        LocalHapticsSupported provides hapticsSupported,
         content = content,
     )
 }
