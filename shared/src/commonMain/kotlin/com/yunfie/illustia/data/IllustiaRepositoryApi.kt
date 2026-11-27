@@ -17,6 +17,7 @@ import com.yunfie.illustia.models.pixiv.AccountEditResult
 import com.yunfie.illustia.models.pixiv.BookmarkTag
 import com.yunfie.illustia.models.pixiv.CommentResponse
 import com.yunfie.illustia.models.pixiv.CurrentUserProfile
+import com.yunfie.illustia.models.pixiv.IllustSeriesWithIdModel
 import com.yunfie.illustia.models.pixiv.NotificationListResult
 import com.yunfie.illustia.models.pixiv.PixivStamp
 import com.yunfie.illustia.models.pixiv.RelatedUsersResult
@@ -229,6 +230,14 @@ interface IllustiaRepositoryApi {
     suspend fun watchlistManga(forceRefresh: Boolean = false): WatchlistMangaModel
 
     suspend fun nextWatchlistMangaPage(nextUrl: String): WatchlistMangaModel
+
+    suspend fun illustSeries(illustSeriesId: Long): IllustSeriesWithIdModel
+
+    suspend fun nextIllustSeriesPage(nextUrl: String): IllustSeriesWithIdModel
+
+    suspend fun watchlistMangaAdd(seriesId: Long)
+
+    suspend fun watchlistMangaDelete(seriesId: Long)
 
     suspend fun ugoiraMetadata(
         illustId: Long,

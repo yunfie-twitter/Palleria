@@ -417,15 +417,12 @@ class IllustiaRepository(
     override suspend fun nextWatchlistMangaPage(nextUrl: String): WatchlistMangaModel =
         withSessionRetry { session -> apiClient.nextWatchlistMangaPage(session, nextUrl) }
 
-    suspend fun illustSeries(
-        illustSeriesId: Long,
-        forceRefresh: Boolean = false,
-    ): IllustSeriesWithIdModel =
-        withApiCache("illust_series:$illustSeriesId", CACHE_TTL_SERIES_MILLIS, forceRefresh) {
+    override suspend fun illustSeries(illustSeriesId: Long): IllustSeriesWithIdModel =
+        withApiCache("illust_series:$illustSeriesId", CACHE_TTL_SERIES_MILLIS, false) {
             withSessionRetry { session -> apiClient.illustSeries(session, illustSeriesId) }
         }
 
-    suspend fun nextIllustSeriesPage(nextUrl: String): IllustSeriesWithIdModel =
+    override suspend fun nextIllustSeriesPage(nextUrl: String): IllustSeriesWithIdModel =
         withSessionRetry { session -> apiClient.nextIllustSeriesPage(session, nextUrl) }
 
     override suspend fun illustComments(
@@ -512,13 +509,13 @@ class IllustiaRepository(
         parentCommentId?.let { apiCache.remove("comments:novel_replies:$it") }
     }
 
-    suspend fun watchlistMangaAdd(seriesId: Long) {
+    override suspend fun watchlistMangaAdd(seriesId: Long) {
         withSessionRetry { session -> apiClient.addWatchlistManga(session, seriesId) }
         apiCache.remove("watchlist_manga")
         apiCache.remove("illust_series:$seriesId")
     }
 
-    suspend fun watchlistMangaDelete(seriesId: Long) {
+    override suspend fun watchlistMangaDelete(seriesId: Long) {
         withSessionRetry { session -> apiClient.removeWatchlistManga(session, seriesId) }
         apiCache.remove("watchlist_manga")
         apiCache.remove("illust_series:$seriesId")

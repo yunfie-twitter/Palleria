@@ -10,17 +10,10 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -29,203 +22,29 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.R
 import com.yunfie.illustia.resources.Res
-import com.yunfie.illustia.resources.action_add
 import com.yunfie.illustia.resources.action_bookmark
-import com.yunfie.illustia.resources.action_follow
-import com.yunfie.illustia.resources.action_following
 import com.yunfie.illustia.resources.action_remove_bookmark
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.stringResource
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Favorites
 import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
 import top.yukonga.miuix.kmp.icon.extended.Lock
-import top.yukonga.miuix.kmp.icon.extended.Ok
-import top.yukonga.miuix.kmp.squircle.squircleBorder
 import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-private enum class WatchlistPillStage { UNADDED, CHECK, ADDED, REMOVING }
-
 private enum class BookmarkButtonStage { UNBOOKMARKED, CHECK, PRIVATE_CHECK, BOOKMARKED, REMOVING }
-
-@Composable
-fun WatchlistPill(
-    isAdded: Boolean,
-    animationTrigger: Int = 0,
-    modifier: Modifier = Modifier,
-) {
-    var animationStage by remember { mutableStateOf<WatchlistPillStage?>(null) }
-    var lastHandledTrigger by remember { mutableStateOf(animationTrigger) }
-    var wasAdded by remember { mutableStateOf(isAdded) }
-
-    val haptic = LocalHapticFeedback.current
-    val context = LocalContext.current
-    val hapticMode = LocalAppHapticMode.current
-
-    LaunchedEffect(animationTrigger) {
-        if (animationTrigger == lastHandledTrigger) return@LaunchedEffect
-        lastHandledTrigger = animationTrigger
-        animationStage = WatchlistPillStage.CHECK
-        performAppHapticFeedback(context, haptic, hapticMode)
-        delay(600)
-        animationStage = WatchlistPillStage.ADDED
-    }
-
-    LaunchedEffect(isAdded) {
-        if (wasAdded && !isAdded) {
-            animationStage = WatchlistPillStage.REMOVING
-            performAppHapticFeedback(context, haptic, hapticMode)
-            delay(180)
-            animationStage = WatchlistPillStage.UNADDED
-        } else if (!wasAdded && isAdded && animationStage == null) {
-            animationStage = WatchlistPillStage.ADDED
-        }
-        wasAdded = isAdded
-    }
-
-    val stage =
-        animationStage ?: if (isAdded) {
-            WatchlistPillStage.ADDED
-        } else {
-            WatchlistPillStage.UNADDED
-        }
-
-    val isActive = stage == WatchlistPillStage.ADDED || stage == WatchlistPillStage.CHECK
-    val scheme = MiuixTheme.colorScheme
-    Box(
-        modifier =
-            modifier
-                .squircleSurface(
-                    color = if (isActive) scheme.primary else scheme.surfaceContainerHighest,
-                    cornerRadius = 24.dp,
-                ).then(
-                    if (!isActive) {
-                        Modifier.squircleBorder(
-                            width = 1.dp,
-                            color = scheme.onSurface.copy(alpha = 0.15f),
-                            cornerRadius = 24.dp,
-                        )
-                    } else {
-                        Modifier
-                    },
-                ).padding(horizontal = 18.dp, vertical = 10.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        AnimatedContent(
-            targetState = stage,
-            transitionSpec = {
-                when (targetState) {
-                    WatchlistPillStage.CHECK -> {
-                        (scaleIn(spring(dampingRatio = 0.45f, stiffness = 380f), initialScale = 0.3f) + fadeIn(tween(160))) togetherWith
-                            (scaleOut(tween(120), targetScale = 0.5f) + fadeOut(tween(120)))
-                    }
-
-                    WatchlistPillStage.ADDED -> {
-                        (fadeIn(tween(200)) + scaleIn(tween(200), initialScale = 0.85f)) togetherWith
-                            (fadeOut(tween(140)) + scaleOut(tween(140), targetScale = 1.1f))
-                    }
-
-                    WatchlistPillStage.REMOVING -> {
-                        (scaleIn(tween(140), initialScale = 0.8f) + fadeIn(tween(140))) togetherWith
-                            (scaleOut(tween(140), targetScale = 0.5f) + fadeOut(tween(140)))
-                    }
-
-                    WatchlistPillStage.UNADDED -> {
-                        (fadeIn(tween(200)) + scaleIn(tween(200), initialScale = 0.85f)) togetherWith
-                            (fadeOut(tween(140)) + scaleOut(tween(140), targetScale = 1.05f))
-                    }
-                }
-            },
-            label = "watchlist-pill-stage",
-        ) { s ->
-            when (s) {
-                WatchlistPillStage.CHECK -> {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(
-                            imageVector = MiuixIcons.Ok,
-                            contentDescription = null,
-                            tint = scheme.onPrimary,
-                            modifier = Modifier.size(16.dp),
-                        )
-                        Text(
-                            text = stringResource(Res.string.action_remove_bookmark),
-                            color = scheme.onPrimary,
-                            fontWeight = FontWeight.Bold,
-                            style = MiuixTheme.textStyles.subtitle,
-                        )
-                    }
-                }
-
-                WatchlistPillStage.ADDED -> {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(
-                            imageVector = MiuixIcons.FavoritesFill,
-                            contentDescription = null,
-                            tint = scheme.onPrimary,
-                            modifier = Modifier.size(16.dp),
-                        )
-                        Text(
-                            text = stringResource(Res.string.action_remove_bookmark),
-                            color = scheme.onPrimary,
-                            fontWeight = FontWeight.Bold,
-                            style = MiuixTheme.textStyles.subtitle,
-                        )
-                    }
-                }
-
-                WatchlistPillStage.REMOVING,
-                WatchlistPillStage.UNADDED,
-                -> {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(
-                            imageVector = MiuixIcons.Favorites,
-                            contentDescription = null,
-                            tint = scheme.onSurface,
-                            modifier = Modifier.size(16.dp),
-                        )
-                        Text(
-                            text = stringResource(Res.string.action_add),
-                            color = scheme.onSurface,
-                            fontWeight = FontWeight.Bold,
-                            style = MiuixTheme.textStyles.subtitle,
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
 
 @Composable
 fun BookmarkHeartButton(
@@ -240,9 +59,7 @@ fun BookmarkHeartButton(
     inactiveBackground: Color = Color.Transparent,
     hapticBurstEnabled: Boolean = true,
 ) {
-    val haptic = LocalHapticFeedback.current
-    val context = LocalContext.current
-    val hapticMode = LocalAppHapticMode.current
+    val haptic = rememberAppHapticPerformer()
     var userClicked by remember { mutableStateOf(false) }
     var privateRequested by remember { mutableStateOf(false) }
     val actionLabel = stringResource(if (isBookmarked) Res.string.action_remove_bookmark else Res.string.action_bookmark)
@@ -319,7 +136,7 @@ fun BookmarkHeartButton(
                         } else {
                             AppHapticEffect.Toggle
                         }
-                    performAppHapticFeedback(context, haptic, hapticMode, effect)
+                    haptic(effect)
                     onClick()
                 },
                 onLongClick =
@@ -333,7 +150,7 @@ fun BookmarkHeartButton(
                                 } else {
                                     AppHapticEffect.Success
                                 }
-                            performAppHapticFeedback(context, haptic, hapticMode, effect)
+                            haptic(effect)
                             onLongClick()
                         }
                     } else {

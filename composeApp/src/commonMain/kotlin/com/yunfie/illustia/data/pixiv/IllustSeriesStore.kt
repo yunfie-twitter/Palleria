@@ -1,7 +1,6 @@
 package com.yunfie.illustia.data.pixiv
 
-import android.content.Context
-import com.yunfie.illustia.data.IllustiaRepository
+import com.yunfie.illustia.data.IllustiaRepositoryApi
 import com.yunfie.illustia.data.toUserMessage
 import com.yunfie.illustia.models.pixiv.IllustSeriesWithIdModel
 import com.yunfie.illustia.models.pixiv.Illusts
@@ -22,9 +21,8 @@ data class IllustSeriesState(
 )
 
 class IllustSeriesStore(
-    private val repository: IllustiaRepository,
-    private val illustSeriesId: Long,
-    private val context: Context,
+    private val repository: IllustiaRepositoryApi,
+    val seriesId: Long,
 ) {
     private val _state = MutableStateFlow(IllustSeriesState())
     val state: StateFlow<IllustSeriesState> = _state.asStateFlow()
@@ -38,7 +36,7 @@ class IllustSeriesStore(
             )
         }
         try {
-            val model = repository.illustSeries(illustSeriesId)
+            val model = repository.illustSeries(seriesId)
             _state.update {
                 it.copy(
                     isLoading = false,
@@ -91,7 +89,7 @@ class IllustSeriesStore(
 
     suspend fun addWatchlist() {
         try {
-            repository.watchlistMangaAdd(illustSeriesId)
+            repository.watchlistMangaAdd(seriesId)
             _state.update { it.copy(watchlistAdded = true) }
         } catch (cancellation: CancellationException) {
             throw cancellation
@@ -101,7 +99,7 @@ class IllustSeriesStore(
 
     suspend fun removeWatchlist() {
         try {
-            repository.watchlistMangaDelete(illustSeriesId)
+            repository.watchlistMangaDelete(seriesId)
             _state.update { it.copy(watchlistAdded = false) }
         } catch (cancellation: CancellationException) {
             throw cancellation
