@@ -81,6 +81,10 @@ import com.yunfie.illustia.ui.components.SystemBarAppearanceEffect
 import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.screens.novel.NovelChapterInfo
+import com.yunfie.illustia.ui.screens.novel.reader.NovelFontFamily
+import com.yunfie.illustia.ui.screens.novel.reader.NovelLayoutMode
+import com.yunfie.illustia.ui.screens.novel.reader.NovelLineSpacing
+import com.yunfie.illustia.ui.screens.novel.reader.NovelTheme
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults

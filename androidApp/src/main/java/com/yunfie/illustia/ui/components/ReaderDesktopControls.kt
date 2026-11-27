@@ -96,32 +96,6 @@ internal object TransparentSystemBars {
     }
 }
 
-internal fun paragraphTarget(
-    indices: List<Int>,
-    current: Int,
-    direction: Int,
-): Int? = if (direction > 0) indices.firstOrNull { it > current } else indices.lastOrNull { it < current }
-
-@Composable
-internal fun ParagraphNavigation(
-    state: LazyListState,
-    request: Int,
-    active: () -> Boolean,
-    paragraphIndices: List<Int>,
-) {
-    var previousRequest by remember { mutableIntStateOf(request) }
-    // active を値ではなく provider で受け取り、LaunchedEffect のキーに含めない。
-    // スワイプ中に settledPage が変わるたびに effect が張り直されるのを防ぐ。
-    val isActive by rememberUpdatedState(active)
-    LaunchedEffect(request) {
-        val direction = request.compareTo(previousRequest)
-        previousRequest = request
-        if (!isActive() || direction == 0) return@LaunchedEffect
-        val target = paragraphTarget(paragraphIndices, state.firstVisibleItemIndex, direction) ?: return@LaunchedEffect
-        state.animateScrollToItem(target)
-    }
-}
-
 private tailrec fun Context.readerActivity(): Activity? =
     when (this) {
         is Activity -> this

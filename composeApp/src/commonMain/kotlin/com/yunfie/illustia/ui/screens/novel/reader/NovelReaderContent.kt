@@ -1,4 +1,4 @@
-package com.yunfie.illustia.ui.screens
+package com.yunfie.illustia.ui.screens.novel.reader
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -51,7 +51,6 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.action_open
 import com.yunfie.illustia.resources.novel_font_sans_serif
@@ -74,6 +73,7 @@ import com.yunfie.illustia.resources.novel_theme_system
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.miuixClickable
+import com.yunfie.illustia.ui.screens.NovelMetaPill
 import com.yunfie.illustia.ui.screens.novel.InlineRubyInfo
 import com.yunfie.illustia.ui.screens.novel.NovelBlock
 import com.yunfie.illustia.ui.screens.novel.NovelChapterBlock
@@ -190,7 +190,7 @@ enum class NovelLayoutMode(
 }
 
 @Composable
-internal fun NovelReaderPage(
+fun NovelReaderPage(
     page: NovelPage,
     pageIndex: Int,
     paragraphStep: Int = 0,
@@ -202,7 +202,8 @@ internal fun NovelReaderPage(
     lineHeightMultiplier: Float,
     textColor: Color,
     fontFamily: FontFamily,
-    viewModel: IllustiaViewModel,
+    onOpenIllust: (Long) -> Unit,
+    loadIllustPreviewUrl: suspend (Long) -> String?,
     uriHandler: UriHandler,
     seriesNextId: Long? = null,
     seriesNextTitle: String? = null,
@@ -252,7 +253,8 @@ internal fun NovelReaderPage(
                 lineHeightMultiplier = lineHeightMultiplier,
                 textColor = textColor,
                 fontFamily = fontFamily,
-                viewModel = viewModel,
+                onOpenIllust = onOpenIllust,
+                loadIllustPreviewUrl = loadIllustPreviewUrl,
                 uriHandler = uriHandler,
                 onJumpPage = onJumpPage,
                 onToggleControls = onToggleControls,
@@ -304,14 +306,15 @@ internal fun NovelReaderPage(
 }
 
 @Composable
-internal fun NovelReaderContinuousContent(
+fun NovelReaderContinuousContent(
     pages: List<NovelPage>,
     lazyListState: LazyListState,
     fontSize: Float,
     lineHeightMultiplier: Float,
     textColor: Color,
     fontFamily: FontFamily,
-    viewModel: IllustiaViewModel,
+    onOpenIllust: (Long) -> Unit,
+    loadIllustPreviewUrl: suspend (Long) -> String?,
     uriHandler: UriHandler,
     seriesNextId: Long? = null,
     seriesNextTitle: String? = null,
@@ -360,7 +363,8 @@ internal fun NovelReaderContinuousContent(
                     lineHeightMultiplier = lineHeightMultiplier,
                     textColor = textColor,
                     fontFamily = fontFamily,
-                    viewModel = viewModel,
+                    onOpenIllust = onOpenIllust,
+                    loadIllustPreviewUrl = loadIllustPreviewUrl,
                     uriHandler = uriHandler,
                     onJumpPage = onJumpPage,
                     onToggleControls = toggleControlsAction,
@@ -431,7 +435,8 @@ private fun NovelBlockItem(
     lineHeightMultiplier: Float,
     textColor: Color,
     fontFamily: FontFamily,
-    viewModel: IllustiaViewModel,
+    onOpenIllust: (Long) -> Unit,
+    loadIllustPreviewUrl: suspend (Long) -> String?,
     uriHandler: UriHandler,
     onJumpPage: (Int) -> Unit,
     onToggleControls: () -> Unit,
@@ -455,8 +460,8 @@ private fun NovelBlockItem(
             NovelArtworkCard(
                 illustId = block.illustId,
                 textColor = textColor,
-                viewModel = viewModel,
-                onOpen = { viewModel.openIllust(block.illustId) },
+                loadIllustPreviewUrl = loadIllustPreviewUrl,
+                onOpen = { onOpenIllust(block.illustId) },
             )
         }
 
@@ -518,7 +523,7 @@ private fun NovelChapterItem(
 }
 
 @Composable
-internal fun NovelJumpButton(
+fun NovelJumpButton(
     pageNumber: Int,
     onJumpPage: (Int) -> Unit,
 ) {
@@ -545,12 +550,12 @@ internal fun NovelJumpButton(
 private fun NovelArtworkCard(
     illustId: Long,
     textColor: Color,
-    viewModel: IllustiaViewModel,
+    loadIllustPreviewUrl: suspend (Long) -> String?,
     onOpen: () -> Unit,
 ) {
     var previewUrl by remember(illustId) { mutableStateOf<String?>(null) }
     LaunchedEffect(illustId) {
-        previewUrl = viewModel.getIllustPreviewUrl(illustId)
+        previewUrl = loadIllustPreviewUrl(illustId)
     }
 
     ElevatedPanel(

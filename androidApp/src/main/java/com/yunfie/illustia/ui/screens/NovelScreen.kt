@@ -96,6 +96,10 @@ import com.yunfie.illustia.ui.screens.novel.NovelTtsParagraphLocation
 import com.yunfie.illustia.ui.screens.novel.NovelTtsTextSanitizer
 import com.yunfie.illustia.ui.screens.novel.extractChapters
 import com.yunfie.illustia.ui.screens.novel.parseNovelPages
+import com.yunfie.illustia.ui.screens.novel.reader.NovelFontFamily
+import com.yunfie.illustia.ui.screens.novel.reader.NovelLayoutMode
+import com.yunfie.illustia.ui.screens.novel.reader.NovelLineSpacing
+import com.yunfie.illustia.ui.screens.novel.reader.NovelTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
