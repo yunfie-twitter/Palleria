@@ -32,4 +32,6 @@ interface BookmarkTabsActions {
     fun openUserPageFor(user: UserPreview)
 
     fun updateColumnsFromGrid(columns: Int)
+
+    fun updateVerticalColumnCount(count: Int)
 }

@@ -409,12 +409,12 @@ class IllustiaRepository(
         }
     }
 
-    suspend fun watchlistManga(forceRefresh: Boolean = false): WatchlistMangaModel =
+    override suspend fun watchlistManga(forceRefresh: Boolean): WatchlistMangaModel =
         withApiCache("watchlist_manga", CACHE_TTL_STANDARD_MILLIS, forceRefresh) {
             withSessionRetry { session -> apiClient.watchlistManga(session) }
         }
 
-    suspend fun nextWatchlistMangaPage(nextUrl: String): WatchlistMangaModel =
+    override suspend fun nextWatchlistMangaPage(nextUrl: String): WatchlistMangaModel =
         withSessionRetry { session -> apiClient.nextWatchlistMangaPage(session, nextUrl) }
 
     suspend fun illustSeries(

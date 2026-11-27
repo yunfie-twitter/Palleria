@@ -23,6 +23,7 @@ import com.yunfie.illustia.models.pixiv.UgoiraFrame
 import com.yunfie.illustia.models.pixiv.UgoiraMetadataResponse
 import com.yunfie.illustia.models.pixiv.UgoiraPlayback
 import com.yunfie.illustia.models.pixiv.UserProfileEdit
+import com.yunfie.illustia.models.pixiv.WatchlistMangaModel
 import com.yunfie.illustia.settings.AppSettings
 
 /**
@@ -221,6 +222,10 @@ interface IllustiaRepositoryApi {
         illustId: Long,
         forceRefresh: Boolean = false,
     ): Illust
+
+    suspend fun watchlistManga(forceRefresh: Boolean = false): WatchlistMangaModel
+
+    suspend fun nextWatchlistMangaPage(nextUrl: String): WatchlistMangaModel
 
     suspend fun ugoiraMetadata(
         illustId: Long,

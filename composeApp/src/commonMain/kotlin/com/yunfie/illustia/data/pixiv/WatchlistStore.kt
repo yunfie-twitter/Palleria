@@ -1,7 +1,6 @@
 package com.yunfie.illustia.data.pixiv
 
-import android.content.Context
-import com.yunfie.illustia.data.IllustiaRepository
+import com.yunfie.illustia.data.IllustiaRepositoryApi
 import com.yunfie.illustia.data.toUserMessage
 import com.yunfie.illustia.models.pixiv.MangaSeriesModel
 import com.yunfie.illustia.models.pixiv.WatchlistMangaModel
@@ -14,8 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
 class WatchlistStore(
-    private val repository: IllustiaRepository,
-    private val context: Context,
+    private val repository: IllustiaRepositoryApi,
 ) : com.yunfie.illustia.ui.screens.bookmark.WatchlistPager {
     private val _state = MutableStateFlow(WatchlistState())
     val state: StateFlow<WatchlistState> = _state.asStateFlow()
@@ -81,7 +79,7 @@ class WatchlistStore(
     }
 }
 
-private suspend fun WatchlistMangaModel.withThumbnails(repository: IllustiaRepository): WatchlistMangaModel =
+private suspend fun WatchlistMangaModel.withThumbnails(repository: IllustiaRepositoryApi): WatchlistMangaModel =
     coroutineScope {
         val series =
             series

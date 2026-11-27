@@ -158,7 +158,7 @@ fun WatchlistSeriesScreen(
     val context = LocalContext.current
     val activity = context as? Activity
     val repository = remember(context) { context.uiRepository() }
-    val store = remember(repository) { WatchlistStore(repository, context) }
+    val store = remember(repository) { WatchlistStore(repository) }
     val state by store.state.collectAsStateWithLifecycle()
     val settings by viewModel.settingsState.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
