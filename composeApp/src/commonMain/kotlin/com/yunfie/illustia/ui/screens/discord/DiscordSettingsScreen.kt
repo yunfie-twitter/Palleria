@@ -1,6 +1,5 @@
-package com.yunfie.illustia.ui.screens
+package com.yunfie.illustia.ui.screens.discord
 
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -14,21 +13,19 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.discord.DiscordRpcManager
 import com.yunfie.illustia.platform.AppStrings
 import com.yunfie.illustia.platform.StringKey
 import com.yunfie.illustia.resources.Res
@@ -70,10 +67,10 @@ import com.yunfie.illustia.resources.discord_warning_desc
 import com.yunfie.illustia.resources.discord_warning_title
 import com.yunfie.illustia.settings.AppSettings
 import com.yunfie.illustia.ui.components.AppDialog
+import com.yunfie.illustia.ui.components.BackNavigationHandler
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.HeaderIcon
-import com.yunfie.illustia.ui.components.PredictiveBackGestureHandler
 import com.yunfie.illustia.ui.components.Section
 import com.yunfie.illustia.ui.components.SettingLinkRow
 import com.yunfie.illustia.ui.components.SettingRow
@@ -101,14 +98,15 @@ import org.jetbrains.compose.resources.stringResource as resString
 fun DiscordSettingsScreen(
     settings: AppSettings,
     viewModel: IllustiaViewModel,
+    platform: DiscordRpcPlatform,
     onBack: () -> Unit,
     onOpenDiscordLogin: () -> Unit,
+    onShowMessage: (String) -> Unit,
 ) {
-    PredictiveBackGestureHandler(onBack = onBack)
+    BackNavigationHandler(onBack = onBack)
     val scrollBehavior = MiuixScrollBehavior()
-    val context = LocalContext.current
-    val isSupported = DiscordRpcManager.isSupported(context)
-    val diagnostics by DiscordRpcManager.diagnostics.collectAsStateWithLifecycle()
+    val isSupported = platform.isSupported()
+    val diagnostics by platform.diagnostics.collectAsState()
 
     var showTokenDialog by remember { mutableStateOf(false) }
     var tempToken by remember { mutableStateOf("") }
@@ -163,7 +161,7 @@ fun DiscordSettingsScreen(
                         onClick = {
                             viewModel.updateDiscordToken(tempToken.trim())
                             showTokenDialog = false
-                            Toast.makeText(context, AppStrings.get(StringKey.ActionSave), Toast.LENGTH_SHORT).show()
+                            onShowMessage(AppStrings.get(StringKey.ActionSave))
                         },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.textButtonColorsPrimary(),
@@ -199,8 +197,8 @@ fun DiscordSettingsScreen(
                 ) {
                     TextButton(
                         onClick = {
-                            tempAppId = DiscordRpcManager.DEFAULT_APP_ID
-                            viewModel.updateDiscordApplicationId(DiscordRpcManager.DEFAULT_APP_ID)
+                            tempAppId = platform.defaultApplicationId
+                            viewModel.updateDiscordApplicationId(platform.defaultApplicationId)
                             showAppIdDialog = false
                         },
                         modifier = Modifier.weight(1f),
@@ -215,10 +213,10 @@ fun DiscordSettingsScreen(
                     Spacer(Modifier.width(12.dp))
                     TextButton(
                         onClick = {
-                            val id = tempAppId.trim().ifBlank { DiscordRpcManager.DEFAULT_APP_ID }
+                            val id = tempAppId.trim().ifBlank { platform.defaultApplicationId }
                             viewModel.updateDiscordApplicationId(id)
                             showAppIdDialog = false
-                            Toast.makeText(context, AppStrings.get(StringKey.ActionSave), Toast.LENGTH_SHORT).show()
+                            onShowMessage(AppStrings.get(StringKey.ActionSave))
                         },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.textButtonColorsPrimary(),
@@ -393,7 +391,7 @@ fun DiscordSettingsScreen(
                     ElevatedPanel {
                         SettingLinkRow(
                             title = stringResource(Res.string.discord_application_id),
-                            summary = settings.discordApplicationId.ifBlank { DiscordRpcManager.DEFAULT_APP_ID },
+                            summary = settings.discordApplicationId.ifBlank { platform.defaultApplicationId },
                             onClick = {
                                 tempAppId = settings.discordApplicationId
                                 showAppIdDialog = true
@@ -431,7 +429,7 @@ fun DiscordSettingsScreen(
                             }
                             TextButton(
                                 text = stringResource(Res.string.discord_log_clear),
-                                onClick = DiscordRpcManager::clearDiagnostics,
+                                onClick = platform::clearDiagnostics,
                             )
                         }
                     }
