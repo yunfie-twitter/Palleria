@@ -1,4 +1,4 @@
-package com.yunfie.illustia.ui.screens
+package com.yunfie.illustia.ui.screens.novel.reader
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -42,13 +42,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.action_open
 import com.yunfie.illustia.resources.novel_inline_illust_label
 import com.yunfie.illustia.resources.novel_open_illust
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.PixivImage
+import com.yunfie.illustia.ui.screens.NovelMetaPill
+import com.yunfie.illustia.ui.screens.novel.InlineRubyInfo
 import com.yunfie.illustia.ui.screens.novel.NovelBlock
 import com.yunfie.illustia.ui.screens.novel.NovelChapterBlock
 import com.yunfie.illustia.ui.screens.novel.NovelInlineItem
@@ -272,7 +273,7 @@ internal object NovelVerticalEngine {
 }
 
 @Composable
-internal fun NovelReaderVerticalPage(
+fun NovelReaderVerticalPage(
     page: NovelPage,
     pageIndex: Int,
     paragraphStep: Int = 0,
@@ -284,7 +285,8 @@ internal fun NovelReaderVerticalPage(
     lineHeightMultiplier: Float,
     textColor: Color,
     fontFamily: FontFamily,
-    viewModel: IllustiaViewModel,
+    onOpenIllust: (Long) -> Unit,
+    loadIllustPreviewUrl: suspend (Long) -> String?,
     onJumpPage: (Int) -> Unit,
     onToggleControls: () -> Unit,
     scrollBehavior: ScrollBehavior,
@@ -348,7 +350,8 @@ internal fun NovelReaderVerticalPage(
                         fontSize = fontSize,
                         textColor = textColor,
                         fontFamily = fontFamily,
-                        viewModel = viewModel,
+                        onOpenIllust = onOpenIllust,
+                        loadIllustPreviewUrl = loadIllustPreviewUrl,
                         onJumpPage = onJumpPage,
                         isReading = readingBlockIndex == blockIndex,
                     )
@@ -374,7 +377,8 @@ private fun LazyListScope.renderVerticalBlock(
     fontSize: Float,
     textColor: Color,
     fontFamily: FontFamily,
-    viewModel: IllustiaViewModel,
+    onOpenIllust: (Long) -> Unit,
+    loadIllustPreviewUrl: suspend (Long) -> String?,
     onJumpPage: (Int) -> Unit,
     isReading: Boolean = false,
 ) {
@@ -396,8 +400,8 @@ private fun LazyListScope.renderVerticalBlock(
                 NovelVerticalArtworkCard(
                     illustId = block.illustId,
                     textColor = textColor,
-                    viewModel = viewModel,
-                    onOpen = { viewModel.openIllust(block.illustId) },
+                    loadIllustPreviewUrl = loadIllustPreviewUrl,
+                    onOpen = { onOpenIllust(block.illustId) },
                 )
             }
         }
@@ -475,12 +479,12 @@ private fun NovelVerticalChapterItem(
 private fun NovelVerticalArtworkCard(
     illustId: Long,
     textColor: Color,
-    viewModel: IllustiaViewModel,
+    loadIllustPreviewUrl: suspend (Long) -> String?,
     onOpen: () -> Unit,
 ) {
     var previewUrl by remember(illustId) { mutableStateOf<String?>(null) }
     LaunchedEffect(illustId) {
-        previewUrl = viewModel.getIllustPreviewUrl(illustId)
+        previewUrl = loadIllustPreviewUrl(illustId)
     }
 
     ElevatedPanel(
