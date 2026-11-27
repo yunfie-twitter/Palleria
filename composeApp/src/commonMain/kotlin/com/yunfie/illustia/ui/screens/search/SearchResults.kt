@@ -1,4 +1,4 @@
-package com.yunfie.illustia.ui.screens
+package com.yunfie.illustia.ui.screens.search
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,8 +23,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.IllustiaUiState
-import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.SearchUiState
 import com.yunfie.illustia.isMutedByTags
 import com.yunfie.illustia.models.Illust
@@ -36,7 +34,6 @@ import com.yunfie.illustia.resources.action_load_more
 import com.yunfie.illustia.resources.search_empty_illust
 import com.yunfie.illustia.resources.search_empty_novel
 import com.yunfie.illustia.resources.search_empty_user
-import com.yunfie.illustia.searchUiState
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
@@ -59,6 +56,8 @@ import com.yunfie.illustia.ui.components.animatedGridPlacement
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.components.pinchToChangeColumns
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
+import com.yunfie.illustia.ui.screens.NovelCard
+import com.yunfie.illustia.ui.screens.NovelCardSkeleton
 import com.yunfie.illustia.ui.scroll.ScrollStateKeys
 import com.yunfie.illustia.ui.scroll.ScrollStateRegistry
 import org.jetbrains.compose.resources.stringResource
@@ -74,7 +73,7 @@ import androidx.compose.foundation.lazy.grid.items as gridItems
 internal fun SearchResultGrid(
     page: Int,
     state: SearchUiState,
-    viewModel: IllustiaViewModel,
+    actions: SearchActions,
     onIllustSelected: ((Illust) -> Unit)? = null,
 ) {
     val feedHighQuality = state.settings.useHighQualityFeedImages
@@ -129,7 +128,7 @@ internal fun SearchResultGrid(
         enabled = state.settings.autoLoadMore,
         nextUrl = nextUrl,
         isLoading = isPaginating || state.loadState == LoadState.Loading,
-        onLoadMore = if (page == 0) viewModel::loadMoreSearch else viewModel::loadMoreUserSearch,
+        onLoadMore = if (page == 0) actions::loadMoreSearch else actions::loadMoreUserSearch,
     )
 
     val pinchEnabled =
@@ -144,7 +143,7 @@ internal fun SearchResultGrid(
     if (emptyError != null) {
         CenteredErrorState(
             message = emptyError.message,
-            onRetry = { viewModel.submitSearch(forceRefresh = true) },
+            onRetry = { actions.submitSearch(state.activeSearchWord, forceRefresh = true) },
         )
         return
     }
@@ -157,7 +156,7 @@ internal fun SearchResultGrid(
                 .pinchToChangeColumns(
                     enabled = pinchEnabled,
                     currentColumns = illustColumns,
-                    onColumnsChange = viewModel::updateVerticalColumnCount,
+                    onColumnsChange = actions::updateVerticalColumnCount,
                 ),
         contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 8.dp, bottom = adaptiveMainNavigationContentPadding()),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -167,11 +166,11 @@ internal fun SearchResultGrid(
             if (isNovelResult) {
                 gridItems(state.searchNovelItems, key = { it.id }, contentType = { "novel_card" }) { novel ->
                     val novelId = novel.id
-                    val onClick = remember(novelId) { { viewModel.openNovel(novel) } }
+                    val onClick = remember(novelId) { { actions.openNovel(novel) } }
                     NovelCard(
                         novel = novel,
                         onClick = onClick,
-                        onToggleBookmark = { viewModel.toggleNovelBookmark(novel) },
+                        onToggleBookmark = { actions.toggleNovelBookmark(novel) },
                     )
                 }
                 if (state.settings.autoLoadMore && isPaginating) {
@@ -181,7 +180,7 @@ internal fun SearchResultGrid(
                 } else if (!state.settings.autoLoadMore && state.searchNovelNextUrl != null) {
                     item(key = "search_novel_load_more_button", span = { GridItemSpan(maxLineSpan) }, contentType = "load_more") {
                         Button(
-                            onClick = viewModel::loadMoreSearch,
+                            onClick = actions::loadMoreSearch,
                             enabled = !isPaginating,
                             modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                             colors = overlayActionButtonColors(),
@@ -206,7 +205,7 @@ internal fun SearchResultGrid(
                         item(key = "search_novel_error_state", span = { GridItemSpan(maxLineSpan) }, contentType = "error_state") {
                             SearchErrorState(
                                 message = loadState.message,
-                                onRetry = { viewModel.submitSearch(forceRefresh = true) },
+                                onRetry = { actions.submitSearch(state.activeSearchWord, forceRefresh = true) },
                             )
                         }
                     } else if (loadState == LoadState.Loading) {
@@ -227,11 +226,11 @@ internal fun SearchResultGrid(
             } else {
                 gridItems(state.searchItems, key = { it.id }, contentType = { "illust_card" }) { illust ->
                     val illustId = illust.id
-                    val onBookmark = remember(illust) { { viewModel.toggleBookmark(illust) } }
+                    val onBookmark = remember(illust) { { actions.toggleBookmark(illust) } }
                     val onBookmarkLongClick =
-                        remember(illust) { { viewModel.openBookmarkTagPicker(illust) } }
-                    val onClick = remember(illust) { { onIllustSelected?.invoke(illust) ?: viewModel.openIllust(illust) } }
-                    val onLongClick = remember(illustId) { { viewModel.onIllustLongPress(illustId) } }
+                        remember(illust) { { actions.openBookmarkTagPicker(illust) } }
+                    val onClick = remember(illust) { { onIllustSelected?.invoke(illust) ?: actions.openIllust(illust) } }
+                    val onLongClick = remember(illustId) { { actions.onIllustLongPress(illustId) } }
 
                     IllustCard(
                         modifier = animatedGridPlacement(),
@@ -256,7 +255,7 @@ internal fun SearchResultGrid(
                 } else if (!state.settings.autoLoadMore && state.searchNextUrl != null) {
                     item(key = "search_illust_load_more_button", span = { GridItemSpan(maxLineSpan) }, contentType = "load_more") {
                         Button(
-                            onClick = viewModel::loadMoreSearch,
+                            onClick = actions::loadMoreSearch,
                             enabled = !isPaginating,
                             modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                             colors = overlayActionButtonColors(),
@@ -281,7 +280,7 @@ internal fun SearchResultGrid(
                         item(key = "search_illust_error_state", span = { GridItemSpan(maxLineSpan) }, contentType = "error_state") {
                             SearchErrorState(
                                 message = illustLoadState.message,
-                                onRetry = { viewModel.submitSearch(forceRefresh = true) },
+                                onRetry = { actions.submitSearch(state.activeSearchWord, forceRefresh = true) },
                             )
                         }
                     } else if (illustLoadState == LoadState.Loading) {
@@ -302,11 +301,11 @@ internal fun SearchResultGrid(
         } else {
             gridItems(state.userSearchItems, key = { it.id }, contentType = { "user_card" }) { user ->
                 val userId = user.id
-                val onClick = remember(userId) { { viewModel.openUserPage(user) } }
+                val onClick = remember(userId) { { actions.openUserPage(user) } }
                 val onLongClick =
                     remember(user, miuixPeekEnabled) {
                         if (miuixPeekEnabled) {
-                            { viewModel.onUserLongPress(user) }
+                            { actions.onUserLongPress(user) }
                         } else {
                             null
                         }
@@ -320,7 +319,7 @@ internal fun SearchResultGrid(
             } else if (!state.settings.autoLoadMore && state.userSearchNextUrl != null) {
                 item(key = "search_user_load_more_button", span = { GridItemSpan(maxLineSpan) }, contentType = "load_more") {
                     Button(
-                        onClick = viewModel::loadMoreUserSearch,
+                        onClick = actions::loadMoreUserSearch,
                         enabled = !isPaginating,
                         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                         colors = overlayActionButtonColors(),
@@ -345,7 +344,7 @@ internal fun SearchResultGrid(
                     item(key = "search_user_error_state", span = { GridItemSpan(maxLineSpan) }, contentType = "error_state") {
                         SearchErrorState(
                             message = userLoadState.message,
-                            onRetry = { viewModel.submitSearch(forceRefresh = true) },
+                            onRetry = { actions.submitSearch(state.activeSearchWord, forceRefresh = true) },
                         )
                     }
                 } else if (userLoadState == LoadState.Loading) {
@@ -373,19 +372,4 @@ private fun SearchErrorState(
     onRetry: () -> Unit,
 ) {
     RequestErrorState(message = message, onRetry = onRetry)
-}
-
-@Composable
-internal fun SearchResultGrid(
-    page: Int,
-    state: IllustiaUiState,
-    viewModel: IllustiaViewModel,
-    onIllustSelected: ((Illust) -> Unit)? = null,
-) {
-    SearchResultGrid(
-        page = page,
-        state = state.searchUiState,
-        viewModel = viewModel,
-        onIllustSelected = onIllustSelected,
-    )
 }

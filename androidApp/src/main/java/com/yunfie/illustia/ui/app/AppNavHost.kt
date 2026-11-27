@@ -34,6 +34,7 @@ import com.yunfie.illustia.isMutedByTags
 import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.platform.rememberAppInfo
+import com.yunfie.illustia.searchUiState
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.LoadingIndicator
@@ -184,6 +185,7 @@ internal fun AppNavHost(
                     focusRequest = if (backStack.lastOrNull() == AppRoute.Search) searchFocusRequest else 0,
                     state = searchState,
                     viewModel = viewModel,
+                    repository = context.uiRepository(),
                     isResultRoute = false,
                     onBack = onPopRoute,
                     onNavigateToResults = { query: String ->
@@ -231,8 +233,9 @@ internal fun AppNavHost(
                 SearchScreen(
                     onFocusRequestHandled = onSearchFocusHandled,
                     focusRequest = if (backStack.lastOrNull() == route) searchFocusRequest else 0,
-                    state = effectiveState,
+                    state = effectiveState.searchUiState,
                     viewModel = viewModel,
+                    repository = context.uiRepository(),
                     isResultRoute = true,
                     onBackFromResults = onPopRoute,
                     onNavigateToResults = { nextQuery ->
@@ -280,8 +283,9 @@ internal fun AppNavHost(
                 SearchScreen(
                     onFocusRequestHandled = onSearchFocusHandled,
                     focusRequest = if (backStack.lastOrNull() == route) searchFocusRequest else 0,
-                    state = effectiveState,
+                    state = effectiveState.searchUiState,
                     viewModel = viewModel,
+                    repository = context.uiRepository(),
                     isResultRoute = true,
                     onBackFromResults = onPopRoute,
                     onNavigateToResults = { nextQuery ->

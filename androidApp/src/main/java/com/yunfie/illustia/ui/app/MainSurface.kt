@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.data.IllustiaRepositoryApi
 import com.yunfie.illustia.platform.rememberAppInfo
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.msg_double_back_exit
@@ -71,6 +72,7 @@ import com.yunfie.illustia.ui.screens.MoreScreen
 import com.yunfie.illustia.ui.screens.RankingScreen
 import com.yunfie.illustia.ui.screens.SearchScreen
 import com.yunfie.illustia.ui.screens.ShortsFeedScreen
+import com.yunfie.illustia.uiRepository
 import com.yunfie.illustia.visibleWith
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.anim.SinOutEasing
@@ -329,6 +331,7 @@ internal fun MainSurface(
                                             onFocusRequestHandled = onSearchFocusHandled,
                                             focusRequest = if (selectedTab == AppTab.Search) searchFocusRequest else 0,
                                             viewModel = viewModel,
+                                            repository = context.uiRepository(),
                                             onNavigateToResults = onNavigateToResults,
                                         )
                                     }
@@ -529,6 +532,7 @@ private fun SearchTabContent(
     focusRequest: Int,
     onFocusRequestHandled: () -> Unit,
     viewModel: IllustiaViewModel,
+    repository: IllustiaRepositoryApi,
     onNavigateToResults: (String) -> Unit,
 ) {
     val searchState by viewModel.searchState.collectAsStateWithLifecycle()
@@ -537,6 +541,7 @@ private fun SearchTabContent(
         onFocusRequestHandled = onFocusRequestHandled,
         state = searchState,
         viewModel = viewModel,
+        repository = repository,
         isResultRoute = false,
         onNavigateToResults = onNavigateToResults,
     )

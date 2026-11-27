@@ -37,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.glance.appwidget.GlanceAppWidgetManager
@@ -56,6 +57,7 @@ import com.yunfie.illustia.resources.widget_illust_apply
 import com.yunfie.illustia.resources.widget_illust_cancel
 import com.yunfie.illustia.resources.widget_illust_pick_page
 import com.yunfie.illustia.resources.widget_illust_title
+import com.yunfie.illustia.searchUiState
 import com.yunfie.illustia.ui.components.AppBottomSheet
 import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.CoilPixivImage
@@ -63,6 +65,7 @@ import com.yunfie.illustia.ui.components.LoadingIndicator
 import com.yunfie.illustia.ui.screens.OnboardingScreen
 import com.yunfie.illustia.ui.screens.RefreshTokenLoginBottomSheet
 import com.yunfie.illustia.ui.screens.SearchScreen
+import com.yunfie.illustia.uiRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -124,6 +127,7 @@ class IllustWidgetConfigureActivity : FragmentActivity() {
             var selectedPageIndex by rememberSaveable { mutableIntStateOf(0) }
             val scope = rememberCoroutineScope()
             val scrollBehavior = MiuixScrollBehavior()
+            val appContext = LocalContext.current
 
             MiuixTheme {
                 BackHandler {
@@ -171,8 +175,9 @@ class IllustWidgetConfigureActivity : FragmentActivity() {
                                     .padding(paddingValues),
                         ) {
                             SearchScreen(
-                                state = state,
+                                state = state.searchUiState,
                                 viewModel = viewModel,
+                                repository = appContext.uiRepository(),
                                 widgetSelectionMode = true,
                                 onIllustSelected = { illust ->
                                     saveError = null
