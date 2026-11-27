@@ -4,7 +4,6 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import com.yunfie.illustia.IllustiaViewModel
 
 fun LazyGridState.asScrollPositionProbe(): ScrollPositionProbe =
     ScrollPositionProbe {
@@ -17,16 +16,16 @@ fun LazyListState.asScrollPositionProbe(): ScrollPositionProbe =
     }
 
 /**
- * ホームフィードのグリッド状態を ViewModel に接続する。
- * このグリッドが画面から外れたら、ViewModel 側の参照も初期値に戻す。
+ * ホームフィードのグリッド状態を購読側へ接続する。
+ * このグリッドが画面から外れたら、参照も初期値に戻す。
  */
 @Composable
 fun InstallHomeScrollProbe(
-    viewModel: IllustiaViewModel,
     state: LazyGridState,
+    onProbeChanged: (ScrollPositionProbe) -> Unit,
 ) {
-    DisposableEffect(viewModel, state) {
-        viewModel.homeScrollProbe = state.asScrollPositionProbe()
-        onDispose { viewModel.homeScrollProbe = ScrollPositionProbe.Never }
+    DisposableEffect(state, onProbeChanged) {
+        onProbeChanged(state.asScrollPositionProbe())
+        onDispose { onProbeChanged(ScrollPositionProbe.Never) }
     }
 }

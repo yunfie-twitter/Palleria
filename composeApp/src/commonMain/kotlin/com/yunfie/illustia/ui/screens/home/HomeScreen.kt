@@ -1,0 +1,298 @@
+package com.yunfie.illustia.ui.screens.home
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.unit.dp
+import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.models.LoadState
+import com.yunfie.illustia.models.UserProfile
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.dialog_reload
+import com.yunfie.illustia.resources.more_notifications
+import com.yunfie.illustia.resources.nav_home
+import com.yunfie.illustia.resources.nav_novel
+import com.yunfie.illustia.resources.nav_search
+import com.yunfie.illustia.settings.AppSettings
+import com.yunfie.illustia.settings.FeatureFlag
+import com.yunfie.illustia.settings.isFeatureEnabled
+import com.yunfie.illustia.ui.app.AppTab
+import com.yunfie.illustia.ui.app.LocalTabUiState
+import com.yunfie.illustia.ui.components.AppHapticEffect
+import com.yunfie.illustia.ui.components.ScrollBlurScaffold
+import com.yunfie.illustia.ui.components.onTopBarTap
+import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
+import com.yunfie.illustia.ui.components.smoothScrollToTop
+import com.yunfie.illustia.ui.screens.HomeTab
+import com.yunfie.illustia.ui.screens.HomeTabRow
+import com.yunfie.illustia.ui.scroll.ScrollStateKeys
+import com.yunfie.illustia.ui.scroll.ScrollStateRegistry
+import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.ScrollBehavior
+import top.yukonga.miuix.kmp.basic.Surface
+import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Messages
+import top.yukonga.miuix.kmp.icon.extended.Photos
+import top.yukonga.miuix.kmp.icon.extended.Refresh
+import top.yukonga.miuix.kmp.icon.extended.Search
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+@Composable
+fun HomeScreen(
+    items: List<Illust>,
+    timelineItems: List<Illust>,
+    loadState: LoadState,
+    timelineLoadState: LoadState = loadState,
+    nextUrl: String?,
+    timelineNextUrl: String?,
+    settings: AppSettings,
+    currentAccount: UserProfile?,
+    actions: HomeActions,
+    scrollBehavior: ScrollBehavior,
+    onSearch: () -> Unit,
+    onOpenNovels: () -> Unit,
+    isHomeRefreshing: Boolean = false,
+    isHomePaginating: Boolean = false,
+    isTimelineRefreshing: Boolean = false,
+    isTimelinePaginating: Boolean = false,
+    isOfflineCached: Boolean = false,
+    initialTab: Int = 0,
+    pendingHomeItemsCount: Int = 0,
+) {
+    val pagerState =
+        rememberPagerState(
+            initialPage =
+                initialTab
+                    .coerceIn(0, (HomeTab.entries.size - 1).coerceAtLeast(0)),
+            pageCount = { HomeTab.entries.size },
+        )
+    val coroutineScope = rememberCoroutineScope()
+    // Drive the tab indicator from targetPage so it reacts immediately on tap.
+    // Commit selectedTab only when the pager settles, so swiping does not
+    // recompose the whole screen on every intermediate page change.
+    val indicatorTab = pagerState.targetPage.coerceIn(0, HomeTab.entries.lastIndex)
+    val selectedTab = HomeTab.entries[pagerState.settledPage.coerceIn(0, HomeTab.entries.lastIndex)]
+
+    LaunchedEffect(pagerState.settledPage) {
+        actions.updateHomeSelectedTab(pagerState.settledPage)
+    }
+
+    val tabUiState = LocalTabUiState.current
+    LaunchedEffect(actions) {
+        tabUiState.scrollToTopRequests.collect { tab ->
+            if (tab == AppTab.Home) {
+                val currentTab = HomeTab.entries[pagerState.currentPage]
+                val gridState =
+                    when (currentTab) {
+                        HomeTab.Feed -> ScrollStateRegistry.shared.grid(ScrollStateKeys.HOME_FEED)
+                        HomeTab.Following -> ScrollStateRegistry.shared.grid(ScrollStateKeys.HOME_TIMELINE)
+                    }
+                gridState.smoothScrollToTop(scrollBehavior)
+            }
+        }
+    }
+
+    LaunchedEffect(selectedTab) {
+        when (selectedTab) {
+            HomeTab.Feed -> {
+                if (items.isEmpty() && loadState != LoadState.Loading) {
+                    actions.refreshHome()
+                }
+            }
+
+            HomeTab.Following -> {
+                if (timelineItems.isEmpty()) {
+                    actions.refreshTimeline()
+                }
+            }
+        }
+    }
+
+    val scheme = MiuixTheme.colorScheme
+    val performHaptic = rememberHapticFeedbackAction()
+
+    ScrollBlurScaffold(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(scheme.surface),
+        enabled = settings.isFeatureEnabled(FeatureFlag.TopScrollBlur),
+        scrollBehavior = scrollBehavior,
+        header = {
+            TopAppBar(
+                color = if (settings.isFeatureEnabled(FeatureFlag.TopScrollBlur)) Color.Transparent else MiuixTheme.colorScheme.surface,
+                title = stringResource(Res.string.nav_home),
+                largeTitle = stringResource(Res.string.nav_home),
+                scrollBehavior = scrollBehavior,
+                modifier =
+                    Modifier.onTopBarTap(
+                        navIconWidth = 64.dp,
+                        actionsWidth = 120.dp,
+                        hasBottomContent = true,
+                    ) {
+                        performHaptic(AppHapticEffect.Click)
+                        coroutineScope.launch {
+                            val currentTab = HomeTab.entries[pagerState.currentPage]
+                            val gridState =
+                                when (currentTab) {
+                                    HomeTab.Feed -> ScrollStateRegistry.shared.grid(ScrollStateKeys.HOME_FEED)
+                                    HomeTab.Following -> ScrollStateRegistry.shared.grid(ScrollStateKeys.HOME_TIMELINE)
+                                }
+                            gridState.smoothScrollToTop(scrollBehavior)
+                        }
+                    },
+                navigationIcon = {
+                    IconButton(onClick = {
+                        performHaptic(AppHapticEffect.Click)
+                        actions.openAccountSwitcher()
+                    }) {
+                        HomeAccountAvatar(account = currentAccount)
+                    }
+                },
+                actions = {
+                    if (settings.shortsFeedEnabled) {
+                        IconButton(onClick = {
+                            performHaptic(AppHapticEffect.Click)
+                            onSearch()
+                        }) {
+                            Icon(MiuixIcons.Search, contentDescription = stringResource(Res.string.nav_search))
+                        }
+                    }
+                    if (!settings.hideHomeNovelButton) {
+                        IconButton(onClick = {
+                            performHaptic(AppHapticEffect.Click)
+                            onOpenNovels()
+                        }) {
+                            Icon(
+                                MiuixIcons.Photos,
+                                contentDescription = stringResource(Res.string.nav_novel),
+                            )
+                        }
+                    } else {
+                        IconButton(onClick = {
+                            performHaptic(AppHapticEffect.Click)
+                            actions.openNotifications()
+                        }) {
+                            Icon(
+                                MiuixIcons.Messages,
+                                contentDescription = stringResource(Res.string.more_notifications),
+                            )
+                        }
+                    }
+                    IconButton(
+                        onClick = {
+                            performHaptic(AppHapticEffect.Click)
+                            when (selectedTab) {
+                                HomeTab.Feed -> actions.refreshHome(forceRefresh = true)
+                                HomeTab.Following -> actions.refreshTimeline(forceRefresh = true)
+                            }
+                        },
+                    ) {
+                        Icon(
+                            MiuixIcons.Refresh,
+                            contentDescription = stringResource(Res.string.dialog_reload),
+                        )
+                    }
+                },
+                bottomContent = {
+                    HomeTabRow(
+                        selectedTabIndex = indicatorTab,
+                        onTabSelected = { index ->
+                            if (index != pagerState.currentPage) {
+                                performHaptic(AppHapticEffect.Toggle)
+                                coroutineScope.launch { pagerState.animateScrollToPage(index) }
+                            } else {
+                                performHaptic(AppHapticEffect.Click)
+                                coroutineScope.launch {
+                                    val gridState =
+                                        when (selectedTab) {
+                                            HomeTab.Feed -> ScrollStateRegistry.shared.grid(ScrollStateKeys.HOME_FEED)
+                                            HomeTab.Following -> ScrollStateRegistry.shared.grid(ScrollStateKeys.HOME_TIMELINE)
+                                        }
+                                    gridState.smoothScrollToTop(scrollBehavior)
+                                }
+                            }
+                        },
+                        isBlurEnabled = settings.isFeatureEnabled(FeatureFlag.TopScrollBlur),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(start = 16.dp, end = 16.dp, bottom = 6.dp),
+                    )
+                },
+            )
+        },
+    ) {
+        Surface(
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            color = scheme.surface,
+        ) {
+            var hasVisitedFollowingTab by remember {
+                mutableStateOf(pagerState.settledPage == HomeTab.Following.ordinal)
+            }
+            LaunchedEffect(pagerState.settledPage) {
+                if (pagerState.settledPage == HomeTab.Following.ordinal) {
+                    hasVisitedFollowingTab = true
+                }
+            }
+
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize(),
+                beyondViewportPageCount = 0,
+            ) { page ->
+                when (HomeTab.entries[page]) {
+                    HomeTab.Feed -> {
+                        FeedTabContent(
+                            items = items,
+                            loadState = loadState,
+                            nextUrl = nextUrl,
+                            settings = settings,
+                            actions = actions,
+                            isRefreshing = isHomeRefreshing,
+                            isPaginating = isHomePaginating,
+                            isOfflineCached = isOfflineCached,
+                            pendingHomeItemsCount = pendingHomeItemsCount,
+                            scrollBehavior = scrollBehavior,
+                        )
+                    }
+
+                    HomeTab.Following -> {
+                        if (hasVisitedFollowingTab || pagerState.settledPage == HomeTab.Following.ordinal) {
+                            FollowingTabContent(
+                                items = timelineItems,
+                                loadState = timelineLoadState,
+                                nextUrl = timelineNextUrl,
+                                settings = settings,
+                                actions = actions,
+                                isRefreshing = isTimelineRefreshing,
+                                isPaginating = isTimelinePaginating,
+                                isOfflineCached = isOfflineCached,
+                                scrollBehavior = scrollBehavior,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

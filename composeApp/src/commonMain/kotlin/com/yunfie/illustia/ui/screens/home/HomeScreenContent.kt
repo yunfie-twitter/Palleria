@@ -1,4 +1,4 @@
-package com.yunfie.illustia.ui.screens
+package com.yunfie.illustia.ui.screens.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -113,7 +113,7 @@ internal fun FeedTabContent(
     loadState: LoadState,
     nextUrl: String?,
     settings: AppSettings,
-    viewModel: IllustiaViewModel,
+    actions: HomeActions,
     isRefreshing: Boolean = false,
     isPaginating: Boolean = false,
     isOfflineCached: Boolean = false,
@@ -124,7 +124,7 @@ internal fun FeedTabContent(
     val showAiBadge = remember(settings.showAiBadge) { settings.showAiBadge }
     val mutedTagsSet = remember(settings.mutedTags) { settings.mutedTags.toHashSet() }
     val gridState = ScrollStateRegistry.shared.grid(ScrollStateKeys.HOME_FEED)
-    InstallHomeScrollProbe(viewModel, gridState)
+    InstallHomeScrollProbe(gridState, actions::onHomeScrollProbeChanged)
 
     PrefetchIllustGridImages(
         items = items,
@@ -140,14 +140,14 @@ internal fun FeedTabContent(
         enabled = settings.autoLoadMore,
         nextUrl = nextUrl,
         isLoading = isPaginating || loadState == LoadState.Loading,
-        onLoadMore = viewModel::loadMoreHome,
+        onLoadMore = actions::loadMoreHome,
     )
 
     val columns = adaptiveIllustColumns(settings)
     val scope = rememberCoroutineScope()
     ScrollablePullToRefresh(
         isRefreshing = isRefreshing,
-        onRefresh = { viewModel.refreshHome(forceRefresh = true) },
+        onRefresh = { actions.refreshHome(forceRefresh = true) },
         modifier = Modifier.fillMaxSize(),
     ) {
         val pinchEnabled = settings.gridPinchToZoom
@@ -157,7 +157,7 @@ internal fun FeedTabContent(
         if (emptyError != null) {
             CenteredErrorState(
                 message = emptyError.message,
-                onRetry = { viewModel.refreshHome(forceRefresh = true) },
+                onRetry = { actions.refreshHome(forceRefresh = true) },
             )
             return@ScrollablePullToRefresh
         }
@@ -171,7 +171,7 @@ internal fun FeedTabContent(
                         .pinchToChangeColumns(
                             enabled = pinchEnabled,
                             currentColumns = columns,
-                            onColumnsChange = viewModel::updateVerticalColumnCount,
+                            onColumnsChange = actions::updateVerticalColumnCount,
                         ).nestedScroll(scrollBehavior.nestedScrollConnection),
                 contentPadding =
                     PaddingValues(
@@ -197,12 +197,12 @@ internal fun FeedTabContent(
                 if (isStaleCacheActive) {
                     item(key = "home_feed_offline_chip", span = { GridItemSpan(maxLineSpan) }) {
                         OfflineCachedChip(
-                            onRetry = { viewModel.refreshHome(forceRefresh = true) },
+                            onRetry = { actions.refreshHome(forceRefresh = true) },
                         )
                     }
                 } else if (loadState is LoadState.Error) {
                     item(key = "home_feed_error_banner", span = { GridItemSpan(maxLineSpan) }) {
-                        StateBanner(loadState, onRetry = { viewModel.refreshHome(forceRefresh = true) })
+                        StateBanner(loadState, onRetry = { actions.refreshHome(forceRefresh = true) })
                     }
                 }
 
@@ -214,11 +214,11 @@ internal fun FeedTabContent(
 
                 gridItems(items, key = { it.id }, contentType = { "illust_card" }) { illust ->
                     val illustId = illust.id
-                    val onBookmark = remember(illust) { { viewModel.toggleBookmark(illust) } }
+                    val onBookmark = remember(illust) { { actions.toggleBookmark(illust) } }
                     val onBookmarkLongClick =
-                        remember(illust) { { viewModel.openBookmarkTagPicker(illust) } }
-                    val onClick = remember(illust) { { viewModel.openIllust(illust) } }
-                    val onLongClick = remember(illustId) { { viewModel.onIllustLongPress(illustId) } }
+                        remember(illust) { { actions.openBookmarkTagPicker(illust) } }
+                    val onClick = remember(illust) { { actions.openIllust(illust) } }
+                    val onLongClick = remember(illustId) { { actions.onIllustLongPress(illustId) } }
 
                     IllustCard(
                         modifier = animatedGridPlacement(),
@@ -250,7 +250,7 @@ internal fun FeedTabContent(
                 } else if (!settings.autoLoadMore && nextUrl != null) {
                     item(key = "home_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
                         Button(
-                            onClick = viewModel::loadMoreHome,
+                            onClick = actions::loadMoreHome,
                             enabled = !isPaginating,
                             modifier =
                                 Modifier
@@ -276,7 +276,7 @@ internal fun FeedTabContent(
             if (pendingHomeItemsCount > 0) {
                 Button(
                     onClick = {
-                        viewModel.applyPendingHomeItems()
+                        actions.applyPendingHomeItems()
                         scope.launch { gridState.animateScrollToItem(0) }
                     },
                     modifier = Modifier.align(Alignment.TopCenter).padding(12.dp),
@@ -295,7 +295,7 @@ internal fun FollowingTabContent(
     loadState: LoadState,
     nextUrl: String?,
     settings: AppSettings,
-    viewModel: IllustiaViewModel,
+    actions: HomeActions,
     isRefreshing: Boolean = false,
     isPaginating: Boolean = false,
     isOfflineCached: Boolean = false,
@@ -305,7 +305,7 @@ internal fun FollowingTabContent(
     val showAiBadge = remember(settings.showAiBadge) { settings.showAiBadge }
     val mutedTagsSet = remember(settings.mutedTags) { settings.mutedTags.toHashSet() }
     val gridState = ScrollStateRegistry.shared.grid(ScrollStateKeys.HOME_TIMELINE)
-    InstallHomeScrollProbe(viewModel, gridState)
+    InstallHomeScrollProbe(gridState, actions::onHomeScrollProbeChanged)
 
     PrefetchIllustGridImages(
         items = items,
@@ -322,13 +322,13 @@ internal fun FollowingTabContent(
         enabled = settings.autoLoadMore,
         nextUrl = nextUrl,
         isLoading = isPaginating || loadState == LoadState.Loading,
-        onLoadMore = viewModel::loadMoreTimeline,
+        onLoadMore = actions::loadMoreTimeline,
     )
 
     val columns = adaptiveIllustColumns(settings)
     ScrollablePullToRefresh(
         isRefreshing = isRefreshing,
-        onRefresh = { viewModel.refreshTimeline(forceRefresh = true) },
+        onRefresh = { actions.refreshTimeline(forceRefresh = true) },
         modifier = Modifier.fillMaxSize(),
     ) {
         val pinchEnabled = settings.gridPinchToZoom
@@ -336,7 +336,7 @@ internal fun FollowingTabContent(
         if (emptyError != null) {
             CenteredErrorState(
                 message = emptyError.message,
-                onRetry = { viewModel.refreshTimeline(forceRefresh = true) },
+                onRetry = { actions.refreshTimeline(forceRefresh = true) },
             )
             return@ScrollablePullToRefresh
         }
@@ -349,7 +349,7 @@ internal fun FollowingTabContent(
                     .pinchToChangeColumns(
                         enabled = pinchEnabled,
                         currentColumns = columns,
-                        onColumnsChange = viewModel::updateVerticalColumnCount,
+                        onColumnsChange = actions::updateVerticalColumnCount,
                     ).nestedScroll(scrollBehavior.nestedScrollConnection),
             contentPadding =
                 PaddingValues(
@@ -375,12 +375,12 @@ internal fun FollowingTabContent(
             if (isStaleCacheActive) {
                 item(key = "home_following_offline_chip", span = { GridItemSpan(maxLineSpan) }) {
                     OfflineCachedChip(
-                        onRetry = { viewModel.refreshTimeline(forceRefresh = true) },
+                        onRetry = { actions.refreshTimeline(forceRefresh = true) },
                     )
                 }
             } else if (loadState is LoadState.Error) {
                 item(key = "home_following_error_banner", span = { GridItemSpan(maxLineSpan) }) {
-                    StateBanner(loadState, onRetry = { viewModel.refreshTimeline(forceRefresh = true) })
+                    StateBanner(loadState, onRetry = { actions.refreshTimeline(forceRefresh = true) })
                 }
             }
 
@@ -392,11 +392,11 @@ internal fun FollowingTabContent(
 
             gridItems(items, key = { "tl_${it.id}" }, contentType = { "illust_card" }) { illust ->
                 val illustId = illust.id
-                val onBookmark = remember(illust) { { viewModel.toggleBookmark(illust) } }
+                val onBookmark = remember(illust) { { actions.toggleBookmark(illust) } }
                 val onBookmarkLongClick =
-                    remember(illust) { { viewModel.openBookmarkTagPicker(illust) } }
-                val onClick = remember(illust) { { viewModel.openIllust(illust) } }
-                val onLongClick = remember(illustId) { { viewModel.onIllustLongPress(illustId) } }
+                    remember(illust) { { actions.openBookmarkTagPicker(illust) } }
+                val onClick = remember(illust) { { actions.openIllust(illust) } }
+                val onLongClick = remember(illustId) { { actions.onIllustLongPress(illustId) } }
 
                 IllustCard(
                     modifier = animatedGridPlacement(),
@@ -428,7 +428,7 @@ internal fun FollowingTabContent(
             } else if (!settings.autoLoadMore && nextUrl != null) {
                 item(key = "timeline_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
                     Button(
-                        onClick = viewModel::loadMoreTimeline,
+                        onClick = actions::loadMoreTimeline,
                         enabled = !isPaginating,
                         modifier =
                             Modifier
