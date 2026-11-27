@@ -144,21 +144,6 @@ fun androidUserProfilePlatform(): UserProfilePlatform {
                     onTap = onTap,
                 )
             }
-
-            @Composable
-            override fun ReaderSystemBars(
-                lightStatusBars: Boolean,
-                lightNavigationBars: Boolean,
-                restoreLightStatusBars: Boolean,
-                restoreLightNavigationBars: Boolean,
-            ) {
-                SystemBarAppearanceEffect(
-                    lightStatusBars = lightStatusBars,
-                    lightNavigationBars = lightNavigationBars,
-                    restoreLightStatusBars = restoreLightStatusBars,
-                    restoreLightNavigationBars = restoreLightNavigationBars,
-                )
-            }
         }
     }
 }

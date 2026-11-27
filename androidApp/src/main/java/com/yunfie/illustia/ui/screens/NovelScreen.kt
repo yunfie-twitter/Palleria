@@ -96,10 +96,15 @@ import com.yunfie.illustia.ui.screens.novel.NovelTtsParagraphLocation
 import com.yunfie.illustia.ui.screens.novel.NovelTtsTextSanitizer
 import com.yunfie.illustia.ui.screens.novel.extractChapters
 import com.yunfie.illustia.ui.screens.novel.parseNovelPages
+import com.yunfie.illustia.ui.screens.novel.reader.NovelBottomControlBar
 import com.yunfie.illustia.ui.screens.novel.reader.NovelFontFamily
 import com.yunfie.illustia.ui.screens.novel.reader.NovelLayoutMode
 import com.yunfie.illustia.ui.screens.novel.reader.NovelLineSpacing
+import com.yunfie.illustia.ui.screens.novel.reader.NovelReaderSystemBarsEffect
+import com.yunfie.illustia.ui.screens.novel.reader.NovelReaderTopBar
+import com.yunfie.illustia.ui.screens.novel.reader.NovelSettingsBottomSheet
 import com.yunfie.illustia.ui.screens.novel.reader.NovelTheme
+import com.yunfie.illustia.ui.screens.novel.reader.NovelTocBottomSheet
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
@@ -461,7 +466,7 @@ fun NovelReaderScreen(
     var showTocSheet by rememberSaveable { mutableStateOf(false) }
     var showSettingsSheet by rememberSaveable { mutableStateOf(false) }
 
-    NovelReaderSystemBarsEffect(theme = theme, isDarkTheme = isDarkTheme)
+    NovelReaderSystemBarsEffect(theme = theme, isDarkTheme = isDarkTheme, platform = androidUserProfilePlatform())
 
     val backgroundColor = theme.backgroundColor()
     val textColor = theme.textColor()
@@ -619,7 +624,7 @@ fun NovelReaderScreen(
                     onPageChange = ::jumpToPage,
                     onOpenToc = { showTocSheet = true },
                     onOpenSettings = { showSettingsSheet = true },
-                    ttsPlayer = ttsPlayer,
+                    ttsPlaying = ttsPlayer?.isPlaying == true,
                     onToggleTts =
                         if (isTtsEnabled && ttsPlayer != null && text != null) {
                             {

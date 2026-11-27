@@ -1,4 +1,4 @@
-package com.yunfie.illustia.ui.screens
+package com.yunfie.illustia.ui.screens.novel.reader
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -77,14 +77,15 @@ import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
 import com.yunfie.illustia.ui.components.DividerLine
 import com.yunfie.illustia.ui.components.ElevatedPanel
 import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
-import com.yunfie.illustia.ui.components.SystemBarAppearanceEffect
 import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
+import com.yunfie.illustia.ui.screens.NovelMetaPill
 import com.yunfie.illustia.ui.screens.novel.NovelChapterInfo
 import com.yunfie.illustia.ui.screens.novel.reader.NovelFontFamily
 import com.yunfie.illustia.ui.screens.novel.reader.NovelLayoutMode
 import com.yunfie.illustia.ui.screens.novel.reader.NovelLineSpacing
 import com.yunfie.illustia.ui.screens.novel.reader.NovelTheme
+import com.yunfie.illustia.ui.screens.profile.UserProfilePlatform
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -213,9 +214,10 @@ private fun <T> NovelSettingChoicePanel(
  * 画面離脱時はアプリのダーク判定に戻す。
  */
 @Composable
-internal fun NovelReaderSystemBarsEffect(
+fun NovelReaderSystemBarsEffect(
     theme: NovelTheme,
     isDarkTheme: Boolean,
+    platform: UserProfilePlatform,
 ) {
     val isLightBars =
         when (theme) {
@@ -223,7 +225,7 @@ internal fun NovelReaderSystemBarsEffect(
             NovelTheme.Sepia -> true
             NovelTheme.Dark, NovelTheme.Black -> false
         }
-    SystemBarAppearanceEffect(
+    platform.SystemBarAppearance(
         lightStatusBars = isLightBars,
         lightNavigationBars = isLightBars,
         restoreLightStatusBars = !isDarkTheme,
@@ -232,7 +234,7 @@ internal fun NovelReaderSystemBarsEffect(
 }
 
 @Composable
-internal fun NovelReaderTopBar(
+fun NovelReaderTopBar(
     visible: Boolean,
     title: String,
     isBookmarked: Boolean,
@@ -293,13 +295,13 @@ internal fun NovelReaderTopBar(
 }
 
 @Composable
-internal fun NovelBottomControlBar(
+fun NovelBottomControlBar(
     currentPage: Int,
     pageCount: Int,
     onPageChange: (Int) -> Unit,
     onOpenToc: () -> Unit,
     onOpenSettings: () -> Unit,
-    ttsPlayer: NovelTtsPlayer? = null,
+    ttsPlaying: Boolean = false,
     onToggleTts: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -421,7 +423,7 @@ internal fun NovelBottomControlBar(
                         }
                     }
 
-                    if (onToggleTts != null && ttsPlayer != null) {
+                    if (onToggleTts != null) {
                         Button(
                             onClick = {
                                 performHaptic(com.yunfie.illustia.ui.components.AppHapticEffect.Click)
@@ -430,13 +432,13 @@ internal fun NovelBottomControlBar(
                             colors =
                                 ButtonDefaults.buttonColors(
                                     color =
-                                        if (ttsPlayer.isPlaying) {
+                                        if (ttsPlaying) {
                                             MiuixTheme.colorScheme.primaryContainer
                                         } else {
                                             MiuixTheme.colorScheme.surfaceContainerHighest
                                         },
                                     contentColor =
-                                        if (ttsPlayer.isPlaying) {
+                                        if (ttsPlaying) {
                                             MiuixTheme.colorScheme.primary
                                         } else {
                                             MiuixTheme.colorScheme.onSurface
@@ -444,8 +446,8 @@ internal fun NovelBottomControlBar(
                                 ),
                         ) {
                             Icon(
-                                imageVector = if (ttsPlayer.isPlaying) TtsPauseIcon else TtsPlayIcon,
-                                contentDescription = stringResource(if (ttsPlayer.isPlaying) Res.string.tts_pause else Res.string.tts_play),
+                                imageVector = if (ttsPlaying) TtsPauseIcon else TtsPlayIcon,
+                                contentDescription = stringResource(if (ttsPlaying) Res.string.tts_pause else Res.string.tts_play),
                                 modifier = Modifier.size(18.dp),
                             )
                         }
@@ -470,7 +472,7 @@ internal fun NovelBottomControlBar(
 }
 
 @Composable
-internal fun NovelTocBottomSheet(
+fun NovelTocBottomSheet(
     show: Boolean,
     currentPage: Int,
     pageCount: Int,
@@ -662,7 +664,7 @@ internal fun NovelTocBottomSheet(
 }
 
 @Composable
-internal fun NovelSettingsBottomSheet(
+fun NovelSettingsBottomSheet(
     show: Boolean,
     fontSize: Float,
     onFontSizeChange: (Float) -> Unit,

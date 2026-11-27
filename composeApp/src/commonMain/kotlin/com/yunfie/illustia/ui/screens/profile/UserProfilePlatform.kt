@@ -84,15 +84,6 @@ interface UserProfilePlatform {
     ) {
         Box(modifier)
     }
-
-    /** リーダーなど画面ごとのシステムバー明暗切り替え（色は触らない）。 */
-    @Composable
-    fun ReaderSystemBars(
-        lightStatusBars: Boolean,
-        lightNavigationBars: Boolean,
-        restoreLightStatusBars: Boolean,
-        restoreLightNavigationBars: Boolean,
-    ) = Unit
 }
 
 enum class ViewerShortcut { ToggleFullscreen, SaveCurrentPage }
