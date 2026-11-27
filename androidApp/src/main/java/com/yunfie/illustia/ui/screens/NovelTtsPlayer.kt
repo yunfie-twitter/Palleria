@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.yunfie.illustia.ui.screens.novel.reader.NovelReaderTts
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -19,16 +20,16 @@ import kotlinx.coroutines.launch
 class NovelTtsPlayer(
     private val context: Context,
     private val onPageAdvance: ((Int) -> Unit)? = null,
-) {
+) : NovelReaderTts {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
-    var novelId by mutableStateOf<Long?>(null)
+    override var novelId by mutableStateOf<Long?>(null)
         private set
 
-    var isPlaying by mutableStateOf(false)
+    override var isPlaying by mutableStateOf(false)
         private set
 
-    var currentParagraphIndex by mutableIntStateOf(0)
+    override var currentParagraphIndex by mutableIntStateOf(0)
         private set
 
     var speechRate by mutableFloatStateOf(DEFAULT_SPEECH_RATE)
@@ -40,10 +41,10 @@ class NovelTtsPlayer(
     var voiceName by mutableStateOf("")
         private set
 
-    var availableVoices by mutableStateOf<List<String>>(emptyList())
+    override var availableVoices by mutableStateOf<List<String>>(emptyList())
         private set
 
-    var totalParagraphs by mutableIntStateOf(0)
+    override var totalParagraphs by mutableIntStateOf(0)
         private set
 
     init {
@@ -66,17 +67,17 @@ class NovelTtsPlayer(
         }
     }
 
-    fun startReading(
+    override fun startReading(
         rawText: String,
-        startIndex: Int = 0,
-        novelTitle: String = "",
-        authorName: String = "",
-        novelId: Long? = null,
-        rate: Float = speechRate,
-        pitchLevel: Float = pitch,
-        voice: String = voiceName,
-        skipSymbols: Boolean = true,
-        customDictionary: Map<String, String> = emptyMap(),
+        startIndex: Int,
+        novelTitle: String,
+        authorName: String,
+        novelId: Long,
+        rate: Float,
+        pitchLevel: Float,
+        voice: String,
+        skipSymbols: Boolean,
+        customDictionary: Map<String, String>,
     ) {
         NovelTtsService.startReading(
             context = context,
@@ -93,11 +94,11 @@ class NovelTtsPlayer(
         )
     }
 
-    fun pause() {
+    override fun pause() {
         NovelTtsService.pause(context)
     }
 
-    fun resume() {
+    override fun resume() {
         NovelTtsService.resume(context)
     }
 
@@ -117,19 +118,19 @@ class NovelTtsPlayer(
         NovelTtsService.stop(context)
     }
 
-    fun setRate(rate: Float) {
+    override fun setRate(rate: Float) {
         val clamped = rate.coerceIn(MIN_SPEECH_RATE, MAX_SPEECH_RATE)
         speechRate = clamped
         NovelTtsService.setSpeed(context, clamped)
     }
 
-    fun setPitchLevel(pitchValue: Float) {
+    override fun setPitchLevel(pitchValue: Float) {
         val clamped = pitchValue.coerceIn(MIN_PITCH, MAX_PITCH)
         pitch = clamped
         NovelTtsService.setPitch(context, clamped)
     }
 
-    fun setVoiceSelection(name: String) {
+    override fun setVoiceSelection(name: String) {
         voiceName = name
         NovelTtsService.setVoice(context, name)
     }

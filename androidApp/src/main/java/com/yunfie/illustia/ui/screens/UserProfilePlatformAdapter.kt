@@ -11,6 +11,7 @@ import com.yunfie.illustia.ui.components.SystemBarAppearanceEffect
 import com.yunfie.illustia.ui.components.TransparentNavigationBarColor
 import com.yunfie.illustia.ui.components.TransparentStatusBarColor
 import com.yunfie.illustia.ui.components.rememberLiquidGlassBackdrop
+import com.yunfie.illustia.ui.screens.profile.ReaderShortcut
 import com.yunfie.illustia.ui.screens.profile.UserProfilePlatform
 import com.yunfie.illustia.ui.screens.profile.ViewerShortcut
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
@@ -121,6 +122,39 @@ fun androidUserProfilePlatform(): UserProfilePlatform {
                 if (keyEvent !is android.view.KeyEvent) return 0
                 return com.yunfie.illustia.platform
                     .readerPageDirection(event = keyEvent, volumeKeysEnabled = volumeKeysEnabled)
+            }
+
+            override fun readerShortcut(keyEvent: Any): ReaderShortcut? {
+                if (keyEvent !is android.view.KeyEvent) return null
+                val noModifiers = !keyEvent.isCtrlPressed && !keyEvent.isAltPressed && !keyEvent.isMetaPressed
+                return when {
+                    noModifiers && keyEvent.keyCode == android.view.KeyEvent.KEYCODE_F -> ReaderShortcut.ToggleFullscreen
+                    noModifiers && keyEvent.keyCode == android.view.KeyEvent.KEYCODE_J -> ReaderShortcut.ParagraphNext
+                    noModifiers && keyEvent.keyCode == android.view.KeyEvent.KEYCODE_K -> ReaderShortcut.ParagraphPrevious
+                    else -> null
+                }
+            }
+
+            override fun isKeyAutoRepeat(keyEvent: Any): Boolean = keyEvent is android.view.KeyEvent && keyEvent.repeatCount > 0
+
+            @Composable
+            override fun ScrollRefreshRateBoost(enabled: Boolean) {
+                if (enabled) {
+                    com.yunfie.illustia.platform
+                        .RequestDynamicHzMode(com.yunfie.illustia.platform.DynamicHzMode.Boost)
+                }
+            }
+
+            @Composable
+            override fun ApplyReaderFullscreen(
+                enabled: Boolean,
+                isDarkTheme: Boolean,
+            ) {
+                com.yunfie.illustia.ui.components.ReaderFullscreen(
+                    enabled = enabled,
+                    isDarkTheme = isDarkTheme,
+                    navigationBarColor = android.graphics.Color.TRANSPARENT,
+                )
             }
 
             @Composable

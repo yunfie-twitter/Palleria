@@ -71,6 +71,26 @@ interface UserProfilePlatform {
         volumeKeysEnabled: Boolean,
     ): Int = 0
 
+    /**
+     * リーダーのキーボードショートカットを解釈する。
+     * F は全画面切り替え、J/K は段落送り。未対応環境では null。
+     */
+    fun readerShortcut(keyEvent: Any): ReaderShortcut? = null
+
+    /** キーが押しっぱなし（オートリピート）によるものか。未対応環境では false。 */
+    fun isKeyAutoRepeat(keyEvent: Any): Boolean = false
+
+    /** リーダーがスクロール中に高リフレッシュレートを要求する。未対応環境では何もしない。 */
+    @Composable
+    fun ScrollRefreshRateBoost(enabled: Boolean) = Unit
+
+    /** リーダーの全画面表示を切り替える（バー配色はアプリテーマに合わせて戻す）。 */
+    @Composable
+    fun ApplyReaderFullscreen(
+        enabled: Boolean,
+        isDarkTheme: Boolean,
+    ) = Unit
+
     /** ビューア用のうごイラ再生（ズームとタップ連動）。未対応環境では静止画のみ。 */
     @Composable
     fun ViewerUgoira(
@@ -87,3 +107,5 @@ interface UserProfilePlatform {
 }
 
 enum class ViewerShortcut { ToggleFullscreen, SaveCurrentPage }
+
+enum class ReaderShortcut { ToggleFullscreen, ParagraphNext, ParagraphPrevious }
