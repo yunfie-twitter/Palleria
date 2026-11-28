@@ -1,51 +1,17 @@
 package com.yunfie.illustia.ui.screens.novel
 
-import com.yunfie.illustia.ui.screens.novel.NovelTtsProgress
-import com.yunfie.illustia.ui.screens.novel.NovelTtsTextSanitizer
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 
+/**
+ * NovelTtsTextSanitizer は composeApp/commonMain にあり iOS でも動くため、
+ * ここで両プラットフォームの検証対象にする。
+ *
+ * NovelTtsState / NovelTtsService / NovelTtsNotificationHelper は Android 専用の
+ * 実装なので、それらの検証は androidApp 側のテストに残す。
+ */
 class NovelTtsPlaybackTest :
     FunSpec({
-        test("NovelTtsState has expected default values") {
-            val state = NovelTtsState()
-            state.isPlaying shouldBe false
-            state.novelId shouldBe null
-            state.novelTitle shouldBe ""
-            state.authorName shouldBe ""
-            state.currentParagraphIndex shouldBe 0
-            state.totalParagraphs shouldBe 0
-            state.currentParagraphText shouldBe ""
-            state.speechRate shouldBe 1.0f
-            state.isInitialized shouldBe false
-        }
-
-        test("NovelTtsState updates properties correctly") {
-            val initialState = NovelTtsState()
-            val playingState =
-                initialState.copy(
-                    isPlaying = true,
-                    novelId = 12345L,
-                    novelTitle = "テスト小説",
-                    authorName = "作者名",
-                    currentParagraphIndex = 3,
-                    totalParagraphs = 10,
-                    currentParagraphText = "これは第4段落です。",
-                    speechRate = 1.25f,
-                    isInitialized = true,
-                )
-
-            playingState.isPlaying shouldBe true
-            playingState.novelId shouldBe 12345L
-            playingState.novelTitle shouldBe "テスト小説"
-            playingState.authorName shouldBe "作者名"
-            playingState.currentParagraphIndex shouldBe 3
-            playingState.totalParagraphs shouldBe 10
-            playingState.currentParagraphText shouldBe "これは第4段落です。"
-            playingState.speechRate shouldBe 1.25f
-            playingState.isInitialized shouldBe true
-        }
-
         test("Ruby and pixiv special tags are parsed and cleaned properly for TTS reading") {
             val rubyRegex = Regex("""\[\[rb:[^>]*>(.*?)\]\]""")
             val jumpRegex = Regex("""\[jump:\d+\]""")
@@ -70,20 +36,6 @@ class NovelTtsPlaybackTest :
             paragraphs[2] shouldBe "名前はまだ無い。"
         }
 
-        test("NovelTtsService action strings have expected intents") {
-            NovelTtsService.ACTION_START_READING shouldBe "com.yunfie.illustia.tts.START_READING"
-            NovelTtsService.ACTION_PLAY shouldBe "com.yunfie.illustia.tts.PLAY"
-            NovelTtsService.ACTION_PAUSE shouldBe "com.yunfie.illustia.tts.PAUSE"
-            NovelTtsService.ACTION_TOGGLE_PLAY shouldBe "com.yunfie.illustia.tts.TOGGLE_PLAY"
-            NovelTtsService.ACTION_NEXT shouldBe "com.yunfie.illustia.tts.NEXT"
-            NovelTtsService.ACTION_PREV shouldBe "com.yunfie.illustia.tts.PREV"
-            NovelTtsService.ACTION_STOP shouldBe "com.yunfie.illustia.tts.STOP"
-            NovelTtsService.ACTION_SET_SPEED shouldBe "com.yunfie.illustia.tts.SET_SPEED"
-            NovelTtsService.ACTION_SET_PITCH shouldBe "com.yunfie.illustia.tts.SET_PITCH"
-            NovelTtsService.ACTION_SET_VOICE shouldBe "com.yunfie.illustia.tts.SET_VOICE"
-            NovelTtsService.ACTION_SEEK_PARAGRAPH shouldBe "com.yunfie.illustia.tts.SEEK_PARAGRAPH"
-        }
-
         test("NovelTtsTextSanitizer replaces custom dictionary words and skips symbols") {
             val text = "★主人公の月姫は……何者かに追われていた――！"
             val dict = mapOf("月姫" to "かぐや")
@@ -103,10 +55,5 @@ class NovelTtsPlaybackTest :
                     customDictionary = dict,
                 )
             sanitizedWithoutSkip shouldBe "★主人公のかぐやは……何者かに追われていた――！"
-        }
-
-        test("NovelTtsNotificationHelper notification channel and ID constants") {
-            NovelTtsNotificationHelper.CHANNEL_ID shouldBe "novel_tts_channel"
-            NovelTtsNotificationHelper.NOTIFICATION_ID shouldBe 2001
         }
     })
