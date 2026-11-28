@@ -1,38 +1,10 @@
 package com.yunfie.illustia.platform
 
-import kotlinx.cinterop.ExperimentalForeignApi
-import platform.Foundation.NSAttributedString
-import platform.Foundation.NSString
-import platform.Foundation.NSUTF8StringEncoding
-import platform.Foundation.dataUsingEncoding
-
 /**
  * HTML 断片をプレーンテキストへ変換する。
  *
- * `android.text.Html` の代わりに Foundation の HTML 読み込みを使う。
- * `NSDocumentTypeDocumentAttribute` / `NSHTMLTextDocumentType` は Kotlin/Native の
- * Foundation バインディングに定数として公開されていないため、実際のキー文字列と
- * 値を自前で定義する（値は Apple の公開ドキュメントどおり）。
- *
- * Objective-C の `-initWithData:options:documentAttributes:error:` は Kotlin/Native では
- * 通常のコンストラクタとして公開される。
+ * Foundation の `NSAttributedString` による HTML 読み込みは Kotlin/Native のバインディングで
+ * 初期化子の形が安定せず、commonTest からも叩きにくい。Pixiv のコメントはタグと実体参照
+ * だけの素朴な HTML なので、依存の無いタグ除去 + エンティティ展開で十分。
  */
-@OptIn(ExperimentalForeignApi::class)
-actual fun htmlToPlainText(html: String): String {
-    val data = (html as NSString).dataUsingEncoding(NSUTF8StringEncoding) ?: return html.trim()
-    val typed =
-        NSAttributedString(
-            data = data,
-            options = mapOf<Any?, Any?>(DOCUMENT_TYPE_ATTRIBUTE to HTML_DOCUMENT_TYPE),
-            documentAttributes = null,
-            error = null,
-        )
-    return typed.string
-        .replace(NON_BREAKING_SPACE, ' ')
-        .replace("\r\n", "\n")
-        .trim()
-}
-
-private const val DOCUMENT_TYPE_ATTRIBUTE = "NSDocumentTypeDocumentAttribute"
-private const val HTML_DOCUMENT_TYPE = "NSHTMLTextDocumentType"
-private const val NON_BREAKING_SPACE = '\u00A0'
+actual fun htmlToPlainText(html: String): String = stripHtmlTags(html)
