@@ -23,8 +23,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
-import java.net.HttpURLConnection
+
+private const val HTTP_STATUS_NOT_FOUND = 404
 
 /** Illustration detail, image viewer, user profile, follow, and mute interactions. */
 @Suppress("LargeClass")
@@ -76,7 +76,7 @@ abstract class IllustiaDetailProfileModule(
         pendingDetailExtrasIllust = null
         detailExtrasJob?.cancel()
         detailExtrasJob =
-            viewModelScope.launch(Dispatchers.IO) {
+            viewModelScope.launch(Dispatchers.Default) {
                 try {
                     telemetry.traceAsync("illust.detail.load", "illust.detail") {
                         // 履歴やプロフィールのカードは詳細情報が欠けている場合があるため、
@@ -158,7 +158,7 @@ abstract class IllustiaDetailProfileModule(
         }
         detailExtrasJob?.cancel()
         detailExtrasJob =
-            viewModelScope.launch(Dispatchers.IO) {
+            viewModelScope.launch(Dispatchers.Default) {
                 try {
                     telemetry.traceAsync("illust.detail.load", "illust.detail") {
                         val illust = repository.illustDetail(illustId)
@@ -185,14 +185,14 @@ abstract class IllustiaDetailProfileModule(
     }
 
     private fun illustOpenErrorMessage(error: Throwable): String =
-        if (error.findPixivApiException()?.statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
+        if (error.findPixivApiException()?.statusCode == HTTP_STATUS_NOT_FOUND) {
             str(StringKey.ErrorIllustNotFound)
         } else {
             cleanErrorMessage(error, str(StringKey.ErrorLoadDetailFailed))
         }
 
     override suspend fun getIllustPreviewUrl(illustId: Long): String? =
-        withContext(Dispatchers.IO) {
+        withContext(Dispatchers.Default) {
             findIllustById(illustId)?.mediumImageUrl
                 ?: runCatching { repository.illustDetail(illustId).mediumImageUrl }.getOrNull()
         }
@@ -205,7 +205,7 @@ abstract class IllustiaDetailProfileModule(
         detailExtrasJob?.cancel()
         _uiState.update { it.copy(isSelectedIllustRefreshing = true) }
         val job =
-            viewModelScope.launch(Dispatchers.IO) {
+            viewModelScope.launch(Dispatchers.Default) {
                 try {
                     val fullIllust = repository.illustDetail(illustId)
                     kotlinx.coroutines.coroutineScope {
@@ -303,7 +303,7 @@ abstract class IllustiaDetailProfileModule(
      */
     fun openComments(target: Pair<Long, com.yunfie.illustia.data.pixiv.CommentArtworkType>) {
         setDetailExtrasSuppressed(true)
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             runCatching {
                 when (target.second) {
                     com.yunfie.illustia.data.pixiv.CommentArtworkType.ILLUST -> repository.illustComments(target.first)
@@ -368,17 +368,17 @@ abstract class IllustiaDetailProfileModule(
     }
 
     suspend fun loadUgoiraPlayback(illustId: Long): UgoiraPlayback =
-        withContext(Dispatchers.IO) {
+        withContext(Dispatchers.Default) {
             val metadata = repository.ugoiraMetadata(illustId)
             val zipUrl =
                 metadata.ugoiraMetadata.zipUrls.medium.ifBlank {
                     throw IllegalStateException("Ugoira zip URL is missing.")
                 }
             val requestUrl = proxyPixivImageUrl(zipUrl, _uiState.value.settings.pixivImageProxyBaseUrl)
-            val cacheRoot = File(appPaths.cacheDir(), "ugoira/$illustId")
+            val cacheRoot = "${appPaths.cacheDir()}/ugoira/$illustId"
             repository.prepareUgoira(
                 url = requestUrl,
-                cacheDir = cacheRoot.absolutePath,
+                cacheDir = cacheRoot,
                 frames = metadata.ugoiraMetadata.frames,
             )
         }
@@ -498,7 +498,7 @@ abstract class IllustiaDetailProfileModule(
         viewModelScope.launch {
             try {
                 val myProfile =
-                    withContext(Dispatchers.IO) {
+                    withContext(Dispatchers.Default) {
                         repository.currentUserProfile()
                     }
                 _uiState.update { current ->
@@ -541,7 +541,7 @@ abstract class IllustiaDetailProfileModule(
     }
 
     override suspend fun updateUserProfile(profile: UserProfileEdit): AccountEditResult =
-        withContext(Dispatchers.IO) {
+        withContext(Dispatchers.Default) {
             val result = repository.setUserProfile(profile)
             if (result.isSucceeded) {
                 _uiState.update { current ->
@@ -607,7 +607,7 @@ abstract class IllustiaDetailProfileModule(
         }
         session.scope.launch {
             try {
-                val profile = withContext(Dispatchers.IO) { repository.userDetail(userId, forceRefresh = forceRefresh) }
+                val profile = withContext(Dispatchers.Default) { repository.userDetail(userId, forceRefresh = forceRefresh) }
                 if (!isCurrentProfileRequest(session)) return@launch
                 _uiState.update {
                     it.copy(
@@ -651,7 +651,7 @@ abstract class IllustiaDetailProfileModule(
         session.scope.launch {
             try {
                 val page =
-                    withContext(Dispatchers.IO) {
+                    withContext(Dispatchers.Default) {
                         if (nextUrl == null) repository.userIllusts(session.userId) else repository.nextPage(nextUrl)
                     }
                 if (!isCurrentProfileRequest(session)) return@launch
@@ -807,7 +807,7 @@ abstract class IllustiaDetailProfileModule(
         message: String?,
         onComplete: ((Boolean) -> Unit)? = null,
     ) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             try {
                 repository.reportIllust(illustId, problemType, message)
                 withContext(Dispatchers.Main) {
@@ -830,7 +830,7 @@ abstract class IllustiaDetailProfileModule(
         message: String?,
         onComplete: ((Boolean) -> Unit)? = null,
     ) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             try {
                 repository.reportUser(userId, problemType, message)
                 withContext(Dispatchers.Main) {

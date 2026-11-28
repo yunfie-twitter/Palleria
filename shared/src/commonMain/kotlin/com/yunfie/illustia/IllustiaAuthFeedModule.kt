@@ -11,9 +11,13 @@ import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
 import com.yunfie.illustia.platform.IncomingLink
 import com.yunfie.illustia.platform.StringKey
+import com.yunfie.illustia.platform.TransportFailure
 import com.yunfie.illustia.platform.ViewModelDepsApi
+import com.yunfie.illustia.platform.currentTimeMillis
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.ui.app.SearchEntrySnapshot
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -21,7 +25,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.IOException
 
 private const val TARGET_INITIAL_SEARCH_COUNT = 30
 private const val MAX_SEARCH_PAGES_ACCUMULATION = 20
@@ -32,6 +35,7 @@ private const val STARTUP_HOME_BACKGROUND_REFRESH_DELAY_MS = 1200L
 abstract class IllustiaAuthFeedModule(
     deps: ViewModelDepsApi,
 ) : IllustiaSettingsSecurityModule(deps) {
+    private val pendingNovelBookmarkIdsLock = SynchronizedObject()
     private val pendingNovelBookmarkIds = mutableSetOf<Long>()
 
     abstract override fun openIllust(illustId: Long)
@@ -192,7 +196,7 @@ abstract class IllustiaAuthFeedModule(
     }
 
     override fun prefetchHomeFeedOnStartup(kind: HomeFeedKind) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             if (_uiState.value.homeItems.isNotEmpty() || _uiState.value.loadState == LoadState.Loading) return@launch
             try {
                 val hasCachedItems = tryApplyHomeSnapshot(kind)
@@ -223,7 +227,7 @@ abstract class IllustiaAuthFeedModule(
     }
 
     override fun refreshHome(forceRefresh: Boolean) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             val kind = _uiState.value.homeKind
             val shouldTryCache = !forceRefresh && _uiState.value.homeItems.isEmpty()
             val hasCached = if (shouldTryCache) tryApplyHomeSnapshot(kind) else false
@@ -240,7 +244,7 @@ abstract class IllustiaAuthFeedModule(
                 _uiState.update {
                     it.copy(
                         isHomeRefreshing = false,
-                        loadState = LoadState.Error(loadFailureMessage(it, IOException("offline"))),
+                        loadState = LoadState.Error(loadFailureMessage(it, TransportFailure("offline"))),
                     )
                 }
                 return@launch
@@ -269,7 +273,7 @@ abstract class IllustiaAuthFeedModule(
     }
 
     override fun refreshNovels(forceRefresh: Boolean) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             _uiState.update {
                 it.copy(
                     isNovelRefreshing = forceRefresh,
@@ -307,7 +311,7 @@ abstract class IllustiaAuthFeedModule(
     override fun loadMoreNovels() {
         val nextUrl = _uiState.value.novelNextUrl ?: return
         if (_uiState.value.isNovelPaginating) return
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             _uiState.update { it.copy(isNovelPaginating = true) }
             try {
                 val page = repository.nextNovelPage(nextUrl)
@@ -335,7 +339,7 @@ abstract class IllustiaAuthFeedModule(
 
     override fun toggleNovelBookmark(novel: NovelPreview) {
         val shouldBookmark = !novel.isBookmarked
-        synchronized(pendingNovelBookmarkIds) {
+        synchronized(pendingNovelBookmarkIdsLock) {
             if (!pendingNovelBookmarkIds.add(novel.id)) return
         }
         val settings = _uiState.value.settings
@@ -347,7 +351,7 @@ abstract class IllustiaAuthFeedModule(
             }
         _uiState.update { it.withNovelBookmark(novel.id, shouldBookmark) }
 
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             try {
                 if (shouldBookmark) {
                     repository.addNovelBookmark(novel.id, bookmarkRestrict)
@@ -372,7 +376,7 @@ abstract class IllustiaAuthFeedModule(
                 if (handleAuthExpired(expectedFailure)) return@launch
                 telemetry.recordException(expectedFailure, tag = "novel_bookmark_toggle")
             } finally {
-                synchronized(pendingNovelBookmarkIds) {
+                synchronized(pendingNovelBookmarkIdsLock) {
                     pendingNovelBookmarkIds.remove(novel.id)
                 }
             }
@@ -390,7 +394,7 @@ abstract class IllustiaAuthFeedModule(
         forceRefresh: Boolean,
     ) {
         _uiState.update { it.copy(selectedNovel = novel, selectedNovelText = null) }
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             try {
                 val text = repository.loadNovelText(novel.id, forceRefresh = forceRefresh)
                 _uiState.update {
@@ -455,7 +459,7 @@ abstract class IllustiaAuthFeedModule(
                     novelId = novelId,
                     lastReadPage = page,
                     totalPages = totalPages,
-                    updatedAt = System.currentTimeMillis(),
+                    updatedAt = currentTimeMillis(),
                     status = resolvedStatus,
                 )
             current.copy(novelProgress = current.novelProgress + (novelId to record))
@@ -469,12 +473,12 @@ abstract class IllustiaAuthFeedModule(
         updateSettings { current ->
             val existing = current.novelProgress[novelId]
             val record =
-                existing?.copy(status = status, updatedAt = System.currentTimeMillis())
+                existing?.copy(status = status, updatedAt = currentTimeMillis())
                     ?: com.yunfie.illustia.models.NovelReadingProgress(
                         novelId = novelId,
                         lastReadPage = 0,
                         totalPages = 1,
-                        updatedAt = System.currentTimeMillis(),
+                        updatedAt = currentTimeMillis(),
                         status = status,
                     )
             current.copy(novelProgress = current.novelProgress + (novelId to record))
@@ -496,7 +500,7 @@ abstract class IllustiaAuthFeedModule(
         mode: String,
         forceRefresh: Boolean,
     ) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             _uiState.update {
                 it.copy(
                     isRankingRefreshing = it.isRankingRefreshing + (mode to forceRefresh),
@@ -553,7 +557,7 @@ abstract class IllustiaAuthFeedModule(
     override fun loadMoreRanking(mode: String) {
         val nextUrl = _uiState.value.rankingModeNextUrls[mode] ?: _uiState.value.rankingNextUrl ?: return
         if (_uiState.value.isRankingPaginating[mode] == true) return
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             _uiState.update {
                 it.copy(
                     isRankingPaginating = it.isRankingPaginating + (mode to true),
@@ -596,7 +600,7 @@ abstract class IllustiaAuthFeedModule(
     fun loadMoreHome() {
         val nextUrl = _uiState.value.homeNextUrl ?: return
         if (_uiState.value.isHomePaginating) return
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             _uiState.update { it.copy(isHomePaginating = true) }
             try {
                 val page =
@@ -726,7 +730,7 @@ abstract class IllustiaAuthFeedModule(
         normalized: String,
         forceRefresh: Boolean,
     ): Job =
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             _uiState.update { it.copy(loadState = LoadState.Loading, isSearchRefreshing = forceRefresh, message = null) }
             try {
                 telemetry.traceAsync("search.query", "search") {
@@ -1052,7 +1056,7 @@ abstract class IllustiaAuthFeedModule(
 
     override fun refreshTimeline(forceRefresh: Boolean) {
         val requestedRestrict = _uiState.value.settings.followRestrict
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             _uiState.update {
                 it.copy(
                     isTimelineRefreshing = forceRefresh,
@@ -1115,7 +1119,7 @@ abstract class IllustiaAuthFeedModule(
         val nextUrl = state.timelineNextUrl ?: return
         if (state.isTimelinePaginating) return
         val requestedRestrict = state.settings.followRestrict
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             _uiState.update { it.copy(isTimelinePaginating = true) }
             try {
                 val page =
@@ -1200,7 +1204,7 @@ abstract class IllustiaAuthFeedModule(
     ) {
         val normalized = tag.trim().removePrefix("#")
         if (normalized.isBlank()) return
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             _uiState.update {
                 it.copy(
                     isWatchlistRefreshing = forceRefresh,
@@ -1246,7 +1250,7 @@ abstract class IllustiaAuthFeedModule(
     override fun loadMoreWatchlist() {
         val nextUrl = _uiState.value.watchlistNextUrl ?: return
         if (_uiState.value.isWatchlistPaginating) return
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             _uiState.update { it.copy(isWatchlistPaginating = true) }
             try {
                 val page =
@@ -1277,7 +1281,7 @@ abstract class IllustiaAuthFeedModule(
 
     override fun refreshFollowingUsers(forceRefresh: Boolean) {
         val requestedRestrict = _uiState.value.settings.followRestrict
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             _uiState.update {
                 it.copy(
                     isFollowingRefreshing = forceRefresh,
@@ -1322,7 +1326,7 @@ abstract class IllustiaAuthFeedModule(
         val nextUrl = state.followingUsersNextUrl ?: return
         if (state.isFollowingPaginating) return
         val requestedRestrict = state.settings.followRestrict
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             _uiState.update { it.copy(isFollowingPaginating = true) }
             try {
                 val page = repository.nextUserSearchPage(nextUrl)
@@ -1369,7 +1373,7 @@ abstract class IllustiaAuthFeedModule(
 
     fun exportManagedData(uri: String) {
         val settings = _uiState.value.settings
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             runCatching {
                 documentIo.export(uri, settings)
             }.onSuccess {
@@ -1382,7 +1386,7 @@ abstract class IllustiaAuthFeedModule(
     }
 
     fun importManagedData(uri: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             runCatching {
                 val current = _uiState.value.settings
                 val imported = documentIo.import(uri, current)

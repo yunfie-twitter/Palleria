@@ -17,15 +17,16 @@ import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
 import com.yunfie.illustia.platform.StringKey
 import com.yunfie.illustia.platform.ViewModelDepsApi
+import com.yunfie.illustia.platform.currentTimeMillis
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.withImageExtension
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.withLock
-import java.io.File
-import java.io.FileOutputStream
 
 private const val MAX_SIMULTANEOUS_DOWNLOADS = 4
 private const val STORAGE_SIZE_CACHE_MILLIS = 5_000L
@@ -40,7 +41,7 @@ private data class StorageSizeSample(
 abstract class IllustiaLibraryNavigationModule(
     deps: ViewModelDepsApi,
 ) : IllustiaBookmarkModule(deps) {
-    private val storageSizeLock = Any()
+    private val storageSizeLock = SynchronizedObject()
     private var cachedStorageBytes: StorageSizeSample? = null
 
     override fun saveImage(
@@ -55,14 +56,14 @@ abstract class IllustiaLibraryNavigationModule(
                 _uiState.update { it.copy(message = str(StringKey.ErrorSaveFailed)) }
                 return
             }
-        val queueId = System.nanoTime()
+        val queueId = currentTimeMillis()
         val queuedIllust = resolveDownloadIllust(filename)
         val queueTitle = queuedIllust?.title?.takeIf { it.isNotBlank() } ?: filename
         val queueSubtitle =
             queuedIllust?.artistName?.takeIf { it.isNotBlank() }
                 ?: str(StringKey.DownloadQueueWaiting)
         val saveJob =
-            viewModelScope.launch(Dispatchers.IO) {
+            viewModelScope.launch(Dispatchers.Default) {
                 enqueueDownloadQueue(queueId, queueTitle, queueSubtitle, DownloadQueueStatus.Waiting)
                 var terminalStatus: DownloadQueueStatus? = null
                 var acquiredSlot = false
@@ -118,7 +119,7 @@ abstract class IllustiaLibraryNavigationModule(
                 return
             }
         viewModelScope
-            .launch(Dispatchers.IO) {
+            .launch(Dispatchers.Default) {
                 try {
                     documentIo.downloadToUri(
                         url = proxyPixivImageUrl(url, _uiState.value.settings.pixivImageProxyBaseUrl),
@@ -211,8 +212,8 @@ abstract class IllustiaLibraryNavigationModule(
         illust: Illust? = null,
     ) {
         val targetIllust = illust ?: _uiState.value.selectedIllust ?: return
-        viewModelScope.launch(Dispatchers.IO) {
-            var savedFile: File? = null
+        viewModelScope.launch(Dispatchers.Default) {
+            var savedPath: String? = null
             try {
                 if (_uiState.value.settings.offlineWifiOnly && connectivity.isMetered()) {
                     _uiState.update { it.copy(message = str(StringKey.OfflineWifiOnlyDesc)) }
@@ -224,7 +225,7 @@ abstract class IllustiaLibraryNavigationModule(
                     return@launch
                 }
                 val resumeEnabled = FeatureFlag.ByteRangeResume.resolve(_uiState.value.settings)
-                val partFile = resolveDownloadPartFile(filename, requestUrl)
+                val partPath = resolveDownloadPartFile(filename, requestUrl)
                 val headers =
                     mapOf(
                         "Referer" to "https://www.pixiv.net/",
@@ -233,25 +234,25 @@ abstract class IllustiaLibraryNavigationModule(
                 val result =
                     downloadService.downloadToPartFile(
                         url = requestUrl,
-                        partPath = partFile.absolutePath,
+                        partPath = partPath,
                         resumeEnabled = resumeEnabled,
                         headers = headers,
                     )
-                val file =
-                    saveOfflineFile(
+                val filePath =
+                    moveDownloadedFile(
+                        partPath = partPath,
                         filename = filename,
                         sourceUrl = requestUrl,
                         responseMimeType = result.contentType,
-                        input = partFile.inputStream().buffered(),
                     )
-                savedFile = file
-                partFile.delete()
+                savedPath = filePath
+                fileSystem.delete(partPath)
                 val pages =
                     listOf(
                         SavedIllustPage(
                             illustId = targetIllust.id,
                             pageIndex = 0,
-                            localPath = file.absolutePath,
+                            localPath = filePath,
                             sourceUrl = requestUrl,
                         ),
                     )
@@ -262,10 +263,10 @@ abstract class IllustiaLibraryNavigationModule(
                         artistName = targetIllust.artistName,
                         artistId = targetIllust.artistId,
                         thumbUrl = targetIllust.thumbnailUrl,
-                        localCoverPath = file.absolutePath,
-                        localPagePathsJson = "[\"${file.absolutePath.replace("\\", "\\\\")}\"]",
+                        localCoverPath = filePath,
+                        localPagePathsJson = "[\"${filePath.replace("\\", "\\\\")}\"]",
                         pageCount = 1,
-                        savedAt = System.currentTimeMillis(),
+                        savedAt = currentTimeMillis(),
                         saveGroup = targetIllust.artistName,
                         xRestrict = if (targetIllust.isR18) 1 else 0,
                     ),
@@ -276,7 +277,7 @@ abstract class IllustiaLibraryNavigationModule(
             } catch (expectedFailure: Exception) {
                 val e = expectedFailure
                 try {
-                    savedFile?.delete()
+                    savedPath?.let { fileSystem.delete(it) }
                 } catch (_: Throwable) {
                 }
                 if (isCancellation(e)) throw e
@@ -309,14 +310,14 @@ abstract class IllustiaLibraryNavigationModule(
     override fun loadSavedLibrary() {
         if (savedLibraryJob?.isActive == true) return
         savedLibraryJob =
-            viewModelScope.launch(Dispatchers.IO) {
+            viewModelScope.launch(Dispatchers.Default) {
                 val saved = settingsStore.getSavedIllusts()
                 _uiState.update { it.copy(savedIllusts = saved) }
             }
     }
 
     fun openSavedIllustViewer(illustId: Long) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             val savedId = settingsStore.getSavedIllustIllustId(illustId) ?: return@launch
             _uiState.update { it.copy(selectedSavedIllustId = savedId) }
             _navigationRequests.tryEmit(IllustiaNavigationRequest.SavedIllustViewer)
@@ -328,7 +329,7 @@ abstract class IllustiaLibraryNavigationModule(
     }
 
     fun deleteSavedIllust(illustId: Long) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             settingsStore.deleteSavedIllust(illustId)
             _uiState.update { it.copy(savedIllusts = it.savedIllusts.filterNot { item -> item.illustId == illustId }) }
         }
@@ -404,7 +405,7 @@ abstract class IllustiaLibraryNavigationModule(
                     state.downloadQueue
                         .map { entry ->
                             if (entry.id == id) {
-                                entry.copy(status = status, timestampMillis = System.currentTimeMillis())
+                                entry.copy(status = status, timestampMillis = currentTimeMillis())
                             } else {
                                 entry
                             }
@@ -439,7 +440,7 @@ abstract class IllustiaLibraryNavigationModule(
      * instead of rescanning the whole storage tree per page.
      */
     private suspend fun savedIllustStorageBytesAtLeast(limitBytes: Long): Boolean {
-        val now = System.currentTimeMillis()
+        val now = currentTimeMillis()
         synchronized(storageSizeLock) {
             val cached = cachedStorageBytes
             if (cached != null && now - cached.measuredAtMillis < STORAGE_SIZE_CACHE_MILLIS) {
@@ -451,24 +452,28 @@ abstract class IllustiaLibraryNavigationModule(
         return bytes >= limitBytes
     }
 
-    private fun saveOfflineFile(
+    /**
+     * ダウンロード済みの `.part` を保存ディレクトリへ移し、最終パスを返す。
+     *
+     * 従来は入力ストリームを読みながら書き出していたが、ViewModel 層からは生の
+     * ストリームを扱わないため、[DownloadService] が返したパスをそのまま複製する。
+     */
+    private fun moveDownloadedFile(
+        partPath: String,
         filename: String,
         sourceUrl: String,
         responseMimeType: String?,
-        input: java.io.InputStream,
-    ): File {
-        val dir = File(settingsStore.savedIllustDir())
-        dir.mkdirs()
-        val target = File(dir, filename.withImageExtension(sourceUrl, responseMimeType))
+    ): String {
+        val dir = settingsStore.savedIllustDir()
+        fileSystem.makeDirectories(dir)
+        val targetPath = "$dir/${filename.withImageExtension(sourceUrl, responseMimeType)}"
         try {
-            input.use { stream ->
-                FileOutputStream(target).use { output -> stream.copyTo(output) }
-            }
-        } catch (e: java.io.IOException) {
-            target.delete()
+            fileSystem.copy(sourcePath = partPath, targetPath = targetPath)
+        } catch (e: Exception) {
+            fileSystem.delete(targetPath)
             throw e
         }
-        return target
+        return targetPath
     }
 
     private fun resolveDownloadIllust(filename: String): Illust? =
@@ -476,15 +481,19 @@ abstract class IllustiaLibraryNavigationModule(
             ?: _uiState.value.selectedIllust
             ?: _uiState.value.imageViewerIllust
 
-    private fun getDownloadPartsDir(): File = File(appPaths.cacheDir(), "download_parts").apply { mkdirs() }
+    private fun getDownloadPartsDir(): String {
+        val dir = "${appPaths.cacheDir()}/download_parts"
+        fileSystem.makeDirectories(dir)
+        return dir
+    }
 
     private fun resolveDownloadPartFile(
         filename: String,
         url: String,
-    ): File {
+    ): String {
         val hash = "${filename}_$url".hashCode().toUInt().toString(16)
         val sanitized = filename.filter { it.isLetterOrDigit() || it == '_' || it == '-' }.take(20)
-        return File(getDownloadPartsDir(), "part_${sanitized}_$hash.part")
+        return "${getDownloadPartsDir()}/part_${sanitized}_$hash.part"
     }
 
     private fun downloadImageToGallery(
@@ -494,7 +503,7 @@ abstract class IllustiaLibraryNavigationModule(
     ) {
         val requestUrl = proxyPixivImageUrl(url, _uiState.value.settings.pixivImageProxyBaseUrl)
         val resumeEnabled = FeatureFlag.ByteRangeResume.resolve(_uiState.value.settings)
-        val partFile = resolveDownloadPartFile(filename, requestUrl)
+        val partPath = resolveDownloadPartFile(filename, requestUrl)
         val headers =
             mapOf(
                 "Referer" to "https://www.pixiv.net/",
@@ -503,7 +512,7 @@ abstract class IllustiaLibraryNavigationModule(
         val result =
             downloadService.downloadToPartFile(
                 url = requestUrl,
-                partPath = partFile.absolutePath,
+                partPath = partPath,
                 resumeEnabled = resumeEnabled,
                 headers = headers,
             )
@@ -512,7 +521,7 @@ abstract class IllustiaLibraryNavigationModule(
             val embedMeta = _uiState.value.settings.embedMetadata
             val saved =
                 imageStore.saveFromFile(
-                    sourcePath = partFile.absolutePath,
+                    sourcePath = partPath,
                     name = filename,
                     sourceUrl = requestUrl,
                     responseMimeType = result.contentType,
@@ -521,10 +530,10 @@ abstract class IllustiaLibraryNavigationModule(
                     embedMetadata = embedMeta,
                 )
             if (!saved) {
-                throw java.io.IOException(str(StringKey.ErrorSaveFailed))
+                throw IllegalStateException(str(StringKey.ErrorSaveFailed))
             }
         } finally {
-            partFile.delete()
+            fileSystem.delete(partPath)
         }
     }
 
@@ -537,7 +546,7 @@ abstract class IllustiaLibraryNavigationModule(
         if (playback.frames.isEmpty()) {
             throw IllegalStateException(str(StringKey.UgoiraLoadFailed))
         }
-        val cacheDir = File(appPaths.cacheDir())
+        val cacheDir = appPaths.cacheDir()
         if (_uiState.value.settings.ugoiraSaveFormat == "gif") {
             saveUgoiraAsGif(illust.id, playback.frames, filename, cacheDir, clearOld)
         } else {
@@ -549,22 +558,22 @@ abstract class IllustiaLibraryNavigationModule(
         illustId: Long,
         frames: List<UgoiraPlaybackFrame>,
         filename: String,
-        cacheDir: File,
+        cacheDir: String,
         clearOld: Boolean = false,
     ) {
         telemetry.trace("ugoira.convert.gif", "ugoira.convert") {
-            val tempGif = File.createTempFile("ugoira_${illustId}_", ".gif", cacheDir)
+            val tempGif = fileSystem.createTempFile("ugoira_${illustId}_", ".gif", cacheDir)
             try {
-                mediaEncoder.encodeGif(frames, tempGif.absolutePath)
+                mediaEncoder.encodeGif(frames, tempGif)
                 imageStore.saveFromFile(
-                    sourcePath = tempGif.absolutePath,
+                    sourcePath = tempGif,
                     name = filename,
                     sourceUrl = "https://www.pixiv.net/artworks/$illustId.gif",
                     responseMimeType = "image/gif",
                     clearOld = clearOld,
                 )
             } finally {
-                tempGif.delete()
+                fileSystem.delete(tempGif)
             }
         }
     }
@@ -573,22 +582,22 @@ abstract class IllustiaLibraryNavigationModule(
         illustId: Long,
         frames: List<UgoiraPlaybackFrame>,
         filename: String,
-        cacheDir: File,
+        cacheDir: String,
         clearOld: Boolean = false,
     ) {
         telemetry.trace("ugoira.convert.mp4", "ugoira.convert") {
-            val tempMp4 = File.createTempFile("ugoira_${illustId}_", ".mp4", cacheDir)
+            val tempMp4 = fileSystem.createTempFile("ugoira_${illustId}_", ".mp4", cacheDir)
             try {
-                mediaEncoder.encodeMp4(frames, tempMp4.absolutePath)
+                mediaEncoder.encodeMp4(frames, tempMp4)
                 imageStore.saveFromFile(
-                    sourcePath = tempMp4.absolutePath,
+                    sourcePath = tempMp4,
                     name = filename,
                     sourceUrl = "https://www.pixiv.net/artworks/$illustId.mp4",
                     responseMimeType = "video/mp4",
                     clearOld = clearOld,
                 )
             } finally {
-                tempMp4.delete()
+                fileSystem.delete(tempMp4)
             }
         }
     }
@@ -602,26 +611,27 @@ abstract class IllustiaLibraryNavigationModule(
     }
 
     fun clearAppCache() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             try {
                 runCatching {
                     imageCache.clear()
                 }
 
-                val cacheRoot = File(appPaths.cacheDir())
-                cacheRoot.listFiles()?.forEach { file ->
+                val cacheRoot = appPaths.cacheDir()
+                fileSystem.list(cacheRoot).forEach { name ->
+                    val child = "$cacheRoot/$name"
                     when {
-                        file.name == "image_cache" ||
-                            file.name == "http_cache" ||
-                            file.name == "download_parts" -> {
-                            file.listFiles()?.forEach { child -> child.deleteRecursively() }
+                        name == "image_cache" ||
+                            name == "http_cache" ||
+                            name == "download_parts" -> {
+                            fileSystem.delete(child)
                         }
 
-                        file.name.startsWith("ugoira_") ||
-                            file.name.startsWith("temp_") ||
-                            file.name.endsWith(".tmp") ||
-                            file.name.endsWith(".part") -> {
-                            file.deleteRecursively()
+                        name.startsWith("ugoira_") ||
+                            name.startsWith("temp_") ||
+                            name.endsWith(".tmp") ||
+                            name.endsWith(".part") -> {
+                            fileSystem.delete(child)
                         }
                     }
                 }
@@ -879,7 +889,7 @@ abstract class IllustiaLibraryNavigationModule(
                 followingUsersLoadState = LoadState.Idle,
             )
         }
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             repository.saveSettings(nextSettings, current)
             login()
         }
@@ -919,11 +929,11 @@ abstract class IllustiaLibraryNavigationModule(
         }
 
         if (nextAccount == null && removedActiveAccount) {
-            viewModelScope.launch(Dispatchers.IO) {
+            viewModelScope.launch(Dispatchers.Default) {
                 repository.logout()
             }
         } else {
-            viewModelScope.launch(Dispatchers.IO) {
+            viewModelScope.launch(Dispatchers.Default) {
                 repository.saveSettings(nextSettings, current)
                 if (removedActiveAccount) {
                     login()

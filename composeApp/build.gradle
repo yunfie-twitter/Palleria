@@ -32,8 +32,8 @@ kotlin {
     // iOS targets. Apple's linker only exists on macOS, so these are declared unconditionally but
     // only produce artefacts on a macOS host (the `ios` CI job); elsewhere Kotlin skips them and
     // the Android build is unaffected.
-    iosArm64()
-    iosSimulatorArm64()
+    iosArm64 { binaries.framework { baseName = "ComposeApp"; isStatic = true } }
+    iosSimulatorArm64 { binaries.framework { baseName = "ComposeApp"; isStatic = true } }
 
     sourceSets {
         commonMain.dependencies {
@@ -42,6 +42,7 @@ kotlin {
             implementation compose.runtime
             implementation compose.foundation
             implementation compose.ui
+            implementation compose.material3
             api compose.components.resources
 
             implementation libs.miuix.ui
@@ -58,7 +59,6 @@ kotlin {
         }
 
         androidMain.dependencies {
-            implementation compose.material3
             implementation libs.miuix.navigation3.ui
             implementation libs.navigation3.runtime
             implementation libs.coil.network.okhttp

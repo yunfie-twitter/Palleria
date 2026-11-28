@@ -28,6 +28,7 @@ interface ViewModelDepsApi {
     val strings: StringProvider
 
     val documentIo: DocumentIo
+    val fileSystem: FileSystem
     val appServices: AppServices
     val appIconSwitcher: AppIconSwitcher
     val downloadService: DownloadService

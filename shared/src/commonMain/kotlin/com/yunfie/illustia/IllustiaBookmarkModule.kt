@@ -6,8 +6,10 @@ import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.models.SearchWorkType
 import com.yunfie.illustia.models.UserPreview
+import com.yunfie.illustia.platform.AtomicCounter
 import com.yunfie.illustia.platform.StringKey
 import com.yunfie.illustia.platform.ViewModelDepsApi
+import com.yunfie.illustia.platform.currentTimeMillis
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -17,7 +19,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.util.concurrent.atomic.AtomicLong
 
 private const val TARGET_SEARCH_PAGE_BATCH = 24
 private const val MAX_SEARCH_LOAD_MORE_PAGES = 20
@@ -27,7 +28,7 @@ private const val MAX_SEARCH_LOAD_MORE_PAGES = 20
 abstract class IllustiaBookmarkModule(
     deps: ViewModelDepsApi,
 ) : IllustiaDetailProfileModule(deps) {
-    private val bookmarkRefreshGeneration = AtomicLong()
+    private val bookmarkRefreshGeneration = AtomicCounter()
 
     abstract fun saveImage(
         url: String,
@@ -45,7 +46,7 @@ abstract class IllustiaBookmarkModule(
         if (_uiState.value.isSearchPaginating) return
         searchJob?.cancel()
         val job =
-            viewModelScope.launch(Dispatchers.IO) {
+            viewModelScope.launch(Dispatchers.Default) {
                 _uiState.update { it.copy(isSearchPaginating = true) }
                 try {
                     if (workType.isNovel) {
@@ -118,7 +119,7 @@ abstract class IllustiaBookmarkModule(
     fun loadMoreUserSearch() {
         val nextUrl = _uiState.value.userSearchNextUrl ?: return
         if (_uiState.value.isUserSearchPaginating) return
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             _uiState.update { it.copy(isUserSearchPaginating = true) }
             try {
                 val page = repository.nextUserSearchPage(nextUrl)
@@ -187,7 +188,7 @@ abstract class IllustiaBookmarkModule(
         session.scope.launch {
             try {
                 val page =
-                    withContext(Dispatchers.IO) {
+                    withContext(Dispatchers.Default) {
                         if (nextUrl == null) repository.bookmarks(session.userId, Restrict.Public) else repository.nextPage(nextUrl)
                     }
                 if (!isCurrentProfileRequest(session)) return@launch
@@ -247,7 +248,7 @@ abstract class IllustiaBookmarkModule(
         val userId = targetUserId ?: _uiState.value.selectedUser?.id ?: return
         val cachedForSameUser = hasCachedRelatedUsers(userId)
         if (shouldSkipRelatedUsersLoad(force, cachedForSameUser)) return
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             markRelatedUsersLoading(userId, force, cachedForSameUser)
             fetchSelectedRelatedUsers(userId)
         }
@@ -331,7 +332,7 @@ abstract class IllustiaBookmarkModule(
         val userId = targetUserId ?: _uiState.value.selectedUser?.id ?: return
         val nextUrl = _uiState.value.selectedRelatedUsersNextUrl
         if (nextUrl == null || _uiState.value.selectedRelatedUsersPaginating || _uiState.value.selectedRelatedUsersLoading) return
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             _uiState.update { it.copy(selectedRelatedUsersPaginating = true) }
             try {
                 val page = repository.nextRelatedUsersPage(nextUrl)
@@ -372,7 +373,7 @@ abstract class IllustiaBookmarkModule(
         val generation = bookmarkRefreshGeneration.incrementAndGet()
         val restrict = requestState.settings.bookmarkRestrict
         val tag = requestState.bookmarkTag
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             _uiState.update {
                 it.copy(
                     isBookmarkRefreshing = forceRefresh,
@@ -429,7 +430,7 @@ abstract class IllustiaBookmarkModule(
 
     override fun refreshRecommendedTags(force: Boolean) {
         val state = _uiState.value
-        val now = System.currentTimeMillis()
+        val now = currentTimeMillis()
         val cacheAge = now - state.recommendedTagsFetchedAtMillis
         val cacheIsFresh =
             !force &&
@@ -450,7 +451,7 @@ abstract class IllustiaBookmarkModule(
     private fun loadRecommendedTags() {
         _uiState.update { it.copy(recommendedTagsLoading = true, recommendedTagsError = null) }
         recommendedTagsJob =
-            viewModelScope.launch(Dispatchers.IO) {
+            viewModelScope.launch(Dispatchers.Default) {
                 runCatching {
                     val tags =
                         repository
@@ -482,7 +483,7 @@ abstract class IllustiaBookmarkModule(
                         }
                         return@onSuccess
                     }
-                    val fetchedAt = System.currentTimeMillis()
+                    val fetchedAt = currentTimeMillis()
                     _uiState.update { current ->
                         current.copy(
                             recommendedTags = tags.map { it.tag },
@@ -534,7 +535,7 @@ abstract class IllustiaBookmarkModule(
         val nextUrl = requestState.bookmarkNextUrl ?: return
         if (requestState.isBookmarkPaginating) return
         val generation = bookmarkRefreshGeneration.get()
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             _uiState.update { it.copy(isBookmarkPaginating = true) }
             try {
                 val page =

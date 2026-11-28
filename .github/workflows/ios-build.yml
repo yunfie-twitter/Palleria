@@ -12,6 +12,7 @@ on:
     paths:
       - "shared/**"
       - "composeApp/**"
+      - "iosApp/**"
       - "gradle/**"
       - "build.gradle"
       - "settings.gradle"
@@ -23,6 +24,7 @@ on:
     paths:
       - "shared/**"
       - "composeApp/**"
+      - "iosApp/**"
       - "gradle/**"
       - "build.gradle"
       - "settings.gradle"
@@ -118,3 +120,108 @@ jobs:
             composeApp/build/test-results/iosSimulatorArm64Test/*.xml
           retention-days: 3
           if-no-files-found: error
+
+  # Produces an unsigned .ipa from the Xcode project in `iosApp/`. No signing identity or
+  # provisioning profile exists here, so every signing step is disabled explicitly: the archive is
+  # built with CODE_SIGNING_ALLOWED=NO, and the .app is zipped into a Payload/ folder by hand
+  # instead of going through `-exportArchive` (which always requires a signing team).
+  unsigned-ipa:
+    name: Build unsigned .ipa
+    runs-on: macos-26-arm64
+    timeout-minutes: 60
+    needs: ios-build
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          java-version: "21"
+          distribution: temurin
+          cache: "gradle"
+
+      - name: Grant execute permission for Gradle wrapper
+        run: chmod +x gradlew
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      # Gradle's `embedAndSignAppleFrameworkForXcode` phase (invoked by the Xcode build) needs the
+      # Kotlin/Native toolchain to be ready; warming it here keeps the xcodebuild log readable.
+      - name: Warm Kotlin/Native toolchain
+        run: ./gradlew :composeApp:linkDebugFrameworkIosArm64 --build-cache
+
+      - name: Build unsigned archive
+        shell: bash
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project iosApp/iosApp.xcodeproj \
+            -scheme iosApp \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build/ios-derived \
+            -archivePath build/ios-app.xcarchive \
+            archive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM="" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            ENABLE_BITCODE=NO \
+            2>&1 | tee ios-archive.log
+
+      - name: Package .app into an unsigned .ipa
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP_PATH=$(find build/ios-derived/Build/Products/Release-iphoneos -maxdepth 1 -name "*.app" -print -quit)
+          if [ -z "$APP_PATH" ]; then
+            echo "No .app produced; see ios-archive.log" >&2
+            exit 1
+          fi
+          echo "Packaging $APP_PATH"
+          rm -rf build/ipa && mkdir -p build/ipa/Payload
+          cp -R "$APP_PATH" build/ipa/Payload/
+          # `zip -y` keeps symlinks as symlinks, which iOS requires inside the bundle.
+          (cd build/ipa && zip -qry ../Illustia-unsigned.ipa Payload)
+          unzip -l build/Illustia-unsigned.ipa | head -20
+          ls -lh build/Illustia-unsigned.ipa
+
+      - name: Verify the .ipa is unsigned
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf build/ipa-check && mkdir -p build/ipa-check
+          unzip -q build/Illustia-unsigned.ipa -d build/ipa-check
+          APP_PATH=$(find build/ipa-check/Payload -maxdepth 1 -name "*.app" -print -quit)
+          # A signed bundle always contains these; their absence proves the binary is unsigned.
+          if [ -d "$APP_PATH/_CodeSignature" ]; then
+            echo "Unexpected _CodeSignature directory: the bundle was signed" >&2
+            exit 1
+          fi
+          if codesign -dv "$APP_PATH" 2>&1 | grep -q "Signature=adhoc"; then
+            echo "Bundle carries a signature" >&2
+            exit 1
+          fi
+          echo "Confirmed: bundle has no code signature"
+
+      - name: Upload unsigned .ipa
+        uses: actions/upload-artifact@v7
+        with:
+          name: illustia-unsigned-ipa
+          path: build/Illustia-unsigned.ipa
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Upload Xcode build log
+        uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: ios-archive-log
+          path: ios-archive.log
+          retention-days: 3
+          if-no-files-found: ignore

@@ -51,7 +51,7 @@ abstract class IllustiaSettingsSecurityModule(
         if (!deferredStartupDataStarted.compareAndSet(false, true)) return
         observeAppUpdateDownloadWorkerProgress()
 
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             val fullSettings = repository.readSettings(STARTUP_VIEW_HISTORY_LIMIT)
             val normalizedFullSettings =
                 if (fullSettings.useDynamicColor && !deviceProfile.supportsDynamicColor) {
@@ -79,7 +79,7 @@ abstract class IllustiaSettingsSecurityModule(
     }
 
     override fun loadFullViewHistory() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             val fullHistory = repository.readFullViewHistory()
             val bookmarkedIds =
                 _uiState.value.bookmarkItems
@@ -117,7 +117,7 @@ abstract class IllustiaSettingsSecurityModule(
 
     fun updateBookmarkUserId(value: String) {
         updateSettings { it.copy(bookmarkUserId = value.toLongOrNull()) }
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             refreshCurrentAccountProfile(_uiState.value.settings)
         }
     }
@@ -283,7 +283,7 @@ abstract class IllustiaSettingsSecurityModule(
         enabled: Boolean,
         appIconVariant: String = _uiState.value.settings.appIconVariant,
     ) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             appIconSwitcher.apply(enabled, appIconVariant)
         }
     }
@@ -429,7 +429,7 @@ abstract class IllustiaSettingsSecurityModule(
     private fun resumeAfterUnlock() {
         _uiState.update { it.copy(appLocked = false) }
         resumePendingNativeIntentIfReady()
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             val settings = _uiState.value.settings
             if (settings.refreshToken.isNotBlank()) {
                 refreshCurrentAccountProfile(settings)
@@ -508,7 +508,7 @@ abstract class IllustiaSettingsSecurityModule(
     }
 
     private fun refreshPrivacySensitiveWidgets() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             appServices.refreshPrivacySensitiveWidgets()
             refreshRankingWidget()
         }
@@ -539,7 +539,7 @@ abstract class IllustiaSettingsSecurityModule(
                 resumePendingNativeIntentIfReady()
                 val settings = _uiState.value.settings
                 if (settings.refreshToken.isNotBlank() && _uiState.value.homeItems.isEmpty()) {
-                    withContext(Dispatchers.IO) {
+                    withContext(Dispatchers.Default) {
                         refreshCurrentAccountProfile(settings)
                         if (settings.startupScreen == "home") {
                             refreshHome()

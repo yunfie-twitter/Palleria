@@ -1,6 +1,5 @@
 package com.yunfie.illustia
 
-import androidx.lifecycle.ViewModel
 import com.yunfie.illustia.UserProfileCache
 import com.yunfie.illustia.data.IllustiaRepositoryApi
 import com.yunfie.illustia.data.PixivApiException
@@ -23,13 +22,16 @@ import com.yunfie.illustia.platform.AppLogger
 import com.yunfie.illustia.platform.AppPaths
 import com.yunfie.illustia.platform.AppServices
 import com.yunfie.illustia.platform.AppUpdateEvent
+import com.yunfie.illustia.platform.AtomicCounter
 import com.yunfie.illustia.platform.BackgroundWork
 import com.yunfie.illustia.platform.Connectivity
 import com.yunfie.illustia.platform.DeviceProfile
 import com.yunfie.illustia.platform.DocumentIo
 import com.yunfie.illustia.platform.DownloadService
+import com.yunfie.illustia.platform.FileSystem
 import com.yunfie.illustia.platform.GallerySaver
 import com.yunfie.illustia.platform.ImageCache
+import com.yunfie.illustia.platform.IoFailure
 import com.yunfie.illustia.platform.MainThreadChecker
 import com.yunfie.illustia.platform.MediaEncoder
 import com.yunfie.illustia.platform.MonotonicClock
@@ -37,6 +39,7 @@ import com.yunfie.illustia.platform.StringKey
 import com.yunfie.illustia.platform.StringProvider
 import com.yunfie.illustia.platform.Telemetry
 import com.yunfie.illustia.platform.TelemetryControl
+import com.yunfie.illustia.platform.TimeoutFailure
 import com.yunfie.illustia.platform.ViewModelDepsApi
 import com.yunfie.illustia.platform.randomUrlSafeString
 import com.yunfie.illustia.platform.sha256Base64Url
@@ -72,6 +75,8 @@ import com.yunfie.illustia.updater.AppReleaseInfo
 import com.yunfie.illustia.updater.AppUpdateService
 import com.yunfie.illustia.updater.UpdateCheckState
 import com.yunfie.illustia.updater.UpdateInstallMethod
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -91,13 +96,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
-import okhttp3.HttpUrl
-import okhttp3.OkHttpClient
-import java.io.File
-import java.io.IOException
-import java.net.SocketTimeoutException
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
 
 private const val MIN_SMART_CACHE_PREFETCH = 4
 private const val MAX_SMART_CACHE_PREFETCH = 16
@@ -107,6 +105,7 @@ private const val HTTP_BAD_REQUEST = 400
 private const val HTTP_FORBIDDEN = 403
 private const val HTTP_NOT_FOUND = 404
 private val HTTP_SERVER_ERROR_RANGE = 500..599
+private const val HEX_DIGITS = "0123456789ABCDEF"
 
 private data class SettingsPersistenceRequest(
     val settings: AppSettings,
@@ -149,7 +148,7 @@ internal fun AppSettings.withHydratedRoomCollections(full: AppSettings): AppSett
 abstract class IllustiaViewModelFoundation(
     protected val deps: ViewModelDepsApi,
     protected val strings: StringProvider = deps.strings,
-) : ViewModel(),
+) : PlatformViewModel(),
     CalculatorActions,
     SettingsActions,
     LibraryActions,
@@ -188,6 +187,7 @@ abstract class IllustiaViewModelFoundation(
     protected val backgroundWork: BackgroundWork get() = deps.backgroundWork
     protected val imageCache: ImageCache get() = deps.imageCache
     protected val documentIo: DocumentIo get() = deps.documentIo
+    protected val fileSystem: FileSystem get() = deps.fileSystem
     protected val deviceProfile: DeviceProfile get() = deps.deviceProfile
     protected val telemetry: Telemetry get() = deps.telemetry
     protected val appServices: AppServices get() = deps.appServices
@@ -235,11 +235,11 @@ abstract class IllustiaViewModelFoundation(
     internal var searchSnapshot: SearchSnapshot? = null
     internal var userPageSnapshot: UserPageSnapshot? = null
     protected var pendingNativeIntentEvent: NativeIntentEvent? = null
-    private val settingsUpdateLock = Any()
+    private val settingsUpdateLock = SynchronizedObject()
     private val settingsPersistenceRequests = Channel<SettingsPersistenceRequest>(Channel.UNLIMITED)
 
     protected companion object {
-        val RECOMMENDED_TAG_CACHE_TTL_MILLIS = TimeUnit.MINUTES.toMillis(30)
+        val RECOMMENDED_TAG_CACHE_TTL_MILLIS = 30L * 60L * 1000L
         const val STARTUP_VERSION_WORK_DELAY_MS = 500L
         const val MAX_SEEN_FEED_ILLUSTS = 2_000
         const val MAX_CACHED_GRID_STATES = 16
@@ -250,7 +250,6 @@ abstract class IllustiaViewModelFoundation(
      * ViewModel は「先頭から離れているか」だけを見たいので、Compose の状態型ではなく
      * この小さな関数インターフェースを介して参照する。
      */
-    @Volatile
     var homeScrollProbe: ScrollPositionProbe = ScrollPositionProbe.Never
     val detailSnapshots = androidx.compose.runtime.mutableStateMapOf<Long, DetailEntrySnapshot>()
     val searchSnapshots = androidx.compose.runtime.mutableStateMapOf<String, SearchEntrySnapshot>()
@@ -271,10 +270,7 @@ abstract class IllustiaViewModelFoundation(
         illustDetailRelatedSectionsReady.clear()
     }
 
-    protected val illustDetailPagerPages: MutableMap<Long, Int> =
-        object : java.util.LinkedHashMap<Long, Int>(MAX_CACHED_GRID_STATES, 0.75f, true) {
-            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Long, Int>?): Boolean = size > MAX_CACHED_GRID_STATES
-        }
+    protected val illustDetailPagerPages: MutableMap<Long, Int> = mutableMapOf()
     protected val illustDetailRelatedSectionsReady: MutableSet<Long> = mutableSetOf()
     internal val appStateStore = AppStateStore()
     internal val _uiState: AppStateStore = appStateStore
@@ -307,7 +303,7 @@ abstract class IllustiaViewModelFoundation(
     @Suppress("VariableNaming")
     internal val _calculatorState = MutableStateFlow(CalculatorUiState())
     override val calculatorState: StateFlow<CalculatorUiState> = _calculatorState.asStateFlow()
-    protected val deferredStartupDataStarted = AtomicBoolean(false)
+    protected val deferredStartupDataStarted = AtomicCounter(0)
 
     protected fun str(key: StringKey): String = strings.get(key)
 
@@ -328,7 +324,6 @@ abstract class IllustiaViewModelFoundation(
      * pushed in the same callback instead of after a state round-trip and a recomposition,
      * which made the detail page appear late. Off the main thread it falls back to the channel.
      */
-    @Volatile
     var detailNavigator: ((Long) -> Unit)? = null
 
     protected fun requestDetailNavigation(illustId: Long) {
@@ -376,10 +371,10 @@ abstract class IllustiaViewModelFoundation(
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), _uiState.value.centeredError)
 
     init {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             persistSettingsUpdates()
         }
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             val startupSettings = repository.readStartupSettings()
             val normalizedStartupSettings =
                 if (startupSettings.useDynamicColor && !deviceProfile.supportsDynamicColor) {
@@ -401,7 +396,7 @@ abstract class IllustiaViewModelFoundation(
             }
             resumePendingNativeIntentIfReady()
             // Nonessential package/version work must not gate the first frame or feed request.
-            viewModelScope.launch(Dispatchers.IO) {
+            viewModelScope.launch(Dispatchers.Default) {
                 kotlinx.coroutines.delay(STARTUP_VERSION_WORK_DELAY_MS)
                 val currentVersionCode =
                     appInfo.versionCode() ?: 133
@@ -591,7 +586,7 @@ abstract class IllustiaViewModelFoundation(
             if (!connectivity.isWifiConnected()) return
         }
         val proxyBaseUrl = settings.pixivImageProxyBaseUrl
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             delay(SMART_CACHE_WARM_DELAY_MS)
             items
                 .asSequence()
@@ -641,7 +636,7 @@ abstract class IllustiaViewModelFoundation(
             )
         }
         resumePendingNativeIntentIfReady()
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             refreshCurrentAccountProfile(nextSettings)
         }
         refreshRankingWidget()
@@ -734,7 +729,7 @@ abstract class IllustiaViewModelFoundation(
     protected fun runLoading(block: suspend () -> Unit): Job {
         loadingJob?.cancel()
         val job =
-            viewModelScope.launch(Dispatchers.IO) {
+            viewModelScope.launch(Dispatchers.Default) {
                 _uiState.update { it.copy(loadState = LoadState.Loading, message = null) }
                 try {
                     block()
@@ -824,7 +819,7 @@ abstract class IllustiaViewModelFoundation(
     private fun Throwable.isTimeoutFailure(): Boolean {
         var current: Throwable? = this
         while (current != null) {
-            if (current is SocketTimeoutException) return true
+            if (current is TimeoutFailure) return true
             current = current.cause
         }
         return false
@@ -879,7 +874,7 @@ abstract class IllustiaViewModelFoundation(
         var current: Throwable? = this
         while (current != null) {
             if (current is PixivApiException) return false
-            if (current is IOException) return true
+            if (current is IoFailure) return true
             current = current.cause
         }
         return false
@@ -1031,25 +1026,39 @@ abstract class IllustiaViewModelFoundation(
     protected fun createPixivWebLoginRequest(): PixivWebLoginRequest {
         val verifier = randomUrlSafeString(32)
         val challenge = verifier.sha256Base64Url()
+        val authorizationUrl =
+            buildString {
+                append("https://app-api.pixiv.net/web/v1/login")
+                append("?code_challenge=")
+                append(percentEncode(challenge))
+                append("&code_challenge_method=S256")
+                append("&client=pixiv-android")
+            }
         return PixivWebLoginRequest(
-            authorizationUrl =
-                HttpUrl
-                    .Builder()
-                    .scheme("https")
-                    .host("app-api.pixiv.net")
-                    .addPathSegments("web/v1/login")
-                    .addQueryParameter("code_challenge", challenge)
-                    .addQueryParameter("code_challenge_method", "S256")
-                    .addQueryParameter("client", "pixiv-android")
-                    .build()
-                    .toString(),
+            authorizationUrl = authorizationUrl,
             codeVerifier = verifier,
         )
     }
 
+    private fun percentEncode(value: String): String =
+        buildString {
+            for (ch in value) {
+                if (ch.isLetterOrDigit() || ch == '-' || ch == '_' || ch == '.' || ch == '~') {
+                    append(ch)
+                } else {
+                    for (byte in ch.toString().encodeToByteArray()) {
+                        val unsigned = byte.toInt() and 0xFF
+                        append('%')
+                        append(HEX_DIGITS[unsigned shr 4])
+                        append(HEX_DIGITS[unsigned and 0x0F])
+                    }
+                }
+            }
+        }
+
     fun checkForUpdates(silent: Boolean = false) {
         if (_updateCheckState.value is UpdateCheckState.Checking || _updateCheckState.value is UpdateCheckState.Downloading) return
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             _updateCheckState.value = UpdateCheckState.Checking
             val includePrerelease = _uiState.value.settings.includePrereleaseUpdates
             appUpdaterRepository
@@ -1077,7 +1086,7 @@ abstract class IllustiaViewModelFoundation(
     }
 
     fun installUpdate(apkPath: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             _updateCheckState.value = UpdateCheckState.Installing
             val method = UpdateInstallMethod.fromValue(_uiState.value.settings.updateInstallMethod)
             if (method == UpdateInstallMethod.SHIZUKU) {
