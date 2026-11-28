@@ -1,0 +1,89 @@
+name: Crash Report
+description: Report a crash, ANR, force close, or app termination
+title: "[Crash] "
+labels: ["bug", "crash"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a crash.  
+        Please include the stack trace or Logcat output whenever possible.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Summary
+      description: Briefly describe what happened before the crash.
+      placeholder: "Example: The app crashes when opening the library screen."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Describe the steps that lead to the crash.
+      placeholder: |
+        1. Launch the app
+        2. Open the library screen
+        3. The app crashes
+    validations:
+      required: true
+
+  - type: input
+    id: app-version
+    attributes:
+      label: App Version
+      placeholder: "Example: v1.2.3"
+    validations:
+      required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: Device
+      placeholder: "Example: Pixel 7"
+    validations:
+      required: true
+
+  - type: input
+    id: android-version
+    attributes:
+      label: Android Version
+      placeholder: "Example: Android 14"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: crash-type
+    attributes:
+      label: Crash Type
+      options:
+        - Crash / Force close
+        - ANR / App not responding
+        - App restarts unexpectedly
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Stack Trace / Logcat
+      description: Paste the crash stack trace or relevant Logcat output.
+      placeholder: |
+        ```logcat
+        Paste logs here
+        ```
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Confirmation
+      options:
+        - label: I have confirmed that the crash occurs with the latest version.
+          required: true
+        - label: I have not included any personal information, API keys, credentials, or other sensitive information.
+          required: true
