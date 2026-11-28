@@ -11,21 +11,23 @@ import platform.Foundation.dataUsingEncoding
  *
  * `android.text.Html` の代わりに Foundation の HTML 読み込みを使う。
  * `NSDocumentTypeDocumentAttribute` / `NSHTMLTextDocumentType` は Kotlin/Native の
- * Foundation バインディングには定数として公開されていないので、実際のキー文字列と
+ * Foundation バインディングに定数として公開されていないため、実際のキー文字列と
  * 値を自前で定義する（値は Apple の公開ドキュメントどおり）。
+ *
+ * Objective-C の `-initWithData:options:documentAttributes:error:` は Kotlin/Native では
+ * 通常のコンストラクタとして公開される。
  */
 @OptIn(ExperimentalForeignApi::class)
 actual fun htmlToPlainText(html: String): String {
     val data = (html as NSString).dataUsingEncoding(NSUTF8StringEncoding) ?: return html.trim()
-    val typed: NSAttributedString? =
-        NSAttributedString.create(
+    val typed =
+        NSAttributedString(
             data = data,
             options = mapOf<Any?, Any?>(DOCUMENT_TYPE_ATTRIBUTE to HTML_DOCUMENT_TYPE),
             documentAttributes = null,
             error = null,
         )
-    val plain = typed?.string ?: return html.trim()
-    return plain
+    return typed.string
         .replace(NON_BREAKING_SPACE, ' ')
         .replace("\r\n", "\n")
         .trim()
