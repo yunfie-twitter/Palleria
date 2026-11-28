@@ -127,7 +127,7 @@ jobs:
   # instead of going through `-exportArchive` (which always requires a signing team).
   unsigned-ipa:
     name: Build unsigned .ipa
-    runs-on: macos-26-arm64
+    runs-on: macos-latest
     timeout-minutes: 60
     needs: ios-build
 
