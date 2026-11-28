@@ -1,0 +1,81 @@
+name: Compatibility Report
+description: Report an issue related to a specific device, Android version, manufacturer, or build type
+title: "[Compatibility] "
+labels: ["bug", "compatibility"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Summary
+      description: Describe the issue and when it occurs.
+      placeholder: "Example: Audio playback stops when the screen is turned off on a specific device."
+    validations:
+      required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: Device
+      placeholder: "Example: Samsung Galaxy S23"
+    validations:
+      required: true
+
+  - type: input
+    id: android-version
+    attributes:
+      label: Android Version
+      placeholder: "Example: Android 14"
+    validations:
+      required: true
+
+  - type: input
+    id: manufacturer
+    attributes:
+      label: Manufacturer / ROM
+      description: Enter the manufacturer, custom ROM, or system version if known.
+      placeholder: "Example: Samsung One UI 6.1"
+    validations:
+      required: false
+
+  - type: input
+    id: app-version
+    attributes:
+      label: App Version
+      placeholder: "Example: v1.2.3"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: build-type
+    attributes:
+      label: Build Type
+      options:
+        - Release
+        - Debug
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      placeholder: |
+        1. Open the app
+        2. Start playback
+        3. Turn off the screen
+        4. Playback stops
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / Screenshots
+      description: Attach Logcat output, screenshots, or recordings if available.
+      placeholder: |
+        ```logcat
+        Paste logs here
+        ```
+    validations:
+      required: false
