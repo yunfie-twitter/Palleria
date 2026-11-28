@@ -1,0 +1,30 @@
+name: Question
+description: Ask a question about usage, behavior, or intended functionality
+title: "[Question] "
+labels: ["question"]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: Describe your question clearly.
+      placeholder: "Example: How can I import playlists from another application?"
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Add relevant details such as the app version, device, and what you have already tried.
+      placeholder: "Example: I am using v1.2.3 on a Pixel 7 running Android 14."
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Confirmation
+      options:
+        - label: I have checked the README, documentation, and existing issues before asking this question.
+          required: true
