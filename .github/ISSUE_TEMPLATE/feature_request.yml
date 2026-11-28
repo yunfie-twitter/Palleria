@@ -1,46 +1,80 @@
-name: 機能要望
-description: 新しい機能や改善を提案する
+name: Feature Request
+description: Suggest a new feature or improvement
 title: "[Feature] "
 labels: ["enhancement"]
 body:
   - type: markdown
     attributes:
       value: |
-        機能要望ありがとうございます。以下の項目を埋めてください。
+        Thank you for suggesting a feature or improvement.  
+        Please provide as much detail as possible so maintainers can understand the use case and evaluate the proposal.
 
   - type: textarea
     id: problem
     attributes:
-      label: 課題
-      description: この機能が必要になった背景や課題
-      placeholder: 例：現在、〜ができないため不便
+      label: Problem / Motivation
+      description: Describe the problem, limitation, or use case that motivates this request.
+      placeholder: "Example: It is currently not possible to filter items by category, which makes it difficult to find specific content."
     validations:
       required: true
 
   - type: textarea
     id: solution
     attributes:
-      label: 解決策
-      description: 提案する機能や改善内容
-      placeholder: 例：〜機能を追加する
+      label: Proposed Solution
+      description: Describe the feature or improvement you would like to see.
+      placeholder: "Example: Add a category filter to the main list screen."
     validations:
       required: true
 
   - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: Describe how the feature should work from the user's perspective.
+      placeholder: |
+        1. Open the main list screen
+        2. Select a category from the filter menu
+        3. The list displays only items in the selected category
+    validations:
+      required: false
+
+  - type: textarea
     id: alternatives
     attributes:
-      label: 代替案
-      description: 他に検討した案があれば記載
+      label: Alternatives Considered
+      description: Describe any alternative solutions, workarounds, or related features you have considered.
+      placeholder: "Example: Use search as a temporary workaround, although it does not support saved filters."
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add screenshots, mockups, links, examples, or any other information that may help.
+      placeholder: "Example: A screenshot of a similar feature in another app."
     validations:
       required: false
 
   - type: dropdown
     id: priority
     attributes:
-      label: 優先度
+      label: Priority
+      description: Select how important this feature is to you.
       options:
-        - 低
-        - 中
-        - 高
+        - Low
+        - Medium
+        - High
     validations:
       required: true
+
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Confirmation
+      options:
+        - label: I have searched existing issues and feature requests before submitting this proposal.
+          required: true
+        - label: I have not included any personal information, API keys, credentials, or other sensitive information.
+          required: true
