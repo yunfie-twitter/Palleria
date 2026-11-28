@@ -105,3 +105,16 @@ jobs:
             compose-ios-tests.log
           retention-days: 3
           if-no-files-found: ignore
+
+      # A green test task alone would not prove the tests actually executed, so the JUnit XML
+      # reports are kept as evidence (they carry the per-suite tests/failures counts).
+      - name: Upload iOS test reports
+        uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: ios-test-reports
+          path: |
+            shared/build/test-results/iosSimulatorArm64Test/*.xml
+            composeApp/build/test-results/iosSimulatorArm64Test/*.xml
+          retention-days: 3
+          if-no-files-found: error
