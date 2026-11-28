@@ -102,8 +102,8 @@ class CommandPaletteTest {
 
     @Test fun allPaletteActionsHaveValidResources() {
         PaletteAction.entries.forEach { action ->
-            assertTrue(action.title != 0)
-            assertTrue(action.categoryRes != 0)
+            assertTrue(action.title.key.isNotBlank())
+            assertTrue(action.categoryRes.key.isNotBlank())
         }
     }
 }

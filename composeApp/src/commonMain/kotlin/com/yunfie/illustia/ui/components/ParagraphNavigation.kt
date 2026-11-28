@@ -1,0 +1,36 @@
+package com.yunfie.illustia.ui.components
+
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
+
+fun paragraphTarget(
+    indices: List<Int>,
+    current: Int,
+    direction: Int,
+): Int? = if (direction > 0) indices.firstOrNull { it > current } else indices.lastOrNull { it < current }
+
+@Composable
+fun ParagraphNavigation(
+    state: LazyListState,
+    request: Int,
+    active: () -> Boolean,
+    paragraphIndices: List<Int>,
+) {
+    var previousRequest by remember { mutableIntStateOf(request) }
+    // active を値ではなく provider で受け取り、LaunchedEffect のキーに含めない。
+    // スワイプ中に settledPage が変わるたびに effect が張り直されるのを防ぐ。
+    val isActive by rememberUpdatedState(active)
+    LaunchedEffect(request) {
+        val direction = request.compareTo(previousRequest)
+        previousRequest = request
+        if (!isActive() || direction == 0) return@LaunchedEffect
+        val target = paragraphTarget(paragraphIndices, state.firstVisibleItemIndex, direction) ?: return@LaunchedEffect
+        state.animateScrollToItem(target)
+    }
+}

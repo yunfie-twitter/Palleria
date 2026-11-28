@@ -37,7 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.glance.appwidget.GlanceAppWidgetManager
@@ -46,21 +46,32 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.GlitchTipTelemetry
 import com.yunfie.illustia.IllustiaApplication
 import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
+import com.yunfie.illustia.IllustiaViewModelFactory
 import com.yunfie.illustia.data.proxyPixivImageUrl
 import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.platform.AppStrings
+import com.yunfie.illustia.platform.StringKey
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_close
+import com.yunfie.illustia.resources.widget_illust_apply
+import com.yunfie.illustia.resources.widget_illust_cancel
+import com.yunfie.illustia.resources.widget_illust_pick_page
+import com.yunfie.illustia.resources.widget_illust_title
+import com.yunfie.illustia.searchUiState
 import com.yunfie.illustia.ui.components.AppBottomSheet
 import com.yunfie.illustia.ui.components.BottomSheetInsideMargin
+import com.yunfie.illustia.ui.components.CoilPixivImage
 import com.yunfie.illustia.ui.components.LoadingIndicator
-import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.screens.OnboardingScreen
 import com.yunfie.illustia.ui.screens.RefreshTokenLoginBottomSheet
 import com.yunfie.illustia.ui.screens.SearchScreen
+import com.yunfie.illustia.uiRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.Request
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -87,7 +98,7 @@ class IllustWidgetConfigureActivity : FragmentActivity() {
     private val widgetImageMaxDimension = 960
 
     private val viewModel by viewModels<IllustiaViewModel> {
-        ViewModelProvider.AndroidViewModelFactory.getInstance(application)
+        IllustiaViewModelFactory(application)
     }
 
     private val widgetId: Int by lazy {
@@ -116,6 +127,7 @@ class IllustWidgetConfigureActivity : FragmentActivity() {
             var selectedPageIndex by rememberSaveable { mutableIntStateOf(0) }
             val scope = rememberCoroutineScope()
             val scrollBehavior = MiuixScrollBehavior()
+            val appContext = LocalContext.current
 
             MiuixTheme {
                 BackHandler {
@@ -144,12 +156,12 @@ class IllustWidgetConfigureActivity : FragmentActivity() {
                         containerColor = MiuixTheme.colorScheme.surface,
                         topBar = {
                             TopAppBar(
-                                title = stringResource(R.string.widget_illust_title),
-                                largeTitle = stringResource(R.string.widget_illust_title),
+                                title = stringResource(Res.string.widget_illust_title),
+                                largeTitle = stringResource(Res.string.widget_illust_title),
                                 scrollBehavior = scrollBehavior,
                                 navigationIcon = {
                                     IconButton(onClick = { finish() }) {
-                                        Icon(MiuixIcons.Close, contentDescription = stringResource(R.string.action_close))
+                                        Icon(MiuixIcons.Close, contentDescription = stringResource(Res.string.action_close))
                                     }
                                 },
                             )
@@ -163,8 +175,9 @@ class IllustWidgetConfigureActivity : FragmentActivity() {
                                     .padding(paddingValues),
                         ) {
                             SearchScreen(
-                                state = state,
+                                state = state.searchUiState,
                                 viewModel = viewModel,
+                                repository = appContext.uiRepository(),
                                 widgetSelectionMode = true,
                                 onIllustSelected = { illust ->
                                     saveError = null
@@ -216,7 +229,7 @@ class IllustWidgetConfigureActivity : FragmentActivity() {
                                                     throw cancelled
                                                 } catch (expectedFailure: Exception) {
                                                     GlitchTipTelemetry.recordException(expectedFailure, tag = "configure_illust_widget")
-                                                    saveError = getString(R.string.error_save_failed)
+                                                    saveError = AppStrings.get(StringKey.ErrorSaveFailed)
                                                 } finally {
                                                     isSaving = false
                                                 }
@@ -380,13 +393,13 @@ private fun WidgetPagePickerSheet(
     AppBottomSheet(
         show = true,
         modifier = Modifier.scrollEndHaptic(),
-        title = stringResource(R.string.widget_illust_pick_page),
+        title = stringResource(Res.string.widget_illust_pick_page),
         onDismissRequest = onCancel,
         backgroundColor = MiuixTheme.colorScheme.surfaceContainerHigh,
         insideMargin = BottomSheetInsideMargin,
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-            PixivImage(
+            CoilPixivImage(
                 url = urls[selected],
                 contentDescription = illust.title,
                 contentScale = ContentScale.Crop,
@@ -411,7 +424,7 @@ private fun WidgetPagePickerSheet(
                                     onPageSelected(index)
                                 },
                     ) {
-                        PixivImage(
+                        CoilPixivImage(
                             url = url,
                             contentDescription = "${illust.title} $index",
                             contentScale = ContentScale.Crop,
@@ -428,10 +441,10 @@ private fun WidgetPagePickerSheet(
                 }
                 if (isSaving) LoadingIndicator()
                 Button(onClick = { onApply(selected) }, enabled = !isSaving, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.widget_illust_apply))
+                    Text(stringResource(Res.string.widget_illust_apply))
                 }
                 Button(onClick = onCancel, enabled = !isSaving, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.widget_illust_cancel))
+                    Text(stringResource(Res.string.widget_illust_cancel))
                 }
             }
         }

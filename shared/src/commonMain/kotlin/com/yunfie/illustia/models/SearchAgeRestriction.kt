@@ -3,6 +3,7 @@ package com.yunfie.illustia.models
 import androidx.compose.runtime.Immutable
 
 @Immutable
+@kotlinx.serialization.Serializable
 enum class SearchAgeRestriction(
     internal val keyword: String?,
 ) {

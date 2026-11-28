@@ -1,12 +1,18 @@
 package com.yunfie.illustia.data
 
-import java.util.concurrent.ConcurrentHashMap
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
+import kotlin.time.Clock
 
 private const val DEFAULT_TTL_MILLIS: Long = 10 * 60 * 1000L // 10 minutes
 private const val DEFAULT_MAX_ENTRIES: Int = 300
 
 /**
  * Thread-safe in-memory cache for Pixiv API responses to reduce API traffic and mitigate HTTP 429 (Rate Limiting).
+ *
+ * Shared by every target, so it cannot use `ConcurrentHashMap` (JVM-only) or `@Synchronized`
+ * (JVM-only annotation). A plain map behind atomicfu's portable monitor is enough here: every
+ * mutation is short and the only multi-step ones (capacity eviction) already had to be atomic.
  */
 class PixivApiCache(
     private val defaultTtlMillis: Long = DEFAULT_TTL_MILLIS,
@@ -21,66 +27,67 @@ class PixivApiCache(
         val timestamp: Long,
         val ttlMillis: Long,
     ) {
-        fun isExpired(now: Long = System.currentTimeMillis()): Boolean = now - timestamp > ttlMillis
+        fun isExpired(now: Long = nowMillis()): Boolean = now - timestamp > ttlMillis
     }
 
-    private val cache = ConcurrentHashMap<String, CacheEntry<*>>()
+    private val lock = SynchronizedObject()
+    private val cache = mutableMapOf<String, CacheEntry<*>>()
 
     fun <T : Any> get(
         key: String,
-        now: Long = System.currentTimeMillis(),
+        now: Long = nowMillis(),
     ): T? {
-        val entry = cache[key]
-        if (entry == null || entry.isExpired(now)) {
-            return null
-        }
+        val entry = synchronizedRead(key) ?: return null
+        if (entry.isExpired(now)) return null
         @Suppress("UNCHECKED_CAST")
         return entry.data as? T
     }
 
     fun <T : Any> getStale(key: String): T? {
-        val entry = cache[key] ?: return null
+        val entry = synchronizedRead(key) ?: return null
         @Suppress("UNCHECKED_CAST")
         return entry.data as? T
     }
 
-    @Synchronized
     fun <T : Any> put(
         key: String,
         data: T,
         ttlMillis: Long = defaultTtlMillis,
-        now: Long = System.currentTimeMillis(),
+        now: Long = nowMillis(),
     ) {
-        // Capacity checking and insertion must be atomic across concurrent requests.
-        // Refreshing an existing key does not consume another cache slot.
-        if (!cache.containsKey(key) && cache.size >= maxEntries) {
-            evictOldest(now)
+        synchronized(lock) {
+            // Capacity checking and insertion must be atomic across concurrent requests.
+            // Refreshing an existing key does not consume another cache slot.
+            if (!cache.containsKey(key) && cache.size >= maxEntries) {
+                evictOldest(now)
+            }
+            cache[key] = CacheEntry(data, now, ttlMillis)
         }
-        cache[key] = CacheEntry(data, now, ttlMillis)
     }
 
-    @Synchronized
     fun remove(key: String) {
-        cache.remove(key)
+        synchronized(lock) { cache.remove(key) }
     }
 
-    @Synchronized
     fun removeByPrefix(prefix: String) {
-        val iterator = cache.keys.iterator()
-        while (iterator.hasNext()) {
-            if (iterator.next().startsWith(prefix)) {
-                iterator.remove()
+        synchronized(lock) {
+            val iterator = cache.keys.iterator()
+            while (iterator.hasNext()) {
+                if (iterator.next().startsWith(prefix)) {
+                    iterator.remove()
+                }
             }
         }
     }
 
-    @Synchronized
     fun clear() {
-        cache.clear()
+        synchronized(lock) { cache.clear() }
     }
 
     val size: Int
-        get() = cache.size
+        get() = synchronized(lock) { cache.size }
+
+    private fun synchronizedRead(key: String): CacheEntry<*>? = synchronized(lock) { cache[key] }
 
     private fun evictOldest(now: Long) {
         // Remove expired entries first in place
@@ -104,3 +111,5 @@ class PixivApiCache(
         }
     }
 }
+
+private fun nowMillis(): Long = Clock.System.now().toEpochMilliseconds()

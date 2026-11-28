@@ -1,0 +1,803 @@
+package com.yunfie.illustia.ui.screens
+
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.PointerType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.UriHandler
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.models.pixiv.Comment
+import com.yunfie.illustia.models.pixiv.UgoiraPlayback
+import com.yunfie.illustia.nativebridge.NativeIntentEvent
+import com.yunfie.illustia.nativebridge.NativeIntentRouter
+import com.yunfie.illustia.platform.currentTimeMillis
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_save
+import com.yunfie.illustia.resources.action_unfollow
+import com.yunfie.illustia.resources.detail_muted_artist
+import com.yunfie.illustia.resources.detail_muted_artist_blur
+import com.yunfie.illustia.resources.detail_muted_artist_blur_default
+import com.yunfie.illustia.resources.detail_muted_work
+import com.yunfie.illustia.resources.detail_muted_work_blur
+import com.yunfie.illustia.resources.detail_related
+import com.yunfie.illustia.resources.detail_save_image_confirm
+import com.yunfie.illustia.resources.detail_save_image_title
+import com.yunfie.illustia.resources.detail_save_ugoira_confirm
+import com.yunfie.illustia.resources.detail_save_ugoira_title
+import com.yunfie.illustia.resources.detail_unfollow_confirm
+import com.yunfie.illustia.resources.detail_unfollow_title
+import com.yunfie.illustia.ui.components.AppHapticEffect
+import com.yunfie.illustia.ui.components.AvatarImage
+import com.yunfie.illustia.ui.components.BackNavigationHandler
+import com.yunfie.illustia.ui.components.BookmarkHeartButton
+import com.yunfie.illustia.ui.components.ElevatedPanel
+import com.yunfie.illustia.ui.components.FlowButtons
+import com.yunfie.illustia.ui.components.FollowPill
+import com.yunfie.illustia.ui.components.HeaderOverlayIcon
+import com.yunfie.illustia.ui.components.LoadingIndicator
+import com.yunfie.illustia.ui.components.LocalArtworkCardPreferences
+import com.yunfie.illustia.ui.components.LocalHardwareBlurSupported
+import com.yunfie.illustia.ui.components.MiuixConfirmDialog
+import com.yunfie.illustia.ui.components.PixivImage
+import com.yunfie.illustia.ui.components.ProvideAppNavigationScrimColor
+import com.yunfie.illustia.ui.components.ScrollablePullToRefresh
+import com.yunfie.illustia.ui.components.adaptiveRelatedIllustColumns
+import com.yunfie.illustia.ui.components.miuixClickable
+import com.yunfie.illustia.ui.components.rememberAppHapticPerformer
+import com.yunfie.illustia.ui.screens.profile.UserProfilePlatform
+import kotlinx.coroutines.delay
+import org.jetbrains.compose.resources.stringResource
+import top.yukonga.miuix.kmp.basic.FloatingActionButton
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.Surface
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.rememberPullToRefreshState
+import top.yukonga.miuix.kmp.blur.Backdrop
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Background
+import top.yukonga.miuix.kmp.icon.extended.Favorites
+import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
+import top.yukonga.miuix.kmp.icon.extended.Import
+import top.yukonga.miuix.kmp.icon.extended.Show
+import top.yukonga.miuix.kmp.icon.extended.Theme
+import top.yukonga.miuix.kmp.menu.WindowIconDropdownMenu
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import org.jetbrains.compose.resources.stringResource as resString
+
+/** Bottom padding for the two-pane info column so its last row clears the floating bookmark button. */
+private val TwoPaneFabBottomPadding = 152.dp
+
+/**
+ * 関連作品セクションを描画するか。
+ *
+ * 空リストは「取得中」と「0件」のどちらでもあり得るので、以前は空を取得中と見なして
+ * スピナーを出していた。そのため関連が0件の作品ではスピナーが永久に回り続けた。
+ * 取得完了フラグが立っていれば0件として扱い、見出しごと隠す。
+ */
+fun shouldShowRelatedSection(
+    relatedIllusts: List<Illust>,
+    relatedIllustsLoaded: Boolean,
+): Boolean = relatedIllusts.isNotEmpty() || !relatedIllustsLoaded
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun IllustDetailScreen(
+    illust: Illust,
+    isActive: Boolean = true,
+    relatedIllusts: List<Illust>,
+    relatedIllustsLoaded: Boolean = false,
+    firstComment: Comment?,
+    settings: IllustDetailSettings,
+    onBack: () -> Unit,
+    onBookmark: () -> Unit,
+    onBookmarkLongClick: (() -> Unit)? = null,
+    onRefresh: () -> Unit = {},
+    isRefreshingExternal: Boolean? = null,
+    onOpenUser: (Long) -> Unit,
+    onOpenComments: () -> Unit,
+    onOpenSeries: (() -> Unit)? = null,
+    onOpenImage: (Int) -> Unit,
+    onSearchTag: (String) -> Unit,
+    onLongPressTag: (String) -> Unit,
+    isArtistFollowed: Boolean,
+    isArtistFollowKnown: Boolean = true,
+    isArtistMuted: Boolean,
+    isTagMuted: Boolean,
+    onToggleFollow: () -> Unit,
+    onUnmuteUser: () -> Unit,
+    onMuteIllust: () -> Unit,
+    onMuteUser: () -> Unit,
+    onReport: (String?, (Boolean) -> Unit) -> Unit,
+    onMuteTag: (String) -> Unit,
+    onOpenIllust: (Illust) -> Unit,
+    onLongPressIllust: (Illust) -> Unit,
+    onOpenIllustById: (Long) -> Unit,
+    onSaveImage: (String, String) -> Unit,
+    onSaveAllImages: (List<String>, String) -> Unit,
+    onMessage: (String) -> Unit,
+    loadUgoiraPlayback: suspend (Long) -> UgoiraPlayback,
+    onRelatedSectionReady: () -> Unit = {},
+    onPageChanged: (Int) -> Unit = {},
+    listState: LazyListState = rememberLazyListState(),
+    platform: UserProfilePlatform,
+) {
+    val highQualityImages = settings.highQualityImages
+    val detailQuality = settings.detailQuality
+    val prefetchImages = settings.prefetchImages
+    val confirmOnLongPressSave = settings.confirmOnLongPressSave
+    val skipConfirmOnDetailSave = settings.skipConfirmOnDetailSave
+    val smartDownloadNaming = settings.smartDownloadNaming
+    val ugoiraPowerSave = settings.ugoiraPowerSave
+    val mangaAdaptivePreload = settings.mangaAdaptivePreload
+    val detailSectionOrder = settings.detailSectionOrder
+    val relatedIllustColumnCount = settings.relatedIllustColumnCount
+    val liquidGlassButtons = settings.liquidGlassButtons
+    val liquidGlassFollowButton = settings.liquidGlassFollowButton
+    val progressiveQuality = settings.progressiveQuality
+    val relatedSectionInitiallyReady = settings.relatedSectionInitiallyReady
+    val initialPage = settings.initialPage
+
+    val haptic = rememberAppHapticPerformer()
+    BackNavigationHandler(onBack = onBack)
+    var pendingSave by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var showUnfollowConfirm by remember { mutableStateOf(false) }
+    var showLikeAnimation by remember(illust.id) { mutableStateOf(false) }
+    val isArtworkMuted = isArtistMuted || isTagMuted
+    var revealMutedArtwork by remember(illust.id, isArtistMuted, isTagMuted) { mutableStateOf(!isArtworkMuted) }
+    val pixivUrl = remember(illust.id) { "https://www.pixiv.net/artworks/${illust.id}" }
+    var isRefreshing by rememberSaveable { mutableStateOf(false) }
+    val lastMouseScrollTime = remember { LongArray(1) }
+    val mouseScrollConnection =
+        remember {
+            object : NestedScrollConnection {
+                override fun onPostScroll(
+                    consumed: Offset,
+                    available: Offset,
+                    source: NestedScrollSource,
+                ): Offset {
+                    if (currentTimeMillis() - lastMouseScrollTime[0] < 400L && available.y > 0f) {
+                        return Offset(0f, available.y)
+                    }
+                    return Offset.Zero
+                }
+            }
+        }
+    val pullToRefreshState = rememberPullToRefreshState()
+    val detailListState = listState
+    var useDarkHeaderIcons by remember(illust.id) { mutableStateOf(false) }
+    // firstVisibleItemIndex は 1px スクロールした時点で 1 になるため、そのまま使うと
+    // 作品がまだ画面上に残っているのにシステムバーのアイコン色が切り替わってちらつく。
+    // 作品アイテムが完全に画面外へ出た（スクロール量 > 0）ときだけ切り替える。
+    val isArtworkOffScreen by remember {
+        derivedStateOf {
+            detailListState.firstVisibleItemIndex > 0 || detailListState.firstVisibleItemScrollOffset > 0
+        }
+    }
+    val surfaceColor = MiuixTheme.colorScheme.surface
+    val isDarkTheme = surfaceColor.luminance() < 0.5f
+
+    val isPulling by remember {
+        derivedStateOf { pullToRefreshState.pullProgress > 0.05f || isRefreshing }
+    }
+
+    platform.SystemBarAppearance(
+        lightStatusBars =
+            if (isArtworkOffScreen || isPulling) {
+                !isDarkTheme
+            } else {
+                useDarkHeaderIcons
+            },
+        lightNavigationBars = !isDarkTheme,
+        restoreLightStatusBars = !isDarkTheme,
+        restoreLightNavigationBars = !isDarkTheme,
+        transparentBarColors = true,
+    )
+
+    // 手動リフレッシュの完了は取得側が知っている。固定 delay で消すと遅い回線で
+    // 何も起きていないように見え、続けて引くと前のジョブが取り消されるだけになる。
+    LaunchedEffect(isRefreshingExternal) {
+        if (isRefreshingExternal == true) {
+            if (!isRefreshing) {
+                isRefreshing = true
+                onRefresh()
+            }
+        } else if (isRefreshingExternal == false) {
+            isRefreshing = false
+        }
+    }
+
+    if (pendingSave != null) {
+        val isUgoira = illust.type == "ugoira"
+        MiuixConfirmDialog(
+            show = true,
+            title = stringResource(if (isUgoira) Res.string.detail_save_ugoira_title else Res.string.detail_save_image_title),
+            summary = stringResource(if (isUgoira) Res.string.detail_save_ugoira_confirm else Res.string.detail_save_image_confirm),
+            confirmText = stringResource(Res.string.action_save),
+            onConfirm = {
+                pendingSave?.let { (url, filename) ->
+                    haptic(AppHapticEffect.Success)
+                    onSaveImage(url, filename)
+                }
+                pendingSave = null
+            },
+            onDismiss = { pendingSave = null },
+        )
+    }
+
+    if (showUnfollowConfirm) {
+        MiuixConfirmDialog(
+            show = true,
+            title = resString(Res.string.detail_unfollow_title),
+            summary = resString(Res.string.detail_unfollow_confirm, illust.artistName),
+            confirmText = stringResource(Res.string.action_unfollow),
+            destructive = true,
+            onConfirm = {
+                showUnfollowConfirm = false
+                onToggleFollow()
+            },
+            onDismiss = { showUnfollowConfirm = false },
+        )
+    }
+
+    fun requestSave(
+        url: String,
+        filename: String,
+        requireConfirm: Boolean,
+    ) {
+        if (requireConfirm) {
+            pendingSave = url to filename
+        } else {
+            haptic(AppHapticEffect.Success)
+            onSaveImage(url, filename)
+        }
+    }
+
+    fun likeFromDoubleTap() {
+        // バーストは「いいねが成立した」ことを示す演出なので、既にいいね済みなら何もしない。
+        // 未いいねからの追加は楽観更新で即座に isBookmarked が立つため、
+        // 失敗時はストア側がスナックバー表示と巻き戻しを受け持つ。
+        if (illust.isBookmarked) return
+        showLikeAnimation = false
+        showLikeAnimation = true
+        haptic(AppHapticEffect.Success)
+        onBookmark()
+    }
+
+    LaunchedEffect(showLikeAnimation) {
+        if (showLikeAnimation) {
+            delay(720)
+            showLikeAnimation = false
+        }
+    }
+
+    val mutedArtworkTitle =
+        if (isArtistMuted) {
+            resString(Res.string.detail_muted_artist)
+        } else {
+            resString(Res.string.detail_muted_work)
+        }
+    val mutedArtworkSummary =
+        if (isArtistMuted) {
+            resString(
+                Res.string.detail_muted_artist_blur,
+                illust.artistName.ifBlank { resString(Res.string.detail_muted_artist_blur_default) },
+            )
+        } else {
+            resString(Res.string.detail_muted_work_blur)
+        }
+    val detailHeaderContent: @Composable (Boolean, Modifier) -> Unit = { expanded, modifier ->
+        DetailHeaderSlot(
+            illust = illust,
+            highQualityImages = highQualityImages,
+            detailQuality = detailQuality,
+            prefetchImages = prefetchImages,
+            confirmOnLongPressSave = confirmOnLongPressSave,
+            skipConfirmOnDetailSave = skipConfirmOnDetailSave,
+            smartDownloadNaming = smartDownloadNaming,
+            ugoiraPowerSave = ugoiraPowerSave,
+            isActive = isActive,
+            mangaAdaptivePreload = mangaAdaptivePreload,
+            progressiveQuality = progressiveQuality,
+            pixivUrl = pixivUrl,
+            onBack = onBack,
+            onOpenImage = onOpenImage,
+            onDoubleTapImage = ::likeFromDoubleTap,
+            onSaveImage = { url, name, confirm -> requestSave(url, name, confirm) },
+            onSaveAllImages = { urls, prefix ->
+                haptic(AppHapticEffect.Success)
+                onSaveAllImages(urls, prefix)
+            },
+            onMuteIllust = onMuteIllust,
+            onMuteUser = onMuteUser,
+            onReport = onReport,
+            onMessage = onMessage,
+            loadUgoiraPlayback = loadUgoiraPlayback,
+            isArtworkMuted = isArtworkMuted,
+            revealMutedArtwork = revealMutedArtwork,
+            onRevealMutedArtwork = { revealMutedArtwork = true },
+            mutedArtworkTitle = mutedArtworkTitle,
+            mutedArtworkSummary = mutedArtworkSummary,
+            showLikeAnimation = showLikeAnimation,
+            expanded = expanded,
+            onHeaderIconsThemeChanged = { useDarkHeaderIcons = it },
+            liquidGlassButtons = liquidGlassButtons,
+            initialPage = initialPage,
+            onPageChanged = onPageChanged,
+            platform = platform,
+            modifier = modifier,
+        )
+    }
+    val orderedSections = remember(detailSectionOrder) { orderedDetailSections(detailSectionOrder) }
+    val relatedSectionIndex = orderedSections.indexOf("related")
+    val relatedColumns = adaptiveRelatedIllustColumns(relatedIllustColumnCount)
+    val relatedRows = remember(relatedIllusts, relatedColumns) { relatedIllustRows(relatedIllusts, relatedColumns) }
+    val relatedCardPreferences = LocalArtworkCardPreferences.current
+    val detailInfoContent: @Composable (List<String>?, Boolean) -> Unit = { sections, showHeader ->
+        DetailInfoSlot(
+            illust = illust,
+            isArtistFollowed = isArtistFollowed,
+            isArtistFollowKnown = isArtistFollowKnown,
+            isArtistMuted = isArtistMuted,
+            relatedIllusts = relatedIllusts,
+            relatedIllustsLoaded = relatedIllustsLoaded,
+            onOpenUser = onOpenUser,
+            onOpenIllustById = onOpenIllustById,
+            onOpenComments = onOpenComments,
+            onOpenSeries = onOpenSeries,
+            onToggleFollow = onToggleFollow,
+            onUnmuteUser = onUnmuteUser,
+            onSearchTag = onSearchTag,
+            onLongPressTag = onLongPressTag,
+            detailSectionOrder = detailSectionOrder,
+            relatedIllustColumnCount = relatedIllustColumnCount,
+            onOpenIllust = onOpenIllust,
+            onLongPressIllust = onLongPressIllust,
+            onRequestUnfollowConfirm = { showUnfollowConfirm = true },
+            relatedSectionInitiallyReady = relatedSectionInitiallyReady,
+            relatedSectionVisible = shouldShowRelatedSection(relatedIllusts, relatedIllustsLoaded),
+            onRelatedSectionReady = onRelatedSectionReady,
+            sectionsOverride = sections,
+            showHeader = showHeader,
+        )
+    }
+
+    // 作品ページは surface を全面に敷いているので、ナビ帯は塗らずに背景を透かす。
+    ProvideAppNavigationScrimColor(Color.Transparent) {
+        Scaffold(
+            containerColor = MiuixTheme.colorScheme.surface,
+            floatingActionButton = {
+                BookmarkHeartButton(
+                    isBookmarked = illust.isBookmarked,
+                    onClick = onBookmark,
+                    onLongClick = onBookmarkLongClick,
+                    size = 56.dp,
+                    iconSize = 26.dp,
+                    cornerRadius = 18.dp,
+                    activeBackground = MiuixTheme.colorScheme.surfaceContainerHigh,
+                    inactiveBackground = MiuixTheme.colorScheme.surfaceContainerHigh,
+                )
+            },
+        ) { scaffoldPadding ->
+            val statusBarTopPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .background(MiuixTheme.colorScheme.surface),
+            ) {
+                if (isActive && isPulling && LocalHardwareBlurSupported.current) {
+                    PixivImage(
+                        url = illust.thumbnailUrl.ifBlank { illust.squareImageUrl.ifBlank { illust.previewUrl } },
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .blur(36.dp)
+                                .graphicsLayer {
+                                    val raw = pullToRefreshState.pullProgress
+                                    val progress = if (raw > 0.06f) ((raw - 0.06f) / 0.94f).coerceIn(0f, 1f) else 0f
+                                    alpha = progress * 0.55f
+                                },
+                        thumbnail = true,
+                    )
+                }
+                if (isPulling) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .graphicsLayer {
+                                    val raw = pullToRefreshState.pullProgress
+                                    val progress = if (raw > 0.06f) ((raw - 0.06f) / 0.94f).coerceIn(0f, 1f) else 0f
+                                    alpha = progress * 0.42f
+                                }.background(MiuixTheme.colorScheme.surface),
+                    )
+                }
+
+                Surface(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(bottom = scaffoldPadding.calculateBottomPadding().coerceAtLeast(0.dp)),
+                    color = Color.Transparent,
+                ) {
+                    ScrollablePullToRefresh(
+                        isRefreshing = isRefreshing,
+                        onRefresh = {
+                            if (!isRefreshing) {
+                                isRefreshing = true
+                                onRefresh()
+                            }
+                        },
+                        pullToRefreshState = pullToRefreshState,
+                        circleSize = 0.dp,
+                        color = Color.Transparent,
+                        refreshTexts = emptyList(),
+                        contentPadding = PaddingValues(top = statusBarTopPadding + 8.dp),
+                        modifier = Modifier.fillMaxSize(),
+                    ) {
+                        BoxWithConstraints(
+                            modifier =
+                                Modifier
+                                    .fillMaxSize()
+                                    .pointerInput(Unit) {
+                                        // Inactive (background) pages keep receiving pointer events while a
+                                        // new artwork slides in; only the visible page may drive the
+                                        // mouse-wheel coalescing timestamp shared by both lists.
+                                        if (!isActive) return@pointerInput
+                                        awaitPointerEventScope {
+                                            while (true) {
+                                                val event = awaitPointerEvent(PointerEventPass.Initial)
+                                                if (event.type == PointerEventType.Scroll ||
+                                                    event.changes.any { it.type == PointerType.Mouse }
+                                                ) {
+                                                    lastMouseScrollTime[0] = currentTimeMillis()
+                                                }
+                                            }
+                                        }
+                                    }.nestedScroll(mouseScrollConnection),
+                        ) {
+                            val useTwoPaneLayout = maxWidth >= 840.dp && maxWidth > maxHeight
+                            if (useTwoPaneLayout) {
+                                Row(modifier = Modifier.fillMaxSize()) {
+                                    detailHeaderContent(true, Modifier.weight(1.1f).fillMaxHeight())
+                                    LazyColumn(
+                                        state = detailListState,
+                                        modifier =
+                                            Modifier
+                                                .weight(0.9f)
+                                                .fillMaxHeight()
+                                                .background(MiuixTheme.colorScheme.surface),
+                                        // 2ペインでは FAB が右ペイン（情報側）の下端に重なるので、
+                                        // スクロール末尾の行が隠れないよう余白を多めに取る。
+                                        contentPadding = PaddingValues(top = 12.dp, bottom = TwoPaneFabBottomPadding),
+                                    ) {
+                                        item(key = "detail_info", contentType = "detail_info") { detailInfoContent(null, true) }
+                                    }
+                                }
+                            } else {
+                                LazyColumn(
+                                    state = detailListState,
+                                    modifier =
+                                        Modifier
+                                            .fillMaxSize()
+                                            .background(MiuixTheme.colorScheme.surface),
+                                    contentPadding = PaddingValues(bottom = 96.dp),
+                                ) {
+                                    item(key = "detail_header", contentType = "detail_header") { detailHeaderContent(false, Modifier) }
+                                    // 関連が 0 件で確定しているなら、見出しごと出さない。
+                                    val showRelatedSection = shouldShowRelatedSection(relatedIllusts, relatedIllustsLoaded)
+                                    if (relatedSectionIndex >= 0 && showRelatedSection) {
+                                        val beforeSections = orderedSections.take(relatedSectionIndex)
+                                        val afterSections = orderedSections.drop(relatedSectionIndex + 1)
+                                        item(key = "detail_info_before", contentType = "detail_info") {
+                                            detailInfoContent(beforeSections, true)
+                                        }
+                                        item(key = "related_header", contentType = "related_header") {
+                                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                                Spacer(Modifier.height(8.dp))
+                                                Text(
+                                                    text = resString(Res.string.detail_related),
+                                                    color = MiuixTheme.colorScheme.onBackground,
+                                                    style = MiuixTheme.textStyles.title4,
+                                                    fontWeight = FontWeight.Bold,
+                                                    modifier = Modifier.padding(horizontal = 16.dp),
+                                                )
+                                            }
+                                        }
+                                        if (relatedRows.isEmpty()) {
+                                            item(key = "related_loading", contentType = "related_loading") {
+                                                Box(
+                                                    modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
+                                                    contentAlignment = Alignment.Center,
+                                                ) {
+                                                    LoadingIndicator()
+                                                }
+                                            }
+                                        } else {
+                                            itemsIndexed(
+                                                items = relatedRows,
+                                                key = { index, row -> "related_row_${row.firstOrNull()?.id ?: index}" },
+                                                contentType = { _, _ -> "related_row" },
+                                            ) { _, row ->
+                                                RelatedIllustRow(
+                                                    rowItems = row,
+                                                    columns = relatedColumns,
+                                                    cardPreferences = relatedCardPreferences,
+                                                    onOpenIllust = onOpenIllust,
+                                                    onLongPressIllust = onLongPressIllust,
+                                                    modifier = Modifier.padding(bottom = 4.dp),
+                                                )
+                                            }
+                                        }
+                                        if (afterSections.isNotEmpty()) {
+                                            item(key = "detail_info_after", contentType = "detail_info") {
+                                                detailInfoContent(afterSections, false)
+                                            }
+                                        }
+                                    } else {
+                                        item(key = "detail_info", contentType = "detail_info") { detailInfoContent(null, true) }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = isRefreshing,
+                    enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.expandVertically(),
+                    exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.shrinkVertically(),
+                    modifier = Modifier.align(androidx.compose.ui.Alignment.TopCenter),
+                ) {
+                    top.yukonga.miuix.kmp.basic.LinearProgressIndicator(
+                        // Draw in the edge-to-edge layer so the refresh bar remains visible
+                        // over the transparent status bar instead of below the artwork header.
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Header slot. Kept as its own composable so the header (pager, ugoira playback, decode effects)
+ * keeps one stable recomposition scope when settings or state change in [IllustDetailScreen].
+ * Callers re-create the argument lambdas on every parent recomposition, so they are re-read
+ * through [rememberUpdatedState] to keep identity stable for the subtree.
+ */
+@Composable
+private fun DetailHeaderSlot(
+    illust: Illust,
+    highQualityImages: Boolean,
+    detailQuality: String,
+    prefetchImages: Boolean,
+    confirmOnLongPressSave: Boolean,
+    skipConfirmOnDetailSave: Boolean,
+    smartDownloadNaming: Boolean,
+    ugoiraPowerSave: Boolean,
+    isActive: Boolean,
+    mangaAdaptivePreload: Boolean,
+    progressiveQuality: Boolean,
+    pixivUrl: String,
+    onBack: () -> Unit,
+    onOpenImage: (Int) -> Unit,
+    onDoubleTapImage: () -> Unit,
+    onSaveImage: (String, String, Boolean) -> Unit,
+    onSaveAllImages: (List<String>, String) -> Unit,
+    onMuteIllust: () -> Unit,
+    onMuteUser: () -> Unit,
+    onReport: (String?, (Boolean) -> Unit) -> Unit,
+    onMessage: (String) -> Unit,
+    loadUgoiraPlayback: suspend (Long) -> UgoiraPlayback,
+    isArtworkMuted: Boolean,
+    revealMutedArtwork: Boolean,
+    onRevealMutedArtwork: () -> Unit,
+    mutedArtworkTitle: String,
+    mutedArtworkSummary: String,
+    showLikeAnimation: Boolean,
+    expanded: Boolean,
+    onHeaderIconsThemeChanged: (Boolean) -> Unit,
+    liquidGlassButtons: Boolean,
+    initialPage: Int,
+    onPageChanged: (Int) -> Unit,
+    platform: UserProfilePlatform,
+    modifier: Modifier = Modifier,
+) {
+    val currentOnBack by rememberUpdatedState(onBack)
+    val currentOnOpenImage by rememberUpdatedState(onOpenImage)
+    val currentOnDoubleTap by rememberUpdatedState(onDoubleTapImage)
+    val currentOnSaveImage by rememberUpdatedState(onSaveImage)
+    val currentOnSaveAllImages by rememberUpdatedState(onSaveAllImages)
+    val currentOnMuteIllust by rememberUpdatedState(onMuteIllust)
+    val currentOnMuteUser by rememberUpdatedState(onMuteUser)
+    val currentOnReport by rememberUpdatedState(onReport)
+    val currentOnMessage by rememberUpdatedState(onMessage)
+    val currentOnReveal by rememberUpdatedState(onRevealMutedArtwork)
+    val currentOnTheme by rememberUpdatedState(onHeaderIconsThemeChanged)
+    IllustDetailHeader(
+        illust = illust,
+        highQualityImages = highQualityImages,
+        detailQuality = detailQuality,
+        prefetchImages = prefetchImages && isActive,
+        confirmOnLongPressSave = confirmOnLongPressSave,
+        skipConfirmOnDetailSave = skipConfirmOnDetailSave,
+        smartDownloadNaming = smartDownloadNaming,
+        ugoiraPowerSave = ugoiraPowerSave,
+        isActive = isActive,
+        mangaAdaptivePreload = mangaAdaptivePreload,
+        progressiveQuality = progressiveQuality,
+        pixivUrl = pixivUrl,
+        onBack = { currentOnBack() },
+        onOpenImage = { currentOnOpenImage(it) },
+        onDoubleTapImage = { currentOnDoubleTap() },
+        onSaveImage = { url, name, confirm -> currentOnSaveImage(url, name, confirm) },
+        onSaveAllImages = { urls, prefix -> currentOnSaveAllImages(urls, prefix) },
+        onMuteIllust = { currentOnMuteIllust() },
+        onMuteUser = { currentOnMuteUser() },
+        onReport = { reason, complete -> currentOnReport(reason, complete) },
+        onMessage = { currentOnMessage(it) },
+        loadUgoiraPlayback = loadUgoiraPlayback,
+        showImage = true,
+        maskMutedArtwork = isArtworkMuted && !revealMutedArtwork,
+        onRevealMutedArtwork = { currentOnReveal() },
+        mutedArtworkTitle = mutedArtworkTitle,
+        mutedArtworkSummary = mutedArtworkSummary,
+        showLikeAnimation = showLikeAnimation,
+        expanded = expanded,
+        onHeaderIconsThemeChanged = { currentOnTheme(it) },
+        liquidGlassButtons = liquidGlassButtons,
+        initialPage = initialPage,
+        onPageChanged = onPageChanged,
+        platform = platform,
+        modifier = modifier,
+    )
+}
+
+/** Info slot; see [DetailHeaderSlot] for why the lambdas are re-read via [rememberUpdatedState]. */
+@Composable
+private fun DetailInfoSlot(
+    illust: Illust,
+    isArtistFollowed: Boolean,
+    isArtistFollowKnown: Boolean = true,
+    isArtistMuted: Boolean,
+    relatedIllusts: List<Illust>,
+    relatedIllustsLoaded: Boolean = false,
+    onOpenUser: (Long) -> Unit,
+    onOpenIllustById: (Long) -> Unit,
+    onOpenComments: () -> Unit,
+    onOpenSeries: (() -> Unit)?,
+    onToggleFollow: () -> Unit,
+    onUnmuteUser: () -> Unit,
+    onSearchTag: (String) -> Unit,
+    onLongPressTag: (String) -> Unit,
+    detailSectionOrder: List<String>,
+    relatedIllustColumnCount: Int,
+    onOpenIllust: (Illust) -> Unit,
+    onLongPressIllust: (Illust) -> Unit,
+    onRequestUnfollowConfirm: () -> Unit,
+    relatedSectionInitiallyReady: Boolean,
+    onRelatedSectionReady: () -> Unit,
+    sectionsOverride: List<String>? = null,
+    showHeader: Boolean = true,
+    relatedSectionVisible: Boolean = true,
+) {
+    val currentOnOpenUser by rememberUpdatedState(onOpenUser)
+    val currentOnOpenIllustById by rememberUpdatedState(onOpenIllustById)
+    val currentOnOpenComments by rememberUpdatedState(onOpenComments)
+    val currentOnOpenSeries by rememberUpdatedState(onOpenSeries)
+    val currentOnToggleFollow by rememberUpdatedState(onToggleFollow)
+    val currentOnUnmuteUser by rememberUpdatedState(onUnmuteUser)
+    val currentOnSearchTag by rememberUpdatedState(onSearchTag)
+    val currentOnLongPressTag by rememberUpdatedState(onLongPressTag)
+    val currentOnOpenIllust by rememberUpdatedState(onOpenIllust)
+    val currentOnLongPressIllust by rememberUpdatedState(onLongPressIllust)
+    val currentOnUnfollowConfirm by rememberUpdatedState(onRequestUnfollowConfirm)
+    IllustDetailInfo(
+        illust = illust,
+        isArtistFollowed = isArtistFollowed,
+        isArtistFollowKnown = isArtistFollowKnown,
+        isArtistMuted = isArtistMuted,
+        onOpenUser = { currentOnOpenUser(illust.artistId) },
+        onOpenUserById = { currentOnOpenUser(it) },
+        onOpenIllustById = { currentOnOpenIllustById(it) },
+        onOpenComments = { currentOnOpenComments() },
+        onOpenSeries = currentOnOpenSeries?.let { openSeries -> { openSeries() } },
+        onToggleFollow = {
+            if (isArtistFollowed) currentOnUnfollowConfirm() else currentOnToggleFollow()
+        },
+        onUnmuteUser = { currentOnUnmuteUser() },
+        onSearchTag = { currentOnSearchTag(it) },
+        onLongPressTag = { currentOnLongPressTag(it) },
+        sectionOrder = detailSectionOrder,
+        relatedContent = { isNearViewport ->
+            if (!isNearViewport) {
+                Spacer(Modifier.height(24.dp))
+            } else if (relatedIllusts.isNotEmpty()) {
+                RelatedIllustsList(
+                    relatedIllusts = relatedIllusts,
+                    onOpenIllust = { currentOnOpenIllust(it) },
+                    onLongPressIllust = { currentOnLongPressIllust(it) },
+                    configuredColumns = relatedIllustColumnCount,
+                )
+            } else if (!relatedIllustsLoaded) {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 24.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    LoadingIndicator()
+                }
+            }
+        },
+        relatedSectionInitiallyReady = relatedSectionInitiallyReady,
+        relatedSectionVisible = relatedSectionVisible,
+        onRelatedSectionReady = onRelatedSectionReady,
+        sectionsOverride = sectionsOverride,
+        showHeader = showHeader,
+    )
+}

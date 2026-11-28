@@ -1,0 +1,764 @@
+package com.yunfie.illustia.ui.screens
+
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
+import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.models.pixiv.UgoiraPlayback
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_bookmark
+import com.yunfie.illustia.resources.action_close
+import com.yunfie.illustia.resources.action_copy_image
+import com.yunfie.illustia.resources.action_share
+import com.yunfie.illustia.resources.copied_image_to_clipboard
+import com.yunfie.illustia.resources.copy_image_failed
+import com.yunfie.illustia.resources.viewer_share_failed
+import com.yunfie.illustia.ui.components.AppHapticEffect
+import com.yunfie.illustia.ui.components.BackNavigationHandler
+import com.yunfie.illustia.ui.components.LocalHardwareBlurSupported
+import com.yunfie.illustia.ui.components.PixivImage
+import com.yunfie.illustia.ui.components.rememberClipboardServices
+import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
+import com.yunfie.illustia.ui.components.rememberTextSharing
+import com.yunfie.illustia.ui.components.resolveProgressivePlaceholderUrls
+import com.yunfie.illustia.ui.components.resolveQualityImageUrls
+import com.yunfie.illustia.ui.screens.profile.UserProfilePlatform
+import com.yunfie.illustia.ui.screens.profile.ViewerShortcut
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
+import top.yukonga.miuix.kmp.basic.FloatingToolbar
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.Slider
+import top.yukonga.miuix.kmp.basic.SmallTopAppBar
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.ToolbarPosition
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.icon.extended.Background
+import top.yukonga.miuix.kmp.icon.extended.Close
+import top.yukonga.miuix.kmp.icon.extended.Copy
+import top.yukonga.miuix.kmp.icon.extended.Favorites
+import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
+import top.yukonga.miuix.kmp.icon.extended.Import
+import top.yukonga.miuix.kmp.icon.extended.Photos
+import top.yukonga.miuix.kmp.icon.extended.Share
+import top.yukonga.miuix.kmp.icon.extended.Theme
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun ImageViewerScreen(
+    illust: Illust,
+    startPage: Int,
+    onSave: (String, String) -> Unit,
+    onBack: () -> Unit,
+    isBookmarked: Boolean,
+    onBookmark: () -> Unit,
+    onMessage: (String) -> Unit,
+    fullscreenQuality: String,
+    prefetchImages: Boolean,
+    mangaReaderMode: String,
+    onPageChanged: (Int) -> Unit,
+    loadUgoiraPlayback: suspend (Long) -> UgoiraPlayback,
+    ambientLightEnabled: Boolean = false,
+    volumeKeyPageTurnerEnabled: Boolean = false,
+    swipeToDismissEnabled: Boolean = true,
+    ugoiraPowerSave: Boolean = true,
+    mangaAdaptivePreload: Boolean = true,
+    progressiveQuality: Boolean = false,
+    platform: UserProfilePlatform,
+) {
+    val shareText = rememberTextSharing()
+    val clipboard = rememberClipboardServices()
+    val shareFailedMessage = stringResource(Res.string.viewer_share_failed)
+    val copiedMessage = stringResource(Res.string.copied_image_to_clipboard)
+    val copyFailedMessage = stringResource(Res.string.copy_image_failed)
+    val imageUrls =
+        remember(illust, fullscreenQuality) {
+            resolveQualityImageUrls(illust, fullscreenQuality)
+        }
+    val placeholderUrls =
+        remember(illust, fullscreenQuality, progressiveQuality) {
+            resolveProgressivePlaceholderUrls(illust, fullscreenQuality, progressiveQuality)
+        }
+    val ambientUrls =
+        remember(illust) {
+            illust.mediumImagePages.ifEmpty {
+                illust.imagePages.ifEmpty {
+                    listOf(
+                        illust.mediumImageUrl.ifBlank {
+                            illust.squareImageUrl.ifBlank { illust.imageUrl }
+                        },
+                    )
+                }
+            }
+        }
+    val pagerState =
+        rememberPagerState(initialPage = startPage.coerceIn(0, imageUrls.lastIndex.coerceAtLeast(0)), pageCount = { imageUrls.size })
+    val coroutineScope = rememberCoroutineScope()
+    var isZoomed by remember { mutableStateOf(false) }
+    var showControls by remember { mutableStateOf(true) }
+    var fullscreen by remember { mutableStateOf(true) }
+    var showSeekSlider by remember { mutableStateOf(false) }
+    val comicMode = illust.type == "manga" && imageUrls.size > 1 && mangaReaderMode == "vertical"
+
+    val comicListState =
+        androidx.compose.foundation.lazy
+            .rememberLazyListState(initialFirstVisibleItemIndex = startPage)
+    // Keep the pager/list position out of the screen's composition scope. Reading it directly
+    // here used to invalidate the whole viewer on every scroll boundary or page change. The
+    // derived state is only read where the current page is actually displayed.
+    val currentPageState =
+        remember(comicMode) {
+            derivedStateOf {
+                if (comicMode) comicListState.firstVisibleItemIndex else pagerState.currentPage
+            }
+        }
+
+    var localBookmarked by remember(illust.id, isBookmarked) { mutableStateOf(isBookmarked) }
+    LaunchedEffect(isBookmarked) {
+        localBookmarked = isBookmarked
+    }
+    // 楽観更新の取り消し用。ボタンは即座に見た目を反転するが、削除確認をキャンセルした
+    // 場合など isBookmarked が変化しないまま終わることがある。この場合 LaunchedEffect が
+    // 発火せず反転したまま残るので、少し待っても実際の値が変わっていなければ戻す。
+    var pendingBookmark by remember { mutableStateOf<Boolean?>(null) }
+    LaunchedEffect(pendingBookmark, isBookmarked) {
+        val expected = pendingBookmark ?: return@LaunchedEffect
+        if (isBookmarked == expected) {
+            pendingBookmark = null
+        } else {
+            delay(800)
+            if (isBookmarked != expected) {
+                localBookmarked = isBookmarked
+                pendingBookmark = null
+            }
+        }
+    }
+    var triggerPop by remember { mutableStateOf(false) }
+    val popScale by animateFloatAsState(
+        targetValue = if (triggerPop) 1.25f else 1.0f,
+        animationSpec =
+            spring(
+                dampingRatio = 0.4f,
+                stiffness = 400f,
+            ),
+        finishedListener = { triggerPop = false },
+        label = "bookmark-button-pop",
+    )
+    val buttonBgColor by animateColorAsState(
+        targetValue =
+            if (localBookmarked) {
+                MiuixTheme.colorScheme.primaryContainer
+            } else {
+                MiuixTheme.colorScheme.surfaceContainerHighest
+            },
+        animationSpec = tween(200),
+        label = "bookmark-button-bg",
+    )
+    val iconColor by animateColorAsState(
+        targetValue =
+            if (localBookmarked) {
+                MiuixTheme.colorScheme.primary
+            } else {
+                MiuixTheme.colorScheme.onSurface
+            },
+        animationSpec = tween(200),
+        label = "bookmark-button-icon",
+    )
+
+    // 操作のたびに増やして、ツールバーの自動非表示タイマーを測り直すためのカウンタ。
+    // showControls だけをキーにしていたので、表示中にページを送る・ズームするといった
+    // 操作をしても 4 秒後にツールバーごと消え、ページ番号も見失っていた。
+    var lastInteractionTick by remember { mutableIntStateOf(0) }
+    val onUserInteraction = { lastInteractionTick++ }
+
+    LaunchedEffect(showControls, lastInteractionTick) {
+        if (showControls) {
+            delay(4000)
+            showControls = false
+        } else {
+            showSeekSlider = false
+        }
+    }
+
+    LaunchedEffect(currentPageState) {
+        snapshotFlow { currentPageState.value }
+            .distinctUntilChanged()
+            .collect { page ->
+                isZoomed = false
+                onPageChanged(page)
+                // ページ送りも操作なので、ツールバー表示中なら自動非表示を数え直す。
+                if (showControls) onUserInteraction()
+            }
+    }
+
+    // ビューアの背景は常に黒なので、復帰後のバーは明るいアイコン（ダーク前提）に戻す。
+    // ナビゲーションバーの帯は Compose（appNavigationScrim）がアプリ色で塗るため、
+    // window 側は透過のままにする。ここで不透明色を書くと帯が点滅する（#647）。
+    platform.FullscreenEffect(
+        enabled = fullscreen,
+        darkTheme = true,
+    )
+
+    fun shareCurrentPage() {
+        val url = imageUrls.getOrNull(currentPageState.value) ?: return
+        runCatching {
+            shareText("${illust.title} by ${illust.artistName}\n$url")
+        }.onFailure {
+            onMessage(shareFailedMessage)
+        }
+    }
+
+    val performHaptic = rememberHapticFeedbackAction()
+    val dismissOffsetY = remember { Animatable(0f) }
+    val density = LocalDensity.current
+    val dismissThresholdPx = remember(density) { with(density) { 140.dp.toPx() } }
+
+    fun copyCurrentPage() {
+        val url = imageUrls.getOrNull(currentPageState.value) ?: return
+        coroutineScope.launch {
+            val copy = clipboard?.copyImage(url)
+            val success = copy?.invoke() ?: false
+            if (success) {
+                performHaptic(AppHapticEffect.Success)
+                onMessage(copiedMessage)
+            } else {
+                onMessage(copyFailedMessage)
+            }
+        }
+    }
+
+    fun movePage(direction: Int) {
+        if (imageUrls.isEmpty()) return
+        val page = currentPageState.value
+        val targetPage = (page + direction).coerceIn(0, imageUrls.lastIndex)
+        if (targetPage == page) return
+        coroutineScope.launch {
+            if (comicMode) comicListState.animateScrollToItem(targetPage) else pagerState.animateScrollToPage(targetPage)
+        }
+    }
+
+    BackNavigationHandler(onBack = onBack)
+
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
+
+    Scaffold(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .focusRequester(focusRequester)
+                .onKeyEvent { keyEvent ->
+                    if (keyEvent.type != KeyEventType.KeyDown) {
+                        false
+                    } else {
+                        val direction =
+                            platform.readerPageDirection(keyEvent.nativeKeyEvent, volumeKeyPageTurnerEnabled)
+                        when {
+                            direction != 0 -> {
+                                movePage(direction)
+                                true
+                            }
+
+                            else -> {
+                                when (platform.viewerShortcut(keyEvent.nativeKeyEvent)) {
+                                    ViewerShortcut.ToggleFullscreen -> {
+                                        if (!platform.isKeyAutoRepeat(keyEvent.nativeKeyEvent)) fullscreen = !fullscreen
+                                        true
+                                    }
+
+                                    ViewerShortcut.SaveCurrentPage -> {
+                                        if (!platform.isKeyAutoRepeat(keyEvent.nativeKeyEvent)) {
+                                            val page = currentPageState.value
+                                            val url =
+                                                illust.originalImagePages.getOrNull(page)
+                                                    ?: illust.originalImageUrl?.takeIf { page == 0 }
+                                                    ?: imageUrls.getOrNull(page)
+                                            if (url != null) onSave(url, "${illust.id}_p$page")
+                                        }
+                                        true
+                                    }
+
+                                    null -> {
+                                        false
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }.focusable(),
+        containerColor = Color.Black,
+        contentWindowInsets = WindowInsets(0),
+        topBar = {
+            AnimatedVisibility(visible = showControls, enter = fadeIn(), exit = fadeOut()) {
+                SmallTopAppBar(
+                    title = illust.title,
+                    color = Color.Transparent,
+                    titleColor = Color.White,
+                    // Consume the safe inset so SmallTopAppBar does not add the status bar twice.
+                    modifier = Modifier.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top)),
+                    navigationIcon = {
+                        IconButton(modifier = Modifier.pointerHoverIcon(PointerIcon.Hand), onClick = {
+                            performHaptic(AppHapticEffect.Click)
+                            onBack()
+                        }) {
+                            Icon(
+                                imageVector = MiuixIcons.Back,
+                                contentDescription = stringResource(Res.string.action_close),
+                                tint = Color.White,
+                            )
+                        }
+                    },
+                )
+            }
+        },
+        floatingToolbar = {
+            AnimatedVisibility(visible = showControls, enter = fadeIn(), exit = fadeOut()) {
+                FloatingToolbar(
+                    modifier = Modifier.fillMaxWidth().navigationBarsPadding(),
+                    color = MiuixTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.96f),
+                    cornerRadius = 24.dp,
+                    outSidePadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+                    shadowElevation = 12.dp,
+                    showDivider = false,
+                ) {
+                    if (showSeekSlider && imageUrls.size > 1) {
+                        Column(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    text = "${currentPageState.value + 1} / ${imageUrls.size}",
+                                    color = MiuixTheme.colorScheme.onSurface,
+                                    style = MiuixTheme.textStyles.title4,
+                                )
+                                IconButton(
+                                    modifier = Modifier.pointerHoverIcon(PointerIcon.Hand),
+                                    onClick = {
+                                        performHaptic(AppHapticEffect.Click)
+                                        showSeekSlider = false
+                                    },
+                                    minWidth = 32.dp,
+                                    minHeight = 32.dp,
+                                ) {
+                                    Icon(
+                                        imageVector = MiuixIcons.Close,
+                                        contentDescription = stringResource(Res.string.action_close),
+                                        tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                }
+                            }
+                            Slider(
+                                value = (currentPageState.value + 1).toFloat(),
+                                onValueChange = { targetPage ->
+                                    val targetIndex = (targetPage.toInt() - 1).coerceIn(0, imageUrls.lastIndex)
+                                    if (targetIndex != currentPageState.value) {
+                                        performHaptic(AppHapticEffect.WheelTick)
+                                        coroutineScope.launch {
+                                            if (comicMode) {
+                                                comicListState.scrollToItem(
+                                                    targetIndex,
+                                                )
+                                            } else {
+                                                pagerState.scrollToPage(targetIndex)
+                                            }
+                                        }
+                                    }
+                                },
+                                valueRange = 1f..imageUrls.size.toFloat(),
+                                steps = (imageUrls.size - 2).coerceAtLeast(0),
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                    } else {
+                        Row(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(999.dp))
+                                        .background(MiuixTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.96f))
+                                        .padding(horizontal = 14.dp, vertical = 10.dp)
+                                        .clickable(
+                                            enabled = imageUrls.size > 1,
+                                            onClick = {
+                                                performHaptic(AppHapticEffect.Click)
+                                                showSeekSlider = true
+                                            },
+                                        ),
+                            ) {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Icon(
+                                        imageVector = MiuixIcons.Photos,
+                                        contentDescription = null,
+                                        tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                    Text(
+                                        text = "${currentPageState.value + 1} / ${imageUrls.size}",
+                                        color = MiuixTheme.colorScheme.onSurface,
+                                        style = MiuixTheme.textStyles.title4,
+                                    )
+                                }
+                            }
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .size(46.dp)
+                                        .graphicsLayer {
+                                            scaleX = popScale
+                                            scaleY = popScale
+                                        }.clip(RoundedCornerShape(16.dp))
+                                        .background(buttonBgColor),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                IconButton(modifier = Modifier.pointerHoverIcon(PointerIcon.Hand), onClick = {
+                                    performHaptic(AppHapticEffect.Toggle)
+                                    triggerPop = true
+                                    val next = !localBookmarked
+                                    localBookmarked = next
+                                    pendingBookmark = next
+                                    onBookmark()
+                                }) {
+                                    AnimatedContent(
+                                        targetState = localBookmarked,
+                                        transitionSpec = {
+                                            (
+                                                scaleIn(spring(dampingRatio = 0.4f, stiffness = 400f), initialScale = 0.4f) +
+                                                    fadeIn(tween(150))
+                                            ).togetherWith(
+                                                scaleOut(tween(100), targetScale = 0.4f) +
+                                                    fadeOut(tween(100)),
+                                            )
+                                        },
+                                        label = "bookmark-icon-switch",
+                                    ) { isLiked ->
+                                        Icon(
+                                            imageVector = if (isLiked) MiuixIcons.FavoritesFill else MiuixIcons.Favorites,
+                                            contentDescription = stringResource(Res.string.action_bookmark),
+                                            tint = iconColor,
+                                        )
+                                    }
+                                }
+                            }
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .size(46.dp)
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .background(MiuixTheme.colorScheme.surfaceContainerHighest),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                IconButton(modifier = Modifier.pointerHoverIcon(PointerIcon.Hand), onClick = {
+                                    performHaptic(AppHapticEffect.Click)
+                                    copyCurrentPage()
+                                }) {
+                                    Icon(
+                                        imageVector = MiuixIcons.Copy,
+                                        contentDescription = stringResource(Res.string.action_copy_image),
+                                        tint = MiuixTheme.colorScheme.primary,
+                                    )
+                                }
+                            }
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .size(46.dp)
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .background(MiuixTheme.colorScheme.surfaceContainerHighest),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                IconButton(modifier = Modifier.pointerHoverIcon(PointerIcon.Hand), onClick = {
+                                    performHaptic(AppHapticEffect.Click)
+                                    shareCurrentPage()
+                                }) {
+                                    Icon(
+                                        imageVector = MiuixIcons.Share,
+                                        contentDescription = stringResource(Res.string.action_share),
+                                        tint = MiuixTheme.colorScheme.primary,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        floatingToolbarPosition = ToolbarPosition.BottomCenter,
+    ) {
+        // dismissOffsetY is an Animatable updated on every drag frame. Deriving these inside the
+        // draw/layer lambdas keeps the drag from recomposing the whole viewer (backdrop blur + pager).
+        val dismissProgressOf: () -> Float = { (dismissOffsetY.value / (dismissThresholdPx * 2f)).coerceIn(0f, 1f) }
+        val bgAlphaOf: () -> Float = { (1f - dismissProgressOf() * 1.2f).coerceIn(0f, 1f) }
+        val contentScaleOf: () -> Float = { (1f - dismissProgressOf() * 0.2f).coerceIn(0.7f, 1f) }
+
+        val currentIsZoomed by rememberUpdatedState(isZoomed)
+        val swipeModifier =
+            if (swipeToDismissEnabled && !comicMode) {
+                Modifier.pointerInput(swipeToDismissEnabled, comicMode) {
+                    detectVerticalDragGestures(
+                        onDragEnd = {
+                            coroutineScope.launch {
+                                if (!currentIsZoomed && dismissOffsetY.value > dismissThresholdPx) {
+                                    onBack()
+                                } else if (dismissOffsetY.value != 0f) {
+                                    dismissOffsetY.animateTo(
+                                        0f,
+                                        spring(dampingRatio = 0.8f, stiffness = 600f),
+                                    )
+                                }
+                            }
+                        },
+                        onDragCancel = {
+                            coroutineScope.launch {
+                                if (dismissOffsetY.value != 0f) {
+                                    dismissOffsetY.animateTo(
+                                        0f,
+                                        spring(dampingRatio = 0.8f, stiffness = 600f),
+                                    )
+                                }
+                            }
+                        },
+                        onVerticalDrag = { change, dragAmount ->
+                            if (currentIsZoomed) {
+                                if (dismissOffsetY.value != 0f) {
+                                    coroutineScope.launch { dismissOffsetY.snapTo(0f) }
+                                }
+                                return@detectVerticalDragGestures
+                            }
+                            if (dragAmount > 0f || dismissOffsetY.value > 0f) {
+                                change.consume()
+                                val currentOffset = dismissOffsetY.value
+                                val newOffset = (currentOffset + dragAmount).coerceAtLeast(0f)
+                                val wasOverThreshold = currentOffset >= dismissThresholdPx
+                                val isOverThreshold = newOffset >= dismissThresholdPx
+                                if (wasOverThreshold != isOverThreshold) {
+                                    performHaptic(AppHapticEffect.ThresholdSnap)
+                                }
+                                coroutineScope.launch {
+                                    dismissOffsetY.snapTo(newOffset)
+                                }
+                            }
+                        },
+                    )
+                }
+            } else {
+                Modifier
+            }
+
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .drawBehind { drawRect(Color.Black.copy(alpha = bgAlphaOf())) },
+        ) {
+            if (ambientLightEnabled && ambientUrls.isNotEmpty() && LocalHardwareBlurSupported.current) {
+                val ambientUrl = ambientUrls.getOrNull(currentPageState.value) ?: ambientUrls.first()
+                PixivImage(
+                    url = ambientUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    thumbnail = true,
+                    maxDecodeDimensionPx = 128,
+                    allowRgb565 = true,
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .graphicsLayer {
+                                val bgAlpha = bgAlphaOf()
+                                alpha = 0.40f * bgAlpha
+                                scaleX = 1.35f
+                                scaleY = 1.35f
+                            }.blur(48.dp),
+                )
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .drawBehind { drawRect(Color.Black.copy(alpha = 0.30f * bgAlphaOf())) },
+                )
+            }
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .then(swipeModifier)
+                        .graphicsLayer {
+                            val contentScale = contentScaleOf()
+                            translationY = dismissOffsetY.value
+                            scaleX = contentScale
+                            scaleY = contentScale
+                        },
+            ) {
+                if (illust.type == "ugoira") {
+                    platform.ViewerUgoira(
+                        previewUrl = imageUrls.firstOrNull().orEmpty(),
+                        contentDescription = illust.title,
+                        loadPlayback = { loadUgoiraPlayback(illust.id) },
+                        modifier = Modifier.fillMaxSize(),
+                        powerSaveEnabled = ugoiraPowerSave,
+                        onZoomChanged = { isZoomed = it },
+                        onTap = { showControls = !showControls },
+                    )
+                } else if (comicMode) {
+                    LazyColumn(
+                        state = comicListState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(vertical = 72.dp),
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
+                        itemsIndexed(
+                            imageUrls,
+                            key = { index, _ -> index },
+                            contentType = { _, _ -> "comic_page" },
+                        ) { page, url ->
+                            PixivImage(
+                                url = url,
+                                contentDescription = "${illust.title} ${page + 1}",
+                                contentScale = ContentScale.FillWidth,
+                                showLoadingSpinner = true,
+                                placeholderUrl = placeholderUrls.getOrNull(page),
+                                maxDecodeDimensionPx = 1920,
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .wrapContentHeight()
+                                        .clickable { showControls = !showControls },
+                            )
+                        }
+                    }
+                } else {
+                    com.yunfie.illustia.ui.components.AdaptiveMangaPreloader(
+                        pagerState = pagerState,
+                        imageUrls = imageUrls,
+                        enabled = prefetchImages,
+                        adaptiveDirectionEnabled = mangaAdaptivePreload,
+                    )
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.fillMaxSize(),
+                        beyondViewportPageCount = if (prefetchImages) 1 else 0,
+                        userScrollEnabled = !isZoomed,
+                        key = { it },
+                    ) { page ->
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            ZoomablePixivImage(
+                                url = imageUrls[page],
+                                contentDescription = illust.title,
+                                placeholderUrl = placeholderUrls.getOrNull(page),
+                                isActive = pagerState.currentPage == page,
+                                onZoomChanged = { zoomed ->
+                                    if (pagerState.currentPage == page) {
+                                        isZoomed = zoomed
+                                        if (showControls) onUserInteraction()
+                                    }
+                                },
+                                onTap = { showControls = !showControls },
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

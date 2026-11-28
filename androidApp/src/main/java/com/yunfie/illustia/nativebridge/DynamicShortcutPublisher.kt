@@ -12,6 +12,8 @@ import com.yunfie.illustia.AppShortcutDestination
 import com.yunfie.illustia.MainActivity
 import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.platform.AppStrings
+import com.yunfie.illustia.platform.StringKey
 
 /**
  * Publishes runtime (dynamic) shortcuts that mirror the four static destinations and
@@ -49,27 +51,27 @@ object DynamicShortcutPublisher {
 
     private fun destinationSpecs(context: Context): List<ShortcutInfoCompat> =
         listOf(
-            destinationSpec(context, AppShortcutDestination.Search, R.string.shortcut_search, R.string.shortcut_search_long),
-            destinationSpec(context, AppShortcutDestination.Ranking, R.string.shortcut_ranking, R.string.shortcut_ranking_long),
-            destinationSpec(context, AppShortcutDestination.Bookmarks, R.string.shortcut_bookmarks, R.string.shortcut_bookmarks_long),
+            destinationSpec(context, AppShortcutDestination.Search, StringKey.ShortcutSearch, StringKey.ShortcutSearchLong),
+            destinationSpec(context, AppShortcutDestination.Ranking, StringKey.ShortcutRanking, StringKey.ShortcutRankingLong),
+            destinationSpec(context, AppShortcutDestination.Bookmarks, StringKey.ShortcutBookmarks, StringKey.ShortcutBookmarksLong),
             destinationSpec(
                 context,
                 AppShortcutDestination.ViewHistory,
-                R.string.shortcut_history,
-                R.string.shortcut_history_long,
+                StringKey.ShortcutHistory,
+                StringKey.ShortcutHistoryLong,
             ),
         )
 
     private fun destinationSpec(
         context: Context,
         destination: AppShortcutDestination,
-        shortLabelRes: Int,
-        longLabelRes: Int,
+        shortLabelKey: StringKey,
+        longLabelKey: StringKey,
     ): ShortcutInfoCompat =
         ShortcutInfoCompat
             .Builder(context, destination.shortcutId)
-            .setShortLabel(context.getString(shortLabelRes))
-            .setLongLabel(context.getString(longLabelRes))
+            .setShortLabel(AppStrings.get(shortLabelKey))
+            .setLongLabel(AppStrings.get(longLabelKey))
             .setIcon(IconCompat.createWithResource(context, R.mipmap.ic_launcher))
             .setIntent(mainActivityIntent(context, Intent(destination.action)))
             .build()

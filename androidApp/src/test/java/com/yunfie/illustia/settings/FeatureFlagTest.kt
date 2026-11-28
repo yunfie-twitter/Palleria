@@ -37,14 +37,14 @@ class FeatureFlagTest {
     }
 
     @Test
-    fun `all feature flags have unique keys and valid resource ids`() {
+    fun `all feature flags have unique keys and resolvable labels`() {
         val allKeys = FeatureFlag.entries.map { it.key }
         allKeys.distinct() shouldHaveSize FeatureFlag.entries.size
 
-        FeatureFlag.entries.forEach { flag ->
-            (flag.titleRes != 0) shouldBe true
-            (flag.descRes != 0) shouldBe true
-        }
+        val titles = FeatureFlag.entries.map { it.titleRes.key }
+        val descriptions = FeatureFlag.entries.map { it.descRes.key }
+        titles.distinct() shouldHaveSize FeatureFlag.entries.size
+        descriptions.distinct() shouldHaveSize FeatureFlag.entries.size
     }
 
     @Test

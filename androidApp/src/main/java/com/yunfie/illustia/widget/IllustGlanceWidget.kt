@@ -40,7 +40,8 @@ import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.yunfie.illustia.MainActivity
-import com.yunfie.illustia.R
+import com.yunfie.illustia.platform.AppStrings
+import com.yunfie.illustia.platform.StringKey
 import com.yunfie.illustia.settings.SettingsStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -66,7 +67,7 @@ class IllustGlanceWidget : GlanceAppWidget() {
                 value = loadWidgetBitmap(selection)
             }
             val detailIntent = selection?.let { buildDetailIntent(context, it.illustId) }
-            val promptText = resolvePromptText(context, isPrivacyMode, selection)
+            val promptText = resolvePromptText(isPrivacyMode, selection)
             Box(
                 modifier =
                     GlanceModifier
@@ -100,14 +101,13 @@ class IllustGlanceWidget : GlanceAppWidget() {
     }
 
     private fun resolvePromptText(
-        context: Context,
         isPrivacyMode: Boolean,
         selection: IllustWidgetSelection?,
     ): String =
         when {
-            isPrivacyMode -> context.getString(R.string.widget_illust_pick_prompt)
-            selection != null -> context.getString(R.string.widget_illust_image_missing)
-            else -> context.getString(R.string.widget_illust_pick_prompt)
+            isPrivacyMode -> AppStrings.get(StringKey.WidgetIllustPickPrompt)
+            selection != null -> AppStrings.get(StringKey.WidgetIllustImageMissing)
+            else -> AppStrings.get(StringKey.WidgetIllustPickPrompt)
         }
 
     private fun buildConfigIntent(

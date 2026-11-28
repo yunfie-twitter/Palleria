@@ -13,7 +13,7 @@
     <ID>CyclomaticComplexMethod:Haptics.kt:fun performAppHapticFeedback</ID>
     <ID>CyclomaticComplexMethod:IllustiaBookmarkModule.kt:IllustiaBookmarkModule$private fun loadProfileBookmarks</ID>
     <ID>CyclomaticComplexMethod:IllustiaDetailProfileModule.kt:IllustiaDetailProfileModule$@Suppress("LongMethod") private fun launchDetailExtras</ID>
-    <ID>CyclomaticComplexMethod:IllustiaLibraryNavigationModule.kt:IllustiaLibraryNavigationModule$fun removeAccount</ID>
+    <ID>CyclomaticComplexMethod:IllustiaLibraryNavigationModule.kt:IllustiaLibraryNavigationModule$override fun removeAccount</ID>
     <ID>CyclomaticComplexMethod:IllustiaViewModelFoundation.kt:IllustiaViewModelFoundation$protected fun IllustiaUiState.hasCachedContent: Boolean</ID>
     <ID>CyclomaticComplexMethod:MainActivity.kt:MainActivity$override fun onCreate</ID>
     <ID>CyclomaticComplexMethod:ProtocolDao.kt:ProtocolDao$suspend fun recordConflict: String?</ID>

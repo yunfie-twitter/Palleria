@@ -13,6 +13,8 @@ import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.yunfie.illustia.data.computeAccountKey
 import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.models.SavedIllust
+import com.yunfie.illustia.models.SavedIllustPage
 import com.yunfie.illustia.models.StoredAccount
 import com.yunfie.illustia.platform.PlatformCapabilities
 import com.yunfie.illustia.settings.db.IllustiaDatabase
@@ -97,9 +99,10 @@ internal fun hasNewCredentialValues(
     return hasRefreshTokenUpdate || hasDiscordTokenUpdate || hasAccountTokenUpdate
 }
 
+@Suppress("TooManyFunctions")
 class SettingsStore internal constructor(
     context: Context,
-) {
+) : SettingsFacade {
     private val appContext = context.applicationContext
     private val legacyPreferences by lazy { appContext.getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE) }
     private val encryptedPreferences by lazy { Companion.createEncryptedPreferences(appContext) }
@@ -383,9 +386,9 @@ class SettingsStore internal constructor(
             cachedStartupSettings = null
         }
 
-    suspend fun getSavedIllusts() =
+    override suspend fun getSavedIllusts(): List<SavedIllust> =
         withContext(Dispatchers.IO) {
-            dao.getSavedIllusts()
+            dao.getSavedIllusts().map(SavedIllustEntity::toSavedIllust)
         }
 
     suspend fun getSavedIllust(illustId: Long): SavedIllustWithPages? =
@@ -393,19 +396,34 @@ class SettingsStore internal constructor(
             dao.getSavedIllust(illustId)
         }
 
-    suspend fun saveSavedIllust(
-        illust: SavedIllustEntity,
-        pages: List<SavedIllustPageEntity>,
+    override suspend fun getSavedIllustIllustId(illustId: Long): Long? =
+        withContext(Dispatchers.IO) {
+            dao.getSavedIllust(illustId)?.illust?.illustId
+        }
+
+    override suspend fun saveSavedIllust(
+        illust: SavedIllust,
+        pages: List<SavedIllustPage>,
     ) = withContext(Dispatchers.IO) {
+        val entity = illust.toSavedIllustEntity()
+        val pageEntities =
+            pages.map { page ->
+                SavedIllustPageEntity().apply {
+                    illustId = page.illustId
+                    pageIndex = page.pageIndex
+                    localPath = page.localPath
+                    sourceUrl = page.sourceUrl
+                }
+            }
         database.runInTransaction {
             dao.deleteSavedIllustPages(illust.illustId)
             dao.deleteSavedIllust(illust.illustId)
-            dao.upsertSavedIllust(illust)
-            dao.upsertSavedIllustPages(pages)
+            dao.upsertSavedIllust(entity)
+            dao.upsertSavedIllustPages(pageEntities)
         }
     }
 
-    suspend fun deleteSavedIllust(illustId: Long) =
+    override suspend fun deleteSavedIllust(illustId: Long) =
         withContext(Dispatchers.IO) {
             database.runInTransaction {
                 dao.deleteSavedIllustPages(illustId)
@@ -413,14 +431,14 @@ class SettingsStore internal constructor(
             }
         }
 
-    suspend fun savePinHash(pin: String) {
+    override suspend fun savePinHash(pin: String) {
         savePinHashImpl(sensitivePreferences, pin)
         legacyPreferences.edit().putBoolean(KEY_STARTUP_HAS_PIN, true).apply()
     }
 
-    suspend fun verifyPin(pin: String): Boolean = verifyPinHashImpl(sensitivePreferences, pin)
+    override suspend fun verifyPin(pin: String): Boolean = verifyPinHashImpl(sensitivePreferences, pin)
 
-    fun hasPinSet(): Boolean {
+    override fun hasPinSet(): Boolean {
         if (legacyPreferences.contains(KEY_STARTUP_HAS_PIN)) {
             return legacyPreferences.getBoolean(KEY_STARTUP_HAS_PIN, false)
         }
@@ -429,31 +447,31 @@ class SettingsStore internal constructor(
         return hasPin
     }
 
-    fun clearPinHash() {
+    override fun clearPinHash() {
         clearPinHashImpl(sensitivePreferences)
         legacyPreferences.edit().putBoolean(KEY_STARTUP_HAS_PIN, false).apply()
     }
 
-    suspend fun saveUnlockCodeHash(code: String) {
+    override suspend fun saveUnlockCodeHash(code: String) {
         saveUnlockCodeHashImpl(sensitivePreferences, code)
     }
 
-    suspend fun verifyUnlockCode(code: String): Boolean = verifyUnlockCodeHashImpl(sensitivePreferences, code)
+    override suspend fun verifyUnlockCode(code: String): Boolean = verifyUnlockCodeHashImpl(sensitivePreferences, code)
 
-    fun hasUnlockCodeSet(): Boolean = hasUnlockCodeSetImpl(sensitivePreferences)
+    override fun hasUnlockCodeSet(): Boolean = hasUnlockCodeSetImpl(sensitivePreferences)
 
     fun clearUnlockCodeHash() {
         clearUnlockCodeHashImpl(sensitivePreferences)
     }
 
-    fun isValidUnlockCode(code: String): Boolean = isValidUnlockCodeImpl(code)
+    override fun isValidUnlockCode(code: String): Boolean = isValidUnlockCodeImpl(code)
 
-    suspend fun getSavedIllustStorageBytes(): Long =
+    override suspend fun getSavedIllustStorageBytes(): Long =
         withContext(Dispatchers.IO) {
-            savedIllustStorageBytesImpl(savedIllustDir())
+            savedIllustStorageBytesImpl(File(savedIllustDir()))
         }
 
-    fun savedIllustDir(): File = File(appContext.filesDir, "saved_illusts")
+    override fun savedIllustDir(): String = File(appContext.filesDir, "saved_illusts").absolutePath
 
     internal suspend fun ensureMigrated() {
         if (migrationCompleted) return
@@ -606,6 +624,36 @@ class SettingsStore internal constructor(
         private const val KEY_IMAGE_CACHE_SIZE_MB = "startup_image_cache_size_mb"
         private const val KEY_STARTUP_PRIVACY_MODE = "startup_privacy_mode_enabled"
         private const val DUMMY_LAUNCHER_ALIAS = "com.yunfie.illustia.MainActivityDummy"
-        const val STARTUP_VIEW_HISTORY_LIMIT = 16
+        const val STARTUP_VIEW_HISTORY_LIMIT = com.yunfie.illustia.settings.STARTUP_VIEW_HISTORY_LIMIT
     }
 }
+
+private fun SavedIllustEntity.toSavedIllust(): SavedIllust =
+    SavedIllust(
+        illustId = illustId,
+        title = title.orEmpty(),
+        artistName = artistName.orEmpty(),
+        artistId = artistId,
+        thumbUrl = thumbUrl.orEmpty(),
+        localCoverPath = localCoverPath,
+        localPagePathsJson = localPagePathsJson.orEmpty(),
+        pageCount = pageCount,
+        savedAt = savedAt,
+        saveGroup = saveGroup.orEmpty(),
+        xRestrict = xRestrict,
+    )
+
+private fun SavedIllust.toSavedIllustEntity(): SavedIllustEntity =
+    SavedIllustEntity().apply {
+        illustId = this@toSavedIllustEntity.illustId
+        title = this@toSavedIllustEntity.title
+        artistName = this@toSavedIllustEntity.artistName
+        artistId = this@toSavedIllustEntity.artistId
+        thumbUrl = this@toSavedIllustEntity.thumbUrl
+        localCoverPath = this@toSavedIllustEntity.localCoverPath
+        localPagePathsJson = this@toSavedIllustEntity.localPagePathsJson
+        pageCount = this@toSavedIllustEntity.pageCount
+        savedAt = this@toSavedIllustEntity.savedAt
+        saveGroup = this@toSavedIllustEntity.saveGroup
+        xRestrict = this@toSavedIllustEntity.xRestrict
+    }

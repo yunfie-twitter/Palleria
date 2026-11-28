@@ -112,7 +112,7 @@ internal object UgoiraCache {
             val entry = entries.nextElement()
             val name = entry.name.replace('\\', '/')
             UgoiraValidation.relativePath(name)
-            UgoiraValidation.entry(count, entry, name, required, extracted)
+            UgoiraValidation.entry(count, entry.isDirectory, entry.size, name, required, extracted)
             if (entry.isDirectory || name !in required) continue
             totalBytes += entry.size
             UgoiraValidation.totalBytes(totalBytes)

@@ -14,7 +14,6 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import com.yunfie.illustia.MainActivity
-import com.yunfie.illustia.R
 import java.util.concurrent.atomic.AtomicBoolean
 
 /** Keeps queued and running artwork saves foreground while the activity is minimized. */
@@ -25,7 +24,7 @@ class ArtworkDownloadService : Service() {
         super.onCreate()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             getSystemService(NotificationManager::class.java).createNotificationChannel(
-                NotificationChannel(CHANNEL, getString(R.string.download_queue_title), NotificationManager.IMPORTANCE_LOW),
+                NotificationChannel(CHANNEL, AppStrings.get(StringKey.DownloadQueueTitle), NotificationManager.IMPORTANCE_LOW),
             )
         }
         val openApp =
@@ -39,8 +38,8 @@ class ArtworkDownloadService : Service() {
             NotificationCompat
                 .Builder(this, CHANNEL)
                 .setSmallIcon(android.R.drawable.stat_sys_download)
-                .setContentTitle(getString(R.string.download_queue_title))
-                .setContentText(getString(R.string.download_queue_downloading))
+                .setContentTitle(AppStrings.get(StringKey.DownloadQueueTitle))
+                .setContentText(AppStrings.get(StringKey.DownloadQueueDownloading))
                 .setContentIntent(openApp)
                 .setOngoing(true)
                 .setProgress(0, 0, true)

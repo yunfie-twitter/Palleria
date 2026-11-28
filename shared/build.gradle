@@ -33,13 +33,23 @@ kotlin {
         }
     }
 
+    // See composeApp/build.gradle: declared everywhere, only linked on macOS.
+    // Platform implementations (repository, settings, file system) live here, so the
+    // ComposeApp framework links against this one.
+    iosArm64 { binaries.framework { baseName = "Shared"; isStatic = true } }
+    iosSimulatorArm64 { binaries.framework { baseName = "Shared"; isStatic = true } }
+
     sourceSets {
         commonMain.dependencies {
             implementation compose.runtime
 
             implementation libs.kotlinx.coroutines.core
             implementation libs.serialization.json
-            implementation libs.kotlinx.datetime
+            // commonMain には synchronized が無いため、ロック付きキャッシュを
+            // マルチプラットフォームで書くために atomicfu を使う。
+            implementation libs.atomicfu
+            // Exposed to composeApp so shared UI can format timestamps without java.text.
+            api libs.kotlinx.datetime
 
             implementation libs.ktor.client.core
             implementation libs.ktor.client.content.negotiation
@@ -48,6 +58,12 @@ kotlin {
 
         androidMain.dependencies {
             implementation libs.ktor.client.okhttp
+            implementation libs.okhttp
+            implementation libs.lifecycle.viewmodel.ktx
+        }
+
+        iosMain.dependencies {
+            implementation libs.ktor.client.darwin
         }
 
         commonTest.dependencies {

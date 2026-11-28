@@ -155,40 +155,6 @@
     <string name="favorite_tags_works_not_found">Tidak ada karya yang ditemukan untuk \"#%1$s\"</string>
 
     <!-- Illust detail screen -->
-    <string name="detail_save_image_title">Simpan Gambar</string>
-    <string name="detail_save_image_confirm">Simpan gambar ini ke folder Palleria.</string>
-    <string name="detail_save_ugoira_title">Selamatkan Ugoira</string>
-    <string name="detail_save_ugoira_confirm">Simpan gambar diam (sampul) ugoira ini ke folder Palleria.</string>
-    <string name="detail_unfollow_title">Berhenti mengikuti</string>
-    <string name="detail_unfollow_confirm">Berhenti mengikuti %1$s?</string>
-    <string name="detail_open_in_browser">Buka di Peramban</string>
-    <string name="detail_share">Bagikan</string>
-    <string name="detail_save_image">Simpan Gambar</string>
-    <string name="detail_save_this_page">Simpan Halaman Ini</string>
-    <string name="detail_save_ugoira">Selamatkan Ugoira</string>
-    <string name="detail_save_all_pages">Simpan Semua Halaman</string>
-    <string name="detail_copy_url">Salin URL</string>
-    <string name="detail_mute">Bisukan</string>
-    <string name="detail_mute_work">Bisukan Pekerjaan Ini</string>
-    <string name="detail_mute_artist">Bisukan Artis Ini</string>
-    <string name="detail_more">Lebih lanjut</string>
-    <string name="detail_muted_artist">Artis yang Dibungkam</string>
-    <string name="detail_muted_artist_blur">Karya %1$s kabur.</string>
-    <string name="detail_muted_artist_blur_default">artis ini</string>
-    <string name="detail_muted_work">Pekerjaan yang Diredam</string>
-    <string name="detail_muted_work_blur">Karya yang mengandung tag yang dibisukan akan diburamkan.</string>
-    <string name="detail_unmute">Suarakan</string>
-    <string name="detail_image_load_failed">Gagal memuat gambar</string>
-    <string name="detail_no_caption">Tidak ada keterangan</string>
-    <string name="detail_comments">Komentar</string>
-    <string name="detail_show_comments">Tampilkan Komentar</string>
-    <string name="detail_comments_empty">Belum ada komentar</string>
-    <string name="detail_series">Seri</string>
-    <string name="detail_related">Pekerjaan Terkait</string>
-    <string name="detail_tags_show_more">Tampilkan semua (%1$d lagi)</string>
-    <string name="detail_tags_show_less">Tampilkan lebih sedikit</string>
-    <string name="detail_illust_id">ID ilustrasi</string>
-    <string name="detail_resolution">Resolusi</string>
 
     <!-- Image viewer screen -->
     <string name="viewer_share_failed">Tidak dapat mulai berbagi.</string>
@@ -403,7 +369,6 @@
     <string name="offline_capacity_limit_desc">Hentikan ketika karya yang disimpan mencapai batasnya.</string>
     <string name="offline_library_title">Daftar unduhan</string>
     <string name="offline_library_empty">Belum ada karya yang disimpan.</string>
-    <string name="detail_save_offline">Ditambahkan ke daftar tersimpan.</string>
     <string name="image_section_quality">Kualitas</string>
     <string name="image_section_layout">Tata Letak</string>
     <string name="image_section_proxy">Proksi</string>
@@ -989,4 +954,10 @@
     <string name="desktop_open_new_tab">Buka di tab browser baru</string>
     <string name="desktop_bookmark_private">Markah pribadi</string>
     <string name="desktop_save_as">Simpan sebagai</string>
+<string name="detail_save_image_confirm">Simpan gambar ini ke folder Palleria.</string>
+<string name="detail_save_image_title">Simpan Gambar</string>
+<string name="detail_save_ugoira_confirm">Simpan gambar diam (sampul) ugoira ini ke folder Palleria.</string>
+<string name="detail_save_ugoira_title">Selamatkan Ugoira</string>
+<string name="detail_tags_show_more">Tampilkan semua (%1$d lagi)</string>
+<string name="detail_save_offline">Ditambahkan ke daftar tersimpan.</string>
 </resources>

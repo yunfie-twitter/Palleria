@@ -1,6 +1,7 @@
 package com.yunfie.illustia.data
 
-import java.util.concurrent.ConcurrentHashMap
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
 
 /**
  * Records which cache keys were last answered by the stale offline fallback.
@@ -11,15 +12,16 @@ import java.util.concurrent.ConcurrentHashMap
  * offline state as valid and hides the failure until the TTL expires.
  */
 class StaleFallbackTracker {
-    private val keys = ConcurrentHashMap.newKeySet<String>()
+    private val lock = SynchronizedObject()
+    private val keys = mutableSetOf<String>()
 
     fun markStale(key: String) {
-        keys.add(key)
+        synchronized(lock) { keys.add(key) }
     }
 
     fun clear(key: String) {
-        keys.remove(key)
+        synchronized(lock) { keys.remove(key) }
     }
 
-    fun isStale(key: String): Boolean = key in keys
+    fun isStale(key: String): Boolean = synchronized(lock) { key in keys }
 }

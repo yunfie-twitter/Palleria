@@ -1,0 +1,151 @@
+package com.yunfie.illustia.ui.screens
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.account_logged_in
+import com.yunfie.illustia.resources.account_login_status
+import com.yunfie.illustia.resources.account_logout
+import com.yunfie.illustia.resources.account_logout_confirm_summary
+import com.yunfie.illustia.resources.account_logout_confirm_title
+import com.yunfie.illustia.resources.account_not_logged_in
+import com.yunfie.illustia.resources.account_status
+import com.yunfie.illustia.resources.account_switch_add
+import com.yunfie.illustia.resources.discord_section_account
+import com.yunfie.illustia.resources.discord_settings_title
+import com.yunfie.illustia.resources.discord_status_connected
+import com.yunfie.illustia.resources.discord_status_disconnected
+import com.yunfie.illustia.resources.settings_account
+import com.yunfie.illustia.settings.AppSettings
+import com.yunfie.illustia.ui.components.BackNavigationHandler
+import com.yunfie.illustia.ui.components.DividerLine
+import com.yunfie.illustia.ui.components.ElevatedPanel
+import com.yunfie.illustia.ui.components.HeaderIcon
+import com.yunfie.illustia.ui.components.MiuixConfirmDialog
+import com.yunfie.illustia.ui.components.Section
+import com.yunfie.illustia.ui.components.SettingLinkRow
+import com.yunfie.illustia.ui.components.SettingRow
+import com.yunfie.illustia.ui.screens.account.AccountActions
+import org.jetbrains.compose.resources.stringResource
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+@Composable
+fun AccountSettingsScreen(
+    settings: AppSettings,
+    viewModel: AccountActions,
+    onLogout: () -> Unit,
+    onBack: () -> Unit,
+    onOpenDiscordSettings: () -> Unit,
+) {
+    BackNavigationHandler(onBack = onBack)
+    val scrollBehavior = MiuixScrollBehavior()
+    var showLogoutConfirm by remember { mutableStateOf(false) }
+
+    if (showLogoutConfirm) {
+        MiuixConfirmDialog(
+            show = true,
+            title = stringResource(Res.string.account_logout_confirm_title),
+            summary = stringResource(Res.string.account_logout_confirm_summary),
+            confirmText = stringResource(Res.string.account_logout),
+            destructive = true,
+            onConfirm = {
+                showLogoutConfirm = false
+                onLogout()
+            },
+            onDismiss = { showLogoutConfirm = false },
+        )
+    }
+    Scaffold(
+        containerColor = MiuixTheme.colorScheme.surface,
+        topBar = {
+            TopAppBar(
+                title = stringResource(Res.string.settings_account),
+                largeTitle = stringResource(Res.string.settings_account),
+                scrollBehavior = scrollBehavior,
+                navigationIcon = {
+                    HeaderIcon(MiuixIcons.Back, onClick = onBack)
+                },
+            )
+        },
+    ) { scaffoldPadding ->
+        LazyColumn(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .nestedScroll(scrollBehavior.nestedScrollConnection)
+                    .background(MiuixTheme.colorScheme.surface),
+            contentPadding =
+                PaddingValues(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = scaffoldPadding.calculateTopPadding() + 16.dp,
+                    bottom = 96.dp,
+                ),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            item {
+                Section(stringResource(Res.string.account_login_status)) {
+                    ElevatedPanel {
+                        SettingRow(stringResource(Res.string.account_status)) {
+                            Text(
+                                text =
+                                    if (settings.refreshToken.isBlank()) {
+                                        stringResource(Res.string.account_not_logged_in)
+                                    } else {
+                                        stringResource(Res.string.account_logged_in)
+                                    },
+                                color =
+                                    if (settings.refreshToken.isBlank()) {
+                                        MiuixTheme.colorScheme.error
+                                    } else {
+                                        MiuixTheme.colorScheme.primary
+                                    },
+                                style = MiuixTheme.textStyles.body1,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                        DividerLine()
+                        SettingLinkRow(stringResource(Res.string.account_switch_add)) { viewModel.openAccountLoginMethod() }
+                        DividerLine()
+                        SettingLinkRow(stringResource(Res.string.account_logout)) { showLogoutConfirm = true }
+                    }
+                }
+            }
+
+            item {
+                Section(stringResource(Res.string.discord_section_account)) {
+                    ElevatedPanel {
+                        SettingLinkRow(
+                            title = stringResource(Res.string.discord_settings_title),
+                            summary =
+                                if (settings.discordRpcEnabled) {
+                                    stringResource(Res.string.discord_status_connected)
+                                } else {
+                                    stringResource(Res.string.discord_status_disconnected)
+                                },
+                            onClick = onOpenDiscordSettings,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}

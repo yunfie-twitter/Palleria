@@ -1,57 +1,13 @@
+@file:JvmName("AndroidShortsFeedScreen")
+
 package com.yunfie.illustia.ui.screens
 
-import android.content.Intent
-import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.pager.VerticalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.snapshotFlow
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState
-import com.yunfie.illustia.ui.app.AppTab
-import com.yunfie.illustia.ui.components.AppHapticEffect
-import com.yunfie.illustia.ui.components.PixivImage
-import com.yunfie.illustia.ui.components.RequestErrorState
-import com.yunfie.illustia.ui.components.cachedVerticalGradient
-import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filter
-import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Favorites
-import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
-import top.yukonga.miuix.kmp.icon.extended.Messages
-import top.yukonga.miuix.kmp.icon.extended.Share
+import com.yunfie.illustia.ui.screens.ShortsFeedScreen as SharedShortsFeedScreen
 
 @Composable
 fun ShortsFeedScreen(
@@ -61,210 +17,27 @@ fun ShortsFeedScreen(
     viewModel: IllustiaViewModel,
     onOpenComments: (Long) -> Unit,
 ) {
-    val context = LocalContext.current
-    val performHaptic = rememberHapticFeedbackAction()
-    val shareLabel = stringResource(R.string.action_share)
-    val initialPage =
-        remember(items, currentIllustId) {
-            items.indexOfFirst { it.id == currentIllustId }.coerceAtLeast(0)
-        }
-    val pagerState =
-        rememberPagerState(
-            initialPage = initialPage,
-            pageCount = { items.size },
-        )
+    val actions =
+        remember(viewModel) {
+            object : ShortsFeedActions {
+                override fun refreshShortsFeed(forceRefresh: Boolean) = viewModel.refreshShortsFeed(forceRefresh)
 
-    LaunchedEffect(viewModel) {
-        viewModel.tabScrollToTopRequests.collect { tab ->
-            if (tab == AppTab.ShortsFeed) {
-                if (pagerState.currentPage > 0) {
-                    pagerState.animateScrollToPage(0)
-                } else {
-                    viewModel.refreshShortsFeed()
-                }
+                override fun loadMoreShortsFeed() = viewModel.loadMoreShortsFeed()
+
+                override fun updateShortsFeedCurrentIllust(illustId: Long) = viewModel.updateShortsFeedCurrentIllust(illustId)
+
+                override fun openIllust(illust: Illust) = viewModel.openIllust(illust)
+
+                override fun onIllustLongPress(illust: Illust) = viewModel.onIllustLongPress(illust)
+
+                override fun toggleBookmark(illust: Illust) = viewModel.toggleBookmark(illust)
             }
         }
-    }
-
-    LaunchedEffect(pagerState, items) {
-        var isFirstCollection = true
-        snapshotFlow { pagerState.currentPage }
-            .distinctUntilChanged()
-            .collect { page ->
-                if (!isFirstCollection) {
-                    performHaptic(AppHapticEffect.Toggle)
-                }
-                isFirstCollection = false
-                items.getOrNull(page)?.let {
-                    viewModel.updateShortsFeedCurrentIllust(it.id)
-                }
-            }
-    }
-
-    val currentItems by rememberUpdatedState(items)
-    val nearEnd =
-        remember(pagerState) {
-            derivedStateOf {
-                val page = pagerState.currentPage
-                val latest = currentItems
-                latest.isNotEmpty() && page >= latest.lastIndex - 1
-            }
-        }
-    LaunchedEffect(nearEnd) {
-        snapshotFlow { nearEnd.value }
-            .distinctUntilChanged()
-            .filter { it }
-            .collect { viewModel.loadMoreShortsFeed() }
-    }
-
-    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-        if (items.isEmpty()) {
-            when (val state = loadState) {
-                LoadState.Idle, LoadState.Loading -> {
-                    Text(
-                        text = stringResource(R.string.shorts_loading),
-                        color = Color.White,
-                        modifier = Modifier.align(Alignment.Center),
-                    )
-                }
-
-                is LoadState.Error -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        RequestErrorState(
-                            message = state.message,
-                            onRetry = { viewModel.refreshShortsFeed(forceRefresh = true) },
-                        )
-                    }
-                }
-
-                LoadState.Loaded -> {
-                    Text(
-                        text = stringResource(R.string.shorts_empty),
-                        color = Color.White,
-                        modifier = Modifier.align(Alignment.Center),
-                    )
-                }
-            }
-        } else {
-            VerticalPager(
-                state = pagerState,
-                key = { page -> items.getOrNull(page)?.id ?: page },
-                modifier = Modifier.fillMaxSize(),
-            ) { page ->
-                val illust = items.getOrNull(page) ?: return@VerticalPager
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .background(Color.Black)
-                            .combinedClickable(
-                                onClick = { viewModel.openIllust(illust) },
-                                onLongClick = {
-                                    performHaptic(AppHapticEffect.Click)
-                                    viewModel.onIllustLongPress(illust)
-                                },
-                            ),
-                ) {
-                    PixivImage(
-                        url = illust.imageUrl.ifBlank { illust.previewUrl },
-                        contentDescription = illust.title,
-                        contentScale = ContentScale.Fit,
-                        crossfade = true,
-                        maxDecodeDimensionPx = 1920,
-                        allowRgb565 = true,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                    Box(
-                        modifier =
-                            Modifier
-                                .align(Alignment.BottomCenter)
-                                .fillMaxWidth()
-                                .cachedVerticalGradient(
-                                    listOf(Color.Transparent, Color.Black.copy(alpha = 0.82f)),
-                                ).padding(start = 20.dp, end = 92.dp, top = 72.dp, bottom = 24.dp),
-                    ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                            Text(
-                                text = illust.title,
-                                color = Color.White,
-                                fontSize = 19.sp,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 3,
-                                softWrap = true,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = "@${illust.artistName}",
-                                    color = Color.White.copy(alpha = 0.82f),
-                                    fontSize = 14.sp,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                            }
-                        }
-                    }
-                    Column(
-                        modifier =
-                            Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(end = 10.dp, bottom = 40.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        IconButton(
-                            onClick = {
-                                performHaptic(AppHapticEffect.Toggle)
-                                viewModel.toggleBookmark(illust)
-                            },
-                            modifier = Modifier.size(64.dp),
-                            backgroundColor = Color.Black.copy(alpha = 0.56f),
-                        ) {
-                            Icon(
-                                imageVector = if (illust.isBookmarked) MiuixIcons.FavoritesFill else MiuixIcons.Favorites,
-                                contentDescription = stringResource(R.string.action_bookmark),
-                                tint = if (illust.isBookmarked) Color(0xFFFF4D67) else Color.White,
-                                modifier = Modifier.size(38.dp),
-                            )
-                        }
-                        IconButton(
-                            onClick = {
-                                performHaptic(AppHapticEffect.Click)
-                                onOpenComments(illust.id)
-                            },
-                            modifier = Modifier.size(64.dp),
-                            backgroundColor = Color.Black.copy(alpha = 0.56f),
-                        ) {
-                            Icon(
-                                imageVector = MiuixIcons.Messages,
-                                contentDescription = stringResource(R.string.detail_comments),
-                                tint = Color.White,
-                                modifier = Modifier.size(38.dp),
-                            )
-                        }
-                        IconButton(
-                            onClick = {
-                                performHaptic(AppHapticEffect.Click)
-                                val intent =
-                                    Intent(Intent.ACTION_SEND).apply {
-                                        type = "text/plain"
-                                        putExtra(Intent.EXTRA_TEXT, "https://www.pixiv.net/artworks/${illust.id}")
-                                    }
-                                context.startActivity(Intent.createChooser(intent, shareLabel))
-                            },
-                            modifier = Modifier.size(64.dp),
-                            backgroundColor = Color.Black.copy(alpha = 0.56f),
-                        ) {
-                            Icon(
-                                imageVector = MiuixIcons.Share,
-                                contentDescription = shareLabel,
-                                tint = Color.White,
-                                modifier = Modifier.size(38.dp),
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
+    SharedShortsFeedScreen(
+        items = items,
+        loadState = loadState,
+        currentIllustId = currentIllustId,
+        actions = actions,
+        onOpenComments = onOpenComments,
+    )
 }

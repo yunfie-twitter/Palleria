@@ -10,19 +10,22 @@ import android.provider.DocumentsContract
 import android.provider.MediaStore
 import android.webkit.MimeTypeMap
 import androidx.documentfile.provider.DocumentFile
-import com.yunfie.illustia.R
 import com.yunfie.illustia.data.ImageMetadataWriter
 import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.platform.AppStrings
+import com.yunfie.illustia.platform.GallerySaver
 import com.yunfie.illustia.platform.PlatformCapabilities
+import com.yunfie.illustia.platform.StringKey
 import java.io.File
 import java.io.InputStream
 import java.util.ArrayDeque
 import java.util.Collections
 import java.util.Locale
 
+@Suppress("TooManyFunctions")
 class NativeImageStore(
     private val context: Context,
-) {
+) : GallerySaver {
     private val preferences = context.getSharedPreferences("illustia", Context.MODE_PRIVATE)
     private val flutterPreferences = context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
     private val savingNames = Collections.synchronizedSet(mutableSetOf<String>())
@@ -52,9 +55,30 @@ class NativeImageStore(
         }
     }
 
-    fun exists(
+    override fun saveFromFile(
+        sourcePath: String,
         name: String,
-        sourceUrl: String = "",
+        sourceUrl: String,
+        responseMimeType: String?,
+        clearOld: Boolean,
+        illust: Illust?,
+        embedMetadata: Boolean,
+    ): Boolean =
+        File(sourcePath).inputStream().buffered().use { stream ->
+            save(
+                input = stream,
+                name = name,
+                sourceUrl = sourceUrl,
+                responseMimeType = responseMimeType,
+                clearOld = clearOld,
+                illust = illust,
+                embedMetadata = embedMetadata,
+            )
+        }
+
+    override fun exists(
+        name: String,
+        sourceUrl: String,
     ): Boolean {
         val displayName = if (sourceUrl.isBlank()) name else name.withImageExtension(sourceUrl, null)
         val hasDirectMatch = checkExists(displayName)
@@ -369,11 +393,11 @@ class NativeImageStore(
             }
         val uri =
             resolver.insert(contentUriFor(displayName), contentValues)
-                ?: throw IllegalStateException(context.getString(R.string.image_save_media_store_failed))
+                ?: throw IllegalStateException(AppStrings.get(StringKey.ImageSaveMediaStoreFailed))
         runCatching {
             resolver.openOutputStream(uri, "w")?.use { output ->
                 input.use { it.copyTo(output) }
-            } ?: throw IllegalStateException(context.getString(R.string.image_save_write_failed))
+            } ?: throw IllegalStateException(AppStrings.get(StringKey.ImageSaveWriteFailed))
             // Patch EXIF after the single byte copy instead of staging a rewritten temp file.
             ImageMetadataWriter.embedMetadata(
                 resolver,

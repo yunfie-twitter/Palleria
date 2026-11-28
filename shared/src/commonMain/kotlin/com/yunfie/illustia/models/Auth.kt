@@ -6,6 +6,7 @@ const val SESSION_EXPIRY_SKEW_MILLIS = 60_000L
 const val MAX_SESSION_LIFETIME_SECONDS = 86_400L
 
 @Immutable
+@kotlinx.serialization.Serializable
 data class PixivSession(
     val accessToken: String,
     val refreshToken: String,
@@ -14,6 +15,7 @@ data class PixivSession(
 )
 
 @Immutable
+@kotlinx.serialization.Serializable
 data class StoredAccount(
     val name: String,
     val account: String,

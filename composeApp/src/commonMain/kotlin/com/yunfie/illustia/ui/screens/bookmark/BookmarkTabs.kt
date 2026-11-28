@@ -1,0 +1,874 @@
+package com.yunfie.illustia.ui.screens.bookmark
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import com.yunfie.illustia.BookmarkChromeState
+import com.yunfie.illustia.FollowingUserSort
+import com.yunfie.illustia.data.pixiv.WatchlistState
+import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.models.LoadState
+import com.yunfie.illustia.models.Restrict
+import com.yunfie.illustia.models.UserPreview
+import com.yunfie.illustia.models.isEmptyAfterLoad
+import com.yunfie.illustia.models.pixiv.MangaSeriesModel
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_load_more
+import com.yunfie.illustia.resources.bookmark_empty
+import com.yunfie.illustia.resources.bookmark_following_empty
+import com.yunfie.illustia.resources.bookmark_tab_bookmarks
+import com.yunfie.illustia.resources.bookmark_tab_following
+import com.yunfie.illustia.resources.bookmark_tab_timeline
+import com.yunfie.illustia.resources.bookmark_tab_watchlist
+import com.yunfie.illustia.resources.following_users_empty
+import com.yunfie.illustia.resources.series_chapter_count
+import com.yunfie.illustia.resources.watchlist_series_empty
+import com.yunfie.illustia.resources.watchlist_series_load_more
+import com.yunfie.illustia.settings.AppSettings
+import com.yunfie.illustia.settings.FeatureFlag
+import com.yunfie.illustia.settings.isFeatureEnabled
+import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
+import com.yunfie.illustia.ui.components.AvatarImage
+import com.yunfie.illustia.ui.components.CenteredErrorState
+import com.yunfie.illustia.ui.components.EmptyState
+import com.yunfie.illustia.ui.components.IllustCard
+import com.yunfie.illustia.ui.components.IllustCardSkeleton
+import com.yunfie.illustia.ui.components.LoadingIndicator
+import com.yunfie.illustia.ui.components.LocalScrollHeaderInset
+import com.yunfie.illustia.ui.components.PixivImage
+import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
+import com.yunfie.illustia.ui.components.ProfileGridHorizontalSpacing
+import com.yunfie.illustia.ui.components.ProfileGridVerticalSpacing
+import com.yunfie.illustia.ui.components.RequestErrorState
+import com.yunfie.illustia.ui.components.ScrollablePullToRefresh
+import com.yunfie.illustia.ui.components.StateBanner
+import com.yunfie.illustia.ui.components.UserResultCard
+import com.yunfie.illustia.ui.components.UserResultCardSkeleton
+import com.yunfie.illustia.ui.components.adaptiveIllustColumns
+import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
+import com.yunfie.illustia.ui.components.adaptiveProfileGridColumns
+import com.yunfie.illustia.ui.components.animatedGridPlacement
+import com.yunfie.illustia.ui.components.overlayActionButtonColors
+import com.yunfie.illustia.ui.components.pinchToChangeColumns
+import com.yunfie.illustia.ui.components.profileGridContentPadding
+import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
+import com.yunfie.illustia.ui.components.rememberSkeletonShimmer
+import com.yunfie.illustia.ui.screens.bookmark.BookmarkTabsActions
+import com.yunfie.illustia.ui.screens.bookmark.WatchlistPager
+import com.yunfie.illustia.ui.scroll.ScrollStateKeys
+import com.yunfie.illustia.ui.scroll.ScrollStateRegistry
+import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CardDefaults
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.ScrollBehavior
+import top.yukonga.miuix.kmp.basic.TabRowDefaults
+import top.yukonga.miuix.kmp.basic.TabRowWithContour
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
+import top.yukonga.miuix.kmp.squircle.squircleBorder
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.PressFeedbackType
+import androidx.compose.foundation.lazy.grid.items as gridItems
+
+@Composable
+fun BookmarkWatchlistTab(
+    settings: AppSettings,
+    watchlistState: WatchlistState,
+    watchlistStore: WatchlistPager,
+    onOpenWatchlistSeries: (Long) -> Unit,
+    scrollBehavior: ScrollBehavior? = null,
+    gridState: LazyGridState = rememberLazyGridState(),
+    onColumnsChange: (Int) -> Unit = {},
+) {
+    val scope = rememberCoroutineScope()
+    val showWatchlistSkeleton =
+        (!watchlistState.hasLoaded || watchlistState.isLoading) && watchlistState.mangaSeries.isEmpty()
+    val watchlistPending = !watchlistState.hasLoaded || watchlistState.isLoading || watchlistState.errorMessage != null
+
+    ScrollablePullToRefresh(
+        isRefreshing = watchlistState.isRefreshing,
+        onRefresh = { scope.launch { watchlistStore.fetch(forceRefresh = true) } },
+        modifier = Modifier.fillMaxSize(),
+    ) {
+        val emptyError =
+            watchlistState.errorMessage?.takeIf { watchlistState.mangaSeries.isEmpty() && !showWatchlistSkeleton }
+        if (emptyError != null) {
+            CenteredErrorState(
+                message = emptyError,
+                onRetry = { scope.launch { watchlistStore.fetch(forceRefresh = true) } },
+            )
+            return@ScrollablePullToRefresh
+        }
+        AutoLoadMoreEffect(
+            gridState = gridState,
+            enabled = settings.autoLoadMore,
+            nextUrl = watchlistState.model?.nextUrl,
+            isLoading = watchlistState.isPaginating || watchlistState.isLoading,
+            onLoadMore = { scope.launch { watchlistStore.loadMore() } },
+        )
+        val shimmer = if (showWatchlistSkeleton) rememberIllustSkeletonShimmer() else null
+        val columns = adaptiveIllustColumns(settings)
+        LazyVerticalGrid(
+            state = gridState,
+            columns = GridCells.Fixed(columns),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .pinchToChangeColumns(
+                        enabled = settings.gridPinchToZoom,
+                        currentColumns = columns,
+                        onColumnsChange = onColumnsChange,
+                    ).then(if (scrollBehavior != null) Modifier.nestedScroll(scrollBehavior.nestedScrollConnection) else Modifier),
+            contentPadding =
+                profileGridContentPadding(
+                    top = LocalScrollHeaderInset.current + 8.dp,
+                    bottom = adaptiveMainNavigationContentPadding(),
+                ),
+            horizontalArrangement = Arrangement.spacedBy(ProfileGridHorizontalSpacing),
+            verticalArrangement = Arrangement.spacedBy(ProfileGridVerticalSpacing),
+        ) {
+            if (showWatchlistSkeleton) {
+                gridItems(List(6) { it }, key = { "watchlist_skeleton_$it" }, contentType = { "watchlist_series_skeleton" }) {
+                    WatchlistSeriesCardSkeleton(shimmerValue = shimmer)
+                }
+            }
+            if (watchlistState.errorMessage != null && !watchlistState.isLoading) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    RequestErrorState(
+                        message = watchlistState.errorMessage.orEmpty(),
+                        onRetry = { scope.launch { watchlistStore.fetch(forceRefresh = true) } },
+                        modifier = Modifier.heightIn(min = 180.dp),
+                    )
+                }
+            }
+            if (watchlistState.mangaSeries.isEmpty() && !watchlistPending) {
+                item(span = { GridItemSpan(maxLineSpan) }) { EmptyState(stringResource(Res.string.watchlist_series_empty)) }
+            }
+            gridItems(watchlistState.mangaSeries, key = { it.id }, contentType = { "watchlist_series_card" }) { series ->
+                WatchlistSeriesCard(
+                    series = series,
+                    onClick = { onOpenWatchlistSeries(series.id) },
+                    modifier = Modifier.animateItem(),
+                )
+            }
+            if (settings.autoLoadMore && watchlistState.isPaginating) {
+                item(key = "watchlist_series_paginating_footer", span = { GridItemSpan(maxLineSpan) }) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        LoadingIndicator(modifier = Modifier.size(24.dp))
+                    }
+                }
+            } else if (!settings.autoLoadMore && watchlistState.model?.nextUrl != null) {
+                item(key = "watchlist_series_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
+                    Button(
+                        onClick = { scope.launch { watchlistStore.loadMore() } },
+                        enabled = !watchlistState.isPaginating,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = overlayActionButtonColors(),
+                    ) {
+                        if (watchlistState.isPaginating) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                LoadingIndicator(modifier = Modifier.size(16.dp))
+                                Text(stringResource(Res.string.watchlist_series_load_more))
+                            }
+                        } else {
+                            Text(stringResource(Res.string.watchlist_series_load_more))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WatchlistSeriesCard(
+    series: MangaSeriesModel,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .heightIn(min = 180.dp),
+        cornerRadius = 16.dp,
+        insideMargin = PaddingValues(0.dp),
+        colors =
+            CardDefaults.defaultColors(
+                color = MiuixTheme.colorScheme.surfaceContainer,
+                contentColor = MiuixTheme.colorScheme.onSurfaceContainer,
+            ),
+        pressFeedbackType = PressFeedbackType.Sink,
+        onClick = onClick,
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1.15f)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(MiuixTheme.colorScheme.surfaceContainerHigh),
+                contentAlignment = Alignment.Center,
+            ) {
+                val thumbnailUrl = series.thumbnailUrl
+                if (!thumbnailUrl.isNullOrBlank()) {
+                    PixivImage(
+                        url = thumbnailUrl,
+                        contentDescription = series.title,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                        thumbnail = true,
+                        maxDecodeDimensionPx = 384,
+                    )
+                } else {
+                    Icon(
+                        imageVector = MiuixIcons.FavoritesFill,
+                        contentDescription = null,
+                        tint = MiuixTheme.colorScheme.primary,
+                        modifier = Modifier.size(36.dp),
+                    )
+                }
+                if (series.publishedContentCount > 0) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(8.dp)
+                                .clip(RoundedCornerShape(999.dp))
+                                .background(MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.92f))
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                    ) {
+                        Text(
+                            text =
+                                pluralStringResource(
+                                    Res.plurals.series_chapter_count,
+                                    series.publishedContentCount,
+                                    series.publishedContentCount,
+                                ),
+                            color = MiuixTheme.colorScheme.onBackground,
+                            style = MiuixTheme.textStyles.footnote2,
+                            fontWeight = FontWeight.Black,
+                        )
+                    }
+                }
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = series.title,
+                    style = MiuixTheme.textStyles.subtitle,
+                    fontWeight = FontWeight.Black,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    color = MiuixTheme.colorScheme.onBackground,
+                )
+                val seriesUser = series.user
+                if (seriesUser != null) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        AvatarImage(
+                            url = seriesUser.profileImageUrls?.medium,
+                            name = seriesUser.name,
+                            size = 18.dp,
+                        )
+                        Text(
+                            text = seriesUser.name,
+                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            style = MiuixTheme.textStyles.footnote1,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WatchlistSeriesCardSkeleton(
+    modifier: Modifier = Modifier,
+    shimmerValue: State<Float>? = null,
+) {
+    val shimmerModifier = rememberSkeletonShimmer(shimmerValue)
+
+    Column(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .heightIn(min = 180.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1.15f)
+                    .clip(RoundedCornerShape(18.dp))
+                    .then(shimmerModifier),
+        )
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth(0.82f)
+                        .height(14.dp)
+                        .clip(RoundedCornerShape(999.dp))
+                        .then(shimmerModifier),
+            )
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth(0.58f)
+                        .height(10.dp)
+                        .clip(RoundedCornerShape(999.dp))
+                        .then(shimmerModifier),
+            )
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth(0.34f)
+                        .height(9.dp)
+                        .clip(RoundedCornerShape(999.dp))
+                        .then(shimmerModifier),
+            )
+        }
+    }
+}
+
+@Composable
+fun BookmarkMainTab(
+    bookmarkItems: List<Illust>,
+    loadState: LoadState,
+    settings: AppSettings,
+    feedHighQuality: Boolean,
+    showAiBadge: Boolean,
+    viewModel: BookmarkTabsActions,
+    chrome: BookmarkChromeState,
+    scrollBehavior: ScrollBehavior,
+) {
+    val gridState = ScrollStateRegistry.shared.grid(ScrollStateKeys.BOOKMARK_MAIN)
+    PrefetchIllustGridImages(
+        items = bookmarkItems,
+        gridState = gridState,
+        enabled = settings.prefetchImages,
+        highQualityImages = feedHighQuality,
+    )
+    val showInitialSkeletons = bookmarkItems.isEmpty() && loadState == LoadState.Loading
+    val showPaginationSkeletons = settings.autoLoadMore && chrome.isBookmarkPaginating
+    val shimmer =
+        if (showInitialSkeletons || showPaginationSkeletons) {
+            rememberIllustSkeletonShimmer()
+        } else {
+            null
+        }
+    val columns = adaptiveIllustColumns(settings)
+    ScrollablePullToRefresh(
+        isRefreshing = chrome.isBookmarkRefreshing,
+        onRefresh = { viewModel.reloadBookmarks(true) },
+        modifier = Modifier.fillMaxSize(),
+    ) {
+        val emptyError = (loadState as? LoadState.Error)?.takeIf { bookmarkItems.isEmpty() }
+        if (emptyError != null) {
+            CenteredErrorState(
+                message = emptyError.message,
+                onRetry = { viewModel.reloadBookmarks(true) },
+            )
+            return@ScrollablePullToRefresh
+        }
+        AutoLoadMoreEffect(
+            gridState = gridState,
+            enabled = settings.autoLoadMore,
+            nextUrl = chrome.bookmarkNextUrl,
+            isLoading = chrome.isBookmarkPaginating || loadState == LoadState.Loading,
+            onLoadMore = viewModel::loadMoreBookmarks,
+        )
+        val pinchEnabled = settings.gridPinchToZoom
+        LazyVerticalGrid(
+            state = gridState,
+            columns = GridCells.Fixed(columns),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .pinchToChangeColumns(
+                        enabled = pinchEnabled,
+                        currentColumns = columns,
+                        onColumnsChange = viewModel::updateColumnsFromGrid,
+                    ).nestedScroll(scrollBehavior.nestedScrollConnection),
+            contentPadding =
+                PaddingValues(
+                    start = 14.dp,
+                    end = 14.dp,
+                    top = LocalScrollHeaderInset.current + 8.dp,
+                    bottom = adaptiveMainNavigationContentPadding(),
+                ),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            if (showInitialSkeletons) {
+                items(6, contentType = { "illust_skeleton" }) { IllustCardSkeleton(shimmerValue = shimmer) }
+            } else {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    StateBanner(loadState, onRetry = { viewModel.reloadBookmarks(true) })
+                }
+            }
+            if (isEmptyAfterLoad(bookmarkItems.isEmpty(), loadState)) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    EmptyState(stringResource(Res.string.bookmark_empty))
+                }
+            }
+            gridItems(bookmarkItems, key = { it.id }, contentType = { "illust_card" }) { illust ->
+                val illustId = illust.id
+                val onBookmark = remember(illustId) { { viewModel.toggleBookmarkById(illustId) } }
+                val onBookmarkLongClick =
+                    remember(
+                        illustId,
+                    ) { { viewModel.openBookmarkTagPickerFor(illust) } }
+                val onClick = remember(illustId) { { viewModel.openIllustById(illustId) } }
+                val onLongClick = remember(illustId) { { viewModel.onIllustLongPressById(illustId) } }
+                IllustCard(
+                    modifier = animatedGridPlacement(),
+                    illust = illust,
+                    onBookmark = onBookmark,
+                    onBookmarkLongClick = onBookmarkLongClick,
+                    onClick = onClick,
+                    onLongClick = onLongClick,
+                    highQualityImages = feedHighQuality,
+                    showAiBadge = showAiBadge,
+                )
+            }
+            if (showPaginationSkeletons) {
+                items(
+                    count = columns,
+                    key = { "bookmark_paginating_skeleton_$it" },
+                    contentType = { "illust_skeleton" },
+                ) {
+                    IllustCardSkeleton(shimmerValue = shimmer)
+                }
+            } else if (!settings.autoLoadMore && chrome.bookmarkNextUrl != null) {
+                item(key = "bookmark_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
+                    Button(
+                        onClick = viewModel::loadMoreBookmarks,
+                        enabled = !chrome.isBookmarkPaginating,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = overlayActionButtonColors(),
+                    ) {
+                        if (chrome.isBookmarkPaginating) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                LoadingIndicator(modifier = Modifier.size(16.dp))
+                                Text(stringResource(Res.string.action_load_more))
+                            }
+                        } else {
+                            Text(stringResource(Res.string.action_load_more))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun BookmarkTimelineTab(
+    timelineItems: List<Illust>,
+    loadState: LoadState,
+    settings: AppSettings,
+    feedHighQuality: Boolean,
+    showAiBadge: Boolean,
+    viewModel: BookmarkTabsActions,
+    chrome: BookmarkChromeState,
+    scrollBehavior: ScrollBehavior,
+) {
+    val gridState = ScrollStateRegistry.shared.grid(ScrollStateKeys.BOOKMARK_TIMELINE)
+    PrefetchIllustGridImages(
+        items = timelineItems,
+        gridState = gridState,
+        enabled = settings.prefetchImages,
+        highQualityImages = feedHighQuality,
+        keyPrefix = "timeline_",
+    )
+    val showInitialSkeletons = timelineItems.isEmpty() && loadState == LoadState.Loading
+    val showPaginationSkeletons = settings.autoLoadMore && chrome.isTimelinePaginating
+    val shimmer =
+        if (showInitialSkeletons || showPaginationSkeletons) {
+            rememberIllustSkeletonShimmer()
+        } else {
+            null
+        }
+    val columns = adaptiveIllustColumns(settings)
+    ScrollablePullToRefresh(
+        isRefreshing = chrome.isTimelineRefreshing,
+        onRefresh = { viewModel.refreshTimeline(true) },
+        modifier = Modifier.fillMaxSize(),
+    ) {
+        val emptyError = (loadState as? LoadState.Error)?.takeIf { timelineItems.isEmpty() }
+        if (emptyError != null) {
+            CenteredErrorState(
+                message = emptyError.message,
+                onRetry = { viewModel.refreshTimeline(true) },
+            )
+            return@ScrollablePullToRefresh
+        }
+        AutoLoadMoreEffect(
+            gridState = gridState,
+            enabled = settings.autoLoadMore,
+            nextUrl = chrome.timelineNextUrl,
+            isLoading = chrome.isTimelinePaginating || loadState == LoadState.Loading,
+            onLoadMore = viewModel::loadMoreTimeline,
+        )
+        val pinchEnabled = settings.gridPinchToZoom
+        LazyVerticalGrid(
+            state = gridState,
+            columns = GridCells.Fixed(columns),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .pinchToChangeColumns(
+                        enabled = pinchEnabled,
+                        currentColumns = columns,
+                        onColumnsChange = viewModel::updateColumnsFromGrid,
+                    ).nestedScroll(scrollBehavior.nestedScrollConnection),
+            contentPadding =
+                PaddingValues(
+                    start = 14.dp,
+                    end = 14.dp,
+                    top = LocalScrollHeaderInset.current + 8.dp,
+                    bottom = adaptiveMainNavigationContentPadding(),
+                ),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            if (showInitialSkeletons) {
+                items(6, contentType = { "illust_skeleton" }) { IllustCardSkeleton(shimmerValue = shimmer) }
+            } else {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    StateBanner(loadState, onRetry = { viewModel.refreshTimeline(true) })
+                }
+            }
+            if (isEmptyAfterLoad(timelineItems.isEmpty(), loadState)) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    EmptyState(stringResource(Res.string.bookmark_following_empty))
+                }
+            }
+            gridItems(timelineItems, key = { "timeline_${it.id}" }, contentType = { "illust_card" }) { illust ->
+                val illustId = illust.id
+                val onBookmark = remember(illustId) { { viewModel.toggleBookmarkById(illustId) } }
+                val onBookmarkLongClick =
+                    remember(
+                        illustId,
+                    ) { { viewModel.openBookmarkTagPickerFor(illust) } }
+                val onClick = remember(illustId) { { viewModel.openIllustById(illustId) } }
+                val onLongClick = remember(illustId) { { viewModel.onIllustLongPressById(illustId) } }
+                IllustCard(
+                    modifier = animatedGridPlacement(),
+                    illust = illust,
+                    onBookmark = onBookmark,
+                    onBookmarkLongClick = onBookmarkLongClick,
+                    onClick = onClick,
+                    onLongClick = onLongClick,
+                    highQualityImages = feedHighQuality,
+                    showAiBadge = showAiBadge,
+                )
+            }
+            if (showPaginationSkeletons) {
+                items(
+                    count = columns,
+                    key = { "timeline_paginating_skeleton_$it" },
+                    contentType = { "illust_skeleton" },
+                ) {
+                    IllustCardSkeleton(shimmerValue = shimmer)
+                }
+            } else if (!settings.autoLoadMore && chrome.timelineNextUrl != null) {
+                item(key = "timeline_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
+                    Button(
+                        onClick = viewModel::loadMoreTimeline,
+                        enabled = !chrome.isTimelinePaginating,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = overlayActionButtonColors(),
+                    ) {
+                        if (chrome.isTimelinePaginating) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                LoadingIndicator(modifier = Modifier.size(16.dp))
+                                Text(stringResource(Res.string.action_load_more))
+                            }
+                        } else {
+                            Text(stringResource(Res.string.action_load_more))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun BookmarkFollowingTab(
+    settings: AppSettings,
+    followingUsers: List<UserPreview>,
+    sort: FollowingUserSort,
+    loadState: LoadState,
+    viewModel: BookmarkTabsActions,
+    chrome: BookmarkChromeState,
+    scrollBehavior: ScrollBehavior? = null,
+) {
+    val gridState = ScrollStateRegistry.shared.grid(ScrollStateKeys.BOOKMARK_FOLLOWING)
+    val miuixPeekEnabled = settings.isFeatureEnabled(FeatureFlag.MiuixQuickPeek)
+    val sortedUsers =
+        remember(followingUsers, sort) {
+            when (sort) {
+                FollowingUserSort.Newest -> {
+                    followingUsers
+                }
+
+                FollowingUserSort.Oldest -> {
+                    followingUsers.asReversed()
+                }
+
+                FollowingUserSort.Name -> {
+                    // String.CASE_INSENSITIVE_ORDER is JVM-only; compare lowercased keys.
+                    followingUsers.sortedWith(
+                        compareBy { it.name.ifBlank { it.account }.lowercase() },
+                    )
+                }
+            }
+        }
+    val showInitialSkeletons = followingUsers.isEmpty() && loadState == LoadState.Loading
+    val showPaginationSkeletons = settings.autoLoadMore && chrome.isFollowingPaginating
+    val shimmer =
+        if (showInitialSkeletons || showPaginationSkeletons) {
+            rememberIllustSkeletonShimmer()
+        } else {
+            null
+        }
+
+    ScrollablePullToRefresh(
+        isRefreshing = chrome.isFollowingRefreshing,
+        onRefresh = { viewModel.refreshFollowingUsers(true) },
+        modifier = Modifier.fillMaxSize(),
+    ) {
+        val emptyError = (loadState as? LoadState.Error)?.takeIf { followingUsers.isEmpty() }
+        if (emptyError != null) {
+            CenteredErrorState(
+                message = emptyError.message,
+                onRetry = { viewModel.refreshFollowingUsers(true) },
+            )
+            return@ScrollablePullToRefresh
+        }
+        AutoLoadMoreEffect(
+            gridState = gridState,
+            enabled = settings.autoLoadMore,
+            nextUrl = chrome.followingUsersNextUrl,
+            isLoading = chrome.isFollowingPaginating || loadState == LoadState.Loading,
+            onLoadMore = viewModel::loadMoreFollowingUsers,
+        )
+        LazyVerticalGrid(
+            state = gridState,
+            columns = GridCells.Fixed(1),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .then(if (scrollBehavior != null) Modifier.nestedScroll(scrollBehavior.nestedScrollConnection) else Modifier),
+            contentPadding =
+                PaddingValues(
+                    start = 14.dp,
+                    end = 14.dp,
+                    top = LocalScrollHeaderInset.current + 8.dp,
+                    bottom = adaptiveMainNavigationContentPadding(),
+                ),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            if (showInitialSkeletons) {
+                items(
+                    count = 4,
+                    key = { "following_user_skeleton_$it" },
+                    contentType = { "user_skeleton" },
+                ) {
+                    UserResultCardSkeleton(shimmerValue = shimmer)
+                }
+            } else {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    StateBanner(loadState, onRetry = { viewModel.refreshFollowingUsers(true) })
+                }
+            }
+            if (isEmptyAfterLoad(followingUsers.isEmpty(), loadState)) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    EmptyState(stringResource(Res.string.following_users_empty))
+                }
+            }
+            gridItems(sortedUsers, key = { "follow_user_${it.id}" }, contentType = { "user_card" }) { user ->
+                val onLongClick =
+                    remember(user, miuixPeekEnabled) {
+                        if (miuixPeekEnabled) {
+                            { viewModel.onFollowingUserLongPress(user) }
+                        } else {
+                            null
+                        }
+                    }
+                UserResultCard(
+                    user = user,
+                    onClick = { viewModel.openUserPageFor(user) },
+                    onLongClick = onLongClick,
+                )
+            }
+            if (showPaginationSkeletons) {
+                items(
+                    count = 3,
+                    key = { "following_paginating_skeleton_$it" },
+                    contentType = { "user_skeleton" },
+                ) {
+                    UserResultCardSkeleton(shimmerValue = shimmer)
+                }
+            } else if (!settings.autoLoadMore && chrome.followingUsersNextUrl != null) {
+                item(key = "following_load_more_button", span = { GridItemSpan(maxLineSpan) }) {
+                    Button(
+                        onClick = viewModel::loadMoreFollowingUsers,
+                        enabled = !chrome.isFollowingPaginating,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = overlayActionButtonColors(),
+                    ) {
+                        if (chrome.isFollowingPaginating) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                LoadingIndicator(modifier = Modifier.size(16.dp))
+                                Text(stringResource(Res.string.action_load_more))
+                            }
+                        } else {
+                            Text(stringResource(Res.string.action_load_more))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CompactBookmarkTabs(
+    selectedTab: Int,
+    onSelect: (Int) -> Unit,
+    isBlurEnabled: Boolean = false,
+    modifier: Modifier = Modifier,
+) {
+    val isDark = MiuixTheme.colorScheme.surface.luminance() < 0.5f
+    val colors =
+        if (isBlurEnabled) {
+            TabRowDefaults.tabRowColors(
+                backgroundColor =
+                    if (isDark) {
+                        MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.45f)
+                    } else {
+                        MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.55f)
+                    },
+                contentColor = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                selectedBackgroundColor =
+                    if (isDark) {
+                        Color.White.copy(alpha = 0.18f)
+                    } else {
+                        Color.White.copy(alpha = 0.95f)
+                    },
+                selectedContentColor = MiuixTheme.colorScheme.onSurface,
+            )
+        } else {
+            TabRowDefaults.tabRowColors(
+                backgroundColor = MiuixTheme.colorScheme.surfaceContainer,
+                contentColor = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                selectedBackgroundColor =
+                    if (isDark) {
+                        Color.White.copy(alpha = 0.16f)
+                    } else {
+                        Color.White.copy(alpha = 0.92f)
+                    },
+                selectedContentColor = MiuixTheme.colorScheme.onSurface,
+            )
+        }
+    val borderModifier =
+        if (isBlurEnabled) {
+            Modifier.squircleBorder(
+                width = 0.75.dp,
+                color = if (isDark) Color.White.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.08f),
+                cornerRadius = TabRowDefaults.TabRowWithContourCornerRadius,
+            )
+        } else {
+            Modifier
+        }
+    TabRowWithContour(
+        tabs =
+            listOf(
+                stringResource(Res.string.bookmark_tab_timeline),
+                stringResource(Res.string.bookmark_tab_bookmarks),
+                stringResource(Res.string.bookmark_tab_watchlist),
+                stringResource(Res.string.bookmark_tab_following),
+            ),
+        selectedTabIndex = selectedTab,
+        onTabSelected = onSelect,
+        modifier = modifier.then(borderModifier).pointerHoverIcon(PointerIcon.Hand),
+        colors = colors,
+        minWidth = 86.dp,
+        maxWidth = 116.dp,
+    )
+}

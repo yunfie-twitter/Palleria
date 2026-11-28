@@ -1,0 +1,304 @@
+package com.yunfie.illustia
+
+import androidx.compose.runtime.Immutable
+import com.yunfie.illustia.models.HomeFeedKind
+import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.models.LoadState
+import com.yunfie.illustia.models.NovelPreview
+import com.yunfie.illustia.models.NovelTextContent
+import com.yunfie.illustia.models.SavedIllust
+import com.yunfie.illustia.models.UserPreview
+import com.yunfie.illustia.models.UserProfile
+import com.yunfie.illustia.models.pixiv.BookmarkTag
+import com.yunfie.illustia.models.pixiv.Comment
+import com.yunfie.illustia.models.pixiv.PixivNotification
+import com.yunfie.illustia.settings.AppSettings
+import kotlin.time.Clock
+import kotlin.uuid.Uuid
+
+@Immutable
+data class IllustiaUiState(
+    val settings: AppSettings = AppSettings(),
+    val settingsLoaded: Boolean = false,
+    val mutedIllustsSet: Set<Long> = emptySet(),
+    val mutedUsersSet: Set<Long> = emptySet(),
+    val mutedTagsSet: Set<String> = emptySet(),
+    val sessionReady: Boolean = false,
+    val currentAccount: UserProfile? = null,
+    val homeKind: HomeFeedKind = HomeFeedKind.Recommended,
+    val homeItems: List<Illust> = emptyList(),
+    val homeNextUrl: String? = null,
+    val pendingHomeItems: List<Illust> = emptyList(),
+    val pendingHomeNextUrl: String? = null,
+    val novelItems: List<NovelPreview> = emptyList(),
+    val novelNextUrl: String? = null,
+    val selectedNovel: NovelPreview? = null,
+    val selectedNovelText: NovelTextContent? = null,
+    val recommendedTags: List<String> = emptyList(),
+    val recommendedTagTiles: List<RecommendedTagTile> = emptyList(),
+    val recommendedTagsFetchedAtMillis: Long = 0L,
+    val recommendedTagsLoading: Boolean = false,
+    val recommendedTagsError: String? = null,
+    val isHomeRefreshing: Boolean = false,
+    val isHomePaginating: Boolean = false,
+    val isTimelineRefreshing: Boolean = false,
+    val isTimelinePaginating: Boolean = false,
+    val isNovelRefreshing: Boolean = false,
+    val isNovelPaginating: Boolean = false,
+    val isRankingRefreshing: Map<String, Boolean> = emptyMap(),
+    val isRankingPaginating: Map<String, Boolean> = emptyMap(),
+    val isBookmarkRefreshing: Boolean = false,
+    val isBookmarkPaginating: Boolean = false,
+    val isFollowingRefreshing: Boolean = false,
+    val isFollowingPaginating: Boolean = false,
+    val isWatchlistRefreshing: Boolean = false,
+    val isWatchlistPaginating: Boolean = false,
+    val searchDraft: String = "",
+    val activeSearchWord: String = "",
+    val searchItems: List<Illust> = emptyList(),
+    val searchNextUrl: String? = null,
+    val searchNovelItems: List<NovelPreview> = emptyList(),
+    val searchNovelNextUrl: String? = null,
+    val userSearchItems: List<UserPreview> = emptyList(),
+    val userSearchNextUrl: String? = null,
+    val isSearchRefreshing: Boolean = false,
+    val isSearchPaginating: Boolean = false,
+    val isUserSearchPaginating: Boolean = false,
+    val searchSelectedTab: Int = 0,
+    val homeSelectedTab: Int = 0,
+    val isOfflineCached: Boolean = false,
+    val timelineItems: List<Illust> = emptyList(),
+    val timelineNextUrl: String? = null,
+    val shortsFeedItems: List<Illust> = emptyList(),
+    val shortsFeedHomeNextUrl: String? = null,
+    val shortsFeedFollowingNextUrl: String? = null,
+    val shortsFeedCurrentIllustId: Long? = null,
+    val watchlistItems: List<Illust> = emptyList(),
+    val watchlistNextUrl: String? = null,
+    val activeWatchlistTag: String? = null,
+    val followingUsers: List<UserPreview> = emptyList(),
+    val followingUsersNextUrl: String? = null,
+    val bookmarkSelectedTab: Int = 1,
+    val bookmarkSort: BookmarkSort = BookmarkSort.Newest,
+    val rankingItems: List<Illust> = emptyList(),
+    val rankingNextUrl: String? = null,
+    val rankingMode: String = "day",
+    val rankingModeItems: Map<String, List<Illust>> = emptyMap(),
+    val rankingModeNextUrls: Map<String, String?> = emptyMap(),
+    val rankingModeLoadStates: Map<String, LoadState> = emptyMap(),
+    val bookmarkItems: List<Illust> = emptyList(),
+    val bookmarkNextUrl: String? = null,
+    val bookmarkTag: String? = null,
+    val selectedIllust: Illust? = null,
+    val selectedIllustError: String? = null,
+    val selectedIllustErrorId: Long? = null,
+    val selectedIllustUser: UserProfile? = null,
+    val selectedIllustFirstComment: Comment? = null,
+    val isSelectedIllustRefreshing: Boolean = false,
+    val relatedIllusts: List<Illust> = emptyList(),
+    /** 関連作品の取得が一度でも完了したか。空リストが「取得中」か「0件」かの区別に使う。 */
+    val relatedIllustsLoaded: Boolean = false,
+    val savedIllusts: List<SavedIllust> = emptyList(),
+    val selectedSavedIllustId: Long? = null,
+    val selectedUserId: Long? = null,
+    val selectedUser: UserProfile? = null,
+    val selectedUserError: String? = null,
+    val selectedUserIllusts: List<Illust> = emptyList(),
+    val selectedUserNextUrl: String? = null,
+    val selectedUserBookmarks: List<Illust> = emptyList(),
+    val selectedUserBookmarksNextUrl: String? = null,
+    val selectedUserIllustsLoaded: Boolean = false,
+    val selectedUserBookmarksLoaded: Boolean = false,
+    val selectedUserIllustsError: String? = null,
+    val selectedUserBookmarksError: String? = null,
+    val isSelectedUserIllustsPaginating: Boolean = false,
+    val isSelectedUserBookmarksPaginating: Boolean = false,
+    val selectedRelatedUsers: List<UserPreview> = emptyList(),
+    val selectedRelatedUsersNextUrl: String? = null,
+    val selectedRelatedUsersUserId: Long? = null,
+    val selectedRelatedUsersError: String? = null,
+    val selectedRelatedUsersLoading: Boolean = false,
+    val selectedRelatedUsersRefreshing: Boolean = false,
+    val selectedRelatedUsersPaginating: Boolean = false,
+    val showUserPage: Boolean = false,
+    val userPageDismissed: Boolean = false,
+    val imageViewerIllust: Illust? = null,
+    val imageViewerStartPage: Int = 0,
+    val imageViewerCurrentPage: Int = 0,
+    val longPressedIllust: Illust? = null,
+    val longPressedUser: UserPreview? = null,
+    val longPressedTag: TagPreview? = null,
+    val webLoginRequest: PixivWebLoginRequest? = null,
+    val showReloginRequiredDialog: Boolean = false,
+    val pendingBookmarkRemoval: Illust? = null,
+    val bookmarkTagPickerIllust: Illust? = null,
+    val bookmarkTagPickerTags: List<BookmarkTag> = emptyList(),
+    val bookmarkTagPickerLoading: Boolean = false,
+    val bookmarkTagPickerError: String? = null,
+    val bookmarkTagPickerRestrict: com.yunfie.illustia.models.Restrict = com.yunfie.illustia.models.Restrict.Public,
+    val notifications: List<PixivNotification> = emptyList(),
+    val notificationNextUrl: String? = null,
+    val expandedNotifications: Map<Long, List<PixivNotification>> = emptyMap(),
+    val notificationsLoading: Boolean = false,
+    val notificationsError: String? = null,
+    val downloadQueue: List<DownloadQueueEntry> = emptyList(),
+    val showAccountSwitcher: Boolean = false,
+    val appLocked: Boolean = false,
+    val showLockRecoveryDialog: Boolean = false,
+    val loadState: LoadState = LoadState.Idle,
+    // Per-feed loading state. The shared `loadState` is written by every feed, so an empty
+    // following list could be rendered as "no users" while another feed had already reported
+    // Loaded. These start Idle and are gated on Loaded, so the placeholder cannot flash.
+    val timelineLoadState: LoadState = LoadState.Idle,
+    val followingUsersLoadState: LoadState = LoadState.Idle,
+    val message: String? = null,
+    val centeredError: String? = null,
+    val pendingPermissionRationale: PermissionRationaleType? = null,
+    val privacyLocked: Boolean = false,
+    val calculatorBuffer: String = "",
+    val calculatorHistory: List<CalculatorHistoryEntry> = emptyList(),
+    val isTransitioningToIllustia: Boolean = false,
+)
+
+enum class PermissionRationaleType {
+    Notification,
+    Storage,
+}
+
+data class CalculatorHistoryEntry(
+    val expression: String,
+    val result: String,
+    val id: String = Uuid.random().toString(),
+)
+
+@Immutable
+data class CalculatorUiState(
+    val buffer: String = "",
+    val history: List<CalculatorHistoryEntry> = emptyList(),
+)
+
+@Immutable
+data class SearchUiState(
+    val searchDraft: String = "",
+    val activeSearchWord: String = "",
+    val searchSelectedTab: Int = 0,
+    val searchItems: List<Illust> = emptyList(),
+    val searchNextUrl: String? = null,
+    val searchNovelItems: List<NovelPreview> = emptyList(),
+    val searchNovelNextUrl: String? = null,
+    val userSearchItems: List<UserPreview> = emptyList(),
+    val userSearchNextUrl: String? = null,
+    val homeItems: List<Illust> = emptyList(),
+    val recommendedTags: List<String> = emptyList(),
+    val recommendedTagTiles: List<RecommendedTagTile> = emptyList(),
+    val recommendedTagsFetchedAtMillis: Long = 0L,
+    val recommendedTagsLoading: Boolean = false,
+    val recommendedTagsError: String? = null,
+    val isSearchRefreshing: Boolean = false,
+    val isSearchPaginating: Boolean = false,
+    val isUserSearchPaginating: Boolean = false,
+    val loadState: LoadState = LoadState.Idle,
+    val sessionReady: Boolean = false,
+    val settings: AppSettings = AppSettings(),
+)
+
+@Immutable
+data class RankingUiState(
+    val rankingMode: String = "day",
+    val rankingItems: List<Illust> = emptyList(),
+    val rankingNextUrl: String? = null,
+    val rankingModeItems: Map<String, List<Illust>> = emptyMap(),
+    val rankingModeNextUrls: Map<String, String?> = emptyMap(),
+    val rankingModeLoadStates: Map<String, LoadState> = emptyMap(),
+    val isRankingRefreshing: Map<String, Boolean> = emptyMap(),
+    val isRankingPaginating: Map<String, Boolean> = emptyMap(),
+    val loadState: LoadState = LoadState.Idle,
+    val settings: AppSettings = AppSettings(),
+)
+
+val IllustiaUiState.searchUiState: SearchUiState
+    get() =
+        SearchUiState(
+            searchDraft = searchDraft,
+            activeSearchWord = activeSearchWord,
+            searchSelectedTab = searchSelectedTab,
+            searchItems = searchItems,
+            searchNextUrl = searchNextUrl,
+            searchNovelItems = searchNovelItems,
+            searchNovelNextUrl = searchNovelNextUrl,
+            userSearchItems = userSearchItems,
+            userSearchNextUrl = userSearchNextUrl,
+            homeItems = homeItems,
+            recommendedTags = recommendedTags,
+            recommendedTagTiles = recommendedTagTiles,
+            recommendedTagsFetchedAtMillis = recommendedTagsFetchedAtMillis,
+            recommendedTagsLoading = recommendedTagsLoading,
+            recommendedTagsError = recommendedTagsError,
+            isSearchRefreshing = isSearchRefreshing,
+            isSearchPaginating = isSearchPaginating,
+            isUserSearchPaginating = isUserSearchPaginating,
+            loadState = loadState,
+            sessionReady = sessionReady,
+            settings = settings,
+        )
+
+val IllustiaUiState.rankingUiState: RankingUiState
+    get() =
+        RankingUiState(
+            rankingMode = rankingMode,
+            rankingItems = rankingItems,
+            rankingNextUrl = rankingNextUrl,
+            rankingModeItems = rankingModeItems,
+            rankingModeNextUrls = rankingModeNextUrls,
+            rankingModeLoadStates = rankingModeLoadStates,
+            isRankingRefreshing = isRankingRefreshing,
+            isRankingPaginating = isRankingPaginating,
+            loadState = loadState,
+            settings = settings,
+        )
+
+@Immutable
+data class RecommendedTagTile(
+    val tag: String,
+    val imageUrl: String? = null,
+)
+
+@Immutable
+data class TagPreview(
+    val tag: String,
+    val imageUrl: String? = null,
+)
+
+data class MuteFilter(
+    val illustIds: Set<Long> = emptySet(),
+    val userIds: Set<Long> = emptySet(),
+    val tags: Set<String> = emptySet(),
+) {
+    val isEmpty: Boolean
+        get() = illustIds.isEmpty() && userIds.isEmpty() && tags.isEmpty()
+}
+
+@Immutable
+data class DownloadQueueEntry(
+    val id: Long,
+    val title: String,
+    val subtitle: String,
+    val status: DownloadQueueStatus,
+    val timestampMillis: Long = Clock.System.now().toEpochMilliseconds(),
+)
+
+@Immutable
+enum class DownloadQueueStatus {
+    Waiting,
+    Downloading,
+    Completed,
+    Skipped,
+    Failed,
+}
+
+fun AppSettings.toMuteFilter(): MuteFilter =
+    MuteFilter(
+        illustIds = mutedIllusts.toSet(),
+        userIds = mutedUsers.toSet(),
+        tags = mutedTags.toSet(),
+    )

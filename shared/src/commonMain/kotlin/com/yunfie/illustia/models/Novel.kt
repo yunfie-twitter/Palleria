@@ -55,6 +55,7 @@ data class NovelTextContent(
     val seriesNextTitle: String?,
 )
 
+@kotlinx.serialization.Serializable
 enum class NovelReadingStatus(
     val id: String,
 ) {
@@ -70,6 +71,7 @@ enum class NovelReadingStatus(
 }
 
 @Immutable
+@kotlinx.serialization.Serializable
 data class NovelReadingProgress(
     val novelId: Long,
     val lastReadPage: Int = 0,

@@ -64,7 +64,10 @@ import com.yunfie.illustia.data.NativeImageAnalysis
 import com.yunfie.illustia.data.proxyPixivImageUrl
 import com.yunfie.illustia.nativebridge.AssistantContentProvider
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
+import com.yunfie.illustia.nativebridge.toIncomingLink
+import com.yunfie.illustia.platform.AppStrings
 import com.yunfie.illustia.platform.PlatformCapabilities
+import com.yunfie.illustia.platform.StringKey
 import com.yunfie.illustia.settings.AppFont
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.appLanguageLocaleList
@@ -140,8 +143,7 @@ class MainActivity : FragmentActivity() {
     }
 
     private val viewModel by viewModels<IllustiaViewModel> {
-        androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory
-            .getInstance(application)
+        IllustiaViewModelFactory(application)
     }
     private val dynamicHzController =
         com.yunfie.illustia.platform
@@ -358,7 +360,7 @@ class MainActivity : FragmentActivity() {
                 settings.dummyIconVariant,
             ) {
                 if (!settingsLoaded) return@LaunchedEffect
-                viewModel.applyDummyIconSettings(this@MainActivity)
+                viewModel.applyDummyIconSettings()
             }
 
             LaunchedEffect(
@@ -369,7 +371,7 @@ class MainActivity : FragmentActivity() {
                 uiState.showUserPage,
             ) {
                 if (!settingsLoaded) return@LaunchedEffect
-                val appName = getString(R.string.app_name)
+                val appName = AppStrings.get(StringKey.AppName)
                 val pageTitle =
                     when {
                         uiState.selectedIllust != null -> {
@@ -445,7 +447,7 @@ class MainActivity : FragmentActivity() {
         }
         if (intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY == 0) {
             AppShortcutRouter.accept(intent)
-            viewModel.handleIncomingIntent(intent)
+            viewModel.handleIncomingIntent(intent?.toIncomingLink())
             intent.data = null
             intent.removeExtra(NativeIntentRouter.EXTRA_HANDOFF_URI)
             intent.action = Intent.ACTION_MAIN
@@ -522,7 +524,7 @@ class MainActivity : FragmentActivity() {
         setIntent(intent)
         if (intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY == 0) {
             AppShortcutRouter.accept(intent)
-            viewModel.handleIncomingIntent(intent)
+            viewModel.handleIncomingIntent(intent?.toIncomingLink())
             intent.data = null
             intent.removeExtra(NativeIntentRouter.EXTRA_HANDOFF_URI)
             intent.action = Intent.ACTION_MAIN
@@ -601,19 +603,22 @@ class MainActivity : FragmentActivity() {
 
     private fun currentHandoffUri(state: IllustiaUiState): Uri? {
         if (state.appLocked || state.privacyLocked) return null
+        val selectedUser = state.selectedUser
+        val imageViewerIllust = state.imageViewerIllust
+        val selectedIllust = state.selectedIllust
         return when {
-            state.showUserPage && state.selectedUser != null -> {
-                Uri.parse("pixiv://users/${state.selectedUser.id}")
+            state.showUserPage && selectedUser != null -> {
+                Uri.parse("pixiv://users/${selectedUser.id}")
             }
 
-            state.imageViewerIllust != null -> {
+            imageViewerIllust != null -> {
                 Uri.parse(
-                    "pixiv://illusts/${state.imageViewerIllust.id}?page=${state.imageViewerCurrentPage}",
+                    "pixiv://illusts/${imageViewerIllust.id}?page=${state.imageViewerCurrentPage}",
                 )
             }
 
-            state.selectedIllust != null -> {
-                Uri.parse("pixiv://illusts/${state.selectedIllust.id}")
+            selectedIllust != null -> {
+                Uri.parse("pixiv://illusts/${selectedIllust.id}")
             }
 
             else -> {
@@ -822,9 +827,9 @@ class MainActivity : FragmentActivity() {
 
         val title =
             if (settings.hideRecents) {
-                settings.dummyAppName.ifBlank { getString(R.string.app_name_dummy) }
+                settings.dummyAppName.ifBlank { AppStrings.get(StringKey.AppNameDummy) }
             } else {
-                getString(R.string.app_name)
+                AppStrings.get(StringKey.AppName)
             }
 
         val iconRes =

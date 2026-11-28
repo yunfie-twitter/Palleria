@@ -134,7 +134,7 @@ class AppUpdateDownloadWorker(
     private suspend fun installDownloadedUpdate(
         updater: AppUpdaterRepository,
         release: AppReleaseInfo,
-        file: File,
+        apkPath: String,
     ) {
         val currentVersion = updater.getCurrentVersionName()
         if (!updater.isNewerVersion(release.versionName, currentVersion)) {
@@ -155,14 +155,14 @@ class AppUpdateDownloadWorker(
             // WorkManager will not re-trigger this worker indefinitely.
             WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
             AppUpdateNotificationHelper.showInstalling(context, release)
-            val installResult = updater.installApk(file, UpdateInstallMethod.SHIZUKU)
+            val installResult = updater.installApk(apkPath, UpdateInstallMethod.SHIZUKU)
             if (installResult.isSuccess) {
                 AppUpdateNotificationHelper.showUpdateInstalled(context, release)
                 updater.cleanUpdateApks()
                 return
             }
         }
-        AppUpdateNotificationHelper.showUpdateDownloaded(context, release, file)
+        AppUpdateNotificationHelper.showUpdateDownloaded(context, release, File(apkPath))
     }
 
     private fun createForegroundInfo(release: AppReleaseInfo): ForegroundInfo {
@@ -246,7 +246,7 @@ class AppUpdateDownloadWorker(
         ) : DownloadProgressEvent
 
         data class Completed(
-            val file: File,
+            val apkPath: String,
             val release: AppReleaseInfo,
         ) : DownloadProgressEvent
 

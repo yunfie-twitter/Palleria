@@ -1,0 +1,967 @@
+package com.yunfie.illustia
+
+import com.yunfie.illustia.buildCustomDownloadPath
+import com.yunfie.illustia.buildDownloadPath
+import com.yunfie.illustia.buildSmartDownloadFilename
+import com.yunfie.illustia.data.proxyPixivImageUrl
+import com.yunfie.illustia.extractIllustId
+import com.yunfie.illustia.hasImageUrl
+import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.models.LoadState
+import com.yunfie.illustia.models.Restrict
+import com.yunfie.illustia.models.SavedIllust
+import com.yunfie.illustia.models.SavedIllustPage
+import com.yunfie.illustia.models.StoredAccount
+import com.yunfie.illustia.models.pixiv.UgoiraPlaybackFrame
+import com.yunfie.illustia.nativebridge.NativeIntentEvent
+import com.yunfie.illustia.nativebridge.NativeIntentRouter
+import com.yunfie.illustia.platform.StringKey
+import com.yunfie.illustia.platform.ViewModelDepsApi
+import com.yunfie.illustia.platform.currentTimeMillis
+import com.yunfie.illustia.settings.FeatureFlag
+import com.yunfie.illustia.withImageExtension
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.withLock
+
+private const val MAX_SIMULTANEOUS_DOWNLOADS = 4
+private const val STORAGE_SIZE_CACHE_MILLIS = 5_000L
+
+private data class StorageSizeSample(
+    val bytes: Long,
+    val measuredAtMillis: Long,
+)
+
+/** Downloads, offline library, notifications, settings navigation, and account switching. */
+@Suppress("LargeClass")
+abstract class IllustiaLibraryNavigationModule(
+    deps: ViewModelDepsApi,
+) : IllustiaBookmarkModule(deps) {
+    private val storageSizeLock = SynchronizedObject()
+    private var cachedStorageBytes: StorageSizeSample? = null
+
+    override fun saveImage(
+        url: String,
+        filename: String,
+    ) {
+        val keepAlive =
+            try {
+                appServices.acquireArtworkDownloadService()
+            } catch (expectedFailure: RuntimeException) {
+                telemetry.recordException(expectedFailure, tag = "download_service_start")
+                _uiState.update { it.copy(message = str(StringKey.ErrorSaveFailed)) }
+                return
+            }
+        val queueId = currentTimeMillis()
+        val queuedIllust = resolveDownloadIllust(filename)
+        val queueTitle = queuedIllust?.title?.takeIf { it.isNotBlank() } ?: filename
+        val queueSubtitle =
+            queuedIllust?.artistName?.takeIf { it.isNotBlank() }
+                ?: str(StringKey.DownloadQueueWaiting)
+        val saveJob =
+            viewModelScope.launch(Dispatchers.Default) {
+                enqueueDownloadQueue(queueId, queueTitle, queueSubtitle, DownloadQueueStatus.Waiting)
+                var terminalStatus: DownloadQueueStatus? = null
+                var acquiredSlot = false
+                try {
+                    acquireDownloadSlot()
+                    acquiredSlot = true
+                    updateDownloadQueueStatus(queueId, DownloadQueueStatus.Downloading)
+                    _uiState.update { it.copy(loadState = LoadState.Loading, message = null) }
+                    telemetry.traceAsync("download.artwork", "download") {
+                        val currentIllust = resolveDownloadIllust(filename)
+                        val targetName = buildDownloadPath(filename, currentIllust)
+                        val checkUrl = resolveCheckUrl(url, currentIllust)
+                        val (finalName, clearOld) =
+                            resolveDuplicateTarget(targetName, checkUrl, _uiState.value.settings.duplicateSaveMode)
+                                ?: run {
+                                    terminalStatus = DownloadQueueStatus.Skipped
+                                    _uiState.update {
+                                        it.copy(loadState = LoadState.Loaded, message = str(StringKey.MsgSaveSkippedDuplicate))
+                                    }
+                                    return@traceAsync
+                                }
+                        executeGalleryDownload(currentIllust, url, finalName, clearOld)
+                        terminalStatus = DownloadQueueStatus.Completed
+                        _uiState.update { it.copy(loadState = LoadState.Loaded) }
+                    }
+                } catch (expectedFailure: Exception) {
+                    val error = expectedFailure
+                    if (isCancellation(error)) {
+                        throw error
+                    }
+                    terminalStatus = DownloadQueueStatus.Failed
+                    if (handleAuthExpired(error)) return@launch
+                    telemetry.recordException(error, tag = "download_image")
+                    _uiState.update { it.copy(loadState = LoadState.Error(cleanErrorMessage(error, str(StringKey.ErrorSaveFailed)))) }
+                } finally {
+                    terminalStatus?.let { updateDownloadQueueStatus(queueId, it) }
+                    if (acquiredSlot) kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable) { releaseDownloadSlot() }
+                }
+            }
+        saveJob.invokeOnCompletion { keepAlive.close() }
+    }
+
+    fun saveImageToDocument(
+        url: String,
+        uri: String,
+    ) {
+        val keepAlive =
+            try {
+                appServices.acquireArtworkDownloadService()
+            } catch (expectedFailure: RuntimeException) {
+                telemetry.recordException(expectedFailure, tag = "download_service_start")
+                _uiState.update { it.copy(message = str(StringKey.ErrorSaveFailed)) }
+                return
+            }
+        viewModelScope
+            .launch(Dispatchers.Default) {
+                try {
+                    documentIo.downloadToUri(
+                        url = proxyPixivImageUrl(url, _uiState.value.settings.pixivImageProxyBaseUrl),
+                        headers = mapOf("Referer" to "https://www.pixiv.net/"),
+                        uri = uri,
+                    )
+                } catch (expectedFailure: Exception) {
+                    if (isCancellation(expectedFailure)) throw expectedFailure
+                    telemetry.recordException(expectedFailure, tag = "download_document")
+                    _uiState.update { it.copy(message = str(StringKey.ErrorSaveFailed)) }
+                }
+            }.invokeOnCompletion { keepAlive.close() }
+    }
+
+    private fun resolveCheckUrl(
+        url: String,
+        illust: Illust?,
+    ): String =
+        if (illust?.type == "ugoira") {
+            "https://www.pixiv.net/artworks/${illust.id}.gif"
+        } else {
+            proxyPixivImageUrl(url, _uiState.value.settings.pixivImageProxyBaseUrl)
+        }
+
+    private fun resolveDuplicateTarget(
+        targetName: String,
+        checkUrl: String,
+        mode: String,
+    ): Pair<String, Boolean>? {
+        if (!imageStore.exists(targetName, checkUrl)) {
+            return targetName to false
+        }
+        return when (mode) {
+            "overwrite" -> targetName to true
+            "always" -> findUniqueTargetName(targetName, checkUrl) to false
+            else -> null
+        }
+    }
+
+    private fun findUniqueTargetName(
+        targetName: String,
+        checkUrl: String,
+    ): String {
+        var counter = 1
+        var candidate = "${targetName}_$counter"
+        while (imageStore.exists(candidate, checkUrl)) {
+            counter++
+            candidate = "${targetName}_$counter"
+        }
+        return candidate
+    }
+
+    private suspend fun executeGalleryDownload(
+        illust: Illust?,
+        url: String,
+        targetName: String,
+        clearOld: Boolean,
+    ) {
+        if (illust?.type == "ugoira") {
+            downloadUgoiraToGallery(illust, targetName, clearOld)
+        } else {
+            downloadImageToGallery(url, targetName, clearOld)
+        }
+        if (illust != null && shouldAutoBookmark(illust, url)) {
+            val settings = _uiState.value.settings
+            val restrict = if (settings.privateBookmarkDefault) Restrict.Private else settings.bookmarkRestrict
+            val updated = repository.toggleBookmark(illust, restrict)
+            updateIllustEverywhere(updated)
+        }
+    }
+
+    fun saveImages(
+        urls: List<String>,
+        filenamePrefix: String,
+    ) {
+        val targets = urls.filter { it.isNotBlank() }
+        if (targets.isEmpty()) {
+            _uiState.update { it.copy(message = str(StringKey.MsgNoSaveableImages)) }
+            return
+        }
+        targets.forEachIndexed { index, url ->
+            saveImage(url, "${filenamePrefix}_p$index")
+        }
+        _uiState.update { it.copy(message = str(StringKey.MsgSaveStarted, targets.size)) }
+    }
+
+    fun saveOfflineImage(
+        url: String,
+        filename: String,
+        illust: Illust? = null,
+    ) {
+        val targetIllust = illust ?: _uiState.value.selectedIllust ?: return
+        viewModelScope.launch(Dispatchers.Default) {
+            var savedPath: String? = null
+            try {
+                if (_uiState.value.settings.offlineWifiOnly && connectivity.isMetered()) {
+                    _uiState.update { it.copy(message = str(StringKey.OfflineWifiOnlyDesc)) }
+                    return@launch
+                }
+                val requestUrl = proxyPixivImageUrl(url, _uiState.value.settings.pixivImageProxyBaseUrl)
+                if (savedIllustStorageBytesAtLeast(_uiState.value.settings.offlineStorageLimitBytes)) {
+                    _uiState.update { it.copy(message = str(StringKey.OfflineCapacityLimitDesc)) }
+                    return@launch
+                }
+                val resumeEnabled = FeatureFlag.ByteRangeResume.resolve(_uiState.value.settings)
+                val partPath = resolveDownloadPartFile(filename, requestUrl)
+                val headers =
+                    mapOf(
+                        "Referer" to "https://www.pixiv.net/",
+                        "User-Agent" to "PixivAndroidApp/6.184.0 (Android 14; Palleria)",
+                    )
+                val result =
+                    downloadService.downloadToPartFile(
+                        url = requestUrl,
+                        partPath = partPath,
+                        resumeEnabled = resumeEnabled,
+                        headers = headers,
+                    )
+                val filePath =
+                    moveDownloadedFile(
+                        partPath = partPath,
+                        filename = filename,
+                        sourceUrl = requestUrl,
+                        responseMimeType = result.contentType,
+                    )
+                savedPath = filePath
+                fileSystem.delete(partPath)
+                val pages =
+                    listOf(
+                        SavedIllustPage(
+                            illustId = targetIllust.id,
+                            pageIndex = 0,
+                            localPath = filePath,
+                            sourceUrl = requestUrl,
+                        ),
+                    )
+                settingsStore.saveSavedIllust(
+                    SavedIllust(
+                        illustId = targetIllust.id,
+                        title = targetIllust.title,
+                        artistName = targetIllust.artistName,
+                        artistId = targetIllust.artistId,
+                        thumbUrl = targetIllust.thumbnailUrl,
+                        localCoverPath = filePath,
+                        localPagePathsJson = "[\"${filePath.replace("\\", "\\\\")}\"]",
+                        pageCount = 1,
+                        savedAt = currentTimeMillis(),
+                        saveGroup = targetIllust.artistName,
+                        xRestrict = if (targetIllust.isR18) 1 else 0,
+                    ),
+                    pages,
+                )
+                loadSavedLibrary()
+                _uiState.update { it.copy(message = str(StringKey.DetailSaveOffline)) }
+            } catch (expectedFailure: Exception) {
+                val e = expectedFailure
+                try {
+                    savedPath?.let { fileSystem.delete(it) }
+                } catch (_: Throwable) {
+                }
+                if (isCancellation(e)) throw e
+                _uiState.update { it.copy(message = cleanErrorMessage(e, str(StringKey.ErrorSaveFailed))) }
+            }
+        }
+    }
+
+    fun openOfflineLibrary() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.OfflineLibrary)
+    }
+
+    fun openDownloadQueue() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.DownloadQueue)
+    }
+
+    override fun clearFinishedDownloads() {
+        _uiState.update { state ->
+            state.copy(
+                downloadQueue =
+                    state.downloadQueue.filter {
+                        it.status == DownloadQueueStatus.Waiting ||
+                            it.status == DownloadQueueStatus.Downloading
+                    },
+                message = str(StringKey.MsgDownloadHistoryCleared),
+            )
+        }
+    }
+
+    override fun loadSavedLibrary() {
+        if (savedLibraryJob?.isActive == true) return
+        savedLibraryJob =
+            viewModelScope.launch(Dispatchers.Default) {
+                val saved = settingsStore.getSavedIllusts()
+                _uiState.update { it.copy(savedIllusts = saved) }
+            }
+    }
+
+    fun openSavedIllustViewer(illustId: Long) {
+        viewModelScope.launch(Dispatchers.Default) {
+            val savedId = settingsStore.getSavedIllustIllustId(illustId) ?: return@launch
+            _uiState.update { it.copy(selectedSavedIllustId = savedId) }
+            _navigationRequests.tryEmit(IllustiaNavigationRequest.SavedIllustViewer)
+        }
+    }
+
+    override fun closeSavedIllustViewer() {
+        _uiState.update { it.copy(selectedSavedIllustId = null) }
+    }
+
+    fun deleteSavedIllust(illustId: Long) {
+        viewModelScope.launch(Dispatchers.Default) {
+            settingsStore.deleteSavedIllust(illustId)
+            _uiState.update { it.copy(savedIllusts = it.savedIllusts.filterNot { item -> item.illustId == illustId }) }
+        }
+    }
+
+    fun updateOfflineWifiOnly(value: Boolean) {
+        updateSettings { it.copy(offlineWifiOnly = value) }
+    }
+
+    fun updateOfflineStorageLimitBytes(value: Long) {
+        updateSettings { it.copy(offlineStorageLimitBytes = value) }
+    }
+
+    private suspend fun acquireDownloadSlot() {
+        // Waiters park on a channel and are woken by releaseDownloadSlot(); a yield() spin would
+        // burn a CPU core per queued download (e.g. 30 pages queued) until a slot frees up.
+        while (true) {
+            val acquired =
+                downloadMutex.withLock {
+                    val currentLimit =
+                        _uiState.value.settings.simultaneousDownloads
+                            .coerceIn(1, MAX_SIMULTANEOUS_DOWNLOADS)
+                    if (_activeDownloads.value < currentLimit) {
+                        _activeDownloads.update { it + 1 }
+                        true
+                    } else {
+                        false
+                    }
+                }
+            if (acquired) return
+            downloadSlotReleased.receive()
+        }
+    }
+
+    private suspend fun releaseDownloadSlot() {
+        downloadMutex.withLock {
+            _activeDownloads.update { (it - 1).coerceAtLeast(0) }
+        }
+        // Wake one parked waiter; it re-checks the limit under the mutex.
+        downloadSlotReleased.trySend(Unit)
+    }
+
+    private fun enqueueDownloadQueue(
+        id: Long,
+        title: String,
+        subtitle: String,
+        status: DownloadQueueStatus,
+    ) {
+        _uiState.update { state ->
+            state.copy(
+                downloadQueue =
+                    (
+                        listOf(
+                            DownloadQueueEntry(
+                                id = id,
+                                title = title,
+                                subtitle = subtitle,
+                                status = status,
+                            ),
+                        ) + state.downloadQueue
+                    ).take(32),
+            )
+        }
+    }
+
+    private fun updateDownloadQueueStatus(
+        id: Long,
+        status: DownloadQueueStatus,
+    ) {
+        _uiState.update { state ->
+            state.copy(
+                downloadQueue =
+                    state.downloadQueue
+                        .map { entry ->
+                            if (entry.id == id) {
+                                entry.copy(status = status, timestampMillis = currentTimeMillis())
+                            } else {
+                                entry
+                            }
+                        }.take(32),
+            )
+        }
+    }
+
+    private fun buildDownloadPath(
+        filename: String,
+        illust: Illust?,
+    ): String {
+        val settings = _uiState.value.settings
+        val customTemplate =
+            if (FeatureFlag.CustomDownloadPath.resolve(settings)) {
+                "{artist}/{tag}/{filename}"
+            } else {
+                null
+            }
+        return buildDownloadPath(
+            filename = filename,
+            illust = illust,
+            groupByArtist = settings.downloadFolderByArtist,
+            groupByWork = settings.downloadFolderByWork,
+            customPathTemplate = customTemplate,
+        )
+    }
+
+    /**
+     * Whether the offline library already reached [limitBytes]. The directory walk is expensive
+     * and a multi-page save queues many downloads at once, so concurrent checks share one walk
+     * instead of rescanning the whole storage tree per page.
+     */
+    private suspend fun savedIllustStorageBytesAtLeast(limitBytes: Long): Boolean {
+        val now = currentTimeMillis()
+        synchronized(storageSizeLock) {
+            val cached = cachedStorageBytes
+            if (cached != null && now - cached.measuredAtMillis < STORAGE_SIZE_CACHE_MILLIS) {
+                return cached.bytes >= limitBytes
+            }
+        }
+        val bytes = settingsStore.getSavedIllustStorageBytes()
+        synchronized(storageSizeLock) { cachedStorageBytes = StorageSizeSample(bytes, now) }
+        return bytes >= limitBytes
+    }
+
+    /**
+     * ダウンロード済みの `.part` を保存ディレクトリへ移し、最終パスを返す。
+     *
+     * 従来は入力ストリームを読みながら書き出していたが、ViewModel 層からは生の
+     * ストリームを扱わないため、[DownloadService] が返したパスをそのまま複製する。
+     */
+    private fun moveDownloadedFile(
+        partPath: String,
+        filename: String,
+        sourceUrl: String,
+        responseMimeType: String?,
+    ): String {
+        val dir = settingsStore.savedIllustDir()
+        fileSystem.makeDirectories(dir)
+        val targetPath = "$dir/${filename.withImageExtension(sourceUrl, responseMimeType)}"
+        try {
+            fileSystem.copy(sourcePath = partPath, targetPath = targetPath)
+        } catch (e: Exception) {
+            fileSystem.delete(targetPath)
+            throw e
+        }
+        return targetPath
+    }
+
+    private fun resolveDownloadIllust(filename: String): Illust? =
+        extractIllustId(filename)?.let(::findIllustById)
+            ?: _uiState.value.selectedIllust
+            ?: _uiState.value.imageViewerIllust
+
+    private fun getDownloadPartsDir(): String {
+        val dir = "${appPaths.cacheDir()}/download_parts"
+        fileSystem.makeDirectories(dir)
+        return dir
+    }
+
+    private fun resolveDownloadPartFile(
+        filename: String,
+        url: String,
+    ): String {
+        val hash = "${filename}_$url".hashCode().toUInt().toString(16)
+        val sanitized = filename.filter { it.isLetterOrDigit() || it == '_' || it == '-' }.take(20)
+        return "${getDownloadPartsDir()}/part_${sanitized}_$hash.part"
+    }
+
+    private fun downloadImageToGallery(
+        url: String,
+        filename: String,
+        clearOld: Boolean = false,
+    ) {
+        val requestUrl = proxyPixivImageUrl(url, _uiState.value.settings.pixivImageProxyBaseUrl)
+        val resumeEnabled = FeatureFlag.ByteRangeResume.resolve(_uiState.value.settings)
+        val partPath = resolveDownloadPartFile(filename, requestUrl)
+        val headers =
+            mapOf(
+                "Referer" to "https://www.pixiv.net/",
+                "User-Agent" to "PixivAndroidApp/6.184.0 (Android 14; Palleria)",
+            )
+        val result =
+            downloadService.downloadToPartFile(
+                url = requestUrl,
+                partPath = partPath,
+                resumeEnabled = resumeEnabled,
+                headers = headers,
+            )
+        try {
+            val illust = resolveDownloadIllust(filename)
+            val embedMeta = _uiState.value.settings.embedMetadata
+            val saved =
+                imageStore.saveFromFile(
+                    sourcePath = partPath,
+                    name = filename,
+                    sourceUrl = requestUrl,
+                    responseMimeType = result.contentType,
+                    clearOld = clearOld,
+                    illust = illust,
+                    embedMetadata = embedMeta,
+                )
+            if (!saved) {
+                throw IllegalStateException(str(StringKey.ErrorSaveFailed))
+            }
+        } finally {
+            fileSystem.delete(partPath)
+        }
+    }
+
+    private suspend fun downloadUgoiraToGallery(
+        illust: Illust,
+        filename: String,
+        clearOld: Boolean = false,
+    ) {
+        val playback = loadUgoiraPlayback(illust.id)
+        if (playback.frames.isEmpty()) {
+            throw IllegalStateException(str(StringKey.UgoiraLoadFailed))
+        }
+        val cacheDir = appPaths.cacheDir()
+        if (_uiState.value.settings.ugoiraSaveFormat == "gif") {
+            saveUgoiraAsGif(illust.id, playback.frames, filename, cacheDir, clearOld)
+        } else {
+            saveUgoiraAsMp4(illust.id, playback.frames, filename, cacheDir, clearOld)
+        }
+    }
+
+    private fun saveUgoiraAsGif(
+        illustId: Long,
+        frames: List<UgoiraPlaybackFrame>,
+        filename: String,
+        cacheDir: String,
+        clearOld: Boolean = false,
+    ) {
+        telemetry.trace("ugoira.convert.gif", "ugoira.convert") {
+            val tempGif = fileSystem.createTempFile("ugoira_${illustId}_", ".gif", cacheDir)
+            try {
+                mediaEncoder.encodeGif(frames, tempGif)
+                imageStore.saveFromFile(
+                    sourcePath = tempGif,
+                    name = filename,
+                    sourceUrl = "https://www.pixiv.net/artworks/$illustId.gif",
+                    responseMimeType = "image/gif",
+                    clearOld = clearOld,
+                )
+            } finally {
+                fileSystem.delete(tempGif)
+            }
+        }
+    }
+
+    private fun saveUgoiraAsMp4(
+        illustId: Long,
+        frames: List<UgoiraPlaybackFrame>,
+        filename: String,
+        cacheDir: String,
+        clearOld: Boolean = false,
+    ) {
+        telemetry.trace("ugoira.convert.mp4", "ugoira.convert") {
+            val tempMp4 = fileSystem.createTempFile("ugoira_${illustId}_", ".mp4", cacheDir)
+            try {
+                mediaEncoder.encodeMp4(frames, tempMp4)
+                imageStore.saveFromFile(
+                    sourcePath = tempMp4,
+                    name = filename,
+                    sourceUrl = "https://www.pixiv.net/artworks/$illustId.mp4",
+                    responseMimeType = "video/mp4",
+                    clearOld = clearOld,
+                )
+            } finally {
+                fileSystem.delete(tempMp4)
+            }
+        }
+    }
+
+    private fun shouldAutoBookmark(
+        illust: Illust?,
+        url: String,
+    ): Boolean {
+        if (!_uiState.value.settings.autoBookmarkOnDownload || illust == null) return false
+        return !illust.isBookmarked && (illust.type == "ugoira" || illust.hasImageUrl(url))
+    }
+
+    fun clearAppCache() {
+        viewModelScope.launch(Dispatchers.Default) {
+            try {
+                runCatching {
+                    imageCache.clear()
+                }
+
+                val cacheRoot = appPaths.cacheDir()
+                fileSystem.list(cacheRoot).forEach { name ->
+                    val child = "$cacheRoot/$name"
+                    when {
+                        name == "image_cache" ||
+                            name == "http_cache" ||
+                            name == "download_parts" -> {
+                            fileSystem.delete(child)
+                        }
+
+                        name.startsWith("ugoira_") ||
+                            name.startsWith("temp_") ||
+                            name.endsWith(".tmp") ||
+                            name.endsWith(".part") -> {
+                            fileSystem.delete(child)
+                        }
+                    }
+                }
+                _uiState.update { it.copy(message = str(StringKey.MsgCacheDeleted), loadState = LoadState.Loaded) }
+            } catch (expectedFailure: Exception) {
+                val error = expectedFailure
+                if (isCancellation(error)) {
+                    throw error
+                }
+                _uiState.update { it.copy(loadState = LoadState.Error(cleanErrorMessage(error, str(StringKey.ErrorCacheDeleteFailed)))) }
+            }
+        }
+    }
+
+    fun openSettings() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.Settings)
+    }
+
+    fun openGeneralSettings() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.GeneralSettings)
+    }
+
+    fun openImageSettings() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.ImageSettings)
+    }
+
+    fun openBookmarkSettings() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.BookmarkSettings)
+    }
+
+    fun openAccountSettings() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.AccountSettings)
+    }
+
+    override fun openAccountLoginMethod() {
+        closeAccountSwitcher()
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.AccountLoginMethod)
+    }
+
+    fun openDataSettings() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.DataSettings)
+    }
+
+    fun openUpdateSettings() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.UpdateSettings)
+    }
+
+    fun openDiscordSettings() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.DiscordSettings)
+    }
+
+    fun openDiscordLogin() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.DiscordLogin)
+    }
+
+    fun openWallpaperPlaylistSettings() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.WallpaperPlaylistSettings)
+    }
+
+    fun openNavigationSettings() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.NavigationSettings)
+    }
+
+    fun openCardCustomizationSettings() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.CardCustomizationSettings)
+    }
+
+    fun openDetailSectionSettings() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.DetailSectionSettings)
+    }
+
+    fun openDownloadSettings() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.DownloadSettings)
+    }
+
+    fun openNetworkSettings() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.NetworkSettings)
+    }
+
+    override fun openInternalProxySettings() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.InternalProxySettings)
+    }
+
+    override fun openViewHistory() {
+        loadFullViewHistory()
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.ViewHistory)
+    }
+
+    fun openNotifications() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.Notifications)
+        refreshNotifications()
+    }
+
+    fun refreshNotifications() {
+        if (_uiState.value.notificationsLoading) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(notificationsLoading = true, notificationsError = null) }
+            runCatching { repository.notifications() }
+                .onSuccess { page ->
+                    _uiState.update {
+                        it.copy(
+                            notifications = page.notifications,
+                            notificationNextUrl = page.nextUrl,
+                            expandedNotifications = emptyMap(),
+                            notificationsLoading = false,
+                            notificationsError = null,
+                        )
+                    }
+                }.onFailure { expectedFailure ->
+                    val error = expectedFailure
+                    if (isCancellation(error)) throw error
+                    _uiState.update {
+                        it.copy(
+                            notificationsLoading = false,
+                            notificationsError =
+                                cleanErrorMessage(
+                                    error,
+                                    str(StringKey.ErrorNotificationsLoadFailed),
+                                ),
+                            message =
+                                cleanErrorMessage(
+                                    error,
+                                    str(StringKey.ErrorNotificationsLoadFailed),
+                                ),
+                        )
+                    }
+                }
+        }
+    }
+
+    fun loadMoreNotifications() {
+        val nextUrl = _uiState.value.notificationNextUrl ?: return
+        if (_uiState.value.notificationsLoading) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(notificationsLoading = true, notificationsError = null) }
+            runCatching { repository.nextNotificationPage(nextUrl) }
+                .onSuccess { page ->
+                    _uiState.update { state ->
+                        state.copy(
+                            notifications = (state.notifications + page.notifications).distinctBy { it.id },
+                            notificationNextUrl = page.nextUrl,
+                            notificationsLoading = false,
+                            notificationsError = null,
+                        )
+                    }
+                }.onFailure { expectedFailure ->
+                    val error = expectedFailure
+                    if (isCancellation(error)) throw error
+                    _uiState.update {
+                        it.copy(
+                            notificationsLoading = false,
+                            notificationsError =
+                                cleanErrorMessage(
+                                    error,
+                                    str(StringKey.ErrorNotificationsLoadFailed),
+                                ),
+                            message =
+                                cleanErrorMessage(
+                                    error,
+                                    str(StringKey.ErrorNotificationsLoadFailed),
+                                ),
+                        )
+                    }
+                }
+        }
+    }
+
+    fun expandNotification(notificationId: Long) {
+        if (_uiState.value.expandedNotifications.containsKey(notificationId)) return
+        viewModelScope.launch {
+            runCatching { repository.notificationViewMore(notificationId) }
+                .onSuccess { page ->
+                    _uiState.update {
+                        it.copy(expandedNotifications = it.expandedNotifications + (notificationId to page.notifications))
+                    }
+                }.onFailure { expectedFailure ->
+                    val error = expectedFailure
+                    if (isCancellation(error)) throw error
+                    showMessage(cleanErrorMessage(error, str(StringKey.ErrorNotificationOpenFailed)))
+                }
+        }
+    }
+
+    fun openNotificationTarget(targetUrl: String?) {
+        when (val event = NativeIntentRouter.parseText(targetUrl)) {
+            is NativeIntentEvent.Artwork -> openIllust(event.id)
+            is NativeIntentEvent.User -> openUserPage(event.id)
+            is NativeIntentEvent.Tag -> submitSearch(event.tag)
+            else -> showMessage(str(StringKey.NotificationsTargetUnsupported))
+        }
+    }
+
+    fun openNovels() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.Novels)
+    }
+
+    fun openMuteSettings() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.MuteSettings)
+    }
+
+    fun openAppData() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.AppData)
+    }
+
+    fun openAbout() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.About)
+    }
+
+    fun openFavoriteTags() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.FavoriteTags)
+    }
+
+    fun openAppLockSetup() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.AppLockSetup)
+    }
+
+    fun openAppLockPinEntry() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.AppLockPinEntry)
+    }
+
+    fun openPrivacyModeSettings() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.PrivacyModeSettings)
+    }
+
+    fun openFeatureFlags() {
+        _navigationRequests.tryEmit(IllustiaNavigationRequest.FeatureFlags)
+    }
+
+    override fun openAccountSwitcher() {
+        _uiState.update { it.copy(showAccountSwitcher = true) }
+    }
+
+    fun closeAccountSwitcher() {
+        _uiState.update { it.copy(showAccountSwitcher = false) }
+    }
+
+    override fun switchAccount(index: Int) {
+        val current = _uiState.value.settings
+        val accounts = current.accounts
+        if (index < 0 || index >= accounts.size) return
+        val account = accounts[index]
+        val nextSettings =
+            current.copy(
+                refreshToken = account.refreshToken,
+                activeAccountIndex = index,
+                bookmarkUserId = account.userId,
+            )
+        _uiState.update {
+            it.withSettings(nextSettings).copy(
+                currentAccount = nextSettings.resolveLoggedInAccount(),
+                sessionReady = false,
+                showAccountSwitcher = false,
+                loadState = LoadState.Idle,
+                timelineLoadState = LoadState.Idle,
+                followingUsersLoadState = LoadState.Idle,
+            )
+        }
+        viewModelScope.launch(Dispatchers.Default) {
+            repository.saveSettings(nextSettings, current)
+            login()
+        }
+    }
+
+    override fun removeAccount(index: Int) {
+        val current = _uiState.value.settings
+        val mutable = current.accounts.toMutableList()
+        if (index < 0 || index >= mutable.size) return
+        val removedAccount = mutable.removeAt(index)
+        val removedActiveAccount =
+            current.activeAccountIndex == index ||
+                current.refreshToken == removedAccount.refreshToken
+        val newIndex =
+            when {
+                removedActiveAccount && mutable.isNotEmpty() -> index.coerceAtMost(mutable.lastIndex)
+                removedActiveAccount -> -1
+                current.activeAccountIndex > index -> current.activeAccountIndex - 1
+                else -> current.activeAccountIndex
+            }
+        val nextAccount = mutable.getOrNull(newIndex)
+        val nextSettings =
+            current.copy(
+                accounts = mutable,
+                activeAccountIndex = newIndex,
+                refreshToken = if (removedActiveAccount) nextAccount?.refreshToken.orEmpty() else current.refreshToken,
+                bookmarkUserId = if (removedActiveAccount) nextAccount?.userId else current.bookmarkUserId,
+            )
+
+        _uiState.update {
+            it.withSettings(nextSettings).copy(
+                currentAccount = if (removedActiveAccount) nextSettings.resolveLoggedInAccount() else it.currentAccount,
+                sessionReady = if (removedActiveAccount) false else it.sessionReady,
+                showAccountSwitcher = !removedActiveAccount,
+                loadState = if (removedActiveAccount) LoadState.Idle else it.loadState,
+            )
+        }
+
+        if (nextAccount == null && removedActiveAccount) {
+            viewModelScope.launch(Dispatchers.Default) {
+                repository.logout()
+            }
+        } else {
+            viewModelScope.launch(Dispatchers.Default) {
+                repository.saveSettings(nextSettings, current)
+                if (removedActiveAccount) {
+                    login()
+                }
+            }
+        }
+    }
+
+    override fun saveCurrentAccount() {
+        val current = _uiState.value
+        val account = current.currentAccount ?: return
+        val token = current.settings.refreshToken
+        if (token.isBlank()) return
+        val stored =
+            StoredAccount(
+                name = account.name,
+                account = account.account,
+                profileImageUrl = account.profileImageUrl,
+                refreshToken = token,
+                userId = account.id,
+            )
+        val mutable = current.settings.accounts.toMutableList()
+        val existingIndex = mutable.indexOfFirst { it.refreshToken == token }
+        if (existingIndex >= 0) {
+            mutable[existingIndex] = stored
+        } else {
+            mutable.add(stored)
+        }
+        updateSettings { it.copy(accounts = mutable, activeAccountIndex = mutable.indexOfFirst { it.refreshToken == token }) }
+    }
+}

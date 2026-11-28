@@ -52,7 +52,7 @@ private fun refreshDesktopTab(
         }
 
         AppTab.Ranking -> {
-            viewModel.refreshRanking(forceRefresh = true)
+            viewModel.refreshRanking(viewModel.uiState.value.rankingMode, true)
         }
 
         AppTab.Bookmarks -> {

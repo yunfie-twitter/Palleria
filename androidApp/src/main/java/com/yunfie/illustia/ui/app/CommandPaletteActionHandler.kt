@@ -9,9 +9,10 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation3.runtime.NavKey
 import com.yunfie.illustia.IllustiaViewModel
-import com.yunfie.illustia.R
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
+import com.yunfie.illustia.platform.AppStrings
+import com.yunfie.illustia.platform.StringKey
 import com.yunfie.illustia.settings.AppSettings
 
 /**
@@ -108,14 +109,14 @@ private fun handlePaletteNonNavigationAction(
 
         PaletteAction.ClearCache -> {
             deps.viewModel.clearAppCache()
-            toast(context, R.string.command_palette_cache_cleared)
+            toast(context, StringKey.CommandPaletteCacheCleared)
         }
 
         PaletteAction.RefreshFeed -> {
             deps.viewModel.refreshHome(forceRefresh = true)
             deps.viewModel.refreshBookmarks(forceRefresh = true)
             deps.viewModel.refreshTimeline(forceRefresh = true)
-            toast(context, R.string.command_palette_feeds_refreshed)
+            toast(context, StringKey.CommandPaletteFeedsRefreshed)
         }
 
         PaletteAction.OpenFromClipboard -> {
@@ -166,7 +167,7 @@ private fun handleToggleAi(
 ) {
     val next = !deps.settings.hideAiWorks
     deps.viewModel.updateHideAiWorks(next)
-    toast(context, if (next) R.string.command_palette_ai_hidden else R.string.command_palette_ai_shown)
+    toast(context, if (next) StringKey.CommandPaletteAiHidden else StringKey.CommandPaletteAiShown)
 }
 
 private fun handleToggleR18(
@@ -175,7 +176,7 @@ private fun handleToggleR18(
 ) {
     val next = !deps.settings.allowR18
     deps.viewModel.updateAllowR18(next)
-    toast(context, if (next) R.string.command_palette_r18_enabled else R.string.command_palette_r18_disabled)
+    toast(context, if (next) StringKey.CommandPaletteR18Enabled else StringKey.CommandPaletteR18Disabled)
 }
 
 private fun handleToggleGridColumns(
@@ -193,7 +194,7 @@ private fun handleToggleGridColumns(
     Toast
         .makeText(
             context,
-            context.getString(R.string.command_palette_grid_columns_changed, nextCols),
+            AppStrings.get(StringKey.CommandPaletteGridColumnsChanged, nextCols),
             Toast.LENGTH_SHORT,
         ).show()
 }
@@ -206,7 +207,7 @@ private fun handleToggleImageQuality(
     deps.viewModel.updateHighQuality(next)
     toast(
         context,
-        if (next) R.string.command_palette_high_quality_enabled else R.string.command_palette_high_quality_disabled,
+        if (next) StringKey.CommandPaletteHighQualityEnabled else StringKey.CommandPaletteHighQualityDisabled,
     )
 }
 
@@ -218,7 +219,7 @@ private fun handleToggleUgoiraAutoPlay(
     deps.viewModel.updateUgoiraAutoPlay(next)
     toast(
         context,
-        if (next) R.string.command_palette_ugoira_autoplay_enabled else R.string.command_palette_ugoira_autoplay_disabled,
+        if (next) StringKey.CommandPaletteUgoiraAutoplayEnabled else StringKey.CommandPaletteUgoiraAutoplayDisabled,
     )
 }
 
@@ -273,7 +274,7 @@ private fun openFromClipboard(
             ?.trim()
     val target = if (query.isNotBlank()) query.trim() else clipText
     if (target.isNullOrBlank()) {
-        toast(context, R.string.command_palette_no_clipboard_content)
+        toast(context, StringKey.CommandPaletteNoClipboardContent)
         return
     }
 
@@ -301,14 +302,14 @@ private fun openFromClipboard(
         }
 
         else -> {
-            toast(context, R.string.command_palette_invalid_link)
+            toast(context, StringKey.CommandPaletteInvalidLink)
         }
     }
 }
 
 private fun toast(
     context: Context,
-    resId: Int,
+    key: StringKey,
 ) {
-    Toast.makeText(context, context.getString(resId), Toast.LENGTH_SHORT).show()
+    Toast.makeText(context, AppStrings.get(key), Toast.LENGTH_SHORT).show()
 }

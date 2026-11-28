@@ -160,40 +160,6 @@
     <string name="favorite_tags_works_not_found">&quot;#%1$s&quot; 작품을 찾을 수 없습니다</string>
 
     <!-- Illust detail screen -->
-    <string name="detail_save_image_title">이미지 저장</string>
-    <string name="detail_save_image_confirm">이 이미지를 Palleria 폴더에 저장합니다.</string>
-    <string name="detail_save_ugoira_title">우고이라 저장</string>
-    <string name="detail_save_ugoira_confirm">이 우고이라의 정지 이미지(커버)를 Palleria 폴더에 저장합니다.</string>
-    <string name="detail_unfollow_title">팔로우 해제</string>
-    <string name="detail_unfollow_confirm">%1$s 님을 팔로우 해제할까요?</string>
-    <string name="detail_open_in_browser">브라우저에서 열기</string>
-    <string name="detail_share">공유</string>
-    <string name="detail_save_image">이미지 저장</string>
-    <string name="detail_save_this_page">이 페이지 저장</string>
-    <string name="detail_save_ugoira">우고이라 저장</string>
-    <string name="detail_save_all_pages">모든 페이지 저장</string>
-    <string name="detail_copy_url">URL 복사</string>
-    <string name="detail_mute">뮤트</string>
-    <string name="detail_mute_work">이 작품 뮤트</string>
-    <string name="detail_mute_artist">이 작가 뮤트</string>
-    <string name="detail_more">더 보기</string>
-    <string name="detail_muted_artist">뮤트한 작가</string>
-    <string name="detail_muted_artist_blur">%1$s 님의 작품이 흐리게 표시됩니다.</string>
-    <string name="detail_muted_artist_blur_default">이 작가</string>
-    <string name="detail_muted_work">뮤트한 작품</string>
-    <string name="detail_muted_work_blur">뮤트한 태그가 포함된 작품은 흐리게 표시됩니다.</string>
-    <string name="detail_unmute">뮤트 해제</string>
-    <string name="detail_image_load_failed">이미지를 불러오지 못했습니다</string>
-    <string name="detail_no_caption">캡션 없음</string>
-    <string name="detail_comments">댓글</string>
-    <string name="detail_show_comments">댓글 보기</string>
-    <string name="detail_comments_empty">아직 댓글이 없습니다</string>
-    <string name="detail_series">시리즈</string>
-    <string name="detail_related">관련 작품</string>
-    <string name="detail_tags_show_more">전체 보기 (%1$d개 더)</string>
-    <string name="detail_tags_show_less">접기</string>
-    <string name="detail_illust_id">일러스트 ID</string>
-    <string name="detail_resolution">해상도</string>
 
     <!-- Image viewer screen -->
     <string name="viewer_share_failed">공유를 시작할 수 없습니다.</string>
@@ -359,7 +325,6 @@
     <string name="offline_capacity_limit_desc">저장한 작품이 제한에 도달하면 중지합니다.</string>
     <string name="offline_library_title">다운로드 목록</string>
     <string name="offline_library_empty">저장한 작품이 아직 없습니다.</string>
-    <string name="detail_save_offline">저장 목록에 추가했습니다.</string>
     <string name="image_section_quality">화질</string>
     <string name="image_section_layout">레이아웃</string>
     <string name="image_section_proxy">프록시</string>
@@ -881,8 +846,6 @@
     <string name="desktop_bookmark_private">비공개 북마크</string>
     <string name="desktop_save_as">다른 이름으로 저장</string>
 
-    <string name="flag_user_profile_edit_title">프로필 편집</string>
-    <string name="flag_user_profile_edit_desc">내 프로필 화면에 편집 버튼(연필 아이콘)을 표시하고 프로필 편집(POST /v1/user/profile/edit)을 활성화합니다</string>
     <string name="user_profile_edit_title">프로필 편집</string>
     <string name="user_profile_edit_user_name">닉네임</string>
     <string name="user_profile_edit_comment">자기소개</string>
@@ -900,36 +863,6 @@
     <string name="comment_stamp_select">스탬프</string>
     <string name="comment_stamp_empty">사용 가능한 스탬프가 없습니다</string>
 
-    <string name="flag_offline_stale_cache_title">오프라인 캐시 (Stale-While-Revalidate)</string>
-    <string name="flag_offline_stale_cache_desc">네트워크 연결이 끊기거나 오류 발생 시에도 캐시된 피드를 계속 표시하고 오프라인 배너를 보여줍니다</string>
-    <string name="flag_bookmark_haptic_burst_title">북마크 및 좋아요 햅틱 버스트</string>
-    <string name="flag_bookmark_haptic_burst_desc">북마크와 좋아요 시 경쾌한 햅틱 피드백과 화려한 파티클 버스트 애니메이션을 실행합니다</string>
-    <string name="flag_image_blur_preview_title">블러 미리보기 (저해상도 플레이스홀더)</string>
-    <string name="flag_image_blur_preview_desc">이미지 로딩 중 저해상도 썸네일을 블러 처리하여 먼저 표시하고 원본 이미지를 부드럽게 크로스페이드합니다</string>
-    <string name="flag_task_snapshot_blur_title">태스크 기록 스텔스 블러</string>
-    <string name="flag_task_snapshot_blur_desc">앱 전환 화면의 썸네일을 블러 처리하여 주변의 엿보기를 방지합니다</string>
-    <string name="flag_disable_adaptive_refresh_rate_title">적응형 주사율 제어 사용 중지</string>
-    <string name="flag_disable_adaptive_refresh_rate_desc">앱의 높은 주사율 요청을 사용 중지하고 기기가 화면 주사율을 선택하도록 합니다</string>
-    <string name="flag_courtesy_audio_fade_title">이어폰 분리 시 오디오 페이드</string>
-    <string name="flag_courtesy_audio_fade_desc">이어폰이나 블루투스 분리 시 음량을 자연스럽게 감쇠하여 일시 정지하고 소리 누출을 방지합니다</string>
-    <string name="flag_tracking_url_cleaner_title">URL 트래킹 클리너</string>
-    <string name="flag_tracking_url_cleaner_desc">붙여넣은 Pixiv URL에서 불필요한 추적 파라미터를 자동으로 제거합니다</string>
-    <string name="flag_smart_download_naming_title">스마트 파일 이름 생성</string>
-    <string name="flag_smart_download_naming_desc">저장 파일 이름을 \'[작가명] 작품 제목_p0\' 형식으로 자동 지정하여 갤러리 정리를 쉽게 합니다</string>
-    <string name="flag_privacy_exif_stripper_title">공유 시 개인정보 Exif 제거</string>
-    <string name="flag_privacy_exif_stripper_desc">이미지 공유 시 GPS 위치 정보 및 기기 고유 메타데이터를 자동으로 삭제하여 개인정보를 보호합니다</string>
-    <string name="flag_ugoira_power_save_title">우고이라 절전 슬립 &amp; 딜레이</string>
-    <string name="flag_ugoira_power_save_desc">화면 밖에서 애니메이션을 완전 정지하고 빠른 스크롤 통과 시 불필요한 디코딩을 방지합니다</string>
-    <string name="flag_manga_adaptive_preload_title">만화 적응형 프리로드</string>
-    <string name="flag_manga_adaptive_preload_desc">페이지 넘김 방향 습관을 감지하여 프리로드 큐를 반전시켜 대기 시간을 없앱니다</string>
-    <string name="flag_velocity_landing_prefetch_title">착지 예측 프리페치</string>
-    <string name="flag_velocity_landing_prefetch_desc">스크롤 속도로 정지 위치를 추정하여 통과 중인 항목 대신 착지지점 주변을 미리 불러옵니다</string>
-    <string name="flag_byte_range_resume_title">스텔스 다운로드 재개</string>
-    <string name="flag_byte_range_resume_desc">다운로드 중단 시 기존 바이트부터 재개(HTTP Range)하여 데이터와 시간을 절약합니다</string>
-    <string name="flag_predns_socket_warming_title">사전 DNS &amp; 소켓 워밍</string>
-    <string name="flag_predns_socket_warming_desc">스플래시 화면 뒤에서 Pixiv 서버에 대한 사전 DNS 확인 및 TCP/TLS 소켓 풀을 구성하여 첫 화면 지연을 제거합니다</string>
-    <string name="flag_delta_etag_sync_title">델타 ETag 동기화</string>
-    <string name="flag_delta_etag_sync_desc">팔로우 신작 동기화 시 ETag 및 차분(델타)만 가져와 캐시하여 데이터 낭비 없이 최신작을 즉시 표시합니다</string>
     <string name="offline_cached_banner_label">오프라인 캐시 표시 중</string>
     <string name="offline_retry_button">다시 시도</string>
 
@@ -969,4 +902,10 @@
     <string name="settings_wide_color_gamut_desc">지원되는 OLED 디스플레이에서 Display P3 및 AdobeRGB의 생생한 색상을 하드웨어 가속으로 렌더링합니다</string>
     <string name="settings_wide_color_gamut_unsupported">사용 중인 기기는 광색역 디스플레이를 지원하지 않습니다</string>
     <string name="about_open_source_licenses">오픈 소스 라이선스 목록</string>
+<string name="detail_save_image_confirm">이 이미지를 Palleria 폴더에 저장합니다.</string>
+<string name="detail_save_image_title">이미지 저장</string>
+<string name="detail_save_ugoira_confirm">이 우고이라의 정지 이미지(커버)를 Palleria 폴더에 저장합니다.</string>
+<string name="detail_save_ugoira_title">우고이라 저장</string>
+<string name="detail_tags_show_more">전체 보기 (%1$d개 더)</string>
+<string name="detail_save_offline">저장 목록에 추가했습니다.</string>
 </resources>

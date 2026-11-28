@@ -2,13 +2,14 @@ package com.yunfie.illustia.ui.app
 
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation3.runtime.NavKey
-import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.NovelPreview
 import com.yunfie.illustia.models.UserPreview
 import com.yunfie.illustia.models.UserProfile
 import com.yunfie.illustia.models.pixiv.Comment
+import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.settings.AppSettings
+import org.jetbrains.compose.resources.StringResource
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
 import top.yukonga.miuix.kmp.icon.extended.More
@@ -16,21 +17,6 @@ import top.yukonga.miuix.kmp.icon.extended.Photos
 import top.yukonga.miuix.kmp.icon.extended.TopDownloads
 import top.yukonga.miuix.kmp.icon.extended.VerticalSplit
 import top.yukonga.miuix.kmp.icon.extended.Search as MiuixSearch
-
-internal enum class AppTab(
-    val id: String,
-    @param:androidx.annotation.StringRes val labelResId: Int,
-    @param:androidx.annotation.StringRes val titleResId: Int,
-    val icon: ImageVector,
-) {
-    Home("home", R.string.nav_home, R.string.nav_home, MiuixIcons.VerticalSplit),
-    Novel("novel", R.string.nav_novel, R.string.nav_novel, MiuixIcons.Photos),
-    Ranking("ranking", R.string.nav_ranking, R.string.nav_ranking, MiuixIcons.TopDownloads),
-    Bookmarks("bookmarks", R.string.nav_bookmarks, R.string.nav_bookmarks_full, MiuixIcons.FavoritesFill),
-    Search("search", R.string.nav_search, R.string.nav_search, MiuixIcons.MiuixSearch),
-    ShortsFeed("shorts", R.string.nav_shorts_feed, R.string.nav_shorts_feed, MiuixIcons.Photos),
-    More("more", R.string.nav_more, R.string.nav_more, MiuixIcons.More),
-}
 
 internal val SwipeTabs = listOf(AppTab.Home, AppTab.Search, AppTab.Bookmarks, AppTab.Ranking, AppTab.More)
 internal val VisibleTabs = SwipeTabs
@@ -198,23 +184,3 @@ internal fun shouldLoadUserProfile(
     activeRoute: NavKey?,
     selectedUserId: Long?,
 ): Boolean = activeRoute == route && selectedUserId != route.userId
-
-internal data class DetailEntrySnapshot(
-    val illust: Illust,
-    val relatedIllusts: List<Illust> = emptyList(),
-    val relatedIllustsLoaded: Boolean = false,
-    val firstComment: Comment? = null,
-    val user: UserProfile? = null,
-    val isRefreshing: Boolean = false,
-)
-
-internal data class SearchEntrySnapshot(
-    val query: String,
-    val searchItems: List<Illust> = emptyList(),
-    val searchNextUrl: String? = null,
-    val searchNovelItems: List<NovelPreview> = emptyList(),
-    val searchNovelNextUrl: String? = null,
-    val userSearchItems: List<UserPreview> = emptyList(),
-    val userSearchNextUrl: String? = null,
-    val selectedTab: Int = 0,
-)

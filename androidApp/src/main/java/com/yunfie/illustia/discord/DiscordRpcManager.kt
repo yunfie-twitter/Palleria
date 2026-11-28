@@ -12,9 +12,10 @@ import com.discord.oauth2rpc.structures.Metadata
 import com.discord.oauth2rpc.structures.RichPresence
 import com.discord.oauth2rpc.structures.Timestamps
 import com.discord.oauth2rpc.utils.ActivityFlags
-import com.yunfie.illustia.R
 import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.platform.AppStrings
 import com.yunfie.illustia.platform.PlatformCapabilities
+import com.yunfie.illustia.platform.StringKey
 import com.yunfie.illustia.settings.AppSettings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -159,7 +160,7 @@ class DiscordRpcManager(
     ): Triple<String, String, Long> {
         if (selectedIllust == null) {
             currentArtworkId = null
-            return Triple(localize(R.string.discord_presence_browsing_illust, "イラストを閲覧中"), "Palleria", sessionStart)
+            return Triple(localize(StringKey.DiscordPresenceBrowsingIllust, "イラストを閲覧中"), "Palleria", sessionStart)
         }
         if (currentArtworkId != selectedIllust.id) {
             currentArtworkId = selectedIllust.id
@@ -169,9 +170,9 @@ class DiscordRpcManager(
             if (showDetails) {
                 selectedIllust.title
                     .take(MAX_ACTIVITY_TEXT_LENGTH)
-                    .ifBlank { localize(R.string.discord_presence_viewing_artwork, "作品を閲覧中") }
+                    .ifBlank { localize(StringKey.DiscordPresenceViewingArtwork, "作品を閲覧中") }
             } else {
-                localize(R.string.discord_presence_viewing_artwork, "作品を閲覧中")
+                localize(StringKey.DiscordPresenceViewingArtwork, "作品を閲覧中")
             }
         val state =
             if (showDetails) {
@@ -190,18 +191,18 @@ class DiscordRpcManager(
         if (!showButtons) return null
         return if (selectedIllust != null && showDetails) {
             listOf(
-                localize(R.string.discord_button_view_artwork, "Pixivで見る"),
-                localize(R.string.discord_button_download, "Palleriaをダウンロード"),
+                localize(StringKey.DiscordButtonViewArtwork, "Pixivで見る"),
+                localize(StringKey.DiscordButtonDownload, "Palleriaをダウンロード"),
             )
         } else {
-            listOf(localize(R.string.discord_button_download, "Palleriaをダウンロード"))
+            listOf(localize(StringKey.DiscordButtonDownload, "Palleriaをダウンロード"))
         }
     }
 
     private fun localize(
-        id: Int,
+        key: StringKey,
         fallback: String,
-    ): String = appContext?.getString(id) ?: fallback
+    ): String = appContext?.let { AppStrings.get(key) } ?: fallback
 
     private fun buildMetadata(
         showButtons: Boolean,

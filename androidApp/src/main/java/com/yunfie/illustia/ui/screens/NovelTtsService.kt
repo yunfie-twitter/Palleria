@@ -15,11 +15,14 @@ import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import androidx.core.content.ContextCompat
-import com.yunfie.illustia.R
+import com.yunfie.illustia.platform.AppStrings
+import com.yunfie.illustia.platform.StringKey
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.settings.store.decodeStringMap
 import com.yunfie.illustia.settings.store.encodeStringMap
+import com.yunfie.illustia.ui.screens.novel.NovelTtsProgress
+import com.yunfie.illustia.ui.screens.novel.NovelTtsTextSanitizer
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -503,7 +506,7 @@ class NovelTtsService :
                 .Builder()
                 .putString(MediaMetadata.METADATA_KEY_TITLE, novelTitle)
                 .putString(MediaMetadata.METADATA_KEY_ARTIST, authorName)
-                .putString(MediaMetadata.METADATA_KEY_ALBUM, getString(R.string.app_name))
+                .putString(MediaMetadata.METADATA_KEY_ALBUM, AppStrings.get(StringKey.AppName))
                 .putLong(MediaMetadata.METADATA_KEY_NUM_TRACKS, paragraphs.size.toLong())
                 .putLong(MediaMetadata.METADATA_KEY_TRACK_NUMBER, (currentParagraphIndex + 1).toLong())
                 .build()

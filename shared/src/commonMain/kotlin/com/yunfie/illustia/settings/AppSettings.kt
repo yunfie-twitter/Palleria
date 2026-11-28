@@ -1,0 +1,192 @@
+package com.yunfie.illustia.settings
+
+import androidx.compose.runtime.Immutable
+import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.models.Restrict
+import com.yunfie.illustia.models.SearchAgeRestriction
+import com.yunfie.illustia.models.SearchBookmarkFilter
+import com.yunfie.illustia.models.SearchDuration
+import com.yunfie.illustia.models.SearchSort
+import com.yunfie.illustia.models.SearchTarget
+import com.yunfie.illustia.models.SearchWorkType
+import com.yunfie.illustia.models.StoredAccount
+
+private const val DEFAULT_SEED_COLOR = 0xFF42A5F5L
+
+/** 起動直後に保存されるセッションのプレースホルダ。実トークンではない。 */
+const val STARTUP_TOKEN_PLACEHOLDER = "__startup_session_token__"
+
+/** 起動時に読み込む閲覧履歴の件数上限（残りは必要時に遅延読込する）。 */
+const val STARTUP_VIEW_HISTORY_LIMIT = 16
+
+val DEFAULT_NAVIGATION_ORDER = listOf("home", "search", "bookmarks", "ranking", "more")
+val DEFAULT_DETAIL_SECTION_ORDER = listOf("artist", "tags", "description", "related")
+
+@Immutable
+@kotlinx.serialization.Serializable
+data class AppSettings(
+    val refreshToken: String = "",
+    val bookmarkUserId: Long? = null,
+    val appLanguage: String = "system",
+    val appFont: String = "system",
+    val themeMode: String = "system",
+    val useDynamicColor: Boolean = true,
+    val seedColor: Long = DEFAULT_SEED_COLOR,
+    val onboardingSetupCompleted: Boolean = false,
+    val allowR18: Boolean = true,
+    val allowR18G: Boolean = true,
+    val highQualityImages: Boolean = true,
+    val bookmarkRestrict: Restrict = Restrict.Public,
+    val followRestrict: Restrict = Restrict.Public,
+    val searchSort: SearchSort = SearchSort.DateDesc,
+    val searchTarget: SearchTarget = SearchTarget.PartialTags,
+    val searchWorkType: SearchWorkType = SearchWorkType.Artworks,
+    val searchDuration: SearchDuration = SearchDuration.All,
+    val searchBookmarkFilter: SearchBookmarkFilter = SearchBookmarkFilter.None,
+    val searchAgeRestriction: SearchAgeRestriction = SearchAgeRestriction.All,
+    val searchUsersEnabled: Boolean = true,
+    val searchHistory: List<String> = emptyList(),
+    val favoriteTags: List<String> = emptyList(),
+    val saveViewHistory: Boolean = true,
+    val saveSearchHistory: Boolean = true,
+    val appLockEnabled: Boolean = false,
+    val appLockTiming: String = "launch",
+    val biometricEnabled: Boolean = false,
+    val appLockFailCount: Int = 0,
+    val appLockCooldownUntil: Long = 0L,
+    val viewHistory: List<Illust> = emptyList(),
+    val smoothTransitions: Boolean = true,
+    val hapticMode: String = "rich",
+    val prefetchImages: Boolean = false,
+    val autoLoadMore: Boolean = false,
+    val notchOptimization: Boolean = true,
+    val confirmOnLongPressSave: Boolean = true,
+    val doubleBackToExit: Boolean = false,
+    val swipeToSwitchWorks: Boolean = true,
+    val secureWindow: Boolean = false,
+    val appIconVariant: String = "default",
+    val navigationOrder: List<String> = DEFAULT_NAVIGATION_ORDER,
+    val hiddenNavigationTabs: List<String> = emptyList(),
+    val navigationStyle: String = "standard",
+    val artworkThemeEnabled: Boolean = false,
+    val showCardTitle: Boolean = true,
+    val showCardArtist: Boolean = true,
+    val showCardTags: Boolean = false,
+    val showCardBookmarkCount: Boolean = false,
+    val detailSectionOrder: List<String> = DEFAULT_DETAIL_SECTION_ORDER,
+    val skipConfirmOnDetailSave: Boolean = false,
+    val showAiBadge: Boolean = true,
+    val showR18Badge: Boolean = true,
+    val showRelatedR18: Boolean = true,
+    val showCardBookmarkButton: Boolean = true,
+    val doubleTapToBookmark: Boolean = false,
+    val hideAiWorks: Boolean = false,
+    val followOnLike: Boolean = false,
+    val privateBookmarkDefault: Boolean = false,
+    val autoDownloadOnBookmark: Boolean = false,
+    val autoBookmarkOnDownload: Boolean = false,
+    val duplicateSaveMode: String = "skip", // skip | overwrite | always
+    val downloadFolderByArtist: Boolean = true,
+    val downloadFolderByWork: Boolean = true,
+    val autoTagOnBookmark: Boolean = false,
+    val ugoiraSaveFormat: String = "mp4", // mp4 | gif
+    val simultaneousDownloads: Int = 2,
+    val offlineWifiOnly: Boolean = true,
+    val offlineStorageLimitBytes: Long = 5L * 1024 * 1024 * 1024,
+    val feedPreviewQuality: String = "low",
+    val illustDetailQuality: String = "medium",
+    val mangaDetailQuality: String = "low",
+    val fullscreenQuality: String = "high",
+    val mangaReaderMode: String = "paged",
+    val dynamicAmbientViewerEnabled: Boolean = true,
+    val imageViewerSwipeToDismissEnabled: Boolean = true,
+    val quickPeekEnabled: Boolean = true,
+    val smartCacheEnabled: Boolean = false,
+    val smartCacheWifiOnly: Boolean = true,
+    val smartCacheItemCount: Int = 12,
+    val imageCacheSizeMb: Int = 300,
+    val startupScreen: String = "home",
+    val shortsFeedEnabled: Boolean = false,
+    val disableHorizontalSwipeInShortsFeed: Boolean = false,
+    val hideHomeNovelButton: Boolean = true,
+    val verticalColumnCount: Int = 2,
+    val horizontalColumnCount: Int = 4,
+    val relatedIllustColumnCount: Int = 3,
+    val pixivNetworkMode: String = "standard",
+    val pixivImageProxyBaseUrl: String = "",
+    val mutedIllusts: List<Long> = emptyList(),
+    val mutedUsers: List<Long> = emptyList(),
+    val mutedTags: List<String> = emptyList(),
+    val seenFeedIllusts: List<Long> = emptyList(),
+    val wallpaperPlaylistEnabled: Boolean = false,
+    val liveWallpaperSource: String = "all",
+    val liveWallpaperSourceFolder: String = "",
+    val liveWallpaperChangeMode: String = "screen",
+    val liveWallpaperIntervalMinutes: Int = 60,
+    val liveWallpaperOrder: String = "random",
+    val liveWallpaperScaleMode: String = "cover",
+    val liveWallpaperBackground: String = "black",
+    val liveWallpaperCrossfade: Boolean = true,
+    val liveWallpaperExcludeSensitive: Boolean = true,
+    val accounts: List<StoredAccount> = emptyList(),
+    val activeAccountIndex: Int = -1,
+    val privacyModeEnabled: Boolean = false,
+    val privacyModeAutoLockTiming: String = "immediate", // immediate|30s|1m|5m|10m|disabled
+    val hideRecents: Boolean = true,
+    val hideNotifications: Boolean = false,
+    val dummyAppName: String = "",
+    val dummyIconVariant: String = "ic_launcher_dummy",
+    val sendTelemetry: Boolean = false,
+    val autoDetectClipboard: Boolean = false,
+    val updateInstallMethod: String = "standard_apk",
+    val autoCheckUpdateOnStartup: Boolean = false,
+    val includePrereleaseUpdates: Boolean = false,
+    val notifyNewVersion: Boolean = true,
+    val autoDownloadUpdates: Boolean = false,
+    val autoDownloadWifiOnly: Boolean = true,
+    val checkUpdatesInBackground: Boolean = true,
+    val lastSeenAppVersionCode: Int = 0,
+    val discordRpcEnabled: Boolean = false,
+    val discordToken: String = "",
+    val discordApplicationId: String = "1544652855233744926",
+    val discordRpcShowArtworkDetails: Boolean = false,
+    val discordRpcShowButtons: Boolean = true,
+    val discordRpcShowLogs: Boolean = false,
+    val novelFontSize: Float = 17f,
+    val novelLineSpacing: String = "normal",
+    val novelTheme: String = "system",
+    val novelLayoutMode: String = "paged",
+    val novelProgress: Map<Long, com.yunfie.illustia.models.NovelReadingProgress> = emptyMap(),
+    val novelFontFamily: String = "system",
+    val novelTtsSpeechRate: Float = 1.0f,
+    val novelTtsPitch: Float = 1.0f,
+    val novelTtsVoiceName: String = "",
+    val novelTtsSkipSymbols: Boolean = true,
+    val novelTtsCustomDictionary: Map<String, String> = emptyMap(),
+    val internalProxyEnabled: Boolean = false,
+    val internalProxyType: String = "HTTP",
+    val internalProxyHost: String = "",
+    val internalProxyPort: Int = 8080,
+    val internalProxyBypassHosts: String = "localhost, 127.0.0.1",
+    val dohProvider: String = "system",
+    val dohCustomUrl: String = "",
+    val gridPinchToZoom: Boolean = true,
+    val quickPeekSharedElementTransition: Boolean = true,
+    val embedMetadata: Boolean = true,
+    val ugoiraAutoPlay: Boolean = true,
+    val commandPaletteEnabled: Boolean = true,
+    val wideColorGamutEnabled: Boolean = true,
+    val featureFlags: Map<String, Boolean> = emptyMap(),
+) {
+    val useHighQualityFeedImages: Boolean
+        get() = highQualityImages && feedPreviewQuality != "low"
+
+    /**
+     * Pixiv の認証トークンが実際に設定されているか。
+     *
+     * 起動直後はプレースホルダ値が入っているだけなので、それを「ログイン済み」と
+     * 誤認しないようここで判定する。
+     */
+    val isLoggedIn: Boolean
+        get() = refreshToken.isNotBlank() && refreshToken != STARTUP_TOKEN_PLACEHOLDER
+}

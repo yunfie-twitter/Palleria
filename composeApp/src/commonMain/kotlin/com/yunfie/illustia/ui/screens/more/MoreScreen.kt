@@ -1,0 +1,468 @@
+package com.yunfie.illustia.ui.screens.more
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import com.yunfie.illustia.IllustiaUiState
+import com.yunfie.illustia.models.UserProfile
+import com.yunfie.illustia.platform.AppInfo
+import com.yunfie.illustia.platform.AppStrings
+import com.yunfie.illustia.platform.StringKey
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.account_switch_title
+import com.yunfie.illustia.resources.more_connected_pixiv
+import com.yunfie.illustia.resources.more_logged_in_account
+import com.yunfie.illustia.resources.more_login_prompt
+import com.yunfie.illustia.resources.more_not_logged_in
+import com.yunfie.illustia.resources.nav_more
+import com.yunfie.illustia.ui.app.AppTab
+import com.yunfie.illustia.ui.app.LocalTabUiState
+import com.yunfie.illustia.ui.components.AppHapticEffect
+import com.yunfie.illustia.ui.components.PixivImage
+import com.yunfie.illustia.ui.components.miuixClickable
+import com.yunfie.illustia.ui.components.onTopBarTap
+import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
+import com.yunfie.illustia.ui.components.smoothScrollToTop
+import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
+import top.yukonga.miuix.kmp.basic.Badge
+import top.yukonga.miuix.kmp.basic.BasicComponent
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CardDefaults
+import top.yukonga.miuix.kmp.basic.HorizontalDivider
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.ChevronForward
+import top.yukonga.miuix.kmp.icon.extended.Contacts
+import top.yukonga.miuix.kmp.icon.extended.Download
+import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
+import top.yukonga.miuix.kmp.icon.extended.Filter
+import top.yukonga.miuix.kmp.icon.extended.Messages
+import top.yukonga.miuix.kmp.icon.extended.More
+import top.yukonga.miuix.kmp.icon.extended.Photos
+import top.yukonga.miuix.kmp.icon.extended.Settings
+import top.yukonga.miuix.kmp.icon.extended.Timer
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+private val MoreCardShape = RoundedCornerShape(18.dp)
+private val IconTileShape = RoundedCornerShape(12.dp)
+
+@Composable
+fun MoreScreen(
+    state: IllustiaUiState,
+    actions: MoreNavigationActions,
+    appInfo: AppInfo,
+) {
+    val quickActions = rememberQuickActions(state, actions)
+    val utilityActions = rememberUtilityActions(actions, appInfo)
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+    val performHaptic = rememberHapticFeedbackAction()
+
+    val scrollBehavior = MiuixScrollBehavior()
+    val tabUiState = LocalTabUiState.current
+    LaunchedEffect(tabUiState) {
+        tabUiState.scrollToTopRequests.collect { tab ->
+            if (tab == AppTab.More) {
+                listState.smoothScrollToTop(scrollBehavior)
+            }
+        }
+    }
+    Scaffold(
+        containerColor = MiuixTheme.colorScheme.surface,
+        topBar = {
+            TopAppBar(
+                title = stringResource(Res.string.nav_more),
+                largeTitle = stringResource(Res.string.nav_more),
+                scrollBehavior = scrollBehavior,
+                modifier =
+                    Modifier.onTopBarTap(
+                        navIconWidth = 0.dp,
+                        actionsWidth = 0.dp,
+                        hasBottomContent = false,
+                    ) {
+                        performHaptic(AppHapticEffect.Click)
+                        coroutineScope.launch {
+                            listState.smoothScrollToTop(scrollBehavior)
+                        }
+                    },
+            )
+        },
+    ) { scaffoldPadding ->
+        LazyColumn(
+            state = listState,
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .nestedScroll(scrollBehavior.nestedScrollConnection)
+                    .background(MiuixTheme.colorScheme.surface),
+            contentPadding =
+                PaddingValues(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = scaffoldPadding.calculateTopPadding() + 18.dp,
+                    bottom = 24.dp,
+                ),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            item {
+                MoreHeader(
+                    isLoggedIn = state.settings.refreshToken.isNotBlank(),
+                    account = state.currentAccount,
+                    onOpenProfile = actions::openCurrentUserProfile,
+                    onOpenAccountSwitcher = actions::openAccountSwitcher,
+                )
+            }
+            item { ActionList(actions = quickActions + utilityActions) }
+        }
+    }
+}
+
+@Composable
+private fun rememberQuickActions(
+    state: IllustiaUiState,
+    actions: MoreNavigationActions,
+): List<MoreAction> =
+    remember(
+        state.settings.favoriteTags.size,
+        state.settings.hideHomeNovelButton,
+    ) {
+        buildList {
+            add(
+                MoreAction(
+                    title = AppStrings.get(StringKey.MoreSettings),
+                    icon = MiuixIcons.Settings,
+                    onClick = actions::openSettings,
+                ),
+            )
+            add(
+                MoreAction(
+                    title = AppStrings.get(StringKey.MoreViewHistory),
+                    icon = MiuixIcons.Timer,
+                    onClick = actions::openViewHistory,
+                ),
+            )
+            if (!state.settings.hideHomeNovelButton) {
+                add(
+                    MoreAction(
+                        title = AppStrings.get(StringKey.MoreNotifications),
+                        icon = MiuixIcons.Messages,
+                        onClick = actions::openNotifications,
+                    ),
+                )
+            }
+            add(
+                MoreAction(
+                    title = AppStrings.get(StringKey.MoreFavoriteTags),
+                    icon = MiuixIcons.FavoritesFill,
+                    badge =
+                        state.settings.favoriteTags.size
+                            .badgeText(),
+                    onClick = actions::openFavoriteTags,
+                ),
+            )
+            if (state.settings.hideHomeNovelButton) {
+                add(
+                    MoreAction(
+                        title = AppStrings.get(StringKey.NavNovel),
+                        icon = MiuixIcons.Photos,
+                        onClick = actions::openNovels,
+                    ),
+                )
+            }
+            add(
+                MoreAction(
+                    title = AppStrings.get(StringKey.MoreMuteSettings),
+                    icon = MiuixIcons.Filter,
+                    onClick = actions::openMuteSettings,
+                ),
+            )
+            add(
+                MoreAction(
+                    title = AppStrings.get(StringKey.MoreDownloadList),
+                    icon = MiuixIcons.Download,
+                    onClick = actions::openDownloadQueue,
+                ),
+            )
+        }
+    }
+
+@Composable
+private fun rememberUtilityActions(
+    actions: MoreNavigationActions,
+    appInfo: AppInfo,
+): List<MoreAction> {
+    val appVersion = remember(appInfo) { appInfo.versionName() ?: "1.0.0" }
+
+    return remember(actions, appVersion) {
+        listOf(
+            MoreAction(
+                title = AppStrings.get(StringKey.MoreAbout),
+                icon = MiuixIcons.More,
+                onClick = actions::openAbout,
+            ),
+        )
+    }
+}
+
+@Composable
+private fun MoreHeader(
+    isLoggedIn: Boolean,
+    account: UserProfile?,
+    onOpenProfile: () -> Unit,
+    onOpenAccountSwitcher: () -> Unit,
+) {
+    val performHaptic = rememberHapticFeedbackAction()
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        cornerRadius = 18.dp,
+        insideMargin = PaddingValues(0.dp),
+        colors =
+            CardDefaults.defaultColors(
+                color = MiuixTheme.colorScheme.surfaceContainer,
+                contentColor = MiuixTheme.colorScheme.onBackground,
+            ),
+    ) {
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .background(MiuixTheme.colorScheme.surfaceContainer)
+                    .padding(18.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Row(
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .miuixClickable(
+                            onClick = {
+                                performHaptic(AppHapticEffect.Click)
+                                if (isLoggedIn) {
+                                    onOpenProfile()
+                                } else {
+                                    onOpenAccountSwitcher()
+                                }
+                            },
+                        ),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                AccountAvatar(account = account)
+
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        text = accountTitle(isLoggedIn, account),
+                        color = MiuixTheme.colorScheme.onBackground,
+                        style = MiuixTheme.textStyles.title3,
+                        fontWeight = FontWeight.Black,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = accountSubtitle(isLoggedIn, account),
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        style = MiuixTheme.textStyles.footnote1,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+
+            Box(
+                modifier =
+                    Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .miuixClickable(
+                            onClick = {
+                                performHaptic(AppHapticEffect.Click)
+                                onOpenAccountSwitcher()
+                            },
+                        ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = MiuixIcons.More,
+                    contentDescription = stringResource(Res.string.account_switch_title),
+                    tint = MiuixTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AccountAvatar(account: UserProfile?) {
+    Box(
+        modifier =
+            Modifier
+                .size(58.dp)
+                .clip(CircleShape)
+                .background(MiuixTheme.colorScheme.surfaceContainerHigh),
+        contentAlignment = Alignment.Center,
+    ) {
+        val avatarUrl = account?.profileImageUrl
+        if (!avatarUrl.isNullOrBlank()) {
+            PixivImage(
+                url = avatarUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+                thumbnail = true,
+            )
+        } else {
+            Icon(
+                imageVector = MiuixIcons.Contacts,
+                contentDescription = null,
+                tint = MiuixTheme.colorScheme.onSurface,
+                modifier = Modifier.size(30.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun ActionList(actions: List<MoreAction>) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        cornerRadius = 18.dp,
+        insideMargin = PaddingValues(0.dp),
+        colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surfaceContainer),
+    ) {
+        actions.forEachIndexed { index, action ->
+            if (index > 0) {
+                HorizontalDivider()
+            }
+            ActionRow(action = action)
+        }
+    }
+}
+
+@Composable
+private fun ActionRow(action: MoreAction) {
+    BasicComponent(
+        title = action.title,
+        summary = action.summary,
+        modifier = Modifier.fillMaxWidth(),
+        startAction = { IconTile(icon = action.icon, size = 36.dp, iconSize = 20.dp) },
+        endActions = {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                action.badge?.let { Badge(it) }
+                Icon(MiuixIcons.ChevronForward, contentDescription = null, modifier = Modifier.size(18.dp))
+            }
+        },
+        onClick = action.onClick,
+    )
+}
+
+@Composable
+private fun IconTile(
+    icon: ImageVector,
+    size: androidx.compose.ui.unit.Dp = 42.dp,
+    iconSize: androidx.compose.ui.unit.Dp = 22.dp,
+) {
+    Box(
+        modifier =
+            Modifier
+                .size(size)
+                .clip(IconTileShape)
+                .background(MiuixTheme.colorScheme.surfaceContainerHigh),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MiuixTheme.colorScheme.onSurface,
+            modifier = Modifier.size(iconSize),
+        )
+    }
+}
+
+@Composable
+private fun Badge(text: String) {
+    Box(
+        modifier =
+            Modifier
+                .clip(RoundedCornerShape(999.dp))
+                .background(MiuixTheme.colorScheme.error)
+                .padding(horizontal = 7.dp, vertical = 3.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = text,
+            color = MiuixTheme.colorScheme.onError,
+            style = MiuixTheme.textStyles.footnote2,
+            fontWeight = FontWeight.Black,
+        )
+    }
+}
+
+private data class MoreAction(
+    val title: String,
+    val summary: String? = null,
+    val icon: ImageVector,
+    val badge: String? = null,
+    val onClick: () -> Unit,
+)
+
+private fun Int.badgeText(): String? {
+    if (this <= 0) return null
+    return if (this > 99) "99+" else toString()
+}
+
+@Composable
+private fun accountTitle(
+    isLoggedIn: Boolean,
+    account: UserProfile?,
+): String =
+    when {
+        !isLoggedIn -> stringResource(Res.string.more_not_logged_in)
+        account != null -> account.name.ifBlank { "@${account.account}" }
+        else -> stringResource(Res.string.more_logged_in_account)
+    }
+
+@Composable
+private fun accountSubtitle(
+    isLoggedIn: Boolean,
+    account: UserProfile?,
+): String =
+    when {
+        !isLoggedIn -> stringResource(Res.string.more_login_prompt)
+        account != null && account.account.isNotBlank() -> "@${account.account}"
+        else -> stringResource(Res.string.more_connected_pixiv)
+    }

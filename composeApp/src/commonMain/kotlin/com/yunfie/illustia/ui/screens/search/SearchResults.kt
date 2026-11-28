@@ -1,0 +1,375 @@
+package com.yunfie.illustia.ui.screens.search
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import com.yunfie.illustia.SearchUiState
+import com.yunfie.illustia.isMutedByTags
+import com.yunfie.illustia.models.Illust
+import com.yunfie.illustia.models.LoadState
+import com.yunfie.illustia.models.Restrict
+import com.yunfie.illustia.models.UserPreview
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_load_more
+import com.yunfie.illustia.resources.search_empty_illust
+import com.yunfie.illustia.resources.search_empty_novel
+import com.yunfie.illustia.resources.search_empty_user
+import com.yunfie.illustia.settings.FeatureFlag
+import com.yunfie.illustia.settings.isFeatureEnabled
+import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
+import com.yunfie.illustia.ui.components.AvatarImage
+import com.yunfie.illustia.ui.components.CenteredErrorState
+import com.yunfie.illustia.ui.components.EmptyState
+import com.yunfie.illustia.ui.components.FollowPill
+import com.yunfie.illustia.ui.components.IllustCard
+import com.yunfie.illustia.ui.components.IllustCardSkeleton
+import com.yunfie.illustia.ui.components.LoadingIndicator
+import com.yunfie.illustia.ui.components.PixivImage
+import com.yunfie.illustia.ui.components.PrefetchIllustGridImages
+import com.yunfie.illustia.ui.components.PrefetchPixivImages
+import com.yunfie.illustia.ui.components.RequestErrorState
+import com.yunfie.illustia.ui.components.UserResultCard
+import com.yunfie.illustia.ui.components.UserResultCardSkeleton
+import com.yunfie.illustia.ui.components.adaptiveIllustColumns
+import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
+import com.yunfie.illustia.ui.components.animatedGridPlacement
+import com.yunfie.illustia.ui.components.overlayActionButtonColors
+import com.yunfie.illustia.ui.components.pinchToChangeColumns
+import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
+import com.yunfie.illustia.ui.screens.NovelCard
+import com.yunfie.illustia.ui.screens.NovelCardSkeleton
+import com.yunfie.illustia.ui.scroll.ScrollStateKeys
+import com.yunfie.illustia.ui.scroll.ScrollStateRegistry
+import org.jetbrains.compose.resources.stringResource
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CardDefaults
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.PressFeedbackType
+import androidx.compose.foundation.lazy.grid.items as gridItems
+
+@Composable
+internal fun SearchResultGrid(
+    page: Int,
+    state: SearchUiState,
+    actions: SearchActions,
+    onIllustSelected: ((Illust) -> Unit)? = null,
+) {
+    val feedHighQuality = state.settings.useHighQualityFeedImages
+    val showAiBadge = remember(state.settings.showAiBadge) { state.settings.showAiBadge }
+    val isNovelResult = page == 0 && state.settings.searchWorkType.isNovel
+    val gridState =
+        if (page == 0) {
+            ScrollStateRegistry.shared.grid(ScrollStateKeys.SEARCH_RESULT)
+        } else {
+            ScrollStateRegistry.shared.grid(ScrollStateKeys.USER_SEARCH_RESULT)
+        }
+    val isPaginating = if (page == 0) state.isSearchPaginating else state.isUserSearchPaginating
+    val miuixPeekEnabled = state.settings.isFeatureEnabled(FeatureFlag.MiuixQuickPeek)
+
+    val isIllustResult = page == 0 && !isNovelResult
+    if (isIllustResult) {
+        PrefetchIllustGridImages(
+            items = state.searchItems,
+            gridState = gridState,
+            enabled = state.settings.prefetchImages,
+            highQualityImages = feedHighQuality,
+        )
+    } else if (page == 0 && isNovelResult) {
+        val prefetchUrls =
+            remember(state.searchNovelItems) {
+                val items = state.searchNovelItems
+                val startIndex = (items.size - 24).coerceAtLeast(0)
+                val result = ArrayList<String>(items.size - startIndex)
+                for (i in startIndex until items.size) {
+                    val cover = items[i].coverUrl
+                    if (cover.isNotBlank()) {
+                        result.add(cover)
+                    }
+                }
+                result
+            }
+        PrefetchPixivImages(prefetchUrls, enabled = state.settings.prefetchImages, limit = 24)
+    }
+
+    val isAnyLoading = state.loadState == LoadState.Loading || isPaginating
+    val shimmer = if (isAnyLoading) rememberIllustSkeletonShimmer() else null
+
+    val nextUrl =
+        when {
+            page != 0 -> state.userSearchNextUrl
+            isNovelResult -> state.searchNovelNextUrl
+            else -> state.searchNextUrl
+        }
+    val illustColumns = adaptiveIllustColumns(state.settings)
+    AutoLoadMoreEffect(
+        gridState = gridState,
+        enabled = state.settings.autoLoadMore,
+        nextUrl = nextUrl,
+        isLoading = isPaginating || state.loadState == LoadState.Loading,
+        onLoadMore = if (page == 0) actions::loadMoreSearch else actions::loadMoreUserSearch,
+    )
+
+    val pinchEnabled =
+        state.settings.gridPinchToZoom && page == 0 && !isNovelResult
+    val allItemsEmpty =
+        when {
+            page != 0 -> state.userSearchItems.isEmpty()
+            isNovelResult -> state.searchNovelItems.isEmpty()
+            else -> state.searchItems.isEmpty()
+        }
+    val emptyError = (state.loadState as? LoadState.Error)?.takeIf { allItemsEmpty }
+    if (emptyError != null) {
+        CenteredErrorState(
+            message = emptyError.message,
+            onRetry = { actions.submitSearch(state.activeSearchWord, forceRefresh = true) },
+        )
+        return
+    }
+    LazyVerticalGrid(
+        state = gridState,
+        columns = GridCells.Fixed(if (page == 0 && !isNovelResult) illustColumns else 1),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .pinchToChangeColumns(
+                    enabled = pinchEnabled,
+                    currentColumns = illustColumns,
+                    onColumnsChange = actions::updateVerticalColumnCount,
+                ),
+        contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 8.dp, bottom = adaptiveMainNavigationContentPadding()),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        if (page == 0) {
+            if (isNovelResult) {
+                gridItems(state.searchNovelItems, key = { it.id }, contentType = { "novel_card" }) { novel ->
+                    val novelId = novel.id
+                    val onClick = remember(novelId) { { actions.openNovel(novel) } }
+                    NovelCard(
+                        novel = novel,
+                        onClick = onClick,
+                        onToggleBookmark = { actions.toggleNovelBookmark(novel) },
+                    )
+                }
+                if (state.settings.autoLoadMore && isPaginating) {
+                    item(key = "search_novel_paginating_skeleton", span = { GridItemSpan(maxLineSpan) }, contentType = "novel_skeleton") {
+                        NovelCardSkeleton(shimmerValue = shimmer)
+                    }
+                } else if (!state.settings.autoLoadMore && state.searchNovelNextUrl != null) {
+                    item(key = "search_novel_load_more_button", span = { GridItemSpan(maxLineSpan) }, contentType = "load_more") {
+                        Button(
+                            onClick = actions::loadMoreSearch,
+                            enabled = !isPaginating,
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                            colors = overlayActionButtonColors(),
+                        ) {
+                            if (isPaginating) {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    LoadingIndicator(modifier = Modifier.size(16.dp))
+                                    Text(stringResource(Res.string.action_load_more))
+                                }
+                            } else {
+                                Text(stringResource(Res.string.action_load_more))
+                            }
+                        }
+                    }
+                }
+                if (state.searchNovelItems.isEmpty()) {
+                    val loadState = state.loadState
+                    if (loadState is LoadState.Error) {
+                        item(key = "search_novel_error_state", span = { GridItemSpan(maxLineSpan) }, contentType = "error_state") {
+                            SearchErrorState(
+                                message = loadState.message,
+                                onRetry = { actions.submitSearch(state.activeSearchWord, forceRefresh = true) },
+                            )
+                        }
+                    } else if (loadState == LoadState.Loading) {
+                        items(
+                            count = 4,
+                            key = { "search_novel_initial_skeleton_$it" },
+                            span = { GridItemSpan(maxLineSpan) },
+                            contentType = { "novel_skeleton" },
+                        ) {
+                            NovelCardSkeleton(shimmerValue = shimmer)
+                        }
+                    } else {
+                        item(key = "search_novel_empty_state", span = { GridItemSpan(maxLineSpan) }, contentType = "empty_state") {
+                            EmptyState(stringResource(Res.string.search_empty_novel))
+                        }
+                    }
+                }
+            } else {
+                gridItems(state.searchItems, key = { it.id }, contentType = { "illust_card" }) { illust ->
+                    val illustId = illust.id
+                    val onBookmark = remember(illust) { { actions.toggleBookmark(illust) } }
+                    val onBookmarkLongClick =
+                        remember(illust) { { actions.openBookmarkTagPicker(illust) } }
+                    val onClick = remember(illust) { { onIllustSelected?.invoke(illust) ?: actions.openIllust(illust) } }
+                    val onLongClick = remember(illustId) { { actions.onIllustLongPress(illustId) } }
+
+                    IllustCard(
+                        modifier = animatedGridPlacement(),
+                        illust = illust,
+                        onBookmark = onBookmark,
+                        onBookmarkLongClick = onBookmarkLongClick,
+                        onClick = onClick,
+                        onLongClick = onLongClick,
+                        highQualityImages = feedHighQuality,
+                        showAiBadge = showAiBadge,
+                        isMutedByTag = illust.isMutedByTags(state.settings),
+                    )
+                }
+                if (state.settings.autoLoadMore && isPaginating) {
+                    items(
+                        count = illustColumns,
+                        key = { "search_illust_paginating_skeleton_$it" },
+                        contentType = { "illust_skeleton" },
+                    ) {
+                        IllustCardSkeleton(shimmerValue = shimmer)
+                    }
+                } else if (!state.settings.autoLoadMore && state.searchNextUrl != null) {
+                    item(key = "search_illust_load_more_button", span = { GridItemSpan(maxLineSpan) }, contentType = "load_more") {
+                        Button(
+                            onClick = actions::loadMoreSearch,
+                            enabled = !isPaginating,
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                            colors = overlayActionButtonColors(),
+                        ) {
+                            if (isPaginating) {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    LoadingIndicator(modifier = Modifier.size(16.dp))
+                                    Text(stringResource(Res.string.action_load_more))
+                                }
+                            } else {
+                                Text(stringResource(Res.string.action_load_more))
+                            }
+                        }
+                    }
+                }
+                if (state.searchItems.isEmpty()) {
+                    val illustLoadState = state.loadState
+                    if (illustLoadState is LoadState.Error) {
+                        item(key = "search_illust_error_state", span = { GridItemSpan(maxLineSpan) }, contentType = "error_state") {
+                            SearchErrorState(
+                                message = illustLoadState.message,
+                                onRetry = { actions.submitSearch(state.activeSearchWord, forceRefresh = true) },
+                            )
+                        }
+                    } else if (illustLoadState == LoadState.Loading) {
+                        items(
+                            count = illustColumns * 3,
+                            key = { "search_illust_initial_skeleton_$it" },
+                            contentType = { "illust_skeleton" },
+                        ) {
+                            IllustCardSkeleton(shimmerValue = shimmer)
+                        }
+                    } else {
+                        item(key = "search_illust_empty_state", span = { GridItemSpan(maxLineSpan) }, contentType = "empty_state") {
+                            EmptyState(stringResource(Res.string.search_empty_illust))
+                        }
+                    }
+                }
+            }
+        } else {
+            gridItems(state.userSearchItems, key = { it.id }, contentType = { "user_card" }) { user ->
+                val userId = user.id
+                val onClick = remember(userId) { { actions.openUserPage(user) } }
+                val onLongClick =
+                    remember(user, miuixPeekEnabled) {
+                        if (miuixPeekEnabled) {
+                            { actions.onUserLongPress(user) }
+                        } else {
+                            null
+                        }
+                    }
+                UserResultCard(user = user, onClick = onClick, onLongClick = onLongClick)
+            }
+            if (state.settings.autoLoadMore && isPaginating) {
+                item(key = "search_user_paginating_skeleton", span = { GridItemSpan(maxLineSpan) }, contentType = "user_skeleton") {
+                    UserResultCardSkeleton(shimmerValue = shimmer)
+                }
+            } else if (!state.settings.autoLoadMore && state.userSearchNextUrl != null) {
+                item(key = "search_user_load_more_button", span = { GridItemSpan(maxLineSpan) }, contentType = "load_more") {
+                    Button(
+                        onClick = actions::loadMoreUserSearch,
+                        enabled = !isPaginating,
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                        colors = overlayActionButtonColors(),
+                    ) {
+                        if (isPaginating) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                LoadingIndicator(modifier = Modifier.size(16.dp))
+                                Text(stringResource(Res.string.action_load_more))
+                            }
+                        } else {
+                            Text(stringResource(Res.string.action_load_more))
+                        }
+                    }
+                }
+            }
+            if (state.userSearchItems.isEmpty()) {
+                val userLoadState = state.loadState
+                if (userLoadState is LoadState.Error) {
+                    item(key = "search_user_error_state", span = { GridItemSpan(maxLineSpan) }, contentType = "error_state") {
+                        SearchErrorState(
+                            message = userLoadState.message,
+                            onRetry = { actions.submitSearch(state.activeSearchWord, forceRefresh = true) },
+                        )
+                    }
+                } else if (userLoadState == LoadState.Loading) {
+                    items(
+                        count = 4,
+                        key = { "search_user_initial_skeleton_$it" },
+                        span = { GridItemSpan(maxLineSpan) },
+                        contentType = { "user_skeleton" },
+                    ) {
+                        UserResultCardSkeleton(shimmerValue = shimmer)
+                    }
+                } else {
+                    item(key = "search_user_empty_state", span = { GridItemSpan(maxLineSpan) }, contentType = "empty_state") {
+                        EmptyState(stringResource(Res.string.search_empty_user))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SearchErrorState(
+    message: String,
+    onRetry: () -> Unit,
+) {
+    RequestErrorState(message = message, onRetry = onRetry)
+}

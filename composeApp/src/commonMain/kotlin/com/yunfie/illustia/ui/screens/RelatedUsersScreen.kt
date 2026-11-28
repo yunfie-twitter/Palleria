@@ -1,0 +1,269 @@
+package com.yunfie.illustia.ui.screens.profile
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.unit.dp
+import com.yunfie.illustia.IllustiaUiState
+import com.yunfie.illustia.models.UserPreview
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_load_more
+import com.yunfie.illustia.resources.action_reload
+import com.yunfie.illustia.resources.user_related_empty
+import com.yunfie.illustia.resources.user_related_summary
+import com.yunfie.illustia.resources.user_tab_related
+import com.yunfie.illustia.ui.components.AppHapticEffect
+import com.yunfie.illustia.ui.components.AutoLoadMoreEffect
+import com.yunfie.illustia.ui.components.BackNavigationHandler
+import com.yunfie.illustia.ui.components.EmptyState
+import com.yunfie.illustia.ui.components.HeaderIcon
+import com.yunfie.illustia.ui.components.LoadingIndicator
+import com.yunfie.illustia.ui.components.RequestErrorState
+import com.yunfie.illustia.ui.components.UserResultCard
+import com.yunfie.illustia.ui.components.UserResultCardSkeleton
+import com.yunfie.illustia.ui.components.adaptiveMainNavigationContentPadding
+import com.yunfie.illustia.ui.components.collectAsStateWithLifecycle
+import com.yunfie.illustia.ui.components.onTopBarTap
+import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
+import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
+import com.yunfie.illustia.ui.components.smoothScrollToTop
+import com.yunfie.illustia.ui.screens.relatedusers.RelatedUsersActions
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.PullToRefresh
+import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+@Immutable
+private data class RelatedUsersScreenState(
+    val loadedUserId: Long?,
+    val users: List<UserPreview>,
+    val nextUrl: String?,
+    val error: String?,
+    val loading: Boolean,
+    val refreshing: Boolean,
+    val paginating: Boolean,
+)
+
+private val IllustiaUiState.relatedUsersScreenState: RelatedUsersScreenState
+    get() =
+        RelatedUsersScreenState(
+            loadedUserId = selectedRelatedUsersUserId,
+            users = selectedRelatedUsers,
+            nextUrl = selectedRelatedUsersNextUrl,
+            error = selectedRelatedUsersError,
+            loading = selectedRelatedUsersLoading,
+            refreshing = selectedRelatedUsersRefreshing,
+            paginating = selectedRelatedUsersPaginating,
+        )
+
+@Composable
+fun RelatedUsersScreen(
+    userId: Long,
+    userName: String = "",
+    viewModel: RelatedUsersActions,
+    onBack: () -> Unit,
+    onOpenUser: (Long) -> Unit,
+) {
+    BackNavigationHandler(onBack = onBack)
+    // Collect only the related-users slice. Observing the whole uiState made this screen
+    // recompose for unrelated changes such as feed loads or download progress updates.
+    val relatedUsersUiState by remember(viewModel) {
+        viewModel.relatedUsersIllustiaState
+            .map { it.relatedUsersScreenState }
+            .distinctUntilChanged()
+    }.collectAsStateWithLifecycle(initialValue = viewModel.relatedUsersIllustiaState.value.relatedUsersScreenState)
+    val settings =
+        remember(viewModel) {
+            viewModel.relatedUsersIllustiaState
+                .map { it.settings }
+                .distinctUntilChanged()
+        }.collectAsStateWithLifecycle(initialValue = viewModel.relatedUsersIllustiaState.value.settings).value
+    val listState = rememberLazyListState()
+    val scrollBehavior = MiuixScrollBehavior()
+    val coroutineScope = rememberCoroutineScope()
+    val performHaptic = rememberHapticFeedbackAction()
+    val relatedUsers = if (relatedUsersUiState.loadedUserId == userId) relatedUsersUiState.users else emptyList()
+    val relatedUsersNextUrl = if (relatedUsersUiState.loadedUserId == userId) relatedUsersUiState.nextUrl else null
+
+    LaunchedEffect(userId) {
+        viewModel.loadSelectedRelatedUsers(userId, false)
+    }
+
+    AutoLoadMoreEffect(
+        listState = listState,
+        enabled = settings.autoLoadMore,
+        nextUrl = relatedUsersNextUrl,
+        isLoading = relatedUsersUiState.paginating || relatedUsersUiState.loading,
+        onLoadMore = { viewModel.loadMoreSelectedRelatedUsers(targetUserId = userId) },
+    )
+
+    val titleText =
+        if (userName.isNotBlank()) {
+            userName
+        } else {
+            stringResource(Res.string.user_tab_related)
+        }
+
+    Scaffold(
+        containerColor = MiuixTheme.colorScheme.surface,
+        topBar = {
+            TopAppBar(
+                title = titleText,
+                largeTitle = titleText,
+                scrollBehavior = scrollBehavior,
+                modifier =
+                    Modifier.onTopBarTap(
+                        navIconWidth = 64.dp,
+                        actionsWidth = 0.dp,
+                        hasBottomContent = false,
+                    ) {
+                        performHaptic(AppHapticEffect.Click)
+                        coroutineScope.launch {
+                            listState.smoothScrollToTop(scrollBehavior)
+                        }
+                    },
+                navigationIcon = {
+                    HeaderIcon(MiuixIcons.Back, onClick = onBack)
+                },
+            )
+        },
+    ) { scaffoldPadding ->
+        val adaptivePadding = adaptiveMainNavigationContentPadding()
+        val showInitialSkeletons =
+            relatedUsersUiState.loadedUserId != userId ||
+                (relatedUsers.isEmpty() && relatedUsersUiState.loading)
+        val showPaginationSkeletons = settings.autoLoadMore && relatedUsersUiState.paginating
+        val shimmer = if (showInitialSkeletons || showPaginationSkeletons) rememberIllustSkeletonShimmer() else null
+        PullToRefresh(
+            isRefreshing = relatedUsersUiState.refreshing,
+            onRefresh = { viewModel.loadSelectedRelatedUsers(userId, true) },
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .nestedScroll(scrollBehavior.nestedScrollConnection),
+        ) {
+            LazyColumn(
+                state = listState,
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .background(MiuixTheme.colorScheme.surface),
+                contentPadding =
+                    PaddingValues(
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = scaffoldPadding.calculateTopPadding() + 8.dp,
+                        bottom = adaptivePadding + scaffoldPadding.calculateBottomPadding(),
+                    ),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                item(contentType = "related_intro") {
+                    Text(
+                        text = stringResource(Res.string.user_related_summary),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp),
+                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                        style = MiuixTheme.textStyles.footnote1,
+                    )
+                }
+
+                items(
+                    items = relatedUsers,
+                    key = { "related_user_${it.id}" },
+                    contentType = { "related_user" },
+                ) { relatedUser ->
+                    UserResultCard(
+                        user = relatedUser,
+                        onClick = { onOpenUser(relatedUser.id) },
+                    )
+                }
+
+                if (showPaginationSkeletons && relatedUsers.isNotEmpty()) {
+                    items(
+                        count = 3,
+                        key = { "related_user_paginating_skeleton_$it" },
+                        contentType = { "related_paginating_skeleton" },
+                    ) {
+                        UserResultCardSkeleton(shimmerValue = shimmer)
+                    }
+                }
+
+                if (showInitialSkeletons) {
+                    items(
+                        count = 4,
+                        key = { "related_user_skeleton_$it" },
+                        contentType = { "related_loading" },
+                    ) {
+                        UserResultCardSkeleton(shimmerValue = shimmer)
+                    }
+                } else if (relatedUsers.isEmpty() && !relatedUsersUiState.refreshing && !relatedUsersUiState.loading) {
+                    item(contentType = "related_empty") {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            val relatedUsersError = relatedUsersUiState.error
+                            if (relatedUsersError != null && relatedUsersUiState.loadedUserId == userId) {
+                                RequestErrorState(
+                                    message = relatedUsersError,
+                                    onRetry = { viewModel.loadSelectedRelatedUsers(userId, true) },
+                                )
+                            } else {
+                                EmptyState(stringResource(Res.string.user_related_empty))
+                                Button(onClick = { viewModel.loadSelectedRelatedUsers(userId, true) }) {
+                                    Text(stringResource(Res.string.action_reload))
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (!settings.autoLoadMore && relatedUsersNextUrl != null) {
+                    item(contentType = "related_more") {
+                        Button(
+                            onClick = { viewModel.loadMoreSelectedRelatedUsers(targetUserId = userId) },
+                            enabled = !relatedUsersUiState.loading && !relatedUsersUiState.paginating,
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        ) {
+                            if (relatedUsersUiState.loading || relatedUsersUiState.paginating) {
+                                LoadingIndicator(Modifier.size(20.dp))
+                            } else {
+                                Text(stringResource(Res.string.action_load_more))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

@@ -155,40 +155,6 @@
     <string name="favorite_tags_works_not_found">Không tìm thấy tác phẩm nào cho \"#%1$s\"</string>
 
     <!-- Illust detail screen -->
-    <string name="detail_save_image_title">Lưu hình ảnh</string>
-    <string name="detail_save_image_confirm">Lưu hình ảnh này vào thư mục Palleria.</string>
-    <string name="detail_save_ugoira_title">Lưu Ugoira</string>
-    <string name="detail_save_ugoira_confirm">Lưu ảnh tĩnh (ảnh bìa) của ugoira này vào thư mục Palleria.</string>
-    <string name="detail_unfollow_title">Hủy theo dõi</string>
-    <string name="detail_unfollow_confirm">Hủy theo dõi %1$s?</string>
-    <string name="detail_open_in_browser">Mở trong trình duyệt</string>
-    <string name="detail_share">Chia sẻ</string>
-    <string name="detail_save_image">Lưu hình ảnh</string>
-    <string name="detail_save_this_page">Lưu trang này</string>
-    <string name="detail_save_ugoira">Lưu Ugoira</string>
-    <string name="detail_save_all_pages">Lưu tất cả các trang</string>
-    <string name="detail_copy_url">Sao chép URL</string>
-    <string name="detail_mute">Tắt tiếng</string>
-    <string name="detail_mute_work">Tắt tiếng tác phẩm này</string>
-    <string name="detail_mute_artist">Tắt tiếng nghệ sĩ này</string>
-    <string name="detail_more">Thêm</string>
-    <string name="detail_muted_artist">Nghệ sĩ bị tắt tiếng</string>
-    <string name="detail_muted_artist_blur">Tác phẩm của %1$s bị mờ.</string>
-    <string name="detail_muted_artist_blur_default">nghệ sĩ này</string>
-    <string name="detail_muted_work">Công việc bị tắt tiếng</string>
-    <string name="detail_muted_work_blur">Tác phẩm chứa thẻ bị tắt tiếng sẽ bị mờ.</string>
-    <string name="detail_unmute">Bật tiếng</string>
-    <string name="detail_image_load_failed">Không thể tải hình ảnh</string>
-    <string name="detail_no_caption">Không có chú thích</string>
-    <string name="detail_comments">Bình luận</string>
-    <string name="detail_show_comments">Hiển thị bình luận</string>
-    <string name="detail_comments_empty">Chưa có bình luận nào</string>
-    <string name="detail_series">loạt</string>
-    <string name="detail_related">Tác phẩm liên quan</string>
-    <string name="detail_tags_show_more">Hiện tất cả (thêm %1$d)</string>
-    <string name="detail_tags_show_less">Thu gọn</string>
-    <string name="detail_illust_id">ID minh họa</string>
-    <string name="detail_resolution">Độ phân giải</string>
 
     <!-- Image viewer screen -->
     <string name="viewer_share_failed">Không thể bắt đầu chia sẻ.</string>
@@ -403,7 +369,6 @@
     <string name="offline_capacity_limit_desc">Dừng khi tác phẩm đã lưu đạt đến giới hạn.</string>
     <string name="offline_library_title">Danh sách tải xuống</string>
     <string name="offline_library_empty">Chưa có tác phẩm nào được lưu.</string>
-    <string name="detail_save_offline">Đã thêm vào danh sách đã lưu.</string>
     <string name="image_section_quality">chất lượng</string>
     <string name="image_section_layout">Bố cục</string>
     <string name="image_section_proxy">ủy quyền</string>
@@ -989,4 +954,10 @@
     <string name="desktop_open_new_tab">Mở trong thẻ trình duyệt mới</string>
     <string name="desktop_bookmark_private">Dấu trang riêng tư</string>
     <string name="desktop_save_as">Lưu thành</string>
+<string name="detail_save_image_confirm">Lưu hình ảnh này vào thư mục Palleria.</string>
+<string name="detail_save_image_title">Lưu hình ảnh</string>
+<string name="detail_save_ugoira_confirm">Lưu ảnh tĩnh (ảnh bìa) của ugoira này vào thư mục Palleria.</string>
+<string name="detail_save_ugoira_title">Lưu Ugoira</string>
+<string name="detail_tags_show_more">Hiện tất cả (thêm %1$d)</string>
+<string name="detail_save_offline">Đã thêm vào danh sách đã lưu.</string>
 </resources>

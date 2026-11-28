@@ -1,0 +1,505 @@
+package com.yunfie.illustia.ui.components
+
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_cancel
+import com.yunfie.illustia.resources.section_hidden_rows
+import com.yunfie.illustia.ui.components.AppDialog
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
+import top.yukonga.miuix.kmp.basic.BasicComponent
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CardDefaults
+import top.yukonga.miuix.kmp.basic.DropdownItem
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.SmallTitle
+import top.yukonga.miuix.kmp.basic.Switch
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.ChevronForward
+import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
+import top.yukonga.miuix.kmp.preference.OverlaySpinnerPreference
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.PressFeedbackType
+
+@Composable
+fun Section(
+    title: String,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        SmallTitle(
+            text = title,
+            modifier = Modifier.semantics { heading() },
+        )
+        content()
+    }
+}
+
+@Composable
+@Suppress("ModifierParameter") // Keep the existing positional API stable for current callers.
+fun SettingRow(
+    title: String,
+    summary: String? = null,
+    icon: ImageVector? = null,
+    modifier: Modifier = Modifier,
+    action: @Composable () -> Unit,
+) {
+    BasicComponent(
+        title = title,
+        summary = summary,
+        modifier = modifier.fillMaxWidth(),
+        startAction =
+            icon?.let {
+                {
+                    PreferenceIcon(it)
+                }
+            },
+        endActions = {
+            action()
+        },
+    )
+}
+
+@Composable
+fun SettingLinkRow(
+    title: String,
+    summary: String? = null,
+    icon: ImageVector? = null,
+    onClick: () -> Unit,
+) {
+    BasicComponent(
+        title = title,
+        summary = summary,
+        modifier = Modifier.fillMaxWidth(),
+        startAction =
+            icon?.let {
+                {
+                    PreferenceIcon(it)
+                }
+            },
+        endActions = {
+            Icon(
+                imageVector = MiuixIcons.ChevronForward,
+                contentDescription = null,
+                tint = MiuixTheme.colorScheme.onSurfaceVariantActions,
+                modifier = Modifier.size(18.dp),
+            )
+        },
+        onClick = onClick,
+        role = Role.Button,
+    )
+}
+
+@Composable
+private fun PreferenceIcon(icon: ImageVector) {
+    Icon(
+        imageVector = icon,
+        contentDescription = null,
+        tint = MiuixTheme.colorScheme.onSurface,
+        modifier =
+            Modifier
+                .size(28.dp)
+                .padding(end = 12.dp),
+    )
+}
+
+@Composable
+fun ElevatedPanel(
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues = PaddingValues(16.dp),
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        cornerRadius = 18.dp,
+        insideMargin = PaddingValues(0.dp),
+        colors =
+            CardDefaults.defaultColors(
+                color = MiuixTheme.colorScheme.surfaceContainer,
+                contentColor = MiuixTheme.colorScheme.onSurfaceContainer,
+            ),
+    ) {
+        Column(
+            modifier = Modifier.padding(contentPadding),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            content = content,
+        )
+    }
+}
+
+@Composable
+fun HeroPanel(
+    title: String,
+    body: String,
+) {
+    val modifier =
+        Modifier
+            .padding(horizontal = 18.dp, vertical = 10.dp)
+            .fillMaxWidth()
+    val content: @Composable ColumnScope.() -> Unit = {
+        Text(text = title, fontWeight = FontWeight.Black, color = MiuixTheme.colorScheme.onPrimaryContainer)
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(text = body, color = MiuixTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.84f))
+    }
+    Card(
+        modifier = modifier,
+        cornerRadius = 24.dp,
+        insideMargin = PaddingValues(20.dp),
+        colors =
+            CardDefaults.defaultColors(
+                color = MiuixTheme.colorScheme.primaryContainer,
+                contentColor = MiuixTheme.colorScheme.onPrimaryContainer,
+            ),
+        content = content,
+    )
+}
+
+@Composable
+fun MiuixConfirmDialog(
+    show: Boolean,
+    title: String,
+    summary: String,
+    confirmText: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+    destructive: Boolean = false,
+) {
+    AppDialog(
+        show = show,
+        title = title,
+        summary = summary,
+        backgroundColor = MiuixTheme.colorScheme.surfaceContainerHighest,
+        onDismissRequest = onDismiss,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Button(
+                onClick = onDismiss,
+                modifier = Modifier.weight(1f),
+                colors = overlayActionButtonColors(),
+                insideMargin = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
+            ) {
+                Text(stringResource(Res.string.action_cancel))
+            }
+            Button(
+                onClick = onConfirm,
+                modifier = Modifier.weight(1f),
+                colors = overlayActionButtonColors(),
+                insideMargin = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
+            ) {
+                Text(
+                    confirmText,
+                    color = if (destructive) MiuixTheme.colorScheme.error else MiuixTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun <T> SettingDropdownRow(
+    title: String,
+    selected: T,
+    values: List<T>,
+    label: @Composable (T) -> String,
+    onSelect: (T) -> Unit,
+    summary: String? = null,
+    icon: ImageVector? = null,
+    dialogButtonString: String? = null,
+) {
+    val performHaptic = rememberHapticFeedbackAction()
+    val selectedIndex = values.indexOf(selected).coerceAtLeast(0)
+    val onSelectedIndexChange: (Int) -> Unit = { index ->
+        performHaptic(AppHapticEffect.Toggle)
+        values.getOrNull(index)?.let(onSelect)
+    }
+    val startAction: (@Composable () -> Unit)? =
+        icon?.let { preferenceIcon ->
+            {
+                PreferenceIcon(preferenceIcon)
+            }
+        }
+
+    if (dialogButtonString != null) {
+        OverlaySpinnerPreference(
+            title = title,
+            summary = summary,
+            dialogButtonString = dialogButtonString,
+            items = values.map { DropdownItem(text = label(it)) },
+            selectedIndex = selectedIndex,
+            modifier = Modifier.fillMaxWidth(),
+            startAction = startAction,
+            onSelectedIndexChange = onSelectedIndexChange,
+        )
+    } else {
+        OverlayDropdownPreference(
+            title = title,
+            summary = summary,
+            items = values.map { label(it) },
+            selectedIndex = selectedIndex,
+            modifier = Modifier.fillMaxWidth(),
+            startAction = startAction,
+            onSelectedIndexChange = onSelectedIndexChange,
+        )
+    }
+}
+
+@Composable
+fun SettingSwitchRow(
+    title: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    summary: String? = null,
+    icon: ImageVector? = null,
+    enabled: Boolean = true,
+) {
+    val performHaptic = rememberHapticFeedbackAction()
+    BasicComponent(
+        title = title,
+        summary = summary,
+        modifier = Modifier.fillMaxWidth(),
+        startAction =
+            icon?.let {
+                {
+                    PreferenceIcon(it)
+                }
+            },
+        endActions = {
+            Switch(
+                checked = checked,
+                onCheckedChange =
+                    if (enabled) {
+                        {
+                            performHaptic(AppHapticEffect.Toggle)
+                            onCheckedChange(it)
+                        }
+                    } else {
+                        null
+                    },
+                enabled = enabled,
+            )
+        },
+        onClick =
+            if (enabled) {
+                {
+                    performHaptic(AppHapticEffect.Toggle)
+                    onCheckedChange(!checked)
+                }
+            } else {
+                null
+            },
+        role = Role.Switch,
+        enabled = enabled,
+    )
+}
+
+@Composable
+fun <T> ChoiceRow(
+    values: List<T>,
+    selected: T,
+    label: @Composable (T) -> String,
+    onSelect: (T) -> Unit,
+    modifier: Modifier = Modifier,
+    columns: Int = 3,
+) {
+    val performHaptic = rememberHapticFeedbackAction()
+    val safeColumns = columns.coerceAtLeast(1)
+    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        values.chunked(safeColumns).forEach { row ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                row.forEach { value ->
+                    val isSelected = value == selected
+                    Button(
+                        onClick = {
+                            if (!isSelected) {
+                                performHaptic(AppHapticEffect.Toggle)
+                            }
+                            onSelect(value)
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors =
+                            if (isSelected) {
+                                ButtonDefaults.buttonColorsPrimary()
+                            } else {
+                                ButtonDefaults.buttonColors(
+                                    color = MiuixTheme.colorScheme.surfaceContainer,
+                                )
+                            },
+                        insideMargin = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
+                    ) {
+                        Text(
+                            label(value),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            color = if (isSelected) MiuixTheme.colorScheme.onPrimary else MiuixTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                }
+                repeat(safeColumns - row.size) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun <T> FlowButtons(
+    values: List<T>,
+    label: (T) -> String,
+    onClick: (T) -> Unit,
+    onLongClick: ((T) -> Unit)? = null,
+) {
+    val performHaptic = rememberHapticFeedbackAction()
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        values.chunked(3).forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                row.forEach { value ->
+                    Card(
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .combinedClickable(
+                                    onClick = {
+                                        performHaptic(AppHapticEffect.Click)
+                                        onClick(value)
+                                    },
+                                    role = Role.Button,
+                                    onLongClick =
+                                        onLongClick?.let { longClick ->
+                                            {
+                                                performHaptic(AppHapticEffect.Click)
+                                                longClick(value)
+                                            }
+                                        },
+                                ),
+                        cornerRadius = 16.dp,
+                        insideMargin = PaddingValues(horizontal = 8.dp, vertical = 10.dp),
+                        colors =
+                            CardDefaults.defaultColors(
+                                color = MiuixTheme.colorScheme.surfaceContainer,
+                                contentColor = MiuixTheme.colorScheme.onSurface,
+                            ),
+                        pressFeedbackType = PressFeedbackType.Sink,
+                    ) {
+                        androidx.compose.foundation.layout.Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(label(value), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                    }
+                }
+                repeat(3 - row.size) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+/**
+ * A section whose rows stay collapsed until the user asks for them.
+ *
+ * Long settings screens otherwise show every rare recovery action with the same weight as the
+ * everyday ones, so the common rows get lost in the middle of a wall of equal-looking entries.
+ * The header row keeps the title visible and states how many rows are hidden, so nothing looks
+ * missing while the section is closed.
+ */
+@Composable
+fun CollapsibleSection(
+    title: String,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    hiddenCount: Int,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    ElevatedPanel(contentPadding = PaddingValues(0.dp)) {
+        BasicComponent(
+            title = title,
+            summary =
+                if (expanded) {
+                    null
+                } else {
+                    pluralStringResource(Res.plurals.section_hidden_rows, hiddenCount, hiddenCount)
+                },
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .semantics { heading() },
+            endActions = {
+                Icon(
+                    imageVector = MiuixIcons.ChevronForward,
+                    contentDescription = null,
+                    modifier =
+                        Modifier
+                            .size(18.dp)
+                            .rotate(if (expanded) 90f else 0f),
+                )
+            },
+            onClick = { onExpandedChange(!expanded) },
+        )
+        if (expanded) {
+            content()
+        }
+    }
+}
+
+@Composable
+fun SectionHeader(
+    title: String,
+    action: String? = null,
+    onAction: (() -> Unit)? = null,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        SmallTitle(
+            text = title,
+            modifier = Modifier.weight(1f),
+            insideMargin = PaddingValues(0.dp),
+        )
+        if (action != null && onAction != null) {
+            TextButton(
+                text = action,
+                onClick = onAction,
+                minHeight = 32.dp,
+                insideMargin = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+            )
+        }
+    }
+}

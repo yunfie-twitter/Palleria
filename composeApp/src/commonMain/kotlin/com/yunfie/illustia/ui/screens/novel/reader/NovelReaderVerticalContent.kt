@@ -1,0 +1,715 @@
+package com.yunfie.illustia.ui.screens.novel.reader
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_open
+import com.yunfie.illustia.resources.novel_inline_illust_label
+import com.yunfie.illustia.resources.novel_open_illust
+import com.yunfie.illustia.ui.components.ElevatedPanel
+import com.yunfie.illustia.ui.components.PixivImage
+import com.yunfie.illustia.ui.screens.NovelMetaPill
+import com.yunfie.illustia.ui.screens.novel.InlineRubyInfo
+import com.yunfie.illustia.ui.screens.novel.NovelBlock
+import com.yunfie.illustia.ui.screens.novel.NovelChapterBlock
+import com.yunfie.illustia.ui.screens.novel.NovelInlineItem
+import com.yunfie.illustia.ui.screens.novel.NovelJumpBlock
+import com.yunfie.illustia.ui.screens.novel.NovelPage
+import com.yunfie.illustia.ui.screens.novel.NovelParagraphBlock
+import com.yunfie.illustia.ui.screens.novel.NovelPixivImageBlock
+import com.yunfie.illustia.ui.screens.novel.NovelSpacerBlock
+import org.jetbrains.compose.resources.stringResource
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.ScrollBehavior
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Photos
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+private const val VERTICAL_COLUMN_SPACING_FACTOR = 0.45f
+private const val VERTICAL_PADDING_HORIZONTAL_FACTOR = 0.22f
+private const val VERTICAL_SPACER_WIDTH_FACTOR = 1.2f
+private const val VERTICAL_MIN_CHARS = 12
+private const val VERTICAL_MAX_CHARS = 42
+private const val RUBY_FONT_SCALE = 0.5f
+private const val RUBY_LINE_HEIGHT_SCALE = 0.52f
+private const val EMPHASIS_FONT_SCALE = 0.45f
+
+internal sealed interface NovelVerticalToken {
+    data class Char(
+        val char: kotlin.Char,
+    ) : NovelVerticalToken
+
+    data class Ruby(
+        val base: String,
+        val ruby: String,
+    ) : NovelVerticalToken
+
+    data class Emphasis(
+        val char: kotlin.Char,
+        val mark: String,
+    ) : NovelVerticalToken
+}
+
+internal object NovelVerticalEngine {
+    private val PUNCTUATION_MAP =
+        mapOf(
+            'ー' to '丨',
+            '―' to '丨',
+            '—' to '丨',
+            '-' to '丨',
+            '(' to '︵',
+            '）' to '︶',
+            ')' to '︶',
+            '（' to '︵',
+            '[' to '﹇',
+            '］' to '﹈',
+            ']' to '﹈',
+            '［' to '﹇',
+            '{' to '︷',
+            '｝' to '︸',
+            '}' to '︸',
+            '｛' to '︷',
+            '【' to '︻',
+            '】' to '︼',
+            '〔' to '︹',
+            '〕' to '︺',
+            '〈' to '︿',
+            '〉' to '﹀',
+            '《' to '︽',
+            '》' to '︾',
+            '「' to '﹁',
+            '」' to '﹂',
+            '『' to '﹃',
+            '』' to '﹄',
+            '…' to '︙',
+            '‥' to '︰',
+            '～' to '︴',
+            '~' to '︴',
+            '=' to '〢',
+            '＝' to '〢',
+        )
+
+    private val KINSOKU_LINE_START =
+        setOf(
+            '、',
+            '。',
+            '，',
+            '．',
+            '！',
+            '？',
+            '!',
+            '?',
+            '︶',
+            '﹂',
+            '﹄',
+            '︼',
+            '︺',
+            '﹀',
+            '︾',
+            '﹈',
+            '︙',
+            '︰',
+            '丨',
+            '々',
+            'ー',
+            'ぁ',
+            'ぃ',
+            'ぅ',
+            'ぇ',
+            'ぉ',
+            'っ',
+            'ゃ',
+            'ゅ',
+            'ょ',
+            'ゎ',
+            'ァ',
+            'ィ',
+            'ゥ',
+            'ェ',
+            'ォ',
+            'ッ',
+            'ャ',
+            'ュ',
+            'ョ',
+            'ヮ',
+        )
+
+    fun convertPunctuation(char: Char): Char = PUNCTUATION_MAP[char] ?: char
+
+    fun breakIntoColumns(
+        paragraph: NovelParagraphBlock,
+        maxChars: Int,
+    ): List<List<NovelVerticalToken>> {
+        val effectiveMaxChars = maxChars.coerceIn(VERTICAL_MIN_CHARS, VERTICAL_MAX_CHARS)
+        val tokens = mutableListOf<NovelVerticalToken>()
+        paragraph.items.forEach { item ->
+            appendTokens(item, tokens)
+        }
+        if (tokens.isEmpty()) return emptyList()
+
+        val columns = mutableListOf<List<NovelVerticalToken>>()
+        var currentColumn = mutableListOf<NovelVerticalToken>()
+        var currentWeight = 0
+
+        for (token in tokens) {
+            val weight = tokenWeight(token)
+            val isForbidden = isLineStartForbidden(token)
+
+            if (currentWeight + weight > effectiveMaxChars && currentColumn.isNotEmpty()) {
+                if (isForbidden && currentWeight <= effectiveMaxChars + 1) {
+                    currentColumn.add(token)
+                    columns.add(currentColumn)
+                    currentColumn = mutableListOf()
+                    currentWeight = 0
+                    continue
+                }
+                columns.add(currentColumn)
+                currentColumn = mutableListOf()
+                currentWeight = 0
+            }
+            currentColumn.add(token)
+            currentWeight += weight
+        }
+        if (currentColumn.isNotEmpty()) {
+            columns.add(currentColumn)
+        }
+        return columns
+    }
+
+    private fun tokenWeight(token: NovelVerticalToken): Int =
+        when (token) {
+            is NovelVerticalToken.Ruby -> token.base.length.coerceAtLeast(1)
+            else -> 1
+        }
+
+    private fun isLineStartForbidden(token: NovelVerticalToken): Boolean =
+        when (token) {
+            is NovelVerticalToken.Char -> token.char in KINSOKU_LINE_START
+            else -> false
+        }
+
+    private fun appendTokens(
+        item: NovelInlineItem,
+        tokens: MutableList<NovelVerticalToken>,
+    ) {
+        when (item) {
+            is NovelInlineItem.Text -> {
+                item.content.forEach { ch ->
+                    tokens += NovelVerticalToken.Char(convertPunctuation(ch))
+                }
+            }
+
+            is NovelInlineItem.Ruby -> {
+                tokens += NovelVerticalToken.Ruby(item.base, item.ruby)
+            }
+
+            is NovelInlineItem.Emphasis -> {
+                item.base.forEach { ch ->
+                    tokens += NovelVerticalToken.Emphasis(convertPunctuation(ch), item.mark.ifBlank { "﹅" })
+                }
+            }
+
+            is NovelInlineItem.Bold -> {
+                item.text.forEach { ch ->
+                    tokens += NovelVerticalToken.Char(convertPunctuation(ch))
+                }
+            }
+
+            is NovelInlineItem.Italic -> {
+                item.text.forEach { ch ->
+                    tokens += NovelVerticalToken.Char(convertPunctuation(ch))
+                }
+            }
+
+            is NovelInlineItem.Link -> {
+                item.title.forEach { ch ->
+                    tokens += NovelVerticalToken.Char(convertPunctuation(ch))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun NovelReaderVerticalPage(
+    page: NovelPage,
+    pageIndex: Int,
+    paragraphStep: Int = 0,
+    // 現在ページかどうかは provider 経由で読み、スワイプ中に親（Pager）が
+    // settledPage を読んで全ページを再コンポーズしないようにする。
+    keyboardActive: () -> Boolean = { true },
+    pageCount: Int,
+    fontSize: Float,
+    lineHeightMultiplier: Float,
+    textColor: Color,
+    fontFamily: FontFamily,
+    onOpenIllust: (Long) -> Unit,
+    loadIllustPreviewUrl: suspend (Long) -> String?,
+    onJumpPage: (Int) -> Unit,
+    onToggleControls: () -> Unit,
+    scrollBehavior: ScrollBehavior,
+    contentPadding: PaddingValues,
+    modifier: Modifier = Modifier,
+    readingBlockIndex: Int? = null,
+) {
+    val keyboardListState =
+        androidx.compose.foundation.lazy
+            .rememberLazyListState()
+    BoxWithConstraints(
+        modifier =
+            modifier
+                .fillMaxSize()
+                .nestedScroll(scrollBehavior.nestedScrollConnection)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onToggleControls,
+                ).padding(contentPadding),
+    ) {
+        val availableHeight = (maxHeight - 24.dp).coerceAtLeast(100.dp)
+        val charHeight = (fontSize.coerceAtLeast(8f) * lineHeightMultiplier.coerceAtLeast(0.5f)).dp
+        val maxChars = (availableHeight / charHeight).toInt().coerceIn(VERTICAL_MIN_CHARS, VERTICAL_MAX_CHARS)
+
+        val columnsByParagraph =
+            remember(page, maxChars) {
+                page.blocks.filterIsInstance<NovelParagraphBlock>().associateWith { block ->
+                    NovelVerticalEngine.breakIntoColumns(block, maxChars)
+                }
+            }
+
+        val paragraphIndices =
+            remember(page, columnsByParagraph) {
+                buildList {
+                    var offset = 0
+                    page.blocks.forEach { block ->
+                        if (block is NovelParagraphBlock) {
+                            add(offset)
+                            offset += columnsByParagraph[block].orEmpty().size
+                        } else {
+                            offset++
+                        }
+                    }
+                }
+            }
+        com.yunfie.illustia.ui.components
+            .ParagraphNavigation(keyboardListState, paragraphStep, keyboardActive, paragraphIndices)
+        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+            LazyRow(
+                state = keyboardListState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy((fontSize * VERTICAL_COLUMN_SPACING_FACTOR).dp),
+            ) {
+                page.blocks.forEachIndexed { blockIndex, block ->
+                    renderVerticalBlock(
+                        blockIndex = blockIndex,
+                        block = block,
+                        columns = columnsByParagraph[block],
+                        fontSize = fontSize,
+                        textColor = textColor,
+                        fontFamily = fontFamily,
+                        onOpenIllust = onOpenIllust,
+                        loadIllustPreviewUrl = loadIllustPreviewUrl,
+                        onJumpPage = onJumpPage,
+                        isReading = readingBlockIndex == blockIndex,
+                    )
+                }
+            }
+        }
+
+        Box(
+            modifier =
+                Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(start = 16.dp, bottom = 12.dp),
+        ) {
+            NovelMetaPill(text = "${pageIndex + 1} / $pageCount")
+        }
+    }
+}
+
+private fun LazyListScope.renderVerticalBlock(
+    blockIndex: Int,
+    block: NovelBlock,
+    columns: List<List<NovelVerticalToken>>?,
+    fontSize: Float,
+    textColor: Color,
+    fontFamily: FontFamily,
+    onOpenIllust: (Long) -> Unit,
+    loadIllustPreviewUrl: suspend (Long) -> String?,
+    onJumpPage: (Int) -> Unit,
+    isReading: Boolean = false,
+) {
+    when (block) {
+        NovelSpacerBlock -> {
+            item(key = "spacer_$blockIndex", contentType = "vertical_spacer") {
+                Spacer(modifier = Modifier.width((fontSize * VERTICAL_SPACER_WIDTH_FACTOR).dp))
+            }
+        }
+
+        is NovelChapterBlock -> {
+            item(key = "chapter_${blockIndex}_${block.title}", contentType = "vertical_chapter") {
+                NovelVerticalChapterItem(title = block.title, textColor = textColor, fontFamily = fontFamily)
+            }
+        }
+
+        is NovelPixivImageBlock -> {
+            item(key = "image_${blockIndex}_${block.illustId}", contentType = "vertical_image") {
+                NovelVerticalArtworkCard(
+                    illustId = block.illustId,
+                    textColor = textColor,
+                    loadIllustPreviewUrl = loadIllustPreviewUrl,
+                    onOpen = { onOpenIllust(block.illustId) },
+                )
+            }
+        }
+
+        is NovelJumpBlock -> {
+            item(key = "jump_${blockIndex}_${block.pageNumber}", contentType = "vertical_jump") {
+                NovelJumpButton(pageNumber = block.pageNumber, onJumpPage = onJumpPage)
+            }
+        }
+
+        is NovelParagraphBlock -> {
+            val cols = columns ?: emptyList()
+            itemsIndexed(
+                items = cols,
+                key = { colIndex, _ -> "para_${blockIndex}_col_$colIndex" },
+                contentType = { _, _ -> "vertical_column" },
+            ) { _, columnTokens ->
+                val highlightModifier =
+                    if (isReading) {
+                        Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(MiuixTheme.colorScheme.primaryContainer.copy(alpha = 0.35f))
+                    } else {
+                        Modifier
+                    }
+                NovelVerticalColumn(
+                    tokens = columnTokens,
+                    fontSize = fontSize,
+                    textColor = textColor,
+                    fontFamily = fontFamily,
+                    modifier = highlightModifier,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun NovelVerticalChapterItem(
+    title: String,
+    textColor: Color,
+    fontFamily: FontFamily,
+) {
+    Row(
+        modifier = Modifier.fillMaxHeight().padding(horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .width(3.dp)
+                    .fillMaxHeight(0.85f)
+                    .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.6f)),
+        )
+        Column(
+            modifier = Modifier.fillMaxHeight(),
+            verticalArrangement = Arrangement.Top,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            val batchedText = title.map { NovelVerticalEngine.convertPunctuation(it) }.joinToString("\n")
+            Text(
+                text = batchedText,
+                style = MiuixTheme.textStyles.title2,
+                fontWeight = FontWeight.Bold,
+                color = textColor,
+                fontFamily = fontFamily,
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+}
+
+@Composable
+private fun NovelVerticalArtworkCard(
+    illustId: Long,
+    textColor: Color,
+    loadIllustPreviewUrl: suspend (Long) -> String?,
+    onOpen: () -> Unit,
+) {
+    var previewUrl by remember(illustId) { mutableStateOf<String?>(null) }
+    LaunchedEffect(illustId) {
+        previewUrl = loadIllustPreviewUrl(illustId)
+    }
+
+    ElevatedPanel(
+        modifier =
+            Modifier
+                .width(260.dp)
+                .fillMaxHeight(0.9f)
+                .padding(vertical = 8.dp)
+                .clickable(onClick = onOpen),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize().padding(12.dp),
+            verticalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MiuixTheme.colorScheme.surfaceContainer),
+                contentAlignment = Alignment.Center,
+            ) {
+                val currentPreviewUrl = previewUrl
+                if (currentPreviewUrl != null) {
+                    PixivImage(
+                        url = currentPreviewUrl,
+                        contentDescription = stringResource(Res.string.novel_inline_illust_label),
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                } else {
+                    Icon(
+                        imageVector = MiuixIcons.Photos,
+                        contentDescription = null,
+                        tint = MiuixTheme.colorScheme.primary,
+                        modifier = Modifier.size(36.dp),
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(Res.string.novel_open_illust),
+                        style = MiuixTheme.textStyles.subtitle,
+                        fontWeight = FontWeight.Bold,
+                        color = textColor,
+                        maxLines = 1,
+                    )
+                    Text(
+                        text = "ID: $illustId",
+                        style = MiuixTheme.textStyles.footnote1,
+                        color = textColor.copy(alpha = 0.65f),
+                    )
+                }
+                Button(onClick = onOpen) {
+                    Text(stringResource(Res.string.action_open))
+                }
+            }
+        }
+    }
+}
+
+private sealed interface NovelVerticalRenderSegment {
+    data class BatchedChars(
+        val text: String,
+    ) : NovelVerticalRenderSegment
+
+    data class Ruby(
+        val token: NovelVerticalToken.Ruby,
+    ) : NovelVerticalRenderSegment
+
+    data class Emphasis(
+        val token: NovelVerticalToken.Emphasis,
+    ) : NovelVerticalRenderSegment
+}
+
+@Composable
+private fun NovelVerticalColumn(
+    tokens: List<NovelVerticalToken>,
+    fontSize: Float,
+    textColor: Color,
+    fontFamily: FontFamily,
+    modifier: Modifier = Modifier,
+) {
+    val segments =
+        remember(tokens) {
+            val list = mutableListOf<NovelVerticalRenderSegment>()
+            val sb = StringBuilder()
+            for (token in tokens) {
+                when (token) {
+                    is NovelVerticalToken.Char -> {
+                        if (sb.isNotEmpty()) sb.append('\n')
+                        sb.append(token.char)
+                    }
+
+                    is NovelVerticalToken.Ruby -> {
+                        if (sb.isNotEmpty()) {
+                            list.add(NovelVerticalRenderSegment.BatchedChars(sb.toString()))
+                            sb.clear()
+                        }
+                        list.add(NovelVerticalRenderSegment.Ruby(token))
+                    }
+
+                    is NovelVerticalToken.Emphasis -> {
+                        if (sb.isNotEmpty()) {
+                            list.add(NovelVerticalRenderSegment.BatchedChars(sb.toString()))
+                            sb.clear()
+                        }
+                        list.add(NovelVerticalRenderSegment.Emphasis(token))
+                    }
+                }
+            }
+            if (sb.isNotEmpty()) {
+                list.add(NovelVerticalRenderSegment.BatchedChars(sb.toString()))
+            }
+            list
+        }
+
+    Column(
+        modifier = modifier.fillMaxHeight().padding(horizontal = (fontSize * VERTICAL_PADDING_HORIZONTAL_FACTOR).dp),
+        verticalArrangement = Arrangement.Top,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        segments.forEach { segment ->
+            when (segment) {
+                is NovelVerticalRenderSegment.BatchedChars -> {
+                    Text(
+                        text = segment.text,
+                        fontSize = fontSize.sp,
+                        lineHeight = fontSize.sp,
+                        fontFamily = fontFamily,
+                        color = textColor,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+
+                is NovelVerticalRenderSegment.Ruby -> {
+                    NovelVerticalRubyToken(
+                        token = segment.token,
+                        fontSize = fontSize,
+                        textColor = textColor,
+                        fontFamily = fontFamily,
+                    )
+                }
+
+                is NovelVerticalRenderSegment.Emphasis -> {
+                    NovelVerticalEmphasisToken(
+                        token = segment.token,
+                        fontSize = fontSize,
+                        textColor = textColor,
+                        fontFamily = fontFamily,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun NovelVerticalRubyToken(
+    token: NovelVerticalToken.Ruby,
+    fontSize: Float,
+    textColor: Color,
+    fontFamily: FontFamily,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(1.dp),
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            val batchedRuby = token.ruby.map { NovelVerticalEngine.convertPunctuation(it) }.joinToString("\n")
+            Text(
+                text = batchedRuby,
+                fontSize = (fontSize * RUBY_FONT_SCALE).sp,
+                lineHeight = (fontSize * RUBY_LINE_HEIGHT_SCALE).sp,
+                fontFamily = fontFamily,
+                color = textColor.copy(alpha = 0.85f),
+                textAlign = TextAlign.Center,
+            )
+        }
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            val batchedBase = token.base.map { NovelVerticalEngine.convertPunctuation(it) }.joinToString("\n")
+            Text(
+                text = batchedBase,
+                fontSize = fontSize.sp,
+                lineHeight = fontSize.sp,
+                fontFamily = fontFamily,
+                color = textColor,
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+}
+
+@Composable
+private fun NovelVerticalEmphasisToken(
+    token: NovelVerticalToken.Emphasis,
+    fontSize: Float,
+    textColor: Color,
+    fontFamily: FontFamily,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(1.dp),
+    ) {
+        Text(
+            text = token.mark,
+            fontSize = (fontSize * EMPHASIS_FONT_SCALE).sp,
+            lineHeight = (fontSize * RUBY_FONT_SCALE).sp,
+            fontFamily = fontFamily,
+            color = textColor.copy(alpha = 0.85f),
+        )
+        Text(
+            text = token.char.toString(),
+            fontSize = fontSize.sp,
+            lineHeight = fontSize.sp,
+            fontFamily = fontFamily,
+            color = textColor,
+            fontWeight = FontWeight.Bold,
+        )
+    }
+}

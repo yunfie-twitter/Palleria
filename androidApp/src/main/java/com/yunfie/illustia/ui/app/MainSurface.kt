@@ -48,11 +48,14 @@ import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.data.IllustiaRepositoryApi
+import com.yunfie.illustia.platform.rememberAppInfo
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.msg_double_back_exit
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.AppHapticEffect
@@ -69,7 +72,9 @@ import com.yunfie.illustia.ui.screens.MoreScreen
 import com.yunfie.illustia.ui.screens.RankingScreen
 import com.yunfie.illustia.ui.screens.SearchScreen
 import com.yunfie.illustia.ui.screens.ShortsFeedScreen
+import com.yunfie.illustia.uiRepository
 import com.yunfie.illustia.visibleWith
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.anim.SinOutEasing
 import top.yukonga.miuix.kmp.anim.folmeSpring
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
@@ -131,7 +136,7 @@ internal fun MainSurface(
                 }
             }
         }
-    val doubleBackExitMessage = stringResource(R.string.msg_double_back_exit)
+    val doubleBackExitMessage = stringResource(Res.string.msg_double_back_exit)
 
     LaunchedEffect(selectedTab) {
         if (appState.state.showAccountSwitcher) {
@@ -326,6 +331,7 @@ internal fun MainSurface(
                                             onFocusRequestHandled = onSearchFocusHandled,
                                             focusRequest = if (selectedTab == AppTab.Search) searchFocusRequest else 0,
                                             viewModel = viewModel,
+                                            repository = context.uiRepository(),
                                             onNavigateToResults = onNavigateToResults,
                                         )
                                     }
@@ -353,7 +359,7 @@ internal fun MainSurface(
                                         MoreScreen(
                                             state = appState.state,
                                             viewModel = viewModel,
-                                            onOpenWatchlistSeries = onOpenWatchlistSeries,
+                                            appInfo = rememberAppInfo(),
                                         )
                                     }
                                 }
@@ -526,6 +532,7 @@ private fun SearchTabContent(
     focusRequest: Int,
     onFocusRequestHandled: () -> Unit,
     viewModel: IllustiaViewModel,
+    repository: IllustiaRepositoryApi,
     onNavigateToResults: (String) -> Unit,
 ) {
     val searchState by viewModel.searchState.collectAsStateWithLifecycle()
@@ -534,6 +541,7 @@ private fun SearchTabContent(
         onFocusRequestHandled = onFocusRequestHandled,
         state = searchState,
         viewModel = viewModel,
+        repository = repository,
         isResultRoute = false,
         onNavigateToResults = onNavigateToResults,
     )

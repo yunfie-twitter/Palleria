@@ -33,6 +33,8 @@ import com.yunfie.illustia.data.pixiv.CommentArtworkType
 import com.yunfie.illustia.isMutedByTags
 import com.yunfie.illustia.models.Restrict
 import com.yunfie.illustia.platform.PlatformCapabilities
+import com.yunfie.illustia.platform.rememberAppInfo
+import com.yunfie.illustia.searchUiState
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.LoadingIndicator
@@ -43,12 +45,13 @@ import com.yunfie.illustia.ui.components.ProvideEntrySharedTransitionScope
 import com.yunfie.illustia.ui.screens.AboutScreen
 import com.yunfie.illustia.ui.screens.AccountLoginMethodScreen
 import com.yunfie.illustia.ui.screens.AccountSettingsScreen
+import com.yunfie.illustia.ui.screens.AndroidDataSettingsScreen
+import com.yunfie.illustia.ui.screens.AndroidDownloadSettingsScreen
 import com.yunfie.illustia.ui.screens.AppDataScreen
 import com.yunfie.illustia.ui.screens.AppLockSetupScreen
 import com.yunfie.illustia.ui.screens.BookmarkSettingsScreen
 import com.yunfie.illustia.ui.screens.BookmarkTagSortScreen
 import com.yunfie.illustia.ui.screens.CardCustomizationSettingsScreen
-import com.yunfie.illustia.ui.screens.DataSettingsScreen
 import com.yunfie.illustia.ui.screens.DetailSectionSettingsScreen
 import com.yunfie.illustia.ui.screens.DiscordLoginScreen
 import com.yunfie.illustia.ui.screens.DiscordSettingsScreen
@@ -86,6 +89,10 @@ import com.yunfie.illustia.ui.screens.profile.RelatedUsersScreen
 import com.yunfie.illustia.ui.screens.profile.UserProfileEditScreen
 import com.yunfie.illustia.ui.screens.profile.UserProfileErrorScreen
 import com.yunfie.illustia.ui.screens.profile.UserProfileSkeletonScreen
+import com.yunfie.illustia.ui.scroll.ScrollStateKeys
+import com.yunfie.illustia.ui.scroll.ScrollStateRegistry
+import com.yunfie.illustia.uiAppServices
+import com.yunfie.illustia.uiRepository
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -179,6 +186,7 @@ internal fun AppNavHost(
                     focusRequest = if (backStack.lastOrNull() == AppRoute.Search) searchFocusRequest else 0,
                     state = searchState,
                     viewModel = viewModel,
+                    repository = context.uiRepository(),
                     isResultRoute = false,
                     onBack = onPopRoute,
                     onNavigateToResults = { query: String ->
@@ -226,8 +234,9 @@ internal fun AppNavHost(
                 SearchScreen(
                     onFocusRequestHandled = onSearchFocusHandled,
                     focusRequest = if (backStack.lastOrNull() == route) searchFocusRequest else 0,
-                    state = effectiveState,
+                    state = effectiveState.searchUiState,
                     viewModel = viewModel,
+                    repository = context.uiRepository(),
                     isResultRoute = true,
                     onBackFromResults = onPopRoute,
                     onNavigateToResults = { nextQuery ->
@@ -275,8 +284,9 @@ internal fun AppNavHost(
                 SearchScreen(
                     onFocusRequestHandled = onSearchFocusHandled,
                     focusRequest = if (backStack.lastOrNull() == route) searchFocusRequest else 0,
-                    state = effectiveState,
+                    state = effectiveState.searchUiState,
                     viewModel = viewModel,
+                    repository = context.uiRepository(),
                     isResultRoute = true,
                     onBackFromResults = onPopRoute,
                     onNavigateToResults = { nextQuery ->
@@ -411,7 +421,7 @@ internal fun AppNavHost(
                                 ),
                             onRelatedSectionReady = { viewModel.markIllustDetailRelatedSectionReady(illust.id) },
                             onPageChanged = { viewModel.updateIllustDetailPage(illust.id, it) },
-                            listState = viewModel.illustDetailListState(illust.id),
+                            listState = ScrollStateRegistry.shared.list(ScrollStateKeys.illustDetail(illust.id)),
                         )
                     } else {
                         if (backStack.lastOrNull() == route) {
@@ -502,7 +512,12 @@ internal fun AppNavHost(
                 )
             }
             entry(AppRoute.Settings) {
-                SettingsScreen(settings = appState.state.settings, viewModel = viewModel, onBack = onPopRoute)
+                SettingsScreen(
+                    settings = appState.state.settings,
+                    viewModel = viewModel,
+                    appInfo = rememberAppInfo(),
+                    onBack = onPopRoute,
+                )
             }
             entry(AppRoute.GeneralSettings) {
                 GeneralSettingsScreen(
@@ -537,7 +552,7 @@ internal fun AppNavHost(
                 DetailSectionSettingsScreen(settings = appState.state.settings, viewModel = viewModel, onBack = onPopRoute)
             }
             entry(AppRoute.DownloadSettings) {
-                DownloadSettingsScreen(settings = appState.state.settings, viewModel = viewModel, onBack = onPopRoute)
+                AndroidDownloadSettingsScreen(settings = appState.state.settings, viewModel = viewModel, onBack = onPopRoute)
             }
             entry(AppRoute.NetworkSettings) {
                 NetworkSettingsScreen(
@@ -563,7 +578,7 @@ internal fun AppNavHost(
             entry(AppRoute.BookmarkTagSort) {
                 BookmarkTagSortScreen(
                     settings = appState.state.settings,
-                    repository = remember(viewModel) { viewModel.uiRepository() },
+                    repository = remember(context) { context.uiRepository() },
                     selectedTag = appState.state.bookmarkTag,
                     onBack = onPopRoute,
                     onSelect = { restrict, tag ->
@@ -576,6 +591,7 @@ internal fun AppNavHost(
                 AccountSettingsScreen(
                     settings = appState.state.settings,
                     viewModel = viewModel,
+                    onLogout = viewModel::logout,
                     onBack = onPopRoute,
                     onOpenDiscordSettings = { onNavigate(AppRoute.DiscordSettings) },
                 )
@@ -602,7 +618,7 @@ internal fun AppNavHost(
                 )
             }
             entry(AppRoute.DataSettings) {
-                DataSettingsScreen(settings = appState.state.settings, viewModel = viewModel, onBack = onPopRoute)
+                AndroidDataSettingsScreen(settings = appState.state.settings, viewModel = viewModel, onBack = onPopRoute)
             }
             entry(AppRoute.ViewHistory) {
                 ProvideEntrySharedTransitionScope {
@@ -616,7 +632,12 @@ internal fun AppNavHost(
                 MuteSettingsScreen(settings = appState.state.settings, viewModel = viewModel, onBack = onPopRoute)
             }
             entry(AppRoute.AppData) {
-                AppDataScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
+                AppDataScreen(
+                    state = appState.state,
+                    services = LocalContext.current.uiAppServices(),
+                    viewModel = viewModel,
+                    onBack = onPopRoute,
+                )
             }
             entry(AppRoute.DownloadQueue) {
                 DownloadQueueScreen(state = appState.state, viewModel = viewModel, onBack = onPopRoute)
@@ -722,8 +743,8 @@ internal fun AppNavHost(
                                 appState.state.settings.mutedUsers
                                     .contains(user.id),
                             onUnmuteUser = { viewModel.unmuteUser(user.id) },
-                            gridState = viewModel.userProfileGridState(user.id),
-                            bookmarkGridState = viewModel.userProfileBookmarkGridState(user.id),
+                            gridState = ScrollStateRegistry.shared.grid(ScrollStateKeys.userProfile(user.id)),
+                            bookmarkGridState = ScrollStateRegistry.shared.grid(ScrollStateKeys.userProfileBookmarks(user.id)),
                             onIllustLongClick = viewModel::onIllustLongPress,
                             onColumnsChange = viewModel::updateVerticalColumnCount,
                             showHeaderControls = true,

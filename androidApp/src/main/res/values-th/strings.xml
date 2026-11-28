@@ -155,40 +155,6 @@
     <string name="favorite_tags_works_not_found">ไม่พบผลงานสำหรับ \"%1$s\"</string>
 
     <!-- Illust detail screen -->
-    <string name="detail_save_image_title">บันทึกภาพ</string>
-    <string name="detail_save_image_confirm">บันทึกภาพนี้ลงในโฟลเดอร์ Palleria</string>
-    <string name="detail_save_ugoira_title">บันทึกอูโกอิรา</string>
-    <string name="detail_save_ugoira_confirm">บันทึกภาพนิ่ง (ภาพปก) ของ ugoira นี้ลงในโฟลเดอร์ Palleria</string>
-    <string name="detail_unfollow_title">เลิกติดตาม</string>
-    <string name="detail_unfollow_confirm">เลิกติดตาม %1$s?</string>
-    <string name="detail_open_in_browser">เปิดในเบราว์เซอร์</string>
-    <string name="detail_share">แบ่งปัน</string>
-    <string name="detail_save_image">บันทึกภาพ</string>
-    <string name="detail_save_this_page">บันทึกหน้านี้</string>
-    <string name="detail_save_ugoira">บันทึกอูโกอิรา</string>
-    <string name="detail_save_all_pages">บันทึกหน้าทั้งหมด</string>
-    <string name="detail_copy_url">คัดลอก URL</string>
-    <string name="detail_mute">ปิดเสียง</string>
-    <string name="detail_mute_work">ปิดเสียงงานนี้</string>
-    <string name="detail_mute_artist">ปิดเสียงศิลปินคนนี้</string>
-    <string name="detail_more">เพิ่มเติม</string>
-    <string name="detail_muted_artist">ศิลปินใบ้</string>
-    <string name="detail_muted_artist_blur">ผลงานของ %1$s ถูกเบลอ</string>
-    <string name="detail_muted_artist_blur_default">ศิลปินคนนี้</string>
-    <string name="detail_muted_work">ปิดเสียงการทำงาน</string>
-    <string name="detail_muted_work_blur">งานที่มีแท็กปิดเสียงจะถูกเบลอ</string>
-    <string name="detail_unmute">เปิดเสียง</string>
-    <string name="detail_image_load_failed">ไม่สามารถโหลดรูปภาพได้</string>
-    <string name="detail_no_caption">ไม่มีคำอธิบายภาพ</string>
-    <string name="detail_comments">ความคิดเห็น</string>
-    <string name="detail_show_comments">แสดงความคิดเห็น</string>
-    <string name="detail_comments_empty">ยังไม่มีความคิดเห็น</string>
-    <string name="detail_series">ซีรีส์</string>
-    <string name="detail_related">ผลงานที่เกี่ยวข้อง</string>
-    <string name="detail_tags_show_more">แสดงทั้งหมด (อีก %1$d)</string>
-    <string name="detail_tags_show_less">แสดงน้อยลง</string>
-    <string name="detail_illust_id">รหัสภาพประกอบ</string>
-    <string name="detail_resolution">ความละเอียด</string>
 
     <!-- Image viewer screen -->
     <string name="viewer_share_failed">ไม่สามารถเริ่มการแชร์ได้</string>
@@ -403,7 +369,6 @@
     <string name="offline_capacity_limit_desc">หยุดเมื่องานที่บันทึกไว้ถึงขีดจำกัด</string>
     <string name="offline_library_title">ดาวน์โหลดรายการ</string>
     <string name="offline_library_empty">ยังไม่มีงานที่บันทึกไว้</string>
-    <string name="detail_save_offline">เพิ่มไปยังรายการที่บันทึกไว้แล้ว</string>
     <string name="image_section_quality">คุณภาพ</string>
     <string name="image_section_layout">เค้าโครง</string>
     <string name="image_section_proxy">หนังสือมอบฉันทะ</string>
@@ -989,4 +954,10 @@
     <string name="desktop_open_new_tab">เปิดในแท็บเบราว์เซอร์ใหม่</string>
     <string name="desktop_bookmark_private">บุ๊กมาร์กส่วนตัว</string>
     <string name="desktop_save_as">บันทึกเป็น</string>
+<string name="detail_save_image_confirm">บันทึกภาพนี้ลงในโฟลเดอร์ Palleria</string>
+<string name="detail_save_image_title">บันทึกภาพ</string>
+<string name="detail_save_ugoira_confirm">บันทึกภาพนิ่ง (ภาพปก) ของ ugoira นี้ลงในโฟลเดอร์ Palleria</string>
+<string name="detail_save_ugoira_title">บันทึกอูโกอิรา</string>
+<string name="detail_tags_show_more">แสดงทั้งหมด (อีก %1$d)</string>
+<string name="detail_save_offline">เพิ่มไปยังรายการที่บันทึกไว้แล้ว</string>
 </resources>

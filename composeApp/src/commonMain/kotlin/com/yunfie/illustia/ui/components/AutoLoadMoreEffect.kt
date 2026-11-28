@@ -12,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import com.yunfie.illustia.platform.currentTimeMillis
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -140,7 +141,7 @@ private fun AutoLoadMoreCore(
                 val targetUrl = currentNextUrl ?: return@collectLatest
                 if (!currentEnabled || currentIsLoading) return@collectLatest
 
-                val now = System.currentTimeMillis()
+                val now = currentTimeMillis()
                 val isSameUrl = (targetUrl == lastRequestedUrl)
 
                 val requiredDelay =
@@ -157,7 +158,7 @@ private fun AutoLoadMoreCore(
                 val canTrigger = currentEnabled && !currentIsLoading
                 if (canTrigger && currentNextUrl == targetUrl && currentCheckNearBottom()) {
                     lastRequestedUrl = targetUrl
-                    lastRequestTime = System.currentTimeMillis()
+                    lastRequestTime = currentTimeMillis()
                     currentOnLoadMore()
                 }
             }

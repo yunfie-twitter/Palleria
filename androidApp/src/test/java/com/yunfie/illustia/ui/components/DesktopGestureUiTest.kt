@@ -13,6 +13,7 @@ import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
+import com.yunfie.illustia.ComposeResourcesRule
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -25,6 +26,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28], application = Application::class)
 class DesktopGestureUiTest {
+    @get:Rule val composeResources = ComposeResourcesRule()
+
     @get:Rule val compose = createComposeRule()
 
     @Test

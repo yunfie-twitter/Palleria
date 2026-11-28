@@ -1,0 +1,763 @@
+package com.yunfie.illustia.ui.screens.novel.reader
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.foundation.text.appendInlineContent
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.UriHandler
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.Placeholder
+import androidx.compose.ui.text.PlaceholderVerticalAlign
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_open
+import com.yunfie.illustia.resources.novel_font_sans_serif
+import com.yunfie.illustia.resources.novel_font_serif
+import com.yunfie.illustia.resources.novel_font_system
+import com.yunfie.illustia.resources.novel_go_to_page
+import com.yunfie.illustia.resources.novel_inline_illust_label
+import com.yunfie.illustia.resources.novel_layout_paged
+import com.yunfie.illustia.resources.novel_layout_scroll
+import com.yunfie.illustia.resources.novel_layout_vertical
+import com.yunfie.illustia.resources.novel_line_height_compact
+import com.yunfie.illustia.resources.novel_line_height_normal
+import com.yunfie.illustia.resources.novel_line_height_relaxed
+import com.yunfie.illustia.resources.novel_open_illust
+import com.yunfie.illustia.resources.novel_series_next_episode
+import com.yunfie.illustia.resources.novel_theme_black
+import com.yunfie.illustia.resources.novel_theme_dark
+import com.yunfie.illustia.resources.novel_theme_sepia
+import com.yunfie.illustia.resources.novel_theme_system
+import com.yunfie.illustia.ui.components.ElevatedPanel
+import com.yunfie.illustia.ui.components.PixivImage
+import com.yunfie.illustia.ui.components.miuixClickable
+import com.yunfie.illustia.ui.screens.NovelMetaPill
+import com.yunfie.illustia.ui.screens.novel.InlineRubyInfo
+import com.yunfie.illustia.ui.screens.novel.NovelBlock
+import com.yunfie.illustia.ui.screens.novel.NovelChapterBlock
+import com.yunfie.illustia.ui.screens.novel.NovelChapterInfo
+import com.yunfie.illustia.ui.screens.novel.NovelInlineItem
+import com.yunfie.illustia.ui.screens.novel.NovelJumpBlock
+import com.yunfie.illustia.ui.screens.novel.NovelPage
+import com.yunfie.illustia.ui.screens.novel.NovelParagraphBlock
+import com.yunfie.illustia.ui.screens.novel.NovelPixivImageBlock
+import com.yunfie.illustia.ui.screens.novel.NovelSpacerBlock
+import com.yunfie.illustia.ui.screens.novel.NovelTtsParagraphLocation
+import com.yunfie.illustia.ui.screens.novel.NovelTtsTextSanitizer
+import com.yunfie.illustia.ui.screens.novel.extractChapters
+import com.yunfie.illustia.ui.screens.novel.parseNovelPages
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.ScrollBehavior
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.ChevronForward
+import top.yukonga.miuix.kmp.icon.extended.Photos
+import top.yukonga.miuix.kmp.squircle.squircleSurface
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+enum class NovelTheme(
+    val id: String,
+    val displayNameRes: StringResource,
+) {
+    System("system", Res.string.novel_theme_system),
+    Sepia("sepia", Res.string.novel_theme_sepia),
+    Dark("dark", Res.string.novel_theme_dark),
+    Black("black", Res.string.novel_theme_black),
+    ;
+
+    @Composable
+    fun backgroundColor(): Color =
+        when (this) {
+            System -> MiuixTheme.colorScheme.surface
+            Sepia -> Color(0xFFF4ECD8)
+            Dark -> Color(0xFF1E1E1E)
+            Black -> Color(0xFF000000)
+        }
+
+    @Composable
+    fun textColor(): Color =
+        when (this) {
+            System -> MiuixTheme.colorScheme.onSurface
+            Sepia -> Color(0xFF5F4B32)
+            Dark -> Color(0xFFE0E0E0)
+            Black -> Color(0xFFCCCCCC)
+        }
+
+    companion object {
+        fun fromId(id: String?): NovelTheme = entries.firstOrNull { it.id.equals(id, ignoreCase = true) } ?: System
+    }
+}
+
+private const val LINE_SPACING_COMPACT = 1.35f
+private const val LINE_SPACING_NORMAL = 1.65f
+private const val LINE_SPACING_RELAXED = 2.0f
+private const val RUBY_INLINE_HEIGHT_SCALE = 1.6f
+private const val RUBY_INLINE_FONT_SCALE = 0.5f
+private const val RUBY_INLINE_LINE_HEIGHT_SCALE = 0.54f
+private const val EMPHASIS_INLINE_FONT_SCALE = 0.45f
+private const val RUBY_CHAR_WIDTH_SCALE = 0.55f
+private const val RUBY_CHAR_PADDING_FACTOR = 1.08f
+private const val EMPHASIS_CHAR_PADDING_FACTOR = 1.05f
+
+enum class NovelLineSpacing(
+    val id: String,
+    val multiplier: Float,
+    val labelRes: StringResource,
+) {
+    Compact("compact", LINE_SPACING_COMPACT, Res.string.novel_line_height_compact),
+    Normal("normal", LINE_SPACING_NORMAL, Res.string.novel_line_height_normal),
+    Relaxed("relaxed", LINE_SPACING_RELAXED, Res.string.novel_line_height_relaxed),
+    ;
+
+    companion object {
+        fun fromId(id: String?): NovelLineSpacing = entries.firstOrNull { it.id.equals(id, ignoreCase = true) } ?: Normal
+    }
+}
+
+enum class NovelFontFamily(
+    val id: String,
+    val labelRes: StringResource,
+    val fontFamily: FontFamily,
+) {
+    System("system", Res.string.novel_font_system, FontFamily.Default),
+    Serif("serif", Res.string.novel_font_serif, FontFamily.Serif),
+    SansSerif("sans_serif", Res.string.novel_font_sans_serif, FontFamily.SansSerif),
+    ;
+
+    companion object {
+        fun fromId(id: String?): NovelFontFamily = entries.firstOrNull { it.id.equals(id, ignoreCase = true) } ?: System
+    }
+}
+
+enum class NovelLayoutMode(
+    val id: String,
+    val labelRes: StringResource,
+) {
+    Paged("paged", Res.string.novel_layout_paged),
+    Scroll("scroll", Res.string.novel_layout_scroll),
+    Vertical("vertical", Res.string.novel_layout_vertical),
+    ;
+
+    companion object {
+        fun fromId(id: String?): NovelLayoutMode = entries.firstOrNull { it.id.equals(id, ignoreCase = true) } ?: Paged
+    }
+}
+
+@Composable
+fun NovelReaderPage(
+    page: NovelPage,
+    pageIndex: Int,
+    paragraphStep: Int = 0,
+    // 現在ページかどうかは provider 経由で読み、スワイプ中に親（Pager）が
+    // settledPage を読んで全ページを再コンポーズしないようにする。
+    keyboardActive: () -> Boolean = { true },
+    pageCount: Int,
+    fontSize: Float,
+    lineHeightMultiplier: Float,
+    textColor: Color,
+    fontFamily: FontFamily,
+    onOpenIllust: (Long) -> Unit,
+    loadIllustPreviewUrl: suspend (Long) -> String?,
+    uriHandler: UriHandler,
+    seriesNextId: Long? = null,
+    seriesNextTitle: String? = null,
+    onJumpPage: (Int) -> Unit,
+    onOpenSeriesEpisode: ((Long, String) -> Unit)? = null,
+    onToggleControls: () -> Unit,
+    scrollBehavior: ScrollBehavior,
+    contentPadding: PaddingValues,
+    modifier: Modifier = Modifier,
+    readingBlockIndex: Int? = null,
+) {
+    val keyboardListState =
+        androidx.compose.foundation.lazy
+            .rememberLazyListState()
+    com.yunfie.illustia.ui.components.ParagraphNavigation(
+        keyboardListState,
+        paragraphStep,
+        keyboardActive,
+        remember(page) { page.blocks.mapIndexedNotNull { index, block -> if (block is NovelParagraphBlock) index + 1 else null } },
+    )
+    val currentOnToggleControls by rememberUpdatedState(onToggleControls)
+    LazyColumn(
+        state = keyboardListState,
+        modifier =
+            modifier
+                .fillMaxSize()
+                .nestedScroll(scrollBehavior.nestedScrollConnection)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = { currentOnToggleControls() },
+                ),
+        contentPadding = contentPadding,
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        item(key = "page_header_$pageIndex") {
+            NovelMetaPill(text = "${pageIndex + 1} / $pageCount")
+        }
+        itemsIndexed(
+            items = page.blocks,
+            key = { blockIndex, _ -> "page_${pageIndex}_block_$blockIndex" },
+            contentType = { _, block -> block.contentType },
+        ) { blockIndex, block ->
+            NovelBlockItem(
+                block = block,
+                fontSize = fontSize,
+                lineHeightMultiplier = lineHeightMultiplier,
+                textColor = textColor,
+                fontFamily = fontFamily,
+                onOpenIllust = onOpenIllust,
+                loadIllustPreviewUrl = loadIllustPreviewUrl,
+                uriHandler = uriHandler,
+                onJumpPage = onJumpPage,
+                onToggleControls = onToggleControls,
+                isReading = readingBlockIndex == blockIndex,
+            )
+        }
+        if (pageIndex == pageCount - 1 && seriesNextId != null) {
+            item(key = "series_next_$seriesNextId") {
+                ElevatedPanel(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(top = 16.dp, bottom = 24.dp)
+                            .miuixClickable(
+                                pressedScale = 0.98f,
+                                haptic = true,
+                                onClick = { onOpenSeriesEpisode?.invoke(seriesNextId, seriesNextTitle.orEmpty()) },
+                            ),
+                    contentPadding = PaddingValues(16.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(Res.string.novel_series_next_episode),
+                                style = MiuixTheme.textStyles.footnote1,
+                                color = MiuixTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold,
+                            )
+                            Text(
+                                text = seriesNextTitle.orEmpty().ifBlank { stringResource(Res.string.novel_series_next_episode) },
+                                style = MiuixTheme.textStyles.body1,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                        Icon(
+                            MiuixIcons.ChevronForward,
+                            contentDescription = null,
+                            tint = MiuixTheme.colorScheme.primary,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun NovelReaderContinuousContent(
+    pages: List<NovelPage>,
+    lazyListState: LazyListState,
+    fontSize: Float,
+    lineHeightMultiplier: Float,
+    textColor: Color,
+    fontFamily: FontFamily,
+    onOpenIllust: (Long) -> Unit,
+    loadIllustPreviewUrl: suspend (Long) -> String?,
+    uriHandler: UriHandler,
+    seriesNextId: Long? = null,
+    seriesNextTitle: String? = null,
+    onJumpPage: (Int) -> Unit,
+    onOpenSeriesEpisode: ((Long, String) -> Unit)? = null,
+    onToggleControls: () -> Unit,
+    scrollBehavior: ScrollBehavior,
+    contentPadding: PaddingValues,
+    modifier: Modifier = Modifier,
+    readingLocation: NovelTtsParagraphLocation? = null,
+) {
+    val currentOnToggleControls by rememberUpdatedState(onToggleControls)
+    val toggleControlsAction = remember { { currentOnToggleControls() } }
+    LazyColumn(
+        state = lazyListState,
+        modifier =
+            modifier
+                .fillMaxSize()
+                .nestedScroll(scrollBehavior.nestedScrollConnection)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = toggleControlsAction,
+                ),
+        contentPadding = contentPadding,
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        pages.forEachIndexed { pageIndex, page ->
+            item(key = "page_header_$pageIndex") {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    NovelMetaPill(text = "${pageIndex + 1} / ${pages.size}")
+                }
+            }
+            itemsIndexed(
+                items = page.blocks,
+                key = { blockIndex, _ -> "page_${pageIndex}_block_$blockIndex" },
+                contentType = { _, block -> block.contentType },
+            ) { blockIndex, block ->
+                NovelBlockItem(
+                    block = block,
+                    fontSize = fontSize,
+                    lineHeightMultiplier = lineHeightMultiplier,
+                    textColor = textColor,
+                    fontFamily = fontFamily,
+                    onOpenIllust = onOpenIllust,
+                    loadIllustPreviewUrl = loadIllustPreviewUrl,
+                    uriHandler = uriHandler,
+                    onJumpPage = onJumpPage,
+                    onToggleControls = toggleControlsAction,
+                    isReading = readingLocation?.pageIndex == pageIndex && readingLocation.blockIndexInPage == blockIndex,
+                )
+            }
+            if (pageIndex < pages.size - 1) {
+                item(key = "page_divider_$pageIndex") {
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 16.dp)
+                                .height(1.dp)
+                                .background(textColor.copy(alpha = 0.12f)),
+                    )
+                }
+            }
+        }
+        if (seriesNextId != null) {
+            item(key = "series_next_episode_card") {
+                ElevatedPanel(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(top = 16.dp, bottom = 24.dp)
+                            .miuixClickable(
+                                pressedScale = 0.98f,
+                                haptic = true,
+                                onClick = { onOpenSeriesEpisode?.invoke(seriesNextId, seriesNextTitle.orEmpty()) },
+                            ),
+                    contentPadding = PaddingValues(16.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(Res.string.novel_series_next_episode),
+                                style = MiuixTheme.textStyles.footnote1,
+                                color = MiuixTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold,
+                            )
+                            Text(
+                                text = seriesNextTitle.orEmpty().ifBlank { stringResource(Res.string.novel_series_next_episode) },
+                                style = MiuixTheme.textStyles.body1,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                        Icon(
+                            MiuixIcons.ChevronForward,
+                            contentDescription = null,
+                            tint = MiuixTheme.colorScheme.primary,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun NovelBlockItem(
+    block: NovelBlock,
+    fontSize: Float,
+    lineHeightMultiplier: Float,
+    textColor: Color,
+    fontFamily: FontFamily,
+    onOpenIllust: (Long) -> Unit,
+    loadIllustPreviewUrl: suspend (Long) -> String?,
+    uriHandler: UriHandler,
+    onJumpPage: (Int) -> Unit,
+    onToggleControls: () -> Unit,
+    isReading: Boolean = false,
+) {
+    when (block) {
+        NovelSpacerBlock -> {
+            Spacer(modifier = Modifier.height(10.dp))
+        }
+
+        is NovelChapterBlock -> {
+            NovelChapterItem(
+                title = block.title,
+                textColor = textColor,
+                fontFamily = fontFamily,
+                isReading = isReading,
+            )
+        }
+
+        is NovelPixivImageBlock -> {
+            NovelArtworkCard(
+                illustId = block.illustId,
+                textColor = textColor,
+                loadIllustPreviewUrl = loadIllustPreviewUrl,
+                onOpen = { onOpenIllust(block.illustId) },
+            )
+        }
+
+        is NovelJumpBlock -> {
+            NovelJumpButton(pageNumber = block.pageNumber, onJumpPage = onJumpPage)
+        }
+
+        is NovelParagraphBlock -> {
+            NovelParagraph(
+                block = block,
+                fontSize = fontSize,
+                lineHeightMultiplier = lineHeightMultiplier,
+                textColor = textColor,
+                fontFamily = fontFamily,
+                uriHandler = uriHandler,
+                onToggleControls = onToggleControls,
+                isReading = isReading,
+            )
+        }
+    }
+}
+
+@Composable
+private fun NovelChapterItem(
+    title: String,
+    textColor: Color,
+    fontFamily: FontFamily,
+    isReading: Boolean = false,
+) {
+    val highlightModifier =
+        if (isReading) {
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .background(MiuixTheme.colorScheme.primaryContainer.copy(alpha = 0.35f))
+                .padding(8.dp)
+        } else {
+            Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 8.dp)
+        }
+    Column(
+        modifier = highlightModifier,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            text = title,
+            style = MiuixTheme.textStyles.title2,
+            fontWeight = FontWeight.Bold,
+            color = textColor,
+            fontFamily = fontFamily,
+        )
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(2.dp)
+                    .background(MiuixTheme.colorScheme.primary.copy(alpha = 0.6f)),
+        )
+    }
+}
+
+@Composable
+fun NovelJumpButton(
+    pageNumber: Int,
+    onJumpPage: (Int) -> Unit,
+) {
+    Button(
+        onClick = { onJumpPage(pageNumber - 1) },
+        colors =
+            ButtonDefaults.buttonColors(
+                color = MiuixTheme.colorScheme.surfaceContainerHighest,
+                contentColor = MiuixTheme.colorScheme.onSurface,
+            ),
+        modifier = Modifier.padding(vertical = 4.dp),
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(MiuixIcons.ChevronForward, contentDescription = null, modifier = Modifier.size(16.dp))
+            Text(text = stringResource(Res.string.novel_go_to_page, pageNumber))
+        }
+    }
+}
+
+@Composable
+private fun NovelArtworkCard(
+    illustId: Long,
+    textColor: Color,
+    loadIllustPreviewUrl: suspend (Long) -> String?,
+    onOpen: () -> Unit,
+) {
+    var previewUrl by remember(illustId) { mutableStateOf<String?>(null) }
+    LaunchedEffect(illustId) {
+        previewUrl = loadIllustPreviewUrl(illustId)
+    }
+
+    ElevatedPanel(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp)
+                .clickable(onClick = onOpen),
+    ) {
+        val currentPreviewUrl = previewUrl
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            if (currentPreviewUrl != null) {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MiuixTheme.colorScheme.surfaceContainer),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    PixivImage(
+                        url = currentPreviewUrl,
+                        contentDescription = stringResource(Res.string.novel_inline_illust_label),
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                if (currentPreviewUrl == null) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .size(44.dp)
+                                .squircleSurface(MiuixTheme.colorScheme.primaryContainer, 12.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = MiuixIcons.Photos,
+                            contentDescription = null,
+                            tint = MiuixTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp),
+                        )
+                    }
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(Res.string.novel_open_illust),
+                        style = MiuixTheme.textStyles.subtitle,
+                        fontWeight = FontWeight.Bold,
+                        color = textColor,
+                    )
+                    Text(
+                        text = "ID: $illustId",
+                        style = MiuixTheme.textStyles.footnote1,
+                        color = textColor.copy(alpha = 0.65f),
+                    )
+                }
+                Button(onClick = onOpen) {
+                    Text(stringResource(Res.string.action_open))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun NovelParagraph(
+    block: NovelParagraphBlock,
+    fontSize: Float,
+    lineHeightMultiplier: Float,
+    textColor: Color,
+    fontFamily: FontFamily,
+    uriHandler: UriHandler,
+    onToggleControls: () -> Unit,
+    isReading: Boolean = false,
+) {
+    if (block.text.text.isBlank()) return
+
+    val inlineContentMap =
+        remember(block.rubyItems, fontSize, textColor, fontFamily) {
+            createInlineRubyContent(block.rubyItems, fontSize, textColor, fontFamily)
+        }
+
+    val baseStyle = MiuixTheme.textStyles.body1
+    val textStyle =
+        remember(baseStyle, fontSize, lineHeightMultiplier, fontFamily, textColor) {
+            baseStyle.copy(
+                fontSize = fontSize.sp,
+                lineHeight = (fontSize * lineHeightMultiplier).sp,
+                fontFamily = fontFamily,
+                color = textColor,
+            )
+        }
+
+    val currentOnToggleControls by rememberUpdatedState(onToggleControls)
+
+    val highlightModifier =
+        if (isReading) {
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .background(MiuixTheme.colorScheme.primaryContainer.copy(alpha = 0.35f))
+                .padding(horizontal = 6.dp, vertical = 3.dp)
+        } else {
+            Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 3.dp)
+        }
+
+    val urlAnnotations = remember(block.text) { block.text.getStringAnnotations("URL", 0, block.text.length) }
+    if (urlAnnotations.isNotEmpty()) {
+        var layoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
+        BasicText(
+            text = block.text,
+            style = textStyle,
+            inlineContent = inlineContentMap,
+            onTextLayout = { layoutResult = it },
+            modifier =
+                highlightModifier.pointerInput(block.text) {
+                    detectTapGestures { pos ->
+                        val offset = layoutResult?.getOffsetForPosition(pos) ?: -1
+                        val annotation =
+                            if (offset >= 0) block.text.getStringAnnotations("URL", offset, offset).firstOrNull() else null
+                        if (annotation != null) {
+                            runCatching { uriHandler.openUri(annotation.item) }
+                        } else {
+                            currentOnToggleControls()
+                        }
+                    }
+                },
+        )
+    } else {
+        BasicText(
+            text = block.text,
+            style = textStyle,
+            inlineContent = inlineContentMap,
+            modifier = highlightModifier,
+        )
+    }
+}
+
+private fun createInlineRubyContent(
+    rubyItems: Map<String, InlineRubyInfo>,
+    fontSize: Float,
+    textColor: Color,
+    fontFamily: FontFamily,
+): Map<String, InlineTextContent> =
+    rubyItems.mapValues { (_, info) ->
+        val isEmph = info.isEmphasis
+        val baseLen = info.base.length.coerceAtLeast(1)
+        val rubyLen = info.ruby.length.coerceAtLeast(1)
+        val charWidth =
+            if (isEmph) {
+                baseLen.toFloat() * EMPHASIS_CHAR_PADDING_FACTOR
+            } else {
+                maxOf(baseLen.toFloat(), rubyLen * RUBY_CHAR_WIDTH_SCALE) * RUBY_CHAR_PADDING_FACTOR
+            }
+        InlineTextContent(
+            Placeholder(
+                width = (charWidth * fontSize).sp,
+                height = (fontSize * RUBY_INLINE_HEIGHT_SCALE).sp,
+                placeholderVerticalAlign = PlaceholderVerticalAlign.Center,
+            ),
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                val topText =
+                    if (isEmph) {
+                        val mark = info.ruby.ifBlank { "﹅" }
+                        if (mark.length == 1) mark.repeat(baseLen) else mark
+                    } else {
+                        info.ruby
+                    }
+                Text(
+                    text = topText,
+                    fontSize = (fontSize * RUBY_INLINE_FONT_SCALE).sp,
+                    lineHeight = (fontSize * RUBY_INLINE_LINE_HEIGHT_SCALE).sp,
+                    color = textColor.copy(alpha = 0.85f),
+                    fontFamily = fontFamily,
+                    maxLines = 1,
+                    softWrap = false,
+                )
+                Text(
+                    text = info.base,
+                    fontSize = fontSize.sp,
+                    lineHeight = fontSize.sp,
+                    color = textColor,
+                    fontFamily = fontFamily,
+                    fontWeight = if (isEmph) FontWeight.Bold else FontWeight.Normal,
+                    maxLines = 1,
+                    softWrap = false,
+                )
+            }
+        }
+    }

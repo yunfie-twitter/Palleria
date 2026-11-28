@@ -3,6 +3,7 @@ package com.yunfie.illustia.ui.app
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -36,10 +37,15 @@ import com.yunfie.illustia.AppShortcutRouter
 import com.yunfie.illustia.IllustiaNavigationRequest
 import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.R
+import com.yunfie.illustia.data.RequestErrorStrings
 import com.yunfie.illustia.data.pixiv.CommentArtworkType
+import com.yunfie.illustia.platform.AndroidStringProvider
+import com.yunfie.illustia.platform.AppStrings
 import com.yunfie.illustia.platform.DesktopCommand
 import com.yunfie.illustia.platform.DesktopEnvironment
+import com.yunfie.illustia.platform.LocalStringProvider
 import com.yunfie.illustia.platform.PlatformCapabilities
+import com.yunfie.illustia.platform.StringKey
 import com.yunfie.illustia.platform.WindowSizeClass
 import com.yunfie.illustia.settings.AppHapticMode
 import com.yunfie.illustia.settings.FeatureFlag
@@ -57,6 +63,7 @@ import com.yunfie.illustia.ui.components.NoOpHapticFeedback
 import com.yunfie.illustia.ui.components.appNavigationScrim
 import com.yunfie.illustia.ui.components.isActiveNetworkMetered
 import com.yunfie.illustia.ui.components.isAppHapticsSupported
+import com.yunfie.illustia.ui.components.rememberPlatformHapticAction
 import com.yunfie.illustia.ui.components.rememberScrollRendering
 import com.yunfie.illustia.ui.screens.CalculatorScreen
 import kotlinx.coroutines.Dispatchers
@@ -78,6 +85,7 @@ internal val LocalUseNavigationRail = androidx.compose.runtime.staticComposition
 @Composable
 internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val tabUiState = remember { TabUiState() }
     val settings = state.settings
     val startupScreen = state.settings.startupScreen
     val tabs = remember(settings.shortsFeedEnabled, settings.navigationOrder) { mainTabs(settings) }
@@ -87,7 +95,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         }
     val initialTab =
         remember(startupScreen, tabs, rootVisibleTabs) {
-            viewModel.activeTab?.takeIf { it in rootVisibleTabs }
+            tabUiState.activeTab?.takeIf { it in rootVisibleTabs }
                 ?: startupTabFor(startupScreen, tabs).takeIf { it in rootVisibleTabs }
                 ?: rootVisibleTabs.firstOrNull()
                 ?: tabs.first()
@@ -98,7 +106,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     var showTokenLogin by remember { mutableStateOf(false) }
     val selectedWatchlistSeriesIds = viewModel.selectedWatchlistSeriesIds
     var selectedCommentTarget by remember { mutableStateOf<Pair<Long, CommentArtworkType>?>(null) }
-    val backStack = viewModel.navigationBackStack
+    val backStack = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateListOf<NavKey>(AppRoute.Main) }
     val detailSnapshots = viewModel.detailSnapshots
     val searchSnapshots = viewModel.searchSnapshots
     val pagerState =
@@ -154,7 +162,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                 .build()
                 .launchUrl(context, Uri.parse(request.authorizationUrl))
         }.onFailure {
-            viewModel.failWebLogin(context.getString(R.string.error_browser_failed))
+            viewModel.failWebLogin(AppStrings.get(StringKey.ErrorBrowserFailed))
         }
     }
 
@@ -365,7 +373,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
     LaunchedEffect(pagerState.settledPage, tabs) {
         val tab = tabs.getOrNull(pagerState.settledPage) ?: tabs.firstOrNull() ?: initialTab
         selectedTab = tab
-        viewModel.activeTab = tab
+        tabUiState.activeTab = tab
     }
 
     LaunchedEffect(tabs, rootVisibleTabs) {
@@ -380,12 +388,12 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                 ?: return@LaunchedEffect
         val targetIndex = tabs.indexOf(targetTab).coerceAtLeast(0)
         selectedTab = targetTab
-        viewModel.activeTab = targetTab
+        tabUiState.activeTab = targetTab
         if (pagerState.currentPage != targetIndex) pagerState.scrollToPage(targetIndex)
     }
 
     LaunchedEffect(selectedTab) {
-        viewModel.activeTab = selectedTab
+        tabUiState.activeTab = selectedTab
         if (previousTab == AppTab.Search && selectedTab != AppTab.Search) {
             viewModel.clearSearchResults()
         }
@@ -802,9 +810,18 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         } else {
             null
         }
+    val appStringProvider =
+        remember(context) {
+            AndroidStringProvider(context).apply {
+                AppStrings.install(this)
+                RequestErrorStrings.install(this)
+            }
+        }
     CompositionLocalProvider(
-        LocalFastScrolling provides fastScrollingState,
         com.yunfie.illustia.ui.components.LocalArtworkDesktopActions provides desktopActions,
+        LocalStringProvider provides appStringProvider,
+        LocalTabUiState provides tabUiState,
+        LocalFastScrolling provides fastScrollingState,
         LocalPixivImageProxyBaseUrl provides state.settings.pixivImageProxyBaseUrl,
         LocalPreferLowDataImages provides preferLowDataImages,
         com.yunfie.illustia.ui.components.LocalWideColorGamutEnabled provides settings.wideColorGamutEnabled,
@@ -813,6 +830,114 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
         LocalBottomSheetBackgroundColor provides MiuixTheme.colorScheme.surfaceContainerHigh,
         LocalArtworkCardPreferences provides artworkCardPreferences,
         LocalAppHapticMode provides effectiveHapticMode,
+        com.yunfie.illustia.ui.components.LocalHardwareBlurSupported provides
+            (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S),
+        com.yunfie.illustia.ui.components.LocalAppHapticEffect provides
+            rememberPlatformHapticAction(),
+        com.yunfie.illustia.ui.components.LocalHapticsSupported provides hapticsSupported,
+        com.yunfie.illustia.ui.components.LocalDynamicColorAvailable provides
+            com.yunfie.illustia.settings
+                .isDynamicColorAvailable(),
+        com.yunfie.illustia.ui.components.LocalDisplayWideColorGamut provides
+            PlatformCapabilities.supportsWideColorGamut(context),
+        com.yunfie.illustia.ui.components.LocalIsDesktopEnvironment provides
+            DesktopEnvironment.isDesktop(context),
+        com.yunfie.illustia.ui.components.LocalTextSharing provides
+            remember(context) { { text -> startTextShare(context, text) } },
+        com.yunfie.illustia.ui.components.LocalUrlOpener provides
+            remember(context) { { url -> openExternalUrl(context, url) } },
+        com.yunfie.illustia.ui.components.LocalAppHapticPerformer provides
+            com.yunfie.illustia.ui.components
+                .AppHapticPerformer(rememberPlatformHapticAction()),
+        com.yunfie.illustia.ui.components.LocalBackHandler provides
+            remember {
+                object : com.yunfie.illustia.ui.components.BackHandlerRegistrar {
+                    @Composable
+                    override fun Register(
+                        enabled: Boolean,
+                        onBack: () -> Unit,
+                    ) {
+                        if (com.yunfie.illustia.platform.PlatformCapabilities
+                                .supportsPredictiveBack()
+                        ) {
+                            return
+                        }
+                        BackHandler(enabled = enabled) { onBack() }
+                    }
+                }
+            },
+        com.yunfie.illustia.ui.components.LocalAvatarImageRenderer provides
+            com.yunfie.illustia.ui.components.AvatarImageRenderer { url, contentDescription, modifier, maxDecodeDimensionPx ->
+                com.yunfie.illustia.ui.components.CoilPixivImage(
+                    url = url,
+                    contentDescription = contentDescription,
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                    modifier = modifier,
+                    thumbnail = true,
+                    maxDecodeDimensionPx = maxDecodeDimensionPx,
+                )
+            },
+        com.yunfie.illustia.ui.components.LocalIllustCardBookmarkButtonRenderer provides
+            object : com.yunfie.illustia.ui.components.IllustCardBookmarkButtonRenderer {
+                @Composable
+                override fun Render(
+                    isBookmarked: Boolean,
+                    onClick: () -> Unit,
+                    modifier: Modifier,
+                    onLongClick: (() -> Unit)?,
+                    size: androidx.compose.ui.unit.Dp,
+                    iconSize: androidx.compose.ui.unit.Dp,
+                ) {
+                    com.yunfie.illustia.ui.components.BookmarkHeartButton(
+                        isBookmarked = isBookmarked,
+                        onClick = onClick,
+                        modifier = modifier,
+                        onLongClick = onLongClick,
+                        size = size,
+                        iconSize = iconSize,
+                    )
+                }
+            },
+        com.yunfie.illustia.ui.components.LocalArtworkCardDecorator provides
+            object : com.yunfie.illustia.ui.components.ArtworkCardDecorator {
+                @Composable
+                override fun decorate(
+                    illust: com.yunfie.illustia.models.Illust,
+                    modifier: Modifier,
+                ): Modifier =
+                    com.yunfie.illustia.ui.components
+                        .artworkDesktopMenuDecoration(illust, modifier)
+            },
+        com.yunfie.illustia.ui.components.LocalPixivImageRenderer provides
+            com.yunfie.illustia.ui.components.PixivImageRenderer { spec ->
+                com.yunfie.illustia.ui.components.CoilPixivImage(
+                    url = spec.url,
+                    contentDescription = spec.contentDescription,
+                    contentScale = spec.contentScale,
+                    modifier = spec.modifier,
+                    crossfade = spec.crossfade,
+                    thumbnail = spec.thumbnail,
+                    maxDecodeDimensionPx = spec.maxDecodeDimensionPx,
+                    allowRgb565 = spec.allowRgb565,
+                    showLoadingSpinner = spec.showLoadingSpinner,
+                    placeholderUrl = spec.placeholderUrl,
+                    retryToken = spec.retryToken,
+                    onSuccess = spec.onSuccess?.let { callback -> { _: android.graphics.Bitmap -> callback() } },
+                    onError = spec.onError,
+                    onLoadingStateChanged = spec.onLoadingStateChanged,
+                )
+            },
+        com.yunfie.illustia.ui.components.LocalPixivPrefetchRenderer provides
+            object : com.yunfie.illustia.ui.components.PixivPrefetchRenderer {
+                @androidx.compose.runtime.Composable
+                override fun Prefetch(
+                    urls: List<String>,
+                    limit: Int,
+                ) {
+                    com.yunfie.illustia.ui.components
+                        .CoilPrefetchPixivImages(urls = urls, limit = limit)
+                }
+            },
         LocalHapticFeedback provides
             if (effectiveHapticMode == AppHapticMode.Off) {
                 NoOpHapticFeedback
@@ -876,7 +1001,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                     onSearchTag = ::searchFromDetail,
                     onTabSelected = { index, tab ->
                         if (selectedTab == tab && pagerState.currentPage == index) {
-                            viewModel.tabScrollToTopRequests.tryEmit(tab)
+                            tabUiState.requestScrollToTop(tab)
                         } else {
                             selectedTab = tab
                             coroutineScope.launch {
@@ -894,7 +1019,7 @@ internal fun IllustiaAppRoot(viewModel: IllustiaViewModel) {
                             selectedWatchlistSeriesIds.clear()
                         }
                         if (wasOnMain && selectedTab == tab && pagerState.currentPage == pageIndex) {
-                            viewModel.tabScrollToTopRequests.tryEmit(tab)
+                            tabUiState.requestScrollToTop(tab)
                         } else {
                             selectedTab = tab
                             coroutineScope.launch {

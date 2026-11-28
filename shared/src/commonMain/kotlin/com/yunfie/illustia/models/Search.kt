@@ -3,6 +3,7 @@ package com.yunfie.illustia.models
 import androidx.compose.runtime.Immutable
 
 @Immutable
+@kotlinx.serialization.Serializable
 enum class SearchSort(
     val apiValue: String,
 ) {
@@ -12,6 +13,7 @@ enum class SearchSort(
 }
 
 @Immutable
+@kotlinx.serialization.Serializable
 enum class SearchTarget(
     val apiValue: String,
 ) {
@@ -21,6 +23,7 @@ enum class SearchTarget(
 }
 
 @Immutable
+@kotlinx.serialization.Serializable
 enum class SearchWorkType(
     val apiValue: String?,
 ) {
@@ -50,6 +53,7 @@ enum class SearchWorkType(
 }
 
 @Immutable
+@kotlinx.serialization.Serializable
 enum class SearchDuration(
     val apiValue: String?,
 ) {
@@ -60,6 +64,7 @@ enum class SearchDuration(
 }
 
 @Immutable
+@kotlinx.serialization.Serializable
 enum class SearchBookmarkFilter(
     val keyword: String?,
 ) {

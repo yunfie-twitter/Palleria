@@ -22,7 +22,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavKey
@@ -31,6 +30,32 @@ import com.yunfie.illustia.PermissionRationaleType
 import com.yunfie.illustia.R
 import com.yunfie.illustia.platform.ImageClipboardHelper
 import com.yunfie.illustia.platform.PlatformCapabilities
+import com.yunfie.illustia.resources.Res
+import com.yunfie.illustia.resources.action_bookmark
+import com.yunfie.illustia.resources.action_copy_image
+import com.yunfie.illustia.resources.action_remove_bookmark
+import com.yunfie.illustia.resources.app_lock_recovery_reset
+import com.yunfie.illustia.resources.app_lock_recovery_reset_confirm_summary
+import com.yunfie.illustia.resources.app_lock_recovery_reset_confirm_title
+import com.yunfie.illustia.resources.app_lock_recovery_summary
+import com.yunfie.illustia.resources.app_lock_recovery_title
+import com.yunfie.illustia.resources.app_lock_recovery_verify
+import com.yunfie.illustia.resources.copied_image_to_clipboard
+import com.yunfie.illustia.resources.copy_image_failed
+import com.yunfie.illustia.resources.detail_mute_artist
+import com.yunfie.illustia.resources.detail_mute_work
+import com.yunfie.illustia.resources.detail_muted_artist_blur_default
+import com.yunfie.illustia.resources.detail_save_image
+import com.yunfie.illustia.resources.detail_save_ugoira
+import com.yunfie.illustia.resources.dialog_artist_label
+import com.yunfie.illustia.resources.dialog_mute
+import com.yunfie.illustia.resources.dialog_relogin_button
+import com.yunfie.illustia.resources.dialog_relogin_summary
+import com.yunfie.illustia.resources.dialog_relogin_title
+import com.yunfie.illustia.resources.dialog_show_detail
+import com.yunfie.illustia.resources.dialog_unbookmark_confirm
+import com.yunfie.illustia.resources.dialog_unbookmark_title
+import com.yunfie.illustia.resources.dialog_work_options
 import com.yunfie.illustia.settings.FeatureFlag
 import com.yunfie.illustia.settings.isFeatureEnabled
 import com.yunfie.illustia.ui.components.AppBottomSheet
@@ -51,6 +76,7 @@ import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.screens.CommentScreen
 import com.yunfie.illustia.ui.screens.RefreshTokenLoginBottomSheet
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.DropdownEntry
@@ -63,6 +89,7 @@ import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
+import org.jetbrains.compose.resources.stringResource as resString
 
 @Composable
 internal fun AppOverlayHost(
@@ -77,8 +104,8 @@ internal fun AppOverlayHost(
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-    val copiedMessage = stringResource(R.string.copied_image_to_clipboard)
-    val copyFailedMessage = stringResource(R.string.copy_image_failed)
+    val copiedMessage = stringResource(Res.string.copied_image_to_clipboard)
+    val copyFailedMessage = stringResource(Res.string.copy_image_failed)
 
     // 画面遷移したら前の画面で開いていたシートは閉じる。閉じないまま残ると、
     // 遷移後の画面の上に背景付きのシートが居座って見える。
@@ -165,14 +192,14 @@ internal fun AppOverlayHost(
             AppBottomSheet(
                 show = true,
                 modifier = Modifier.scrollEndHaptic(),
-                title = illust.title.ifBlank { stringResource(R.string.dialog_work_options) },
+                title = illust.title.ifBlank { stringResource(Res.string.dialog_work_options) },
                 onDismissRequest = viewModel::closeIllustOptions,
                 backgroundColor = LocalBottomSheetBackgroundColor.current,
                 insideMargin = BottomSheetInsideMargin,
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = stringResource(R.string.dialog_artist_label, illust.artistName),
+                        text = stringResource(Res.string.dialog_artist_label, illust.artistName),
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         style = MiuixTheme.textStyles.footnote1,
                     )
@@ -184,7 +211,7 @@ internal fun AppOverlayHost(
                         modifier = Modifier.fillMaxWidth(),
                         colors = overlayActionButtonColors(),
                     ) {
-                        Text(stringResource(R.string.dialog_show_detail))
+                        Text(stringResource(Res.string.dialog_show_detail))
                     }
                     Button(
                         onClick = {
@@ -196,9 +223,9 @@ internal fun AppOverlayHost(
                     ) {
                         Text(
                             if (illust.isBookmarked) {
-                                stringResource(R.string.action_remove_bookmark)
+                                stringResource(Res.string.action_remove_bookmark)
                             } else {
-                                stringResource(R.string.action_bookmark)
+                                stringResource(Res.string.action_bookmark)
                             },
                         )
                     }
@@ -211,11 +238,11 @@ internal fun AppOverlayHost(
                         colors = overlayActionButtonColors(),
                     ) {
                         Text(
-                            stringResource(
+                            resString(
                                 if (illust.type == "ugoira") {
-                                    R.string.detail_save_ugoira
+                                    Res.string.detail_save_ugoira
                                 } else {
-                                    R.string.detail_save_image
+                                    Res.string.detail_save_image
                                 },
                             ),
                         )
@@ -236,11 +263,11 @@ internal fun AppOverlayHost(
                         modifier = Modifier.fillMaxWidth(),
                         colors = overlayActionButtonColors(),
                     ) {
-                        Text(stringResource(R.string.action_copy_image))
+                        Text(stringResource(Res.string.action_copy_image))
                     }
                     DividerLine()
                     Text(
-                        text = stringResource(R.string.dialog_mute),
+                        text = stringResource(Res.string.dialog_mute),
                         color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                         style = MiuixTheme.textStyles.footnote1,
                     )
@@ -252,7 +279,7 @@ internal fun AppOverlayHost(
                         modifier = Modifier.fillMaxWidth(),
                         colors = overlayActionButtonColors(),
                     ) {
-                        Text(stringResource(R.string.detail_mute_work), color = MiuixTheme.colorScheme.error)
+                        Text(resString(Res.string.detail_mute_work), color = MiuixTheme.colorScheme.error)
                     }
                     Button(
                         onClick = {
@@ -262,7 +289,7 @@ internal fun AppOverlayHost(
                         modifier = Modifier.fillMaxWidth(),
                         colors = overlayActionButtonColors(),
                     ) {
-                        Text(stringResource(R.string.detail_mute_artist), color = MiuixTheme.colorScheme.error)
+                        Text(resString(Res.string.detail_mute_artist), color = MiuixTheme.colorScheme.error)
                     }
                 }
             }
@@ -340,9 +367,9 @@ internal fun AppOverlayHost(
 
     MiuixConfirmDialog(
         show = appState.state.showReloginRequiredDialog,
-        title = stringResource(R.string.dialog_relogin_title),
-        summary = stringResource(R.string.dialog_relogin_summary),
-        confirmText = stringResource(R.string.dialog_relogin_button),
+        title = stringResource(Res.string.dialog_relogin_title),
+        summary = stringResource(Res.string.dialog_relogin_summary),
+        confirmText = stringResource(Res.string.dialog_relogin_button),
         onConfirm = viewModel::openWebLogin,
         onDismiss = viewModel::dismissReloginRequiredDialog,
     )
@@ -350,13 +377,13 @@ internal fun AppOverlayHost(
     appState.state.pendingBookmarkRemoval?.let { illust ->
         MiuixConfirmDialog(
             show = true,
-            title = stringResource(R.string.dialog_unbookmark_title),
+            title = stringResource(Res.string.dialog_unbookmark_title),
             summary =
                 stringResource(
-                    R.string.dialog_unbookmark_confirm,
-                    illust.title.ifBlank { stringResource(R.string.detail_muted_artist_blur_default) },
+                    Res.string.dialog_unbookmark_confirm,
+                    illust.title.ifBlank { resString(Res.string.detail_muted_artist_blur_default) },
                 ),
-            confirmText = stringResource(R.string.action_remove_bookmark),
+            confirmText = stringResource(Res.string.action_remove_bookmark),
             destructive = true,
             onConfirm = viewModel::confirmBookmarkRemoval,
             onDismiss = viewModel::cancelBookmarkRemoval,
@@ -379,8 +406,8 @@ internal fun AppOverlayHost(
     if (appState.state.showLockRecoveryDialog) {
         AppDialog(
             show = true,
-            title = stringResource(R.string.app_lock_recovery_title),
-            summary = stringResource(R.string.app_lock_recovery_summary, appState.state.settings.appLockFailCount),
+            title = stringResource(Res.string.app_lock_recovery_title),
+            summary = stringResource(Res.string.app_lock_recovery_summary, appState.state.settings.appLockFailCount),
             backgroundColor = MiuixTheme.colorScheme.surfaceContainerHighest,
             onDismissRequest = {},
         ) {
@@ -395,7 +422,7 @@ internal fun AppOverlayHost(
                     colors = overlayActionButtonColors(),
                 ) {
                     Text(
-                        stringResource(R.string.app_lock_recovery_verify),
+                        stringResource(Res.string.app_lock_recovery_verify),
                         color = MiuixTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold,
                     )
@@ -407,7 +434,7 @@ internal fun AppOverlayHost(
                     colors = overlayActionButtonColors(),
                 ) {
                     Text(
-                        stringResource(R.string.app_lock_recovery_reset),
+                        stringResource(Res.string.app_lock_recovery_reset),
                         color = MiuixTheme.colorScheme.error,
                         fontWeight = FontWeight.Bold,
                     )
@@ -419,9 +446,9 @@ internal fun AppOverlayHost(
     if (showLockResetConfirmDialog) {
         MiuixConfirmDialog(
             show = true,
-            title = stringResource(R.string.app_lock_recovery_reset_confirm_title),
-            summary = stringResource(R.string.app_lock_recovery_reset_confirm_summary),
-            confirmText = stringResource(R.string.app_lock_recovery_reset),
+            title = stringResource(Res.string.app_lock_recovery_reset_confirm_title),
+            summary = stringResource(Res.string.app_lock_recovery_reset_confirm_summary),
+            confirmText = stringResource(Res.string.app_lock_recovery_reset),
             destructive = true,
             onConfirm = {
                 showLockResetConfirmDialog = false
