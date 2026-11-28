@@ -3,7 +3,6 @@ package com.yunfie.illustia.ui.components
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -12,10 +11,8 @@ val ProfileGridVerticalSpacing = 18.dp
 
 @Composable
 fun adaptiveProfileGridColumns(): Int {
-    val configuration = LocalConfiguration.current
-    return remember(configuration.screenWidthDp) {
-        profileGridColumnsForWidth(configuration.screenWidthDp)
-    }
+    val widthDp = currentWindowSizeDp().widthDp
+    return remember(widthDp) { profileGridColumnsForWidth(widthDp) }
 }
 
 fun profileGridColumnsForWidth(screenWidthDp: Int): Int =
@@ -28,10 +25,8 @@ fun profileGridColumnsForWidth(screenWidthDp: Int): Int =
 
 @Composable
 fun adaptiveRecommendedTagColumns(): Int {
-    val configuration = LocalConfiguration.current
-    return remember(configuration.screenWidthDp) {
-        recommendedTagColumnsForWidth(configuration.screenWidthDp)
-    }
+    val widthDp = currentWindowSizeDp().widthDp
+    return remember(widthDp) { recommendedTagColumnsForWidth(widthDp) }
 }
 
 private const val WIDTH_DP_EXTRA_LARGE = 1_400
@@ -51,9 +46,9 @@ fun recommendedTagColumnsForWidth(screenWidthDp: Int): Int =
 
 @Composable
 fun adaptiveRelatedIllustColumns(configuredColumns: Int = 3): Int {
-    val configuration = LocalConfiguration.current
-    return remember(configuration.screenWidthDp, configuredColumns) {
-        relatedIllustColumnsForWidth(configuration.screenWidthDp, configuredColumns)
+    val widthDp = currentWindowSizeDp().widthDp
+    return remember(widthDp, configuredColumns) {
+        relatedIllustColumnsForWidth(widthDp, configuredColumns)
     }
 }
 

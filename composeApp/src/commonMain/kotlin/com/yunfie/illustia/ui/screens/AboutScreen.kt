@@ -73,6 +73,7 @@ import com.yunfie.illustia.ui.components.LocalBottomSheetBackgroundColor
 import com.yunfie.illustia.ui.components.Section
 import com.yunfie.illustia.ui.components.SettingLinkRow
 import com.yunfie.illustia.ui.components.SettingRow
+import com.yunfie.illustia.ui.components.currentWindowSizeDp
 import com.yunfie.illustia.ui.components.rememberUrlOpener
 import com.yunfie.illustia.updater.UpdateCheckState
 import org.jetbrains.compose.resources.stringResource
@@ -531,8 +532,8 @@ private fun OpenSourceLicensesSheet(
     if (!show) return
     val openUrl = rememberUrlOpener()
 
-    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
-    val maxSheetHeight = (configuration.screenHeightDp.dp * 0.75f).coerceAtLeast(300.dp)
+    val windowHeightDp = currentWindowSizeDp().heightDp
+    val maxSheetHeight = (windowHeightDp.dp * 0.75f).coerceAtLeast(300.dp)
 
     AppBottomSheet(
         show = true,

@@ -39,7 +39,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.NovelPreview
 import com.yunfie.illustia.models.isEmptyAfterLoad
@@ -73,6 +72,7 @@ import com.yunfie.illustia.ui.components.pinchToChangeColumns
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.rememberIllustSkeletonShimmer
 import com.yunfie.illustia.ui.components.smoothScrollToTop
+import com.yunfie.illustia.ui.screens.novel.NovelListActions
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -104,7 +104,7 @@ fun NovelScreen(
     loadState: LoadState,
     nextUrl: String?,
     settings: AppSettings,
-    viewModel: IllustiaViewModel,
+    viewModel: NovelListActions,
     onBack: () -> Unit,
     isNovelRefreshing: Boolean = false,
     isNovelPaginating: Boolean = false,

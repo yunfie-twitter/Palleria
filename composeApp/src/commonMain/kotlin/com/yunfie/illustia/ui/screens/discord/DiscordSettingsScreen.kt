@@ -25,7 +25,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.platform.AppStrings
 import com.yunfie.illustia.platform.StringKey
 import com.yunfie.illustia.resources.Res
@@ -75,6 +74,7 @@ import com.yunfie.illustia.ui.components.Section
 import com.yunfie.illustia.ui.components.SettingLinkRow
 import com.yunfie.illustia.ui.components.SettingRow
 import com.yunfie.illustia.ui.components.SettingSwitchRow
+import com.yunfie.illustia.ui.screens.discord.DiscordActions
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
@@ -97,7 +97,7 @@ import org.jetbrains.compose.resources.stringResource as resString
 @Composable
 fun DiscordSettingsScreen(
     settings: AppSettings,
-    viewModel: IllustiaViewModel,
+    viewModel: DiscordActions,
     platform: DiscordRpcPlatform,
     onBack: () -> Unit,
     onOpenDiscordLogin: () -> Unit,

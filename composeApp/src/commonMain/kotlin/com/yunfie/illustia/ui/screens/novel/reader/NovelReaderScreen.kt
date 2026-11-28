@@ -37,7 +37,6 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.models.LoadState
 import com.yunfie.illustia.models.NovelPreview
 import com.yunfie.illustia.models.NovelTextContent
@@ -55,6 +54,7 @@ import com.yunfie.illustia.ui.screens.novel.NovelTtsParagraphLocation
 import com.yunfie.illustia.ui.screens.novel.NovelTtsTextSanitizer
 import com.yunfie.illustia.ui.screens.novel.extractChapters
 import com.yunfie.illustia.ui.screens.novel.parseNovelPages
+import com.yunfie.illustia.ui.screens.novel.reader.NovelReaderActions
 import com.yunfie.illustia.ui.screens.profile.ReaderShortcut
 import com.yunfie.illustia.ui.screens.profile.UserProfilePlatform
 import kotlinx.coroutines.Dispatchers
@@ -76,7 +76,7 @@ fun NovelReaderScreen(
     text: NovelTextContent?,
     loadState: LoadState,
     settings: AppSettings,
-    viewModel: IllustiaViewModel,
+    viewModel: NovelReaderActions,
     platform: UserProfilePlatform,
     tts: NovelReaderTts?,
     onBack: () -> Unit,

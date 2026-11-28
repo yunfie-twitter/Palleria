@@ -41,19 +41,18 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
+import com.yunfie.illustia.platform.htmlToPlainText
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.detail_illust_id
 import com.yunfie.illustia.resources.detail_no_caption
@@ -75,6 +74,7 @@ import com.yunfie.illustia.ui.components.FollowPill
 import com.yunfie.illustia.ui.components.LocalArtworkCardPreferences
 import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.adaptiveRelatedIllustColumns
+import com.yunfie.illustia.ui.components.currentWindowSizeDp
 import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import kotlinx.coroutines.Dispatchers
@@ -122,7 +122,7 @@ fun IllustDetailInfo(
     showHeader: Boolean = true,
 ) {
     val uriHandler = LocalUriHandler.current
-    val screenHeightDp = LocalConfiguration.current.screenHeightDp
+    val screenHeightDp = currentWindowSizeDp().heightDp
     val relatedSectionTriggerPx = with(LocalDensity.current) { screenHeightDp.dp.toPx() * 1.05f }
     val currentOnRelatedSectionReady by rememberUpdatedState(onRelatedSectionReady)
     var relatedSectionReady by remember(illust.id) { mutableStateOf(relatedSectionInitiallyReady) }
@@ -185,7 +185,7 @@ fun IllustDetailInfo(
             val parsed =
                 withContext(Dispatchers.Default) {
                     try {
-                        AnnotatedString.fromHtml(captionKey)
+                        AnnotatedString(htmlToPlainText(captionKey))
                     } catch (_: Exception) {
                         AnnotatedString(captionKey)
                     }
@@ -623,9 +623,9 @@ private fun DeferredRelatedIllustRow(
     // screenWidthDp) accounts for the section's horizontal padding, and keeps the placeholder the
     // same height as the row it replaces so promoting it does not shift the content below.
     val density = LocalDensity.current
-    val configuration = LocalConfiguration.current
+    val windowHeightDp = currentWindowSizeDp().heightDp
     var rowHeight by remember { mutableStateOf(0.dp) }
-    val triggerPx = with(density) { configuration.screenHeightDp.dp.toPx() } * 1.05f
+    val triggerPx = with(density) { windowHeightDp.dp.toPx() } * 1.05f
     Box(
         modifier =
             Modifier

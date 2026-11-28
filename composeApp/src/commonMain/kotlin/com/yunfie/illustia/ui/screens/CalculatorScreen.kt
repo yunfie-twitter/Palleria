@@ -42,7 +42,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -60,6 +59,7 @@ import com.yunfie.illustia.resources.privacy_unlock_code
 import com.yunfie.illustia.ui.components.AppDialog
 import com.yunfie.illustia.ui.components.BlockBackNavigation
 import com.yunfie.illustia.ui.components.collectAsStateWithLifecycle
+import com.yunfie.illustia.ui.components.currentWindowSizeDp
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.screens.calculator.CalculatorActions
 import kotlinx.coroutines.delay
@@ -122,10 +122,10 @@ fun CalculatorScreen(
                         .fillMaxSize()
                         .background(MiuixTheme.colorScheme.surface),
             ) {
-                val configuration = LocalConfiguration.current
+                val windowSize = currentWindowSizeDp()
                 val useWideLayout =
-                    configuration.screenWidthDp >= 600 &&
-                        configuration.screenWidthDp > configuration.screenHeightDp
+                    windowSize.widthDp >= 600 &&
+                        windowSize.widthDp > windowSize.heightDp
                 if (useWideLayout) {
                     Row(
                         modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 16.dp),

@@ -344,12 +344,12 @@ fun ImageViewerScreen(
                             else -> {
                                 when (platform.viewerShortcut(keyEvent.nativeKeyEvent)) {
                                     ViewerShortcut.ToggleFullscreen -> {
-                                        if (keyEvent.nativeKeyEvent.repeatCount == 0) fullscreen = !fullscreen
+                                        if (!platform.isKeyAutoRepeat(keyEvent.nativeKeyEvent)) fullscreen = !fullscreen
                                         true
                                     }
 
                                     ViewerShortcut.SaveCurrentPage -> {
-                                        if (keyEvent.nativeKeyEvent.repeatCount == 0) {
+                                        if (!platform.isKeyAutoRepeat(keyEvent.nativeKeyEvent)) {
                                             val page = currentPageState.value
                                             val url =
                                                 illust.originalImagePages.getOrNull(page)

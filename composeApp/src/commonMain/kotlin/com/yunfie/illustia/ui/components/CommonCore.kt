@@ -33,7 +33,6 @@ import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
@@ -70,8 +69,7 @@ fun dialogBottomInsets(): WindowInsets =
         .only(WindowInsetsSides.Bottom)
 
 @Composable
-fun adaptiveMainNavigationContentPadding(): Dp =
-    if (LocalConfiguration.current.screenWidthDp >= 600) 32.dp else MainNavigationContentPadding
+fun adaptiveMainNavigationContentPadding(): Dp = if (currentWindowSizeDp().widthDp >= 600) 32.dp else MainNavigationContentPadding
 
 val LocalPixivImageProxyBaseUrl = compositionLocalOf { "" }
 val LocalPreferLowDataImages = compositionLocalOf { false }
@@ -109,14 +107,14 @@ fun NonAmoledDarkTheme(content: @Composable () -> Unit) {
 
 @Composable
 fun adaptiveIllustColumns(settings: AppSettings): Int {
-    val configuration = LocalConfiguration.current
+    val windowSize = currentWindowSizeDp()
     return remember(
-        configuration.screenWidthDp,
-        configuration.screenHeightDp,
+        windowSize.widthDp,
+        windowSize.heightDp,
         settings.horizontalColumnCount,
         settings.verticalColumnCount,
     ) {
-        val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp
+        val isLandscape = windowSize.widthDp > windowSize.heightDp
         if (isLandscape) {
             settings.horizontalColumnCount.coerceIn(3, 6)
         } else {

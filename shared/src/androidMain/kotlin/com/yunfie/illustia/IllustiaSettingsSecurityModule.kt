@@ -227,27 +227,27 @@ abstract class IllustiaSettingsSecurityModule(
         telemetryControl.setEnabled(value)
     }
 
-    fun updateDiscordRpcEnabled(value: Boolean) {
+    override fun updateDiscordRpcEnabled(value: Boolean) {
         updateSettings { it.copy(discordRpcEnabled = value) }
     }
 
-    fun updateDiscordToken(value: String) {
+    override fun updateDiscordToken(value: String) {
         updateSettings { it.copy(discordToken = value) }
     }
 
-    fun updateDiscordApplicationId(value: String) {
+    override fun updateDiscordApplicationId(value: String) {
         updateSettings { it.copy(discordApplicationId = value) }
     }
 
-    fun updateDiscordRpcShowArtworkDetails(value: Boolean) {
+    override fun updateDiscordRpcShowArtworkDetails(value: Boolean) {
         updateSettings { it.copy(discordRpcShowArtworkDetails = value) }
     }
 
-    fun updateDiscordRpcShowButtons(value: Boolean) {
+    override fun updateDiscordRpcShowButtons(value: Boolean) {
         updateSettings { it.copy(discordRpcShowButtons = value) }
     }
 
-    fun updateDiscordRpcShowLogs(value: Boolean) {
+    override fun updateDiscordRpcShowLogs(value: Boolean) {
         updateSettings { it.copy(discordRpcShowLogs = value) }
     }
 
@@ -788,39 +788,39 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(mangaReaderMode = value) }
     }
 
-    fun updateNovelFontSize(value: Float) {
+    override fun updateNovelFontSize(value: Float) {
         updateSettings { it.copy(novelFontSize = value.coerceIn(MIN_NOVEL_FONT_SIZE, MAX_NOVEL_FONT_SIZE)) }
     }
 
-    fun updateNovelLineSpacing(value: String) {
+    override fun updateNovelLineSpacing(value: String) {
         updateSettings { it.copy(novelLineSpacing = value) }
     }
 
-    fun updateNovelTheme(value: String) {
+    override fun updateNovelTheme(value: String) {
         updateSettings { it.copy(novelTheme = value) }
     }
 
-    fun updateNovelLayoutMode(value: String) {
+    override fun updateNovelLayoutMode(value: String) {
         updateSettings { it.copy(novelLayoutMode = value) }
     }
 
-    fun updateNovelFontFamily(value: String) {
+    override fun updateNovelFontFamily(value: String) {
         updateSettings { it.copy(novelFontFamily = value) }
     }
 
-    fun updateNovelTtsSpeechRate(value: Float) {
+    override fun updateNovelTtsSpeechRate(value: Float) {
         updateSettings { it.copy(novelTtsSpeechRate = value.coerceIn(MIN_TTS_SPEECH_RATE, MAX_TTS_SPEECH_RATE)) }
     }
 
-    fun updateNovelTtsPitch(value: Float) {
+    override fun updateNovelTtsPitch(value: Float) {
         updateSettings { it.copy(novelTtsPitch = value.coerceIn(MIN_TTS_PITCH, MAX_TTS_PITCH)) }
     }
 
-    fun updateNovelTtsVoiceName(value: String) {
+    override fun updateNovelTtsVoiceName(value: String) {
         updateSettings { it.copy(novelTtsVoiceName = value) }
     }
 
-    fun updateNovelTtsSkipSymbols(value: Boolean) {
+    override fun updateNovelTtsSkipSymbols(value: Boolean) {
         updateSettings { it.copy(novelTtsSkipSymbols = value) }
     }
 
@@ -828,7 +828,7 @@ abstract class IllustiaSettingsSecurityModule(
         updateSettings { it.copy(novelTtsCustomDictionary = value) }
     }
 
-    fun addNovelTtsDictionaryEntry(
+    override fun addNovelTtsDictionaryEntry(
         word: String,
         reading: String,
     ) {
@@ -840,7 +840,7 @@ abstract class IllustiaSettingsSecurityModule(
         }
     }
 
-    fun removeNovelTtsDictionaryEntry(word: String) {
+    override fun removeNovelTtsDictionaryEntry(word: String) {
         updateSettings { current ->
             current.copy(novelTtsCustomDictionary = current.novelTtsCustomDictionary - word)
         }

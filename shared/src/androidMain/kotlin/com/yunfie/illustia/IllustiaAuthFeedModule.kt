@@ -34,7 +34,7 @@ abstract class IllustiaAuthFeedModule(
 ) : IllustiaSettingsSecurityModule(deps) {
     private val pendingNovelBookmarkIds = mutableSetOf<Long>()
 
-    abstract fun openIllust(illustId: Long)
+    abstract override fun openIllust(illustId: Long)
 
     abstract fun openUserPage(userId: Long)
 
@@ -268,7 +268,7 @@ abstract class IllustiaAuthFeedModule(
         }
     }
 
-    fun refreshNovels(forceRefresh: Boolean = false) {
+    override fun refreshNovels(forceRefresh: Boolean) {
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.update {
                 it.copy(
@@ -304,7 +304,7 @@ abstract class IllustiaAuthFeedModule(
         }
     }
 
-    fun loadMoreNovels() {
+    override fun loadMoreNovels() {
         val nextUrl = _uiState.value.novelNextUrl ?: return
         if (_uiState.value.isNovelPaginating) return
         viewModelScope.launch(Dispatchers.IO) {
@@ -333,7 +333,7 @@ abstract class IllustiaAuthFeedModule(
         }
     }
 
-    fun toggleNovelBookmark(novel: NovelPreview) {
+    override fun toggleNovelBookmark(novel: NovelPreview) {
         val shouldBookmark = !novel.isBookmarked
         synchronized(pendingNovelBookmarkIds) {
             if (!pendingNovelBookmarkIds.add(novel.id)) return
@@ -379,7 +379,7 @@ abstract class IllustiaAuthFeedModule(
         }
     }
 
-    fun openNovel(novel: NovelPreview) = loadNovel(novel, forceRefresh = false)
+    override fun openNovel(novel: NovelPreview) = loadNovel(novel, forceRefresh = false)
 
     fun refreshNovel() {
         _uiState.value.selectedNovel?.let { loadNovel(it, forceRefresh = true) }
@@ -413,9 +413,9 @@ abstract class IllustiaAuthFeedModule(
         }
     }
 
-    fun openNovelById(
+    override fun openNovelById(
         novelId: Long,
-        title: String = "",
+        title: String,
     ) {
         val existing = _uiState.value.novelItems.firstOrNull { it.id == novelId }
         val novel =
@@ -436,11 +436,11 @@ abstract class IllustiaAuthFeedModule(
         openNovel(novel)
     }
 
-    fun updateNovelProgress(
+    override fun updateNovelProgress(
         novelId: Long,
         page: Int,
         totalPages: Int,
-        status: com.yunfie.illustia.models.NovelReadingStatus? = null,
+        status: com.yunfie.illustia.models.NovelReadingStatus?,
     ) {
         updateSettings { current ->
             val existing = current.novelProgress[novelId]
@@ -462,7 +462,7 @@ abstract class IllustiaAuthFeedModule(
         }
     }
 
-    fun setNovelReadingStatus(
+    override fun setNovelReadingStatus(
         novelId: Long,
         status: com.yunfie.illustia.models.NovelReadingStatus,
     ) {

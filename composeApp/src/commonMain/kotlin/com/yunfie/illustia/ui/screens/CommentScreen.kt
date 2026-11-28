@@ -62,6 +62,7 @@ import com.yunfie.illustia.ui.components.PixivImage
 import com.yunfie.illustia.ui.components.RequestErrorState
 import com.yunfie.illustia.ui.components.ScrollablePullToRefresh
 import com.yunfie.illustia.ui.components.collectAsStateWithLifecycle
+import com.yunfie.illustia.ui.components.currentWindowSizeDp
 import com.yunfie.illustia.ui.components.miuixClickable
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
@@ -166,8 +167,8 @@ fun CommentScreen(
         onLoadMore = { scope.launch { store.next() } },
     )
 
-    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
-    val maxSheetHeight = minOf(configuration.screenHeightDp.dp * 0.72f, 560.dp)
+    val windowHeightDp = currentWindowSizeDp().heightDp
+    val maxSheetHeight = minOf(windowHeightDp.dp * 0.72f, 560.dp)
 
     WindowBottomSheet(
         show = true,

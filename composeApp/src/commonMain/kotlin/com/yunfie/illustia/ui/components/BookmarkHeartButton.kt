@@ -43,6 +43,7 @@ import top.yukonga.miuix.kmp.icon.extended.FavoritesFill
 import top.yukonga.miuix.kmp.icon.extended.Lock
 import top.yukonga.miuix.kmp.squircle.squircleSurface
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import kotlin.math.PI
 
 private enum class BookmarkButtonStage { UNBOOKMARKED, CHECK, PRIVATE_CHECK, BOOKMARKED, REMOVING }
 
@@ -250,7 +251,7 @@ private fun HeartBurst(
                         // Main ring particles
                         for (i in 0 until 8) {
                             val angle = i * 45f
-                            val rad = Math.toRadians(angle.toDouble())
+                            val rad = (angle * PI / 180.0)
                             val cx = centerX + (distance * kotlin.math.cos(rad)).toFloat()
                             val cy = centerY + (distance * kotlin.math.sin(rad)).toFloat()
                             drawCircle(
@@ -267,7 +268,7 @@ private fun HeartBurst(
                             val sparkleColor = color.copy(alpha = (color.alpha * alpha * 0.75f).coerceIn(0f, 1f))
                             for (i in 0 until 8) {
                                 val angle = (i * 45f) + 22.5f
-                                val rad = Math.toRadians(angle.toDouble())
+                                val rad = (angle * PI / 180.0)
                                 val cx = centerX + (sparkleDistance * kotlin.math.cos(rad)).toFloat()
                                 val cy = centerY + (sparkleDistance * kotlin.math.sin(rad)).toFloat()
                                 drawCircle(

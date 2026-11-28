@@ -191,7 +191,7 @@ abstract class IllustiaDetailProfileModule(
             cleanErrorMessage(error, str(StringKey.ErrorLoadDetailFailed))
         }
 
-    suspend fun getIllustPreviewUrl(illustId: Long): String? =
+    override suspend fun getIllustPreviewUrl(illustId: Long): String? =
         withContext(Dispatchers.IO) {
             findIllustById(illustId)?.mediumImageUrl
                 ?: runCatching { repository.illustDetail(illustId).mediumImageUrl }.getOrNull()

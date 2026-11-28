@@ -15,12 +15,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.compose.ui.window.DialogWindowProvider
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.action_close
 import org.jetbrains.compose.resources.stringResource
@@ -37,7 +35,6 @@ fun CenteredErrorOverlay(
     onRetry: (() -> Unit)? = null,
 ) {
     if (message == null) return
-    val view = LocalView.current
     val containerSize = LocalWindowInfo.current.containerSize
     Dialog(
         onDismissRequest = onDismiss,
@@ -46,15 +43,11 @@ fun CenteredErrorOverlay(
                 usePlatformDefaultWidth = false,
                 dismissOnBackPress = true,
                 dismissOnClickOutside = true,
-                decorFitsSystemWindows = false,
             ),
     ) {
         // Match the dialog surface to the full display so "centre" means the real screen centre,
-        // not the space between the status and navigation bars.
-        (view.parent as? DialogWindowProvider)?.window?.setLayout(
-            containerSize.width,
-            containerSize.height,
-        )
+        // not the space between the status and navigation bars. Android-only; no-op elsewhere.
+        ExpandDialogToContainer(containerSize.width, containerSize.height)
         val dismissState = remember { MutableInteractionSource() }
         Box(
             modifier =
