@@ -1,0 +1,39 @@
+name: Documentation Issue
+description: Report an error, unclear explanation, or missing documentation
+title: "[Docs] "
+labels: ["documentation"]
+body:
+  - type: textarea
+    id: location
+    attributes:
+      label: Location
+      description: Provide the file name, page, section, or URL where the issue is found.
+      placeholder: "Example: README.md, Installation section"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Issue
+      description: Describe what is incorrect, unclear, outdated, or missing.
+      placeholder: "Example: The installation instructions do not mention the required Android SDK version."
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested Change
+      description: Describe the correction or additional documentation you would like to see.
+      placeholder: "Example: Add the minimum supported Android SDK version to the installation instructions."
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Confirmation
+      options:
+        - label: I have checked the latest version of the documentation.
+          required: true
