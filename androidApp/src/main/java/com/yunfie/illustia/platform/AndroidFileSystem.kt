@@ -24,6 +24,18 @@ class AndroidFileSystem : FileSystem {
         }
     }
 
+    override fun readText(path: String): String? {
+        val file = File(path)
+        if (!file.isFile) return null
+        return runCatching { file.readText(Charsets.UTF_8) }.getOrNull()
+    }
+
+    override fun readBytes(path: String): ByteArray? {
+        val file = File(path)
+        if (!file.isFile) return null
+        return runCatching { file.readBytes() }.getOrNull()
+    }
+
     override fun stat(path: String): FileEntry? {
         val file = File(path)
         if (!file.exists()) return null

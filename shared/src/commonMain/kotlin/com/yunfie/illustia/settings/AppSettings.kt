@@ -23,6 +23,7 @@ val DEFAULT_NAVIGATION_ORDER = listOf("home", "search", "bookmarks", "ranking", 
 val DEFAULT_DETAIL_SECTION_ORDER = listOf("artist", "tags", "description", "related")
 
 @Immutable
+@kotlinx.serialization.Serializable
 data class AppSettings(
     val refreshToken: String = "",
     val bookmarkUserId: Long? = null,

@@ -31,10 +31,9 @@ actual fun randomUrlSafeString(byteCount: Int): String {
 }
 
 @OptIn(ExperimentalForeignApi::class)
-actual fun String.sha256Base64Url(): String {
-    val input = encodeToByteArray()
+private fun ByteArray.sha256Digest(): ByteArray {
     val digest = UByteArray(CC_SHA256_DIGEST_LENGTH.toInt())
-    val source = UByteArray(input.size) { input[it].toUByte() }
+    val source = UByteArray(size) { this[it].toUByte() }
 
     if (source.isNotEmpty()) {
         source.usePinned { pinned ->
@@ -50,6 +49,13 @@ actual fun String.sha256Base64Url(): String {
             }
         }
     }
-
-    return ByteArray(digest.size) { digest[it].toByte() }.toBase64UrlNoPadding()
+    return ByteArray(digest.size) { digest[it].toByte() }
 }
+
+@OptIn(ExperimentalForeignApi::class)
+actual fun String.sha256Base64Url(): String = encodeToByteArray().sha256Digest().toBase64UrlNoPadding()
+
+actual fun String.sha256Hex(): String =
+    encodeToByteArray().sha256Digest().joinToString("") { byte ->
+        (byte.toInt() and 0xFF).toString(16).padStart(2, '0')
+    }

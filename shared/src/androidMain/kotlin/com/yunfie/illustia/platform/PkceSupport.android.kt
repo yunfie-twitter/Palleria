@@ -16,3 +16,9 @@ actual fun String.sha256Base64Url(): String {
     val digest = MessageDigest.getInstance("SHA-256").digest(toByteArray())
     return base64UrlEncoder.encodeToString(digest)
 }
+
+actual fun String.sha256Hex(): String =
+    MessageDigest
+        .getInstance("SHA-256")
+        .digest(toByteArray())
+        .joinToString("") { byte -> (byte.toInt() and 0xFF).toString(16).padStart(2, '0') }

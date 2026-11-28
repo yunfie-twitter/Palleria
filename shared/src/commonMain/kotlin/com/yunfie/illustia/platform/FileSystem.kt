@@ -16,6 +16,12 @@ interface FileSystem {
     /** [path] への書き込み用ストリームを開く。 */
     fun openWrite(path: String): OutputStreamHandle
 
+    /** [path] を UTF-8 テキストとして読む。存在しない場合は null。 */
+    fun readText(path: String): String?
+
+    /** [path] をバイト列として読む。存在しない場合は null。 */
+    fun readBytes(path: String): ByteArray?
+
     /** [path] のファイル情報。存在しない場合は null。 */
     fun stat(path: String): FileEntry?
 
