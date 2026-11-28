@@ -1,0 +1,90 @@
+name: Translation
+description: Report a translation issue or suggest a new translation
+title: "[Translation] "
+labels: ["translation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for helping improve the translations.  
+        Please provide the language, affected text, and your suggested translation.
+
+  - type: dropdown
+    id: translation-type
+    attributes:
+      label: Translation Type
+      description: Select the type of translation issue.
+      options:
+        - New translation
+        - Incorrect translation
+        - Unclear or awkward wording
+        - Missing translation
+        - Formatting issue
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: language
+    attributes:
+      label: Language
+      description: Enter the language name and locale code if known.
+      placeholder: "Example: Japanese (ja)"
+    validations:
+      required: true
+
+  - type: textarea
+    id: location
+    attributes:
+      label: Location
+      description: Provide the screen, string resource name, file path, or URL where the text appears.
+      placeholder: "Example: Settings screen / strings.xml / `settings_title`"
+    validations:
+      required: true
+
+  - type: textarea
+    id: current-text
+    attributes:
+      label: Current Text
+      description: Paste the current English text or translation, if applicable.
+      placeholder: "Example: Enable dark mode"
+    validations:
+      required: false
+
+  - type: textarea
+    id: suggested-text
+    attributes:
+      label: Suggested Translation
+      description: Provide the improved or new translation.
+      placeholder: "Example: ダークモードを有効にする"
+    validations:
+      required: true
+
+  - type: textarea
+    id: reason
+    attributes:
+      label: Reason / Additional Context
+      description: Explain why the current text should be changed, or provide context for a new translation.
+      placeholder: "Example: The current wording is unnatural in Japanese and does not match the terminology used elsewhere in the app."
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: Attach screenshots showing the affected UI or text, if available.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Confirmation
+      options:
+        - label: I have checked the latest version of the app or documentation.
+          required: true
+        - label: I have searched existing issues and pull requests for a similar translation change.
+          required: true
+        - label: I have not included any personal information, API keys, credentials, or other sensitive information.
+          required: true
