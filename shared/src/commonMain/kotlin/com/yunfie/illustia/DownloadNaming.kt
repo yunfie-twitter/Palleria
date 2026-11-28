@@ -124,8 +124,7 @@ fun buildSmartDownloadFilename(
     return "[$artist] $title$pageSuffix"
 }
 
-internal fun String.sanitizeDownloadSegment(maxLength: Int = 80): String =
-    sanitizeOptionalDownloadSegment(maxLength) ?: "untitled"
+internal fun String.sanitizeDownloadSegment(maxLength: Int = 80): String = sanitizeOptionalDownloadSegment(maxLength) ?: "untitled"
 
 internal fun String.sanitizeOptionalDownloadSegment(maxLength: Int = 80): String? =
     trim()
