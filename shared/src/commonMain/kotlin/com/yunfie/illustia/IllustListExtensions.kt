@@ -260,7 +260,6 @@ fun List<Illust>.visibleWith(state: IllustiaUiState): List<Illust> =
         ),
     )
 
-@JvmName("visibleIllustsWithSettings")
 fun List<Illust>.visibleWithSettings(settings: AppSettings): List<Illust> {
     val list = visibleWith(settings.toMuteFilter())
     val r18Filtered =
@@ -283,8 +282,7 @@ fun List<Illust>.visibleRelatedWithSettings(settings: AppSettings): List<Illust>
     }
 }
 
-@JvmName("visibleNovelsWithSettings")
-fun List<NovelPreview>.visibleWithSettings(settings: AppSettings): List<NovelPreview> {
+fun List<NovelPreview>.visibleNovelsWithSettings(settings: AppSettings): List<NovelPreview> {
     val filter = settings.toMuteFilter()
     val userFiltered = if (filter.userIds.isEmpty()) this else filterNot { it.userId in filter.userIds }
     return if (!settings.allowR18) {

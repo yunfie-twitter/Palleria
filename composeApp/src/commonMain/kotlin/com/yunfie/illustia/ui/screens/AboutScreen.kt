@@ -36,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.yunfie.illustia.platform.formatDecimal
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.about_disclaimer
 import com.yunfie.illustia.resources.about_fdroid
@@ -334,17 +335,9 @@ fun AboutScreen(
                                         verticalArrangement = Arrangement.spacedBy(8.dp),
                                     ) {
                                         val downloadedMb =
-                                            String.format(
-                                                java.util.Locale.US,
-                                                "%.1f",
-                                                currentUpdate.downloadedBytes / (1024f * 1024f),
-                                            )
+                                            formatDecimal(currentUpdate.downloadedBytes / (1024f * 1024f).toDouble(), 1)
                                         val totalMb =
-                                            String.format(
-                                                java.util.Locale.US,
-                                                "%.1f",
-                                                currentUpdate.totalBytes / (1024f * 1024f),
-                                            )
+                                            formatDecimal(currentUpdate.totalBytes / (1024f * 1024f).toDouble(), 1)
                                         val percent = (currentUpdate.progress * 100).toInt()
                                         Text(
                                             "$downloadedMb MB / $totalMb MB ($percent%)",

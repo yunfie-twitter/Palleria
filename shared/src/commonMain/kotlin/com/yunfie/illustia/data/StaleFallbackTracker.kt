@@ -1,5 +1,8 @@
 package com.yunfie.illustia.data
 
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
+
 /**
  * Records which cache keys were last answered by the stale offline fallback.
  *
@@ -9,7 +12,7 @@ package com.yunfie.illustia.data
  * offline state as valid and hides the failure until the TTL expires.
  */
 class StaleFallbackTracker {
-    private val lock = Any()
+    private val lock = SynchronizedObject()
     private val keys = mutableSetOf<String>()
 
     fun markStale(key: String) {

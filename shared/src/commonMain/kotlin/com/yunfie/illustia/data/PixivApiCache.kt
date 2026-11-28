@@ -1,5 +1,7 @@
 package com.yunfie.illustia.data
 
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
 import kotlin.time.Clock
 
 private const val DEFAULT_TTL_MILLIS: Long = 10 * 60 * 1000L // 10 minutes
@@ -9,8 +11,8 @@ private const val DEFAULT_MAX_ENTRIES: Int = 300
  * Thread-safe in-memory cache for Pixiv API responses to reduce API traffic and mitigate HTTP 429 (Rate Limiting).
  *
  * Shared by every target, so it cannot use `ConcurrentHashMap` (JVM-only) or `@Synchronized`
- * (JVM-only annotation). A plain map behind a monitor is enough here: every mutation is short and
- * the only multi-step ones (capacity eviction) already had to be atomic.
+ * (JVM-only annotation). A plain map behind atomicfu's portable monitor is enough here: every
+ * mutation is short and the only multi-step ones (capacity eviction) already had to be atomic.
  */
 class PixivApiCache(
     private val defaultTtlMillis: Long = DEFAULT_TTL_MILLIS,
@@ -28,7 +30,7 @@ class PixivApiCache(
         fun isExpired(now: Long = nowMillis()): Boolean = now - timestamp > ttlMillis
     }
 
-    private val lock = Any()
+    private val lock = SynchronizedObject()
     private val cache = mutableMapOf<String, CacheEntry<*>>()
 
     fun <T : Any> get(

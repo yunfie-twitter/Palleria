@@ -283,7 +283,7 @@ abstract class IllustiaAuthFeedModule(
                     }
                 _uiState.update {
                     it.copy(
-                        novelItems = page.items.visibleWithSettings(it.settings),
+                        novelItems = page.items.visibleNovelsWithSettings(it.settings),
                         novelNextUrl = page.nextUrl,
                         isNovelRefreshing = false,
                         loadState = LoadState.Loaded,
@@ -313,7 +313,7 @@ abstract class IllustiaAuthFeedModule(
                 val page = repository.nextNovelPage(nextUrl)
                 _uiState.update {
                     it.copy(
-                        novelItems = it.novelItems + page.items.visibleWithSettings(it.settings),
+                        novelItems = it.novelItems + page.items.visibleNovelsWithSettings(it.settings),
                         novelNextUrl = page.nextUrl,
                         isNovelPaginating = false,
                     )
@@ -819,7 +819,7 @@ abstract class IllustiaAuthFeedModule(
                             it.copy(
                                 searchItems = collectedItems,
                                 searchNextUrl = searchNextUrl,
-                                searchNovelItems = novelPage?.items?.visibleWithSettings(it.settings).orEmpty(),
+                                searchNovelItems = novelPage?.items?.visibleNovelsWithSettings(it.settings).orEmpty(),
                                 searchNovelNextUrl = novelPage?.nextUrl,
                                 userSearchItems =
                                     users

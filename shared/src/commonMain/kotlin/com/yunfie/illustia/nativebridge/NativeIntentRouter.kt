@@ -153,9 +153,8 @@ object NativeIntentRouter {
                 .trimStart()
         if (normalized.isBlank()) return null
 
-        val codePointCount = normalized.codePointCount(0, normalized.length)
-        if (codePointCount <= MAX_PROCESS_TEXT_CODE_POINTS) return normalized
-        val endIndex = normalized.offsetByCodePoints(0, MAX_PROCESS_TEXT_CODE_POINTS)
+        if (normalized.countCodePoints() <= MAX_PROCESS_TEXT_CODE_POINTS) return normalized
+        val endIndex = normalized.offsetWithinCodePoints(MAX_PROCESS_TEXT_CODE_POINTS)
         return normalized.substring(0, endIndex).trimEnd()
     }
 
@@ -236,4 +235,28 @@ object NativeIntentRouter {
             in CUSTOM_PIXIV_SCHEMES -> normalizedHost in CUSTOM_PIXIV_HOSTS
             else -> false
         }
+}
+
+/** サロゲートペアを 1 文字として数える。`String.codePointCount` の multiplatform 代替。 */
+private fun String.countCodePoints(): Int {
+    var count = 0
+    var index = 0
+    while (index < length) {
+        val isPair = this[index].isHighSurrogate() && index + 1 < length && this[index + 1].isLowSurrogate()
+        index += if (isPair) 2 else 1
+        count += 1
+    }
+    return count
+}
+
+/** 先頭から [codePoints] 文字ぶんの UTF-16 インデックス。サロゲートペアの途中では切らない。 */
+private fun String.offsetWithinCodePoints(codePoints: Int): Int {
+    var index = 0
+    var counted = 0
+    while (index < length && counted < codePoints) {
+        val isPair = this[index].isHighSurrogate() && index + 1 < length && this[index + 1].isLowSurrogate()
+        index += if (isPair) 2 else 1
+        counted += 1
+    }
+    return index
 }

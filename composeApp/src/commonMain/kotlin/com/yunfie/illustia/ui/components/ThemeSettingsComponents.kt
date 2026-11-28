@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import com.yunfie.illustia.platform.formatHex6
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.action_cancel
 import com.yunfie.illustia.resources.action_save
@@ -215,4 +216,4 @@ private fun ColorSwatch(
     )
 }
 
-fun colorSummary(color: Color): String = String.format("#%06X", color.toArgb() and 0xFFFFFF)
+fun colorSummary(color: Color): String = "#" + formatHex6(color.toArgb() and 0xFFFFFF)

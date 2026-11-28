@@ -32,6 +32,7 @@ import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.yunfie.illustia.platform.formatDecimal
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.action_add
 import com.yunfie.illustia.resources.action_back
@@ -929,7 +930,7 @@ private fun NovelTtsSettingsSection(
                 fontWeight = FontWeight.Bold,
             )
             Text(
-                text = String.format(java.util.Locale.US, "%.1fx", ttsPitch),
+                text = formatDecimal(ttsPitch.toDouble(), 1) + "x",
                 style = MiuixTheme.textStyles.footnote1,
                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             )

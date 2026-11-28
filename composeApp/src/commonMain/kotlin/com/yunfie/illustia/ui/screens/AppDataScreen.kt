@@ -27,6 +27,7 @@ import com.yunfie.illustia.data.AppStorageUsage
 import com.yunfie.illustia.platform.AppServices
 import com.yunfie.illustia.platform.AppStrings
 import com.yunfie.illustia.platform.StringKey
+import com.yunfie.illustia.platform.formatDecimal
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.action_delete
 import com.yunfie.illustia.resources.app_data_section_overview
@@ -363,6 +364,6 @@ private fun Long.readableBytes(): String {
     return if (index == 0) {
         "${value.toLong()} ${units[index]}"
     } else {
-        String.format(java.util.Locale.US, "%.1f %s", value, units[index])
+        formatDecimal(value, 1) + " " + units[index]
     }
 }

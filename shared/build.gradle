@@ -43,6 +43,9 @@ kotlin {
 
             implementation libs.kotlinx.coroutines.core
             implementation libs.serialization.json
+            // commonMain には synchronized が無いため、ロック付きキャッシュを
+            // マルチプラットフォームで書くために atomicfu を使う。
+            implementation libs.atomicfu
             // Exposed to composeApp so shared UI can format timestamps without java.text.
             api libs.kotlinx.datetime
 

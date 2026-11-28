@@ -75,7 +75,7 @@ abstract class IllustiaBookmarkModule(
         val page = repository.nextNovelPage(nextUrl)
         _uiState.update {
             it.copy(
-                searchNovelItems = it.searchNovelItems + page.items.visibleWithSettings(it.settings),
+                searchNovelItems = it.searchNovelItems + page.items.visibleNovelsWithSettings(it.settings),
                 searchNovelNextUrl = page.nextUrl,
                 isSearchPaginating = false,
             )

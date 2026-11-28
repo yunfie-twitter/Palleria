@@ -43,8 +43,24 @@ object CalculatorEngine {
         return if (value == kotlin.math.floor(value) && kotlin.math.abs(value) < 1e15) {
             value.toLong().toString()
         } else {
-            // 余分な末尾 0 を除去（最大 10 桁）
-            "%.10f".format(value).trimEnd('0').trimEnd('.')
+            // 余分な末尾 0 を除去（最大 10 桁）。java.lang.String.format は JVM 専用なので
+            // 桁数固定の手書き整形に置き換える。
+            formatWithTenDecimals(value).trimEnd('0').trimEnd('.')
+        }
+    }
+
+    /** `%.10f` と同じ出力（小数 10 桁・四捨五入）。 */
+    private fun formatWithTenDecimals(value: Double): String {
+        val negative = value < 0
+        val scaled = kotlin.math.round(kotlin.math.abs(value) * 10_000_000_000.0).toLong()
+        val whole = scaled / 10_000_000_000L
+        val fraction = scaled % 10_000_000_000L
+        val fractionText = fraction.toString().padStart(10, '0')
+        return buildString {
+            if (negative) append('-')
+            append(whole)
+            append('.')
+            append(fractionText)
         }
     }
 

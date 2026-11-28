@@ -1,3 +1,5 @@
+@file:JvmName("AndroidNativeIntentRouter")
+
 package com.yunfie.illustia.nativebridge
 
 import android.content.Intent

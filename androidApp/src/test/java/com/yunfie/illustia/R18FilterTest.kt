@@ -99,8 +99,8 @@ class R18FilterTest :
             val allowedSettings = AppSettings(allowR18 = true)
             val blockedSettings = AppSettings(allowR18 = false)
 
-            list.visibleWithSettings(allowedSettings) shouldBe listOf(normal, r18)
-            list.visibleWithSettings(blockedSettings) shouldBe listOf(normal)
+            list.visibleNovelsWithSettings(allowedSettings) shouldBe listOf(normal, r18)
+            list.visibleNovelsWithSettings(blockedSettings) shouldBe listOf(normal)
         }
 
         "IllustiaUiState withSettings purges already-loaded R-18 content when allowR18 is toggled off" {
