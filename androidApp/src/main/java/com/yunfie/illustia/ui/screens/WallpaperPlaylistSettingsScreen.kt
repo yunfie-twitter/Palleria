@@ -1,3 +1,5 @@
+@file:JvmName("AndroidWallpaperPlaylistSettingsScreen")
+
 package com.yunfie.illustia.ui.screens
 
 import android.app.WallpaperManager

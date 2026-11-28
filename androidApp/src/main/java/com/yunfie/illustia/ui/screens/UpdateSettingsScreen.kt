@@ -1,3 +1,5 @@
+@file:JvmName("AndroidUpdateSettingsScreen")
+
 package com.yunfie.illustia.ui.screens
 
 import android.content.Intent

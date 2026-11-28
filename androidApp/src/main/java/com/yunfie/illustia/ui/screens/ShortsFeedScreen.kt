@@ -1,3 +1,5 @@
+@file:JvmName("AndroidShortsFeedScreen")
+
 package com.yunfie.illustia.ui.screens
 
 import androidx.compose.runtime.Composable

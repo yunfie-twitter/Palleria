@@ -1,3 +1,5 @@
+@file:JvmName("AndroidAboutScreen")
+
 package com.yunfie.illustia.ui.screens
 
 import android.content.Context

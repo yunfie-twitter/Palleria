@@ -2,6 +2,7 @@ package com.yunfie.illustia.data
 
 import com.yunfie.illustia.platform.StringKey
 import com.yunfie.illustia.platform.StringProvider
+import kotlinx.io.IOException
 
 /**
  * プラットフォーム側から文言プロバイダを差し込むための入口。
@@ -41,7 +42,7 @@ fun Throwable.toUserMessage(): String {
         statusCode == HTTP_TOO_MANY_REQUESTS -> RequestErrorStrings.get(StringKey.ErrorRateLimited)
         statusCode != null && statusCode in HTTP_SERVER_ERROR_RANGE -> RequestErrorStrings.get(StringKey.ErrorServerError)
         statusCode != null -> RequestErrorStrings.get(StringKey.ErrorRequestFailed)
-        this is java.io.IOException -> RequestErrorStrings.get(StringKey.ErrorServerUnreachable)
+        this is IOException -> RequestErrorStrings.get(StringKey.ErrorServerUnreachable)
         else -> RequestErrorStrings.get(StringKey.ErrorLoadFailed)
     }
 }

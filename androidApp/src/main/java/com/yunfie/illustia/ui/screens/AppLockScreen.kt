@@ -1,3 +1,5 @@
+@file:JvmName("AndroidAppLockScreen")
+
 package com.yunfie.illustia.ui.screens
 
 import android.os.SystemClock

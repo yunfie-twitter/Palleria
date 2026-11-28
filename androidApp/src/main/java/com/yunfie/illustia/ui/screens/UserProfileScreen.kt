@@ -1,3 +1,5 @@
+@file:JvmName("AndroidUserProfileScreen")
+
 package com.yunfie.illustia.ui.screens
 
 import androidx.compose.foundation.lazy.grid.LazyGridState

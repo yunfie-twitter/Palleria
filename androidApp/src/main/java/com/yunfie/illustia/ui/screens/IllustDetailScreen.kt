@@ -1,3 +1,5 @@
+@file:JvmName("AndroidIllustDetailScreen")
+
 package com.yunfie.illustia.ui.screens
 
 import androidx.compose.foundation.lazy.LazyListState

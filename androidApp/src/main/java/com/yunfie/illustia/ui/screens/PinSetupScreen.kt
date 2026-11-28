@@ -1,3 +1,5 @@
+@file:JvmName("AndroidPinSetupScreen")
+
 package com.yunfie.illustia.ui.screens
 
 import androidx.compose.runtime.Composable
