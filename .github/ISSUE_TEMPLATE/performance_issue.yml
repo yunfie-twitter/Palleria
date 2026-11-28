@@ -1,0 +1,142 @@
+name: Performance Issue
+description: Report slow performance, high resource usage, stuttering, or battery drain
+title: "[Performance] "
+labels: ["bug", "performance"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a performance issue.  
+        Please include the affected operation, device information, and measurements or logs whenever possible.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Summary
+      description: Briefly describe the performance issue.
+      placeholder: "Example: The library list becomes slow when it contains more than 1,000 items."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: performance-type
+    attributes:
+      label: Performance Issue Type
+      description: Select the type of performance problem.
+      options:
+        - Slow startup
+        - Slow screen loading
+        - Slow scrolling
+        - UI stuttering / dropped frames
+        - High CPU usage
+        - High memory usage
+        - High battery usage
+        - High network usage
+        - Slow file processing
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Describe the steps that make the performance issue occur.
+      placeholder: |
+        1. Open the library screen
+        2. Load a library with 2,000 items
+        3. Scroll quickly
+        4. The UI becomes unresponsive
+    validations:
+      required: true
+
+  - type: input
+    id: app-version
+    attributes:
+      label: App Version
+      placeholder: "Example: v1.2.3"
+    validations:
+      required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: Device
+      placeholder: "Example: Pixel 7"
+    validations:
+      required: true
+
+  - type: input
+    id: android-version
+    attributes:
+      label: Android Version
+      placeholder: "Example: Android 14"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: build-type
+    attributes:
+      label: Build Type
+      description: Select the build type where the issue occurred.
+      options:
+        - Release
+        - Debug
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: data-size
+    attributes:
+      label: Data Size / Conditions
+      description: Enter the number of items, file size, playlist size, or other relevant conditions.
+      placeholder: "Example: 2,000 tracks / 12 GB local library"
+    validations:
+      required: false
+
+  - type: textarea
+    id: measurements
+    attributes:
+      label: Measurements
+      description: Add timing results, memory usage, CPU usage, battery usage, frame rate, or other measurements if available.
+      placeholder: |
+        Example:
+        - Startup time: 12 seconds
+        - Memory usage: 850 MB
+        - Frame rate drops below 30 FPS while scrolling
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / Profiling Results
+      description: Attach Logcat output, Android Profiler results, screenshots, or screen recordings if available.
+      placeholder: |
+        ```logcat
+        Paste logs here
+        ```
+    validations:
+      required: false
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: Describe the performance you would expect.
+      placeholder: "Example: The list should scroll smoothly and load within a few seconds."
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Confirmation
+      options:
+        - label: I have confirmed that the issue occurs with the latest version.
+          required: true
+        - label: I have checked whether the issue also occurs with a smaller data set or different settings.
+          required: false
+        - label: I have not included any personal information, API keys, credentials, or other sensitive information.
+          required: true
