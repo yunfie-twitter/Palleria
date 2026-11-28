@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.yunfie.illustia.platform.AppInfo
 import com.yunfie.illustia.platform.AppStrings
 import com.yunfie.illustia.platform.StringKey
+import com.yunfie.illustia.platform.currentTimeMillis
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.app_name
 import com.yunfie.illustia.resources.feature_flags_summary
@@ -229,7 +230,7 @@ fun SettingsScreen(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null,
                             ) {
-                                val now = System.currentTimeMillis()
+                                val now = currentTimeMillis()
                                 if (now - lastVersionTapTime > 3000L) {
                                     versionTapCount = 1
                                 } else {

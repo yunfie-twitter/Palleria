@@ -151,7 +151,7 @@ fun CommentScreen(
             .forEach { comment ->
                 val url = comment.user?.profileImageUrls?.medium
                 if (!url.isNullOrBlank()) {
-                    withContext(Dispatchers.IO) {
+                    withContext(Dispatchers.Default) {
                         prefetchThumbnail(proxyPixivImageUrl(url, proxyBaseUrl))
                     }
                 }

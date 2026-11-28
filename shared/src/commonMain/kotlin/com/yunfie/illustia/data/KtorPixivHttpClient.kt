@@ -90,7 +90,7 @@ class PixivHttpClient(
         fields: List<Pair<String, String>>,
         fallbackRefreshToken: String?,
     ): PixivSession =
-        withContext(Dispatchers.IO) {
+        withContext(Dispatchers.Default) {
             val form = (fields + listOf("client_id" to PixivApiConstants.CLIENT_ID, "client_secret" to PixivApiConstants.CLIENT_SECRET))
             val response =
                 http.request(PixivApiConstants.OAUTH_URL) {
@@ -174,20 +174,20 @@ class PixivCall(
         decode(UgoiraMetadataResponseDto.serializer()) { PixivApiDecoder.ugoiraMetadata(it) }
 
     suspend fun awaitNovelText(novelId: Long): NovelTextContent =
-        withContext(Dispatchers.IO) {
+        withContext(Dispatchers.Default) {
             val body = execute()
             PixivNovelDecoder.novelText(body, novelId)
         }
 
     suspend fun awaitComplete() {
-        withContext(Dispatchers.IO) { execute() }
+        withContext(Dispatchers.Default) { execute() }
     }
 
     internal suspend fun <D, M> decode(
         deserializer: DeserializationStrategy<D>,
         toModel: (D) -> M,
     ): M =
-        withContext(Dispatchers.IO) {
+        withContext(Dispatchers.Default) {
             val body = execute()
             val decoded =
                 try {

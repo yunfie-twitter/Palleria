@@ -69,6 +69,7 @@ import com.yunfie.illustia.models.pixiv.Comment
 import com.yunfie.illustia.models.pixiv.UgoiraPlayback
 import com.yunfie.illustia.nativebridge.NativeIntentEvent
 import com.yunfie.illustia.nativebridge.NativeIntentRouter
+import com.yunfie.illustia.platform.currentTimeMillis
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.action_save
 import com.yunfie.illustia.resources.action_unfollow
@@ -215,7 +216,7 @@ fun IllustDetailScreen(
                     available: Offset,
                     source: NestedScrollSource,
                 ): Offset {
-                    if (System.currentTimeMillis() - lastMouseScrollTime[0] < 400L && available.y > 0f) {
+                    if (currentTimeMillis() - lastMouseScrollTime[0] < 400L && available.y > 0f) {
                         return Offset(0f, available.y)
                     }
                     return Offset.Zero
@@ -512,7 +513,7 @@ fun IllustDetailScreen(
                                                 if (event.type == PointerEventType.Scroll ||
                                                     event.changes.any { it.type == PointerType.Mouse }
                                                 ) {
-                                                    lastMouseScrollTime[0] = System.currentTimeMillis()
+                                                    lastMouseScrollTime[0] = currentTimeMillis()
                                                 }
                                             }
                                         }

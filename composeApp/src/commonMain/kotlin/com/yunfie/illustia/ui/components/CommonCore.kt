@@ -38,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import com.yunfie.illustia.platform.currentTimeMillis
 import com.yunfie.illustia.settings.AppSettings
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
@@ -57,11 +58,11 @@ val MainNavigationContentPadding = 152.dp
 val BottomSheetInsideMargin = DpSize(width = 24.dp, height = 12.dp)
 
 /**
- * ダイアログ冁E��の下端に確保する余白、E *
- * アプリのルート�E `appNavigationScrim()` で navigationBars を消費し帯も塗り済みだが、miuix の
+ * ダイアログ冁E��の下端に確保する余白、E *
+ * アプリのルート�E `appNavigationScrim()` で navigationBars を消費し帯も塗り済みだが、miuix の
  * `OverlayDialog` は既定で imePadding と navigationBarsPadding を両方適用する。そのため
- * キーボ�Eド表示時に両老E��積まれ、キーボ�Eドとの間に隙間ができる。`OverlayDialog` 側で
- * `defaultWindowInsetsPadding = false` にしたぁE��で、�E側で大きい方だけを確保する、E */
+ * キーボ�Eド表示時に両老E��積まれ、キーボ�Eドとの間に隙間ができる。`OverlayDialog` 側で
+ * `defaultWindowInsetsPadding = false` にしたぁE��で、�E側で大きい方だけを確保する、E */
 @Composable
 fun dialogBottomInsets(): WindowInsets =
     WindowInsets.navigationBars
@@ -84,7 +85,7 @@ fun overlayActionButtonColors() =
     )
 
 /**
- * 作品画像�E上に重�Eる�Eタン用。背景を透かして画像を見せつつ、文字�E濁E��で読ませる、E */
+ * 作品画像�E上に重�Eる�Eタン用。背景を透かして画像を見せつつ、文字�E濁E��で読ませる、E */
 @Composable
 fun tagMenuActionButtonColors() =
     ButtonDefaults.buttonColors(
@@ -302,13 +303,13 @@ fun Modifier.onTopBarTap(
             }
 
             var isTap = true
-            val downTime = System.currentTimeMillis()
+            val downTime = currentTimeMillis()
 
             while (true) {
                 val event = awaitPointerEvent(PointerEventPass.Initial)
                 val change = event.changes.firstOrNull { it.id == down.id }
                 if (change == null || !change.pressed) {
-                    val upTime = System.currentTimeMillis()
+                    val upTime = currentTimeMillis()
                     if (isTap && (upTime - downTime) < TOP_BAR_TAP_MAX_DURATION_MS) {
                         currentOnTap.value()
                     }

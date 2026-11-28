@@ -687,8 +687,9 @@ fun BookmarkFollowingTab(
                 }
 
                 FollowingUserSort.Name -> {
+                    // String.CASE_INSENSITIVE_ORDER is JVM-only; compare lowercased keys.
                     followingUsers.sortedWith(
-                        compareBy(String.CASE_INSENSITIVE_ORDER) { it.name.ifBlank { it.account } },
+                        compareBy { it.name.ifBlank { it.account }.lowercase() },
                     )
                 }
             }
