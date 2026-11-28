@@ -1,55 +1,110 @@
-name: バグ報告
-description: 動作不良や不具合を報告する
+name: Bug Report
+description: Report a malfunction, crash, or unexpected behavior
 title: "[Bug] "
 labels: ["bug"]
 body:
   - type: markdown
     attributes:
       value: |
-        バグ報告ありがとうございます。以下の項目を埋めてください。
+        Thank you for reporting a bug.  
+        Please provide as much detail as possible, including reproduction steps, device information, and logs.
 
   - type: textarea
     id: description
     attributes:
-      label: 概要
-      description: 発生しているバグの簡潔な説明
-      placeholder: 例：アプリが起動時にクラッシュする
+      label: Summary
+      description: Provide a concise description of the issue.
+      placeholder: Example: The app crashes on startup
     validations:
       required: true
 
   - type: textarea
     id: reproduction
     attributes:
-      label: 再現手順
-      description: 手順を箇条書きで記載
+      label: Steps to Reproduce
+      description: Describe the steps required to reproduce the issue.
       placeholder: |
-        1. アプリを起動
-        2. 設定画面を開く
-        3. クラッシュする
+        1. Launch the app
+        2. Open the Settings screen
+        3. The app crashes
     validations:
       required: true
 
   - type: input
-    id: environment
+    id: app-version
     attributes:
-      label: 環境
-      description: 端末・OS・アプリバージョン
-      placeholder: 例：Pixel 7 / Android 14 / v1.2.3
+      label: App Version
+      description: Enter the version of the app where the issue occurred.
+      placeholder: Example: v1.2.3
+    validations:
+      required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: Device
+      description: Enter the device name or model.
+      placeholder: Example: Pixel 7
+    validations:
+      required: true
+
+  - type: input
+    id: android-version
+    attributes:
+      label: Android Version
+      description: Enter the Android version.
+      placeholder: Example: Android 14
+    validations:
+      required: true
+
+  - type: dropdown
+    id: build-type
+    attributes:
+      label: Build Type
+      description: Select the build type where the issue occurred.
+      options:
+        - Release
+        - Debug
+        - Other
     validations:
       required: true
 
   - type: textarea
     id: expected
     attributes:
-      label: 期待する動作
-      description: 本来どうあるべきか
+      label: Expected Behavior
+      description: Describe what should happen instead.
+      placeholder: Example: The Settings screen should open normally
+    validations:
+      required: false
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: Describe what actually happens.
+      placeholder: Example: The app crashes immediately after opening the Settings screen
     validations:
       required: false
 
   - type: textarea
     id: logs
     attributes:
-      label: ログ・スクリーンショット
-      description: Logcat ログやエラー画面があれば添付
+      label: Logs / Screenshots
+      description: Attach Logcat output, error messages, screenshots, or screen recordings if available.
+      placeholder: |
+        ```logcat
+        Paste logs here
+        ```
     validations:
       required: false
+
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Confirmation
+      options:
+        - label: I have confirmed that the issue occurs with the latest version.
+          required: true
+        - label: I have not included any personal information, API keys, credentials, or other sensitive information.
+          required: true
