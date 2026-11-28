@@ -84,6 +84,16 @@ jobs:
             --build-cache 2>&1 \
             | tee ios-tests.log
 
+      - name: Run composeApp tests on the iOS simulator
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          set -o pipefail
+          ./gradlew :composeApp:iosSimulatorArm64Test \
+            --stacktrace \
+            --build-cache 2>&1 \
+            | tee compose-ios-tests.log
+
       - name: Upload logs
         uses: actions/upload-artifact@v7
         if: failure()
@@ -92,5 +102,6 @@ jobs:
           path: |
             ios-build.log
             ios-tests.log
+            compose-ios-tests.log
           retention-days: 3
           if-no-files-found: ignore

@@ -25,7 +25,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import com.yunfie.illustia.IllustiaViewModel
 import com.yunfie.illustia.isMutedByTags
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.models.LoadState

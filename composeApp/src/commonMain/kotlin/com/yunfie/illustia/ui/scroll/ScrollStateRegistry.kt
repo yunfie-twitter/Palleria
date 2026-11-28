@@ -35,8 +35,8 @@ object ScrollStateKeys {
  * ここへ移すことで ViewModel 側はプリミティブな値だけを参照できる。
  */
 class ScrollStateRegistry {
-    private val cached = LinkedHashMap<String, LazyGridState>(MAX_CACHED, 0.75f, true)
-    private val cachedLists = LinkedHashMap<String, LazyListState>(MAX_CACHED, 0.75f, true)
+    private val cached = LinkedHashMap<String, LazyGridState>()
+    private val cachedLists = LinkedHashMap<String, LazyListState>()
 
     fun grid(key: String): LazyGridState = cached.getOrPut(key) { LazyGridState() }
 

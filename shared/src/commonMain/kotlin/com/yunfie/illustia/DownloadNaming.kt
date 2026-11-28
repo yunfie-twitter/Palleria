@@ -1,7 +1,6 @@
 package com.yunfie.illustia
 
 import com.yunfie.illustia.models.Illust
-import java.util.Locale
 
 fun buildDownloadPath(
     filename: String,
@@ -61,24 +60,13 @@ fun buildCustomDownloadPath(
     return if (joined.endsWith(ext) || ext.isEmpty()) joined else "$joined$ext"
 }
 
-fun buildSmartDownloadFilename(
-    illust: Illust,
-    page: Int = 0,
-    pageCount: Int = 1,
-): String {
-    val artist = illust.artistName.sanitizeOptionalDownloadSegment() ?: "artist_${illust.artistId}"
-    val title = illust.title.sanitizeOptionalDownloadSegment() ?: "work_${illust.id}"
-    val pageSuffix = if (pageCount > 1 || page > 0) "_p$page" else ""
-    return "[$artist] $title$pageSuffix"
-}
-
 fun String.withImageExtension(
     sourceUrl: String,
     responseMimeType: String?,
 ): String {
     if (contains('.')) return this
     val extension =
-        when (responseMimeType?.substringBefore(';')?.lowercase(Locale.ROOT)) {
+        when (responseMimeType?.substringBefore(';')?.lowercase()) {
             "image/png" -> "png"
             "image/jpeg", "image/jpg" -> "jpg"
             "image/webp" -> "webp"
@@ -124,9 +112,22 @@ private fun Illust.downloadWorkFolder(): String? {
         ?: id?.let { "work_$it" }
 }
 
-private fun String.sanitizeDownloadSegment(maxLength: Int = 80): String = sanitizeOptionalDownloadSegment(maxLength) ?: "untitled"
+/** ダウンロード時の既定ファイル名。UI からも参照するため commonMain に置く。 */
+fun buildSmartDownloadFilename(
+    illust: Illust,
+    page: Int = 0,
+    pageCount: Int = 1,
+): String {
+    val artist = illust.artistName.sanitizeOptionalDownloadSegment() ?: "artist_${illust.artistId}"
+    val title = illust.title.sanitizeOptionalDownloadSegment() ?: "work_${illust.id}"
+    val pageSuffix = if (pageCount > 1 || page > 0) "_p$page" else ""
+    return "[$artist] $title$pageSuffix"
+}
 
-private fun String.sanitizeOptionalDownloadSegment(maxLength: Int = 80): String? =
+internal fun String.sanitizeDownloadSegment(maxLength: Int = 80): String =
+    sanitizeOptionalDownloadSegment(maxLength) ?: "untitled"
+
+internal fun String.sanitizeOptionalDownloadSegment(maxLength: Int = 80): String? =
     trim()
         .replace(INVALID_PATH_CHARACTER_PATTERN, "_")
         .replace(WHITESPACE_PATTERN, " ")
