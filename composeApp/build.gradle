@@ -29,6 +29,12 @@ kotlin {
         minSdk = 24
     }
 
+    // iOS targets. Apple's linker only exists on macOS, so these are declared unconditionally but
+    // only produce artefacts on a macOS host (the `ios` CI job); elsewhere Kotlin skips them and
+    // the Android build is unaffected.
+    iosArm64()
+    iosSimulatorArm64()
+
     sourceSets {
         commonMain.dependencies {
             api(project(":shared"))
@@ -42,6 +48,8 @@ kotlin {
             implementation libs.miuix.icons
             implementation libs.miuix.squircle
             implementation libs.miuix.preference
+            // Publishes iosArm64/iosSimulatorArm64 variants, so the Liquid Glass surface is shared.
+            implementation libs.miuix.blur
 
             implementation libs.kotlinx.coroutines.core
             implementation libs.serialization.json
@@ -51,7 +59,6 @@ kotlin {
 
         androidMain.dependencies {
             implementation compose.material3
-            implementation libs.miuix.blur
             implementation libs.miuix.navigation3.ui
             implementation libs.navigation3.runtime
             implementation libs.coil.network.okhttp

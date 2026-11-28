@@ -165,7 +165,6 @@ import com.yunfie.illustia.resources.widget_ranking_refresh
 import com.yunfie.illustia.resources.widget_ranking_title
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.getString
-import java.util.concurrent.ConcurrentHashMap
 
 /**
  * `StringProvider` の Compose Multiplatform 実装。
@@ -179,7 +178,9 @@ import java.util.concurrent.ConcurrentHashMap
  * キー名を返し、起動時の早期表示でもクラッシュさせない。
  */
 class ComposeStringProvider : StringProvider {
-    private val cache = ConcurrentHashMap<StringKey, String>()
+    // ConcurrentHashMap is JVM-only; preload() fills this from a single coroutine before first use,
+    // and get() only reads afterwards.
+    private val cache = mutableMapOf<StringKey, String>()
 
     /** 全キーを一度だけ解決してキャッシュする。アプリ起動時に suspend 文脈から呼ぶ。 */
     suspend fun preload() {

@@ -70,15 +70,3 @@ fun Modifier.sharedArtworkElement(illustId: Long): Modifier {
         )
     }
 }
-
-/**
- * Publishes the current entry's animated visibility scope so cards and the detail header compiled
- * inside that entry can join the transition.
- */
-@Composable
-fun ProvideEntrySharedTransitionScope(content: @Composable () -> Unit) {
-    val visibilityScope = androidx.navigation3.ui.LocalNavAnimatedContentScope.current
-    CompositionLocalProvider(LocalNavEntryAnimatedVisibilityScope provides visibilityScope) {
-        content()
-    }
-}

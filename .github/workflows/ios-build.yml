@@ -1,0 +1,96 @@
+name: iOS build
+
+# Kotlin/Native can only compile and link the `iosArm64` / `iosSimulatorArm64` targets on a macOS
+# host, so this is the only place the iOS half of the shared modules is actually verified. The
+# `:composeApp:compileKotlinMetadata` gate that runs on Linux/Windows cannot stand in for it: with
+# no non-JVM target in the build, metadata compilation does not check that commonMain is free of
+# JVM-only APIs.
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "shared/**"
+      - "composeApp/**"
+      - "gradle/**"
+      - "build.gradle"
+      - "settings.gradle"
+      - "gradle.properties"
+      - "gradlew"
+      - ".github/workflows/ios-build.yml"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "shared/**"
+      - "composeApp/**"
+      - "gradle/**"
+      - "build.gradle"
+      - "settings.gradle"
+      - "gradle.properties"
+      - "gradlew"
+      - ".github/workflows/ios-build.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ios-build:
+    name: Compile shared modules for iOS
+    runs-on: macos-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          java-version: "21"
+          distribution: temurin
+          cache: "gradle"
+
+      - name: Grant execute permission for Gradle wrapper
+        run: chmod +x gradlew
+
+      # Compiling an iosArm64 klib exercises commonMain against the real Apple target. This is what
+      # catches JVM-only imports (java.*, androidx.core, lifecycle-compose) that the metadata gate
+      # silently accepts.
+      - name: Compile for iOS
+        shell: bash
+        run: |
+          set -o pipefail
+          ./gradlew \
+            :shared:compileKotlinIosArm64 \
+            :composeApp:compileKotlinIosArm64 \
+            :shared:compileKotlinIosSimulatorArm64 \
+            :composeApp:compileKotlinIosSimulatorArm64 \
+            --stacktrace \
+            --build-cache 2>&1 \
+            | tee ios-build.log
+
+      - name: Run shared tests on the iOS simulator
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          set -o pipefail
+          ./gradlew :shared:iosSimulatorArm64Test \
+            --stacktrace \
+            --build-cache 2>&1 \
+            | tee ios-tests.log
+
+      - name: Upload logs
+        uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: ios-build-logs
+          path: |
+            ios-build.log
+            ios-tests.log
+          retention-days: 3
+          if-no-files-found: ignore

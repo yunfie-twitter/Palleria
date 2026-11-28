@@ -33,13 +33,18 @@ kotlin {
         }
     }
 
+    // See composeApp/build.gradle: declared everywhere, only linked on macOS.
+    iosArm64()
+    iosSimulatorArm64()
+
     sourceSets {
         commonMain.dependencies {
             implementation compose.runtime
 
             implementation libs.kotlinx.coroutines.core
             implementation libs.serialization.json
-            implementation libs.kotlinx.datetime
+            // Exposed to composeApp so shared UI can format timestamps without java.text.
+            api libs.kotlinx.datetime
 
             implementation libs.ktor.client.core
             implementation libs.ktor.client.content.negotiation
@@ -50,6 +55,10 @@ kotlin {
             implementation libs.ktor.client.okhttp
             implementation libs.okhttp
             implementation libs.lifecycle.viewmodel.ktx
+        }
+
+        iosMain.dependencies {
+            implementation libs.ktor.client.darwin
         }
 
         commonTest.dependencies {

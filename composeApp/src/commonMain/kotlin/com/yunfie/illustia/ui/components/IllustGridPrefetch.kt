@@ -9,7 +9,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.structuralEqualityPolicy
-import coil3.compose.LocalPlatformContext
 import com.yunfie.illustia.models.Illust
 import com.yunfie.illustia.ui.components.PrefetchPixivImages
 import kotlinx.coroutines.flow.collect

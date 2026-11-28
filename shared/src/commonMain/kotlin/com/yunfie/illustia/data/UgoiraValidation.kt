@@ -1,7 +1,6 @@
 package com.yunfie.illustia.data
 
 import com.yunfie.illustia.models.pixiv.UgoiraFrame
-import java.util.zip.ZipEntry
 
 /** うごイラ ZIP 展開時の入力検証。Rust 版 (`ugoira.rs`) と同じ制約を保つ。 */
 object UgoiraValidation {
@@ -21,17 +20,23 @@ object UgoiraValidation {
         if (relativeIsUnsafe(name)) throw invalid("ugoira archive contains an unsafe path")
     }
 
-    /** 件数上限・重複フレーム・単一フレームサイズをまとめて検証する。 */
+    /**
+     * 件数上限・重複フレーム・単一フレームサイズをまとめて検証する。
+     *
+     * ZIP エントリの型を持たせると commonMain から java.util.zip が抜けなくなるため、
+     * 判定に要る値だけを受け取る。
+     */
     fun entry(
         count: Int,
-        entry: ZipEntry,
+        isDirectory: Boolean,
+        size: Long,
         name: String,
         required: Set<String>,
         extracted: MutableSet<String>,
     ) {
         val invalidEntry =
             count > MAX_ENTRIES ||
-                (!entry.isDirectory && name in required && (!extracted.add(name) || entry.size > MAX_ENTRY_BYTES))
+                (!isDirectory && name in required && (!extracted.add(name) || size > MAX_ENTRY_BYTES))
         if (invalidEntry) throw invalid("ugoira archive contains an invalid entry")
     }
 

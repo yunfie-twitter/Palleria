@@ -50,7 +50,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yunfie.illustia.CalculatorHistoryEntry
 import com.yunfie.illustia.resources.Res
 import com.yunfie.illustia.resources.action_cancel
@@ -59,6 +58,7 @@ import com.yunfie.illustia.resources.privacy_enter_unlock_code
 import com.yunfie.illustia.resources.privacy_unlock_code
 import com.yunfie.illustia.ui.components.AppDialog
 import com.yunfie.illustia.ui.components.BlockBackNavigation
+import com.yunfie.illustia.ui.components.collectAsStateWithLifecycle
 import com.yunfie.illustia.ui.components.overlayActionButtonColors
 import com.yunfie.illustia.ui.screens.calculator.CalculatorActions
 import kotlinx.coroutines.delay

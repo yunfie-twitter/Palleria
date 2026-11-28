@@ -1,8 +1,6 @@
 package com.yunfie.illustia.data
 
 import androidx.compose.runtime.Immutable
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 
 @Immutable
 data class PixivImageProxy(
@@ -34,7 +32,7 @@ fun proxyPixivImageUrl(
         proxyBaseUrl.startsWith("https://media.yunfi.f5.si/")
     ) {
         val workersUrl = PALLERIA_WORKERS_HOST_PREFIX + relativePath
-        return PALLERIA_IMAGE_PROXY_BASE_URL + URLEncoder.encode(workersUrl, StandardCharsets.UTF_8.name())
+        return PALLERIA_IMAGE_PROXY_BASE_URL + formEncode(workersUrl)
     }
 
     val proxy = proxyBaseUrl.trim().trimEnd('/')
@@ -58,3 +56,39 @@ private fun String.pixivImagePrefixOrNull(): String? =
         startsWith("https://i-f.pximg.net/") -> "https://i-f.pximg.net/"
         else -> null
     }
+
+/**
+ * `java.net.URLEncoder.encode(value, "UTF-8")` と同じ出力。
+ *
+ * この値は既存プロキシ URL の一部として既に配布済みなので、置き換えは出力の互換が必須:
+ * 空白は `+`、`A-Z a-z 0-9 . - * _` だけを素通しし、それ以外は UTF-8 バイトの `%XX`（大文字）。
+ */
+private fun formEncode(value: String): String {
+    val builder = StringBuilder(value.length)
+    for (byte in value.encodeToByteArray()) {
+        val code = byte.toInt() and 0xFF
+        val char = code.toChar()
+        when {
+            char == ' ' -> {
+                builder.append('+')
+            }
+
+            char in 'a'..'z' || char in 'A'..'Z' || char in '0'..'9' -> {
+                builder.append(char)
+            }
+
+            char == '.' || char == '-' || char == '*' || char == '_' -> {
+                builder.append(char)
+            }
+
+            else -> {
+                builder.append('%')
+                builder.append(HEX_DIGITS[code shr 4])
+                builder.append(HEX_DIGITS[code and 0x0F])
+            }
+        }
+    }
+    return builder.toString()
+}
+
+private const val HEX_DIGITS = "0123456789ABCDEF"

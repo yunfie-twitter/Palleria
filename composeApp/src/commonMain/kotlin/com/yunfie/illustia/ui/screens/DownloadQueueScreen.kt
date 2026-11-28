@@ -78,6 +78,8 @@ import com.yunfie.illustia.ui.components.rememberHapticFeedbackAction
 import com.yunfie.illustia.ui.components.smoothScrollToTop
 import com.yunfie.illustia.ui.screens.library.LibraryActions
 import kotlinx.coroutines.launch
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import top.yukonga.miuix.kmp.basic.Card
@@ -97,8 +99,7 @@ import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
-import java.text.DateFormat
-import java.util.Date
+import kotlin.time.Instant
 
 private enum class QueueTab {
     All,
@@ -446,9 +447,7 @@ private fun DownloadQueueCard(entry: DownloadQueueEntry) {
                 Text(
                     text =
                         remember(entry.timestampMillis) {
-                            DateFormat
-                                .getTimeInstance(DateFormat.SHORT)
-                                .format(Date(entry.timestampMillis))
+                            formatQueueTimestamp(entry.timestampMillis)
                         },
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     style = MiuixTheme.textStyles.footnote2,
@@ -563,3 +562,16 @@ private fun queueStatusLabel(status: DownloadQueueStatus): String =
         DownloadQueueStatus.Skipped -> stringResource(Res.string.download_queue_skipped)
         DownloadQueueStatus.Failed -> stringResource(Res.string.download_queue_failed)
     }
+
+/**
+ * キュー行の時刻表示。`java.text.DateFormat.SHORT` の代わりに端末のタイムゾーンで 24 時間表記する。
+ */
+private fun formatQueueTimestamp(epochMillis: Long): String {
+    val dateTime =
+        Instant
+            .fromEpochMilliseconds(epochMillis)
+            .toLocalDateTime(TimeZone.currentSystemDefault())
+    return "${dateTime.hour.twoDigits()}:${dateTime.minute.twoDigits()}"
+}
+
+private fun Int.twoDigits(): String = if (this < 10) "0$this" else toString()
